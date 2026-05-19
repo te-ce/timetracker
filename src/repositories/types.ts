@@ -54,6 +54,7 @@ export interface TimeEntryRepository {
 export interface WorkWindowRepository {
   save(window: WorkWindow): Promise<void>
   findByDate(date: Date): Promise<WorkWindow[]>
+  findByDateRange(from: Date, to: Date): Promise<WorkWindow[]>
   delete(id: string): Promise<void>
 }
 

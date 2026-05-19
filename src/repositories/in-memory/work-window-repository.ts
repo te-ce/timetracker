@@ -29,6 +29,17 @@ export class InMemoryWorkWindowRepository implements WorkWindowRepository {
     )
   }
 
+  findByDateRange(from: Date, to: Date): Promise<WorkWindow[]> {
+    const fromDate = toIsoDate(from)
+    const toDate = toIsoDate(to)
+
+    return Promise.resolve(
+      [...this.windows.values()]
+        .filter((window) => window.date >= fromDate && window.date <= toDate)
+        .sort((left, right) => left.date.localeCompare(right.date) || left.start.localeCompare(right.start)),
+    )
+  }
+
   delete(id: string): Promise<void> {
     this.windows.delete(id)
 
