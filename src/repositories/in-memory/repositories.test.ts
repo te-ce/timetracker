@@ -4,8 +4,9 @@ import {
   InMemoryTimeEntryRepository,
   InMemoryWorkWindowRepository,
   InMemorySprintExportRepository,
+  InMemoryWorkLocationRepository,
 } from './index'
-import type { AppConfig, TimeEntry, WorkWindow, SprintExport } from '../types'
+import type { AppConfig, TimeEntry, WorkWindow, SprintExport, WorkLocation } from '../types'
 
 const firstEntry: TimeEntry = {
   id: 'entry-1',
@@ -112,5 +113,44 @@ describe('InMemorySprintExportRepository', () => {
     const result = await repository.findBySprintIndex(3)
     expect(result?.status).toBe('exported')
     expect(result?.exportedAt).toBe('2026-05-20')
+  })
+})
+
+describe('InMemoryWorkLocationRepository', () => {
+  it('returns null for unknown date', async () => {
+    const repo = new InMemoryWorkLocationRepository()
+    await expect(repo.findByDate('2026-05-19')).resolves.toBeNull()
+  })
+
+  it('saves and retrieves location for a date', async () => {
+    const repo = new InMemoryWorkLocationRepository()
+    await repo.save('2026-05-19', 'Office')
+    await expect(repo.findByDate('2026-05-19')).resolves.toBe('Office')
+  })
+
+  it('overwrites location on re-save', async () => {
+    const repo = new InMemoryWorkLocationRepository()
+    await repo.save('2026-05-19', 'Office')
+    await repo.save('2026-05-19', 'Remote')
+    await expect(repo.findByDate('2026-05-19')).resolves.toBe('Remote')
+  })
+
+  it('deletes location', async () => {
+    const repo = new InMemoryWorkLocationRepository()
+    await repo.save('2026-05-19', 'Office')
+    await repo.delete('2026-05-19')
+    await expect(repo.findByDate('2026-05-19')).resolves.toBeNull()
+  })
+
+  it('finds locations by date range', async () => {
+    const repo = new InMemoryWorkLocationRepository()
+    await repo.save('2026-05-18', 'Office')
+    await repo.save('2026-05-19', 'Remote')
+    await repo.save('2026-05-25', 'Office')
+
+    const result = await repo.findByDateRange('2026-05-18', '2026-05-20')
+    expect(result.size).toBe(2)
+    expect(result.get('2026-05-18')).toBe('Office')
+    expect(result.get('2026-05-19')).toBe('Remote')
   })
 })

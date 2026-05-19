@@ -74,3 +74,12 @@ export interface SprintExportRepository {
   save(sprintExport: SprintExport): Promise<void>
   findBySprintIndex(sprintIndex: number): Promise<SprintExport | null>
 }
+
+export type WorkLocation = 'Office' | 'Remote'
+
+export interface WorkLocationRepository {
+  save(date: string, location: WorkLocation): Promise<void>
+  findByDate(date: string): Promise<WorkLocation | null>
+  findByDateRange(from: string, to: string): Promise<Map<string, WorkLocation>>
+  delete(date: string): Promise<void>
+}
