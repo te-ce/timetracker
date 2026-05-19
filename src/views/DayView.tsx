@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { InMemoryWorkWindowRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository, InMemoryWorkLocationRepository, InMemoryDayTypeOverrideRepository } from '../repositories/in-memory'
+import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo } from '../repositories/shared'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { AutoCategoryRow } from '../components/AutoCategoryRow'
@@ -10,13 +10,6 @@ import { calculateRestarbeitszeit } from '../domain/worktime'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
 import type { WorkLocation } from '../repositories/types'
-
-// Temporary in-memory repos until Firestore + MSAL auth is wired
-const workWindowRepo = new InMemoryWorkWindowRepository()
-const timeEntryRepo = new InMemoryTimeEntryRepository()
-const configRepo = new InMemoryConfigRepository()
-const workLocationRepo = new InMemoryWorkLocationRepository()
-const dayTypeOverrideRepo = new InMemoryDayTypeOverrideRepository()
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {

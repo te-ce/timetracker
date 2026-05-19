@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { InMemoryTimeEntryRepository, InMemoryWorkWindowRepository, InMemoryConfigRepository } from '../repositories/in-memory'
+import { timeEntryRepo, workWindowRepo, configRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
-
-// Temporary in-memory repos until Firestore is wired
-const timeEntryRepo = new InMemoryTimeEntryRepository()
-const workWindowRepo = new InMemoryWorkWindowRepository()
-const configRepo = new InMemoryConfigRepository()
 
 export function MonthGridView() {
   const today = new Date()

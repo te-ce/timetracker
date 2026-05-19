@@ -4,11 +4,7 @@ import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../
 import type { SprintConfig } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
-import { InMemorySprintExportRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository } from '../repositories/in-memory'
-
-const sprintExportRepo = new InMemorySprintExportRepository()
-const timeEntryRepo = new InMemoryTimeEntryRepository()
-const configRepo = new InMemoryConfigRepository()
+import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/shared'
 
 export function SprintView() {
   const queryClient = useQueryClient()

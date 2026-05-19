@@ -2,16 +2,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
-import { InMemoryWorkWindowRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository } from '../repositories/in-memory'
+import { workWindowRepo, timeEntryRepo, configRepo } from '../repositories/shared'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { classifyDay } from '../domain/dayType'
 import { getDayStatus, type DayStatus } from '../domain/dayStatus'
 import { toLocalIso } from '../domain/dateUtils'
-
-const workWindowRepo = new InMemoryWorkWindowRepository()
-const timeEntryRepo = new InMemoryTimeEntryRepository()
-const configRepo = new InMemoryConfigRepository()
 
 export function MonthView() {
   const navigate = useNavigate()
