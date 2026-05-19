@@ -30,7 +30,10 @@ export function DayTypePicker({ date, repository }: Props) {
         await repository.save(date, value as DayTypeOverride)
       }
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['dayTypeOverride', date] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['dayTypeOverride'] })
+      void queryClient.invalidateQueries({ queryKey: ['dayTypeOverrides'] })
+    },
   })
 
   const currentValue = override ?? 'WorkDay'

@@ -2,10 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
-import { workWindowRepo, timeEntryRepo, configRepo } from '../repositories/shared'
+import { workWindowRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo } from '../repositories/shared'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { classifyDay } from '../domain/dayType'
+import type { DayType } from '../domain/dayType'
 import { getDayStatus, type DayStatus } from '../domain/dayStatus'
 import { toLocalIso } from '../domain/dateUtils'
 
@@ -37,6 +38,14 @@ export function MonthView() {
     queryFn: () => workWindowRepo.findByDateRange(from, to),
   })
 
+  const fromIso = toLocalIso(from)
+  const toIso = toLocalIso(to)
+
+  const { data: dayTypeOverrides = new Map() } = useQuery({
+    queryKey: ['dayTypeOverrides', year, month],
+    queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
+  })
+
   useQuery({
     queryKey: ['timeEntries', year, month, 'month'],
     queryFn: () => timeEntryRepo.findByDateRange(from, to),
@@ -57,7 +66,8 @@ export function MonthView() {
     const worked = calculateWorkedHours(dayWindows)
     workedHoursPerDay.push(worked)
 
-    const dayType = classifyDay(date)
+    const override = dayTypeOverrides.get(iso)
+    const dayType: DayType = override ?? classifyDay(date)
     if (dayType === 'WorkDay') workDayCount++
   }
 
@@ -68,8 +78,10 @@ export function MonthView() {
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, monthIdx, day)
     const iso = toLocalIso(date)
+    const override = dayTypeOverrides.get(iso)
+    const dayType: DayType = override ?? classifyDay(date)
     dayStatusMap[iso] = getDayStatus({
-      dayType: classifyDay(date),
+      dayType,
       hasWorkedHours: workedHoursPerDay[day - 1] > 0,
       isoDate: iso,
       today: todayIso,

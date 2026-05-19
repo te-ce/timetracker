@@ -24,12 +24,12 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
 
   const addMutation = useMutation({
     mutationFn: (w: WorkWindow) => repository.save(w),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows', date] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows'] }),
   })
 
   const removeMutation = useMutation({
     mutationFn: (id: string) => repository.delete(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows', date] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows'] }),
   })
 
   const workedHours = calculateWorkedHours(windows)
