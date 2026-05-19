@@ -40,8 +40,8 @@ describe('MonthGrid', () => {
 
     // 31 day rows for May
     const rows = screen.getAllByRole('row')
-    // header row + 31 data rows
-    expect(rows.length).toBe(32)
+    // header row + 31 data rows + 1 footer total row
+    expect(rows.length).toBe(33)
   })
 
   it('displays workedHours computed from WorkWindows', async () => {
@@ -98,5 +98,20 @@ describe('MonthGrid', () => {
     // May 2, 2026 is Saturday
     const row = await screen.findByRole('row', { name: /2026-05-02/ })
     expect(row).toHaveClass('opacity-50')
+  })
+
+  it('shows total worked hours in footer', async () => {
+    setup({
+      windows: [
+        { id: 'w1', date: '2026-05-01', start: '09:00', end: '12:00' },
+        { id: 'w2', date: '2026-05-01', start: '13:00', end: '17:00' },
+        { id: 'w3', date: '2026-05-02', start: '08:00', end: '12:00' },
+      ],
+    })
+
+    await waitFor(() => {
+      // 7h (day 1) + 4h (day 2) = 11h
+      expect(screen.getByTestId('total-worked')).toHaveTextContent('11.00')
+    })
   })
 })

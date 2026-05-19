@@ -8,6 +8,7 @@ import { calculateWorkedHours } from '../domain/worktime'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { classifyDay } from '../domain/dayType'
 import { getDayStatus, type DayStatus } from '../domain/dayStatus'
+import { toLocalIso } from '../domain/dateUtils'
 import { useAppStore } from '../stores/appStore'
 
 const workWindowRepo = new InMemoryWorkWindowRepository()
@@ -46,7 +47,7 @@ export function MonthView() {
 
   const sollstunden = config?.sollstunden ?? 8
   const daysInMonth = to.getDate()
-  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const todayIso = toLocalIso(today)
 
   // Compute worked hours per day and day status map
   const workedHoursPerDay: number[] = []
@@ -55,7 +56,7 @@ export function MonthView() {
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day)
-    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    const iso = toLocalIso(date)
     const dayWindows = windows.filter((w) => w.date === iso)
     const worked = calculateWorkedHours(dayWindows)
     workedHoursPerDay.push(worked)

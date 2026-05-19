@@ -1,3 +1,4 @@
+import { toLocalIso } from '../domain/dateUtils'
 import type { DayStatus } from '../domain/dayStatus'
 
 interface Props {
@@ -28,13 +29,6 @@ function getDaysInMonth(year: number, month: number): Date[] {
     days.push(new Date(year, month, d))
   }
   return days
-}
-
-function toIso(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
 }
 
 export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {} }: Props) {
@@ -99,7 +93,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
         ))}
 
         {days.map((date) => {
-          const iso = toIso(date)
+          const iso = toLocalIso(date)
           const status = dayStatusMap[iso] ?? 'future'
           return (
             <button

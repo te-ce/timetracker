@@ -90,6 +90,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
   }
 
   const allCategories = getAllCategories(customCategories)
+  const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
 
   return (
     <div className="overflow-x-auto">
@@ -146,6 +147,24 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
             )
           })}
         </tbody>
+        <tfoot>
+          <tr className="border-t font-semibold">
+            <td className="px-2 py-1">Total</td>
+            <td className="px-2 py-1 text-right" data-testid="total-worked">{totalWorked.toFixed(2)}</td>
+            <td className="w-px border-l border-gray-300"></td>
+            {allCategories.map((cat) => {
+              const catTotal = rows.reduce((sum, row) => sum + (row.entries[cat] ?? 0), 0)
+              return (
+                <td key={cat} className="px-2 py-1 text-right">
+                  {catTotal > 0 ? catTotal.toFixed(2) : ''}
+                </td>
+              )
+            })}
+            <td className="px-2 py-1 text-right">
+              {rows.reduce((sum, row) => sum + row.autoCategoryHours, 0).toFixed(2)}
+            </td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   )
