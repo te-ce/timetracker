@@ -28,16 +28,21 @@ A time-tracking app that logs hours against predefined categories and exports th
 | 10 | **Testwatch** | Testwatch-specific activities |
 
 ### 1.2 Automatic Remaining Category (AutoCategory)
-- Exactly **one** category can be marked as "automatic" — freely chosen by the user, no default
+- A **global default** AutoCategory is set in Settings — freely chosen by the user from fixed or dynamic categories
+- Per-day override possible from DayView or MonthGrid (changes which category receives auto hours for that day)
 - That category receives: `actual worked hours for the day − Σ all manual bookings`
+- The user may **manually override** the auto-computed value in the grid or DayView; clearing the override reverts to the computed value
 - Undershoot (manual bookings > worked hours): the row is **highlighted in red** as a warning
+- When total entries (including auto) < WorkedHours: day flagged with **unaccounted hours** indicator
 - All other categories are filled **manually only**
-- The automatic category is visually distinguished
+- The automatic category is visually distinguished (greyed out when computed)
 
-### 1.3 Investment Columns (dynamic)
+### 1.3 Investment / Dynamic Columns
 - Investments are additional rows in the Excel after the fixed categories
 - The app reads the investment rows from the Excel via Graph API during mapping setup
 - Bookable categories are automatically created in the app from those rows (name = description or Task ID from Excel)
+- The user can also add custom categories manually in Settings (`customCategories` list)
+- Dynamic categories are usable as TimeEntry targets and as AutoCategory
 - Currently one investment; multiple possible in the future
 - On fill: already-entered values are shown and can optionally be **overwritten**
 
@@ -197,11 +202,41 @@ Data should be synchronised across devices. The user logs in once — sync runs 
   - Book TimeEntries per category
   - Mark office/remote
   - Set DayType
-- Separate pages: **monthly statistics**, **sprint report**, **settings** (Sollstunden, sprint config, Excel mapping, federal state)
+  - Set per-day AutoCategory override
+- Separate pages: **monthly statistics**, **MonthGrid**, **sprint report**, **settings** (Sollstunden, sprint config, Excel mapping, federal state, AutoCategory default, custom categories, auto-fill rules)
 
 ---
 
-## 11. Non-Functional Requirements
+## 11. MonthGrid View
+
+- Spreadsheet-like grid: **rows = days (1–31)**, **columns = all categories** (fixed + dynamic)
+- Each cell displays booked hours and is **editable inline**
+- A read-only **WorkedHours** column shows Σ WorkWindow durations per day
+- The **AutoCategory column** shows the computed value (greyed out) but accepts manual overrides
+  - If the user types a value → stored as override
+  - If the user clears the value → reverts to auto-computed
+- Days with unaccounted hours (`WorkedHours − Σ all entries > 0`) display a visual flag
+- Navigation: month selector (prev / next / current)
+- Non-WorkDay rows (weekends, holidays, vacation) are visually muted
+
+---
+
+## 12. Auto-Fill Rules
+
+- The user configures recurring rules that **materialize real TimeEntries** on app load
+- Two recurrence patterns:
+  - `everyWorkday` — every Mon–Fri
+  - `weekly(days, intervalWeeks)` — specific weekday(s) every N weeks (e.g. Monday every 2 weeks)
+- Rules **skip non-WorkDay days** (weekends, public holidays, vacation, sick, absence)
+- Materialization occurs on app load: scan from last materialization date to today
+- Each rule tracks a **`materializedDates`** set — prevents re-creation if the user deleted the entry
+- Auto-filled entries are normal TimeEntries (editable, deletable)
+- Rules are configured in Settings: category, hours, recurrence pattern, optional label
+- A rule definition: `{ id, category, hours, pattern, label?, materializedDates }`
+
+---
+
+## 13. Non-Functional Requirements
 
 | Requirement | Description |
 |---|---|

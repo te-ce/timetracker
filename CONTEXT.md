@@ -50,6 +50,31 @@ An optional per-day label: `Office` or `Remote`.
 Display/statistics only — no effect on TimeEntries or calculations.
 
 ## AutoCategory
-The user-chosen category that automatically receives the remaining hours of a day.  
-No default — the user must set it explicitly in Settings.  
-Calculation: `WorkedHours − Σ manual TimeEntries`. Cannot be negative; undershoot → warning.
+The category that automatically receives the remaining hours of a day.  
+A **global default** is set in Settings; can be **overridden per day** from DayView or MonthGrid.  
+Calculation: `WorkedHours − Σ manual TimeEntries`. Cannot be negative; floors at 0.  
+The user may also manually override the auto-computed value. Clearing the override reverts to the computed value.  
+When `Σ all entries (including auto) < WorkedHours`, the day is flagged as having **unaccounted hours**.  
+Accepts both fixed categories and dynamic categories.
+
+## DynamicCategory
+A user-defined or investment-sourced category beyond the 10 fixed ones.  
+Stored as `customCategories: string[]` in AppConfig.  
+Usable for TimeEntries and as AutoCategory target.  
+Investment categories are loaded from Excel via Graph API during mapping setup.
+
+## MonthGrid
+A spreadsheet-like view for one month. Rows = days (1–31), columns = all categories.  
+Each cell shows booked hours and is editable inline.  
+A read-only **WorkedHours** column provides context.  
+The AutoCategory column shows computed values (greyed out) but accepts manual overrides.
+
+## AutoFillRule
+A recurring rule that materializes real TimeEntries on app load.  
+Two recurrence patterns:
+- `everyWorkday` — fires Mon–Fri, skips non-WorkDay days (holidays, vacation, etc.)
+- `weekly(days, intervalWeeks)` — specific weekday(s) every N weeks, also skips non-WorkDay days
+
+Each rule tracks a `materializedDates` set (ISO strings) — days where the rule was already applied.  
+If a date is in the set, the rule does not re-create the entry (even if the user deleted it).  
+Materialization happens on app load: scan from last materialization date to today.
