@@ -83,3 +83,12 @@ export interface WorkLocationRepository {
   findByDateRange(from: string, to: string): Promise<Map<string, WorkLocation>>
   delete(date: string): Promise<void>
 }
+
+export type DayTypeOverride = 'PublicHoliday' | 'Vacation' | 'SickDay' | 'Absence'
+
+export interface DayTypeOverrideRepository {
+  save(date: string, dayType: DayTypeOverride): Promise<void>
+  findByDate(date: string): Promise<DayTypeOverride | null>
+  findByDateRange(from: string, to: string): Promise<Map<string, DayTypeOverride>>
+  delete(date: string): Promise<void>
+}

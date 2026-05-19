@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntry, TimeEntryRepository, WorkWindowRepository } from '../repositories/types'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
+import { WorkedHoursCell } from './WorkedHoursCell'
 import type { MonthGridRow } from '../domain/monthGrid'
 
 interface Props {
@@ -114,9 +115,11 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                 className={isNonWorkDay ? 'opacity-50' : ''}
               >
                 <td className="px-2 py-1 font-mono">{row.date.slice(8)}</td>
-                <td className="px-2 py-1 text-right" data-testid="worked-hours">
-                  {row.workedHours > 0 ? row.workedHours : ''}
-                </td>
+                <WorkedHoursCell
+                  date={row.date}
+                  workedHours={row.workedHours}
+                  repository={workWindowRepository}
+                />
                 {allCategories.map((cat) => (
                   <td key={cat} className="px-1 py-0.5">
                     <input

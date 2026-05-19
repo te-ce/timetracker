@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { InMemoryWorkWindowRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository, InMemoryWorkLocationRepository } from '../repositories/in-memory'
+import { InMemoryWorkWindowRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository, InMemoryWorkLocationRepository, InMemoryDayTypeOverrideRepository } from '../repositories/in-memory'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { AutoCategoryRow } from '../components/AutoCategoryRow'
+import { DayTypePicker } from '../components/DayTypePicker'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateRestarbeitszeit } from '../domain/worktime'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
@@ -14,6 +15,7 @@ const workWindowRepo = new InMemoryWorkWindowRepository()
 const timeEntryRepo = new InMemoryTimeEntryRepository()
 const configRepo = new InMemoryConfigRepository()
 const workLocationRepo = new InMemoryWorkLocationRepository()
+const dayTypeOverrideRepo = new InMemoryDayTypeOverrideRepository()
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -104,6 +106,7 @@ export function DayView() {
       </div>
 
       <div className="flex items-center gap-4">
+        <DayTypePicker date={selectedDate} repository={dayTypeOverrideRepo} />
         <button
           onClick={handleLocationToggle}
           className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
