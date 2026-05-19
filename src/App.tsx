@@ -2,6 +2,7 @@ import './App.css'
 import { useState } from 'react'
 import { DayView } from './views/DayView'
 import { MonthView } from './views/MonthView'
+import { SprintView } from './views/SprintView'
 import { useAppStore } from './stores/appStore'
 
 type View = 'month' | 'day' | 'sprint' | 'settings'
@@ -47,7 +48,7 @@ function App() {
       <main className="flex-1 p-8">
         {activeView === 'month' && <MonthView onSelectDate={handleDaySelect} />}
         {activeView === 'day' && <DayView />}
-        {activeView === 'sprint' && <p className="text-gray-400">Sprint — coming soon</p>}
+        {activeView === 'sprint' && <SprintView />}
         {activeView === 'settings' && <p className="text-gray-400">Settings — coming soon</p>}
       </main>
     </div>
