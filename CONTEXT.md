@@ -14,7 +14,8 @@ Distinct from **Sollstunden** (the configured daily target).
 Configured daily working-hours target. Used for the hours overview and monthly statistics — not directly for the AutoCategory.
 
 ## WorkWindow
-A time slot on a day during which the user actually worked (start and end time, e.g. 09:00–12:30).  
+A duration block on a day during which the user actually worked.  
+Can be entered as a **start/end time pair** (e.g. 09:00–12:30) from DayView, or as a **plain duration** (decimal hours, e.g. `3.5`) from the MonthGrid WorkedHours column.  
 A day may have multiple WorkWindows.  
 **WorkedHours** for a day = Σ duration of all WorkWindows that day.
 
@@ -37,7 +38,8 @@ Classification of a day. Determines whether WorkWindows are expected and whether
 
 ## Sprint
 A configured recurring period with a fixed length (e.g. 2 weeks) and a one-time start date.  
-The app automatically derives all sprint boundaries from this configuration.  
+Configured in Settings as: **`sprintStartDate`** (ISO date of the first sprint's start) + **`sprintDurationWeeks`** (integer, e.g. `2`).  
+The app automatically derives all past and future sprint boundaries from these two values.  
 The basis for the sprint report.
 
 ## ExportStatus

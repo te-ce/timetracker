@@ -113,7 +113,14 @@ A time-tracking app that logs hours against predefined categories and exports th
 
 ## 6. Sprint Report
 
-- Sprint length and start date are configured once; the app automatically derives all sprint boundaries
+### Sprint Configuration
+- The user configures the sprint once in Settings:
+  - **Sprint start date** — the exact date the first sprint began (ISO date, e.g. `2024-01-08`)
+  - **Sprint duration** — length in weeks (e.g. 2 weeks)
+- The app automatically derives all past and future sprint boundaries from these two values
+- The configuration can be updated at any time; all sprint boundaries recalculate immediately
+
+### Sprint Report
 - At the end of a sprint: summary of all tracked hours **per category**
 - Displayed as a sprint closing report for the elapsed sprint period
 
@@ -211,7 +218,12 @@ Data should be synchronised across devices. The user logs in once — sync runs 
 
 - Spreadsheet-like grid: **rows = days (1–31)**, **columns = all categories** (fixed + dynamic)
 - Each cell displays booked hours and is **editable inline**
-- A read-only **WorkedHours** column shows Σ WorkWindow durations per day
+- A **WorkedHours column** shows Σ WorkWindow durations per day and is **editable from the grid**:
+  - Clicking the cell opens an inline work-hours logger
+  - The user enters a duration (decimal hours, e.g. `4.5`) and can **add further durations** for the same day (multiple WorkWindows)
+  - Each entered duration appears as a separate line beneath the input; individual entries can be removed
+  - The Σ of all entered durations is stored as WorkedHours for that day
+  - The same durations are reflected in the DayView WorkWindows list
 - The **AutoCategory column** shows the computed value (greyed out) but accepts manual overrides
   - If the user types a value → stored as override
   - If the user clears the value → reverts to auto-computed
