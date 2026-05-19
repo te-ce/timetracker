@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { timeEntryRepo, workWindowRepo, configRepo } from '../repositories/shared'
+import { timeEntryRepo, workWindowRepo, configRepo, dayTypeOverrideRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
+import { toLocalIso } from '../domain/dateUtils'
 
 export function MonthGridView() {
   const today = new Date()
@@ -11,6 +12,16 @@ export function MonthGridView() {
   const { data: config } = useQuery({
     queryKey: ['config'],
     queryFn: () => configRepo.get(),
+  })
+
+  const from = new Date(year, month - 1, 1)
+  const to = new Date(year, month, 0)
+  const fromIso = toLocalIso(from)
+  const toIso = toLocalIso(to)
+
+  const { data: dayTypeOverrides = new Map() } = useQuery({
+    queryKey: ['dayTypeOverrides', year, month],
+    queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
   })
 
   function prevMonth() {
@@ -48,6 +59,7 @@ export function MonthGridView() {
         workWindowRepository={workWindowRepo}
         autoCategory={config?.autoCategory ?? 'Coremedia'}
         customCategories={config?.customCategories ?? []}
+        dayTypes={dayTypeOverrides}
       />
     </div>
   )

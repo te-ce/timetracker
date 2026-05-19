@@ -80,3 +80,13 @@ Two recurrence patterns:
 Each rule tracks a `materializedDates` set (ISO strings) — days where the rule was already applied.  
 If a date is in the set, the rule does not re-create the entry (even if the user deleted it).  
 Materialization happens on app load: scan from last materialization date to today.
+
+## DaySummary
+The computed state of a single day within a month. Combines raw data (WorkWindows, TimeEntries, DayType overrides) into a single summary:
+- **dayType**: resolved DayType (override > classifyDay)
+- **workedHours**: Σ WorkWindow durations
+- **entryTotal**: Σ TimeEntry hours
+- **isEntriesBalanced**: whether entryTotal ≈ workedHours (within 0.01)
+- **dayStatus**: the display status for the MonthCalendar (non-working, future, today, tracked, incomplete, needs-attention, and compound today variants)
+
+Built via `buildMonthSummaries(year, month, input)` which returns all DaySummaries for a month plus aggregate stats (workDayCount, workedHoursPerDay, hasAnyTrackedHours).

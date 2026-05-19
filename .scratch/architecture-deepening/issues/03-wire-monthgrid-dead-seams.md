@@ -1,6 +1,6 @@
 # 03 — Wire MonthGrid Dead Seams
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

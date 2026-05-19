@@ -3,11 +3,9 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
 import { workWindowRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo } from '../repositories/shared'
-import { calculateWorkedHours } from '../domain/worktime'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
-import { classifyDay } from '../domain/dayType'
-import type { DayType } from '../domain/dayType'
-import { getDayStatus, type DayStatus } from '../domain/dayStatus'
+import { buildMonthSummaries } from '../domain/daySummary'
+import type { DayStatus } from '../domain/dayStatus'
 import { toLocalIso } from '../domain/dateUtils'
 
 export function MonthView() {
@@ -52,50 +50,18 @@ export function MonthView() {
   })
 
   const sollstunden = config?.sollstunden ?? 8
-  const daysInMonth = to.getDate()
   const todayIso = toLocalIso(today)
 
-  // Compute worked hours and entry totals per day
-  const workedHoursPerDay: number[] = []
-  const entryTotalsPerDay: number[] = []
-  let workDayCount = 0
+  const { days, workDayCount, workedHoursPerDay } = buildMonthSummaries(year, month, {
+    windows,
+    entries,
+    dayTypeOverrides,
+    today: todayIso,
+  })
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, monthIdx, day)
-    const iso = toLocalIso(date)
-    const dayWindows = windows.filter((w) => w.date === iso)
-    const worked = calculateWorkedHours(dayWindows)
-    workedHoursPerDay.push(worked)
-
-    const dayEntries = entries.filter((e) => e.date === iso)
-    const entryTotal = dayEntries.reduce((sum, e) => sum + e.hours, 0)
-    entryTotalsPerDay.push(entryTotal)
-
-    const override = dayTypeOverrides.get(iso)
-    const dayType: DayType = override ?? classifyDay(date)
-    if (dayType === 'WorkDay') workDayCount++
-  }
-
-  const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)
-
-  // Build day status map
   const dayStatusMap: Record<string, DayStatus> = {}
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, monthIdx, day)
-    const iso = toLocalIso(date)
-    const override = dayTypeOverrides.get(iso)
-    const dayType: DayType = override ?? classifyDay(date)
-    const worked = workedHoursPerDay[day - 1]
-    const entryTotal = entryTotalsPerDay[day - 1]
-    const isEntriesBalanced = worked > 0 && Math.abs(worked - entryTotal) < 0.01
-    dayStatusMap[iso] = getDayStatus({
-      dayType,
-      hasWorkedHours: worked > 0,
-      isEntriesBalanced,
-      isoDate: iso,
-      today: todayIso,
-      hasAnyTrackedHours,
-    })
+  for (const day of days) {
+    dayStatusMap[day.date] = day.dayStatus
   }
 
   // Compute overtime carry-over for this month

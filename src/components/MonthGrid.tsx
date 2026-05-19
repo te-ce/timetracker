@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntry, TimeEntryRepository, WorkWindowRepository } from '../repositories/types'
+import type { DayType } from '../domain/dayType'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
 import { WorkedHoursCell } from './WorkedHoursCell'
@@ -13,9 +14,10 @@ interface Props {
   workWindowRepository: WorkWindowRepository
   autoCategory: string
   customCategories?: string[]
+  dayTypes?: Map<string, DayType>
 }
 
-export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory, customCategories = [] }: Props) {
+export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory, customCategories = [], dayTypes = new Map() }: Props) {
   const queryClient = useQueryClient()
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
 
@@ -47,7 +49,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
     month,
     timeEntries: entries,
     workWindows: windows,
-    dayTypes: new Map(),
+    dayTypes,
     autoCategory,
     autoCategoryOverrides: new Map(),
   })
