@@ -36,18 +36,19 @@ describe('WorkedHoursCell', () => {
     expect(screen.getByText('14:00–18:00')).toBeInTheDocument()
   })
 
-  it('user can add a duration entry', async () => {
+  it('user can add a duration entry via from/to inputs', async () => {
     const { repo } = setup()
     await userEvent.click(screen.getByText('8'))
-    await screen.findByLabelText(/add hours/i)
-    await userEvent.type(screen.getByLabelText(/add hours/i), '4.5')
+    await screen.findByLabelText(/from/i)
+    await userEvent.type(screen.getByLabelText(/from/i), '09:00')
+    await userEvent.type(screen.getByLabelText(/to/i), '13:30')
     await userEvent.click(screen.getByRole('button', { name: /add/i }))
 
     await waitFor(async () => {
       const windows = await repo.findByDate(new Date(DATE))
       expect(windows.length).toBe(1)
-      expect(windows[0].start).toBe('00:00')
-      expect(windows[0].end).toBe('04:30')
+      expect(windows[0].start).toBe('09:00')
+      expect(windows[0].end).toBe('13:30')
     })
   })
 

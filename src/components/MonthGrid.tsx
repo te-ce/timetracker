@@ -98,6 +98,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
           <tr>
             <th className="px-2 py-1 text-left">Day</th>
             <th className="px-2 py-1 text-right" role="columnheader">Worked</th>
+            <th className="w-px border-l border-gray-300"></th>
             {allCategories.map((cat) => (
               <th key={cat} className="px-2 py-1 text-right" role="columnheader">{cat}</th>
             ))}
@@ -120,6 +121,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                   workedHours={row.workedHours}
                   repository={workWindowRepository}
                 />
+                <td className="w-px border-l border-gray-300"></td>
                 {allCategories.map((cat) => (
                   <td key={cat} className="px-1 py-0.5">
                     <input

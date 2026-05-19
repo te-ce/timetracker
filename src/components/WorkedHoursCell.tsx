@@ -8,12 +8,6 @@ interface Props {
   repository: WorkWindowRepository
 }
 
-function hoursToTime(hours: number): { start: string; end: string } {
-  const h = Math.floor(hours)
-  const m = Math.round((hours - h) * 60)
-  return { start: '00:00', end: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` }
-}
-
 function windowDuration(start: string, end: string): number {
   const [sh, sm] = start.split(':').map(Number)
   const [eh, em] = end.split(':').map(Number)
@@ -23,7 +17,8 @@ function windowDuration(start: string, end: string): number {
 export function WorkedHoursCell({ date, workedHours, repository }: Props) {
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
-  const [draft, setDraft] = useState('')
+  const [draftStart, setDraftStart] = useState('')
+  const [draftEnd, setDraftEnd] = useState('')
   const ref = useRef<HTMLDivElement>(null)
 
   const { data: windows = [] } = useQuery({
@@ -33,8 +28,7 @@ export function WorkedHoursCell({ date, workedHours, repository }: Props) {
   })
 
   const addMutation = useMutation({
-    mutationFn: async (hours: number) => {
-      const { start, end } = hoursToTime(hours)
+    mutationFn: async ({ start, end }: { start: string; end: string }) => {
       await repository.save({ id: crypto.randomUUID(), date, start, end })
     },
     onSuccess: () => {
@@ -61,10 +55,10 @@ export function WorkedHoursCell({ date, workedHours, repository }: Props) {
   }, [open])
 
   function handleAdd() {
-    const hours = parseFloat(draft)
-    if (isNaN(hours) || hours <= 0) return
-    addMutation.mutate(hours)
-    setDraft('')
+    if (!draftStart || !draftEnd) return
+    addMutation.mutate({ start: draftStart, end: draftEnd })
+    setDraftStart('')
+    setDraftEnd('')
   }
 
   if (!open) {
@@ -81,7 +75,7 @@ export function WorkedHoursCell({ date, workedHours, repository }: Props) {
 
   return (
     <td className="relative px-1 py-0.5" data-testid="worked-hours">
-      <div ref={ref} className="absolute z-10 top-0 left-0 w-48 rounded-lg border bg-white p-3 shadow-lg">
+      <div ref={ref} className="absolute z-10 top-0 left-0 w-56 rounded-lg border bg-white p-3 shadow-lg">
         <ul className="flex flex-col gap-1 mb-2">
           {windows.map((w) => (
             <li key={w.id} className="flex items-center justify-between text-xs">
@@ -97,23 +91,31 @@ export function WorkedHoursCell({ date, workedHours, repository }: Props) {
             </li>
           ))}
         </ul>
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
           <input
-            type="number"
-            min="0"
-            step="0.5"
-            aria-label="Add hours"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            type="time"
+            aria-label="From"
+            value={draftStart}
+            onChange={(e) => setDraftStart(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
-            className="w-16 rounded border px-1 py-0.5 text-xs"
+            className="w-20 rounded border px-1 py-0.5 text-xs"
+          />
+          <span className="text-xs text-gray-400">→</span>
+          <input
+            type="time"
+            aria-label="To"
+            value={draftEnd}
+            onChange={(e) => setDraftEnd(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+            className="w-20 rounded border px-1 py-0.5 text-xs"
           />
           <button
             onClick={handleAdd}
-            className="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
+            disabled={!draftStart || !draftEnd}
+            className="rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700 disabled:opacity-40"
             aria-label="Add"
           >
-            Add
+            +
           </button>
         </div>
       </div>
