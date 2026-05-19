@@ -50,9 +50,8 @@ export function MonthView() {
   const daysInMonth = to.getDate()
   const todayIso = toLocalIso(today)
 
-  // Compute worked hours per day and day status map
+  // Compute worked hours per day
   const workedHoursPerDay: number[] = []
-  const dayStatusMap: Record<string, DayStatus> = {}
   let workDayCount = 0
 
   for (let day = 1; day <= daysInMonth; day++) {
@@ -64,12 +63,21 @@ export function MonthView() {
 
     const dayType = classifyDay(date)
     if (dayType === 'WorkDay') workDayCount++
+  }
 
+  const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)
+
+  // Build day status map
+  const dayStatusMap: Record<string, DayStatus> = {}
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, monthIdx, day)
+    const iso = toLocalIso(date)
     dayStatusMap[iso] = getDayStatus({
-      dayType,
-      hasWorkedHours: worked > 0,
+      dayType: classifyDay(date),
+      hasWorkedHours: workedHoursPerDay[day - 1] > 0,
       isoDate: iso,
       today: todayIso,
+      hasAnyTrackedHours,
     })
   }
 

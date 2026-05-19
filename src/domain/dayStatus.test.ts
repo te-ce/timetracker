@@ -5,34 +5,38 @@ describe('getDayStatus', () => {
   const today = '2026-05-19'
 
   it('returns "non-working" for weekends/holidays/vacation/etc', () => {
-    expect(getDayStatus({ dayType: 'Weekend', hasWorkedHours: false, isoDate: '2026-05-17', today })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'PublicHoliday', hasWorkedHours: false, isoDate: '2026-05-01', today })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'Vacation', hasWorkedHours: false, isoDate: '2026-05-12', today })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'SickDay', hasWorkedHours: false, isoDate: '2026-05-12', today })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'Absence', hasWorkedHours: false, isoDate: '2026-05-12', today })).toBe('non-working')
+    expect(getDayStatus({ dayType: 'Weekend', hasWorkedHours: false, isoDate: '2026-05-17', today, hasAnyTrackedHours: true })).toBe('non-working')
+    expect(getDayStatus({ dayType: 'PublicHoliday', hasWorkedHours: false, isoDate: '2026-05-01', today, hasAnyTrackedHours: true })).toBe('non-working')
+    expect(getDayStatus({ dayType: 'Vacation', hasWorkedHours: false, isoDate: '2026-05-12', today, hasAnyTrackedHours: true })).toBe('non-working')
+    expect(getDayStatus({ dayType: 'SickDay', hasWorkedHours: false, isoDate: '2026-05-12', today, hasAnyTrackedHours: true })).toBe('non-working')
+    expect(getDayStatus({ dayType: 'Absence', hasWorkedHours: false, isoDate: '2026-05-12', today, hasAnyTrackedHours: true })).toBe('non-working')
   })
 
   it('returns "tracked" for work days with hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isoDate: '2026-05-15', today })).toBe('tracked')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isoDate: '2026-05-15', today, hasAnyTrackedHours: true })).toBe('tracked')
   })
 
-  it('returns "needs-attention" for past work days without hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isoDate: '2026-05-15', today })).toBe('needs-attention')
+  it('returns "needs-attention" for past work days without hours when month has tracked hours', () => {
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isoDate: '2026-05-15', today, hasAnyTrackedHours: true })).toBe('needs-attention')
+  })
+
+  it('returns "future" for past work days without hours when no hours tracked at all', () => {
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isoDate: '2026-05-15', today, hasAnyTrackedHours: false })).toBe('future')
   })
 
   it('returns "today" for current day work day without hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isoDate: today, today })).toBe('today')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isoDate: today, today, hasAnyTrackedHours: true })).toBe('today')
   })
 
   it('returns "tracked" for today if it has hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isoDate: today, today })).toBe('tracked')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isoDate: today, today, hasAnyTrackedHours: true })).toBe('tracked')
   })
 
   it('returns "future" for work days in the future without hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isoDate: '2026-05-20', today })).toBe('future')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isoDate: '2026-05-20', today, hasAnyTrackedHours: true })).toBe('future')
   })
 
   it('returns "tracked" for future days that already have hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isoDate: '2026-05-20', today })).toBe('tracked')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isoDate: '2026-05-20', today, hasAnyTrackedHours: true })).toBe('tracked')
   })
 })
