@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
 import { InMemoryWorkWindowRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository } from '../repositories/in-memory'
@@ -9,7 +8,6 @@ import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { classifyDay } from '../domain/dayType'
 import { getDayStatus, type DayStatus } from '../domain/dayStatus'
 import { toLocalIso } from '../domain/dateUtils'
-import { useAppStore } from '../stores/appStore'
 
 const workWindowRepo = new InMemoryWorkWindowRepository()
 const timeEntryRepo = new InMemoryTimeEntryRepository()
@@ -17,18 +15,21 @@ const configRepo = new InMemoryConfigRepository()
 
 export function MonthView() {
   const navigate = useNavigate()
-  const setSelectedDate = useAppStore((s) => s.setSelectedDate)
+  const { year, month } = useSearch({ from: '/' })
   const today = new Date()
-  const [year, setYear] = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth())
+  // month in search params is 1-indexed, internally we use 0-indexed for Date constructor
+  const monthIdx = month - 1
 
   function onSelectDate(date: string) {
-    setSelectedDate(date)
-    void navigate({ to: '/day' })
+    void navigate({ to: '/day', search: { date } })
   }
 
-  const from = new Date(year, month, 1)
-  const to = new Date(year, month + 1, 0)
+  function onMonthChange(y: number, m: number) {
+    void navigate({ to: '/', search: { year: y, month: m + 1 } })
+  }
+
+  const from = new Date(year, monthIdx, 1)
+  const to = new Date(year, monthIdx + 1, 0)
 
   const { data: config } = useQuery({
     queryKey: ['config'],
@@ -55,7 +56,7 @@ export function MonthView() {
   let workDayCount = 0
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day)
+    const date = new Date(year, monthIdx, day)
     const iso = toLocalIso(date)
     const dayWindows = windows.filter((w) => w.date === iso)
     const worked = calculateWorkedHours(dayWindows)
@@ -73,7 +74,7 @@ export function MonthView() {
   }
 
   // Compute overtime carry-over for this month
-  const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`
+  const monthKey = `${year}-${String(month).padStart(2, '0')}`
   const overtimeCarryOver = calculateOvertimeCarryOver({
     initialOvertime: 0,
     monthlyOvertimes: [],
@@ -91,9 +92,9 @@ export function MonthView() {
       />
       <MonthCalendar
         year={year}
-        month={month}
+        month={monthIdx}
         onSelectDate={onSelectDate}
-        onMonthChange={(y, m) => { setYear(y); setMonth(m) }}
+        onMonthChange={onMonthChange}
         dayStatusMap={dayStatusMap}
       />
       <div className="flex flex-wrap gap-3 text-xs">

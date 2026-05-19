@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { InMemoryWorkWindowRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository, InMemoryWorkLocationRepository, InMemoryDayTypeOverrideRepository } from '../repositories/in-memory'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
@@ -7,7 +8,7 @@ import { DayTypePicker } from '../components/DayTypePicker'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateRestarbeitszeit } from '../domain/worktime'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
-import { useAppStore } from '../stores/appStore'
+import { toLocalIso } from '../domain/dateUtils'
 import type { WorkLocation } from '../repositories/types'
 
 // Temporary in-memory repos until Firestore + MSAL auth is wired
@@ -27,7 +28,12 @@ function formatDate(iso: string): string {
 }
 
 export function DayView() {
-  const { selectedDate, setSelectedDate } = useAppStore()
+  const navigate = useNavigate()
+  const { date: selectedDate } = useSearch({ from: '/day' })
+
+  function setSelectedDate(date: string) {
+    void navigate({ to: '/day', search: { date } })
+  }
 
   const { data: config } = useQuery({
     queryKey: ['config'],
@@ -81,7 +87,7 @@ export function DayView() {
           onClick={() => {
             const d = new Date(selectedDate)
             d.setDate(d.getDate() - 1)
-            setSelectedDate(d.toISOString().slice(0, 10))
+            setSelectedDate(toLocalIso(d))
           }}
         >
           ← Prev
@@ -92,14 +98,14 @@ export function DayView() {
           onClick={() => {
             const d = new Date(selectedDate)
             d.setDate(d.getDate() + 1)
-            setSelectedDate(d.toISOString().slice(0, 10))
+            setSelectedDate(toLocalIso(d))
           }}
         >
           Next →
         </button>
         <button
           className="rounded border px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
-          onClick={() => setSelectedDate(new Date().toISOString().slice(0, 10))}
+          onClick={() => setSelectedDate(toLocalIso(new Date()))}
         >
           Today
         </button>
