@@ -1,12 +1,7 @@
 import type { Sprint } from './sprint'
+import type { SprintExport } from '../repositories/types'
 
-export type ExportStatus = 'pending' | 'exported'
-
-export interface SprintExport {
-  sprintIndex: number
-  status: ExportStatus
-  exportedAt: string | null
-}
+export type { SprintExport }
 
 const MS_PER_DAY = 86_400_000
 

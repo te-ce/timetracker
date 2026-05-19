@@ -1,14 +1,18 @@
 import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../domain/sprint'
 import type { SprintConfig } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
-import type { ExportStatus } from '../components/SprintReportPanel'
+import { InMemorySprintExportRepository } from '../repositories/in-memory'
 import type { TimeEntry } from '../repositories/types'
 
 // TODO: load from ConfigRepository
 const DEFAULT_CONFIG: SprintConfig = { startDate: '2024-01-01', lengthDays: 14 }
 
+const sprintExportRepo = new InMemorySprintExportRepository()
+
 export function SprintView() {
+  const queryClient = useQueryClient()
   const today = new Date().toISOString().slice(0, 10)
   const currentSprint = getSprintForDate(today, DEFAULT_CONFIG)
   const [sprintIndex, setSprintIndex] = useState(currentSprint.index)
@@ -19,8 +23,22 @@ export function SprintView() {
   const entries: TimeEntry[] = []
   const hoursPerCategory = aggregateSprintHours(entries, sprint)
 
-  // TODO: load from Firestore
-  const exportStatus: ExportStatus = 'pending'
+  const { data: sprintExport } = useQuery({
+    queryKey: ['sprintExport', sprintIndex],
+    queryFn: () => sprintExportRepo.findBySprintIndex(sprintIndex),
+  })
+
+  const markExportedMutation = useMutation({
+    mutationFn: () =>
+      sprintExportRepo.save({
+        sprintIndex,
+        status: 'exported',
+        exportedAt: new Date().toISOString().slice(0, 10),
+      }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['sprintExport', sprintIndex] }),
+  })
+
+  const exportStatus = sprintExport?.status ?? 'pending'
 
   return (
     <div className="flex flex-col gap-6">
@@ -45,7 +63,11 @@ export function SprintView() {
         </button>
       </div>
 
-      <SprintReportPanel hoursPerCategory={hoursPerCategory} exportStatus={exportStatus} />
+      <SprintReportPanel
+        hoursPerCategory={hoursPerCategory}
+        exportStatus={exportStatus}
+        onMarkExported={() => markExportedMutation.mutate()}
+      />
     </div>
   )
 }

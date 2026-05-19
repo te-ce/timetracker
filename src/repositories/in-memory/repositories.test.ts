@@ -3,8 +3,9 @@ import {
   InMemoryConfigRepository,
   InMemoryTimeEntryRepository,
   InMemoryWorkWindowRepository,
+  InMemorySprintExportRepository,
 } from './index'
-import type { AppConfig, TimeEntry, WorkWindow } from '../types'
+import type { AppConfig, TimeEntry, WorkWindow, SprintExport } from '../types'
 
 const firstEntry: TimeEntry = {
   id: 'entry-1',
@@ -40,6 +41,7 @@ const config: AppConfig = {
   federalState: 'Hamburg',
   sprintLengthDays: 10,
   sprintStartDate: '2025-01-06',
+  customCategories: [],
 }
 
 describe('InMemoryTimeEntryRepository', () => {
@@ -80,5 +82,35 @@ describe('InMemoryConfigRepository', () => {
     await repository.save(config)
 
     await expect(repository.get()).resolves.toEqual(config)
+  })
+})
+
+describe('InMemorySprintExportRepository', () => {
+  it('returns null for unknown sprint index', async () => {
+    const repository = new InMemorySprintExportRepository()
+    await expect(repository.findBySprintIndex(99)).resolves.toBeNull()
+  })
+
+  it('saves and retrieves sprint export status', async () => {
+    const repository = new InMemorySprintExportRepository()
+    const sprintExport: SprintExport = {
+      sprintIndex: 5,
+      status: 'exported',
+      exportedAt: '2026-05-17',
+    }
+
+    await repository.save(sprintExport)
+
+    await expect(repository.findBySprintIndex(5)).resolves.toEqual(sprintExport)
+  })
+
+  it('overwrites existing export status on save', async () => {
+    const repository = new InMemorySprintExportRepository()
+    await repository.save({ sprintIndex: 3, status: 'pending', exportedAt: null })
+    await repository.save({ sprintIndex: 3, status: 'exported', exportedAt: '2026-05-20' })
+
+    const result = await repository.findBySprintIndex(3)
+    expect(result?.status).toBe('exported')
+    expect(result?.exportedAt).toBe('2026-05-20')
   })
 })

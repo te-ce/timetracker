@@ -3,9 +3,10 @@ export type ExportStatus = 'pending' | 'exported'
 interface Props {
   hoursPerCategory: Record<string, number>
   exportStatus: ExportStatus
+  onMarkExported?: () => void
 }
 
-export function SprintReportPanel({ hoursPerCategory, exportStatus }: Props) {
+export function SprintReportPanel({ hoursPerCategory, exportStatus, onMarkExported }: Props) {
   const entries = Object.entries(hoursPerCategory)
   const total = entries.reduce((sum, [, h]) => sum + h, 0)
 
@@ -45,6 +46,15 @@ export function SprintReportPanel({ hoursPerCategory, exportStatus }: Props) {
             Total: {total}h
           </div>
         </>
+      )}
+
+      {exportStatus === 'pending' && onMarkExported && (
+        <button
+          onClick={onMarkExported}
+          className="self-end rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+        >
+          Mark as Exported
+        </button>
       )}
     </section>
   )

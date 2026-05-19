@@ -63,3 +63,14 @@ export interface ConfigRepository {
   get(): Promise<AppConfig>
   save(config: AppConfig): Promise<void>
 }
+
+export interface SprintExport {
+  sprintIndex: number
+  status: 'pending' | 'exported'
+  exportedAt: string | null
+}
+
+export interface SprintExportRepository {
+  save(sprintExport: SprintExport): Promise<void>
+  findBySprintIndex(sprintIndex: number): Promise<SprintExport | null>
+}
