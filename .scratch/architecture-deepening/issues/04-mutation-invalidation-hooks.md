@@ -1,6 +1,6 @@
 # 04 — Mutation Invalidation Hooks
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

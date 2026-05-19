@@ -1,6 +1,6 @@
 # 05 — Wire AutoCategory Override in DayView
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 

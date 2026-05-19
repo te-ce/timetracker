@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo } from '../repositories/shared'
+import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo } from '../repositories/shared'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { AutoCategoryRow } from '../components/AutoCategoryRow'
@@ -51,15 +51,23 @@ export function DayView() {
     queryFn: () => workLocationRepo.findByDate(selectedDate),
   })
 
+  const { data: autoCategoryOverride = null } = useQuery({
+    queryKey: ['autoCategoryOverride', selectedDate],
+    queryFn: () => autoCategoryOverrideRepo.findByDate(selectedDate),
+  })
+
   const sollstunden = config?.sollstunden ?? 8
   const workedHours = calculateWorkedHours(windows)
   const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
   const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)
 
+  const dayOverrides = new Map<string, string>()
+  if (autoCategoryOverride) dayOverrides.set(selectedDate, autoCategoryOverride)
+
   const autoCategory = resolveAutoCategory({
     date: selectedDate,
     globalDefault: config?.autoCategory ?? null,
-    dayOverrides: new Map(),
+    dayOverrides,
   })
 
   function handleLocationToggle() {

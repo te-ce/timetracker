@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { DayTypeOverride, DayTypeOverrideRepository } from '../repositories/types'
+import { useDayTypeOverrideMutations } from '../hooks/useDayTypeOverrideMutations'
 
 interface Props {
   date: string
@@ -15,33 +16,27 @@ const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
 ]
 
 export function DayTypePicker({ date, repository }: Props) {
-  const queryClient = useQueryClient()
-
   const { data: override } = useQuery({
     queryKey: ['dayTypeOverride', date],
     queryFn: () => repository.findByDate(date),
   })
 
-  const saveMutation = useMutation({
-    mutationFn: async (value: string) => {
-      if (value === 'WorkDay') {
-        await repository.delete(date)
-      } else {
-        await repository.save(date, value as DayTypeOverride)
-      }
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['dayTypeOverride'] })
-      void queryClient.invalidateQueries({ queryKey: ['dayTypeOverrides'] })
-    },
-  })
+  const { save: saveMutation, remove: removeMutation } = useDayTypeOverrideMutations(repository)
+
+  function handleChange(value: string) {
+    if (value === 'WorkDay') {
+      removeMutation.mutate(date)
+    } else {
+      saveMutation.mutate({ date, dayType: value as DayTypeOverride })
+    }
+  }
 
   const currentValue = override ?? 'WorkDay'
 
   return (
     <select
       value={currentValue}
-      onChange={(e) => saveMutation.mutate(e.target.value)}
+      onChange={(e) => handleChange(e.target.value)}
       className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
       aria-label="Day type"
     >

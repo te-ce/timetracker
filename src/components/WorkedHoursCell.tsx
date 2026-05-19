@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { WorkWindowRepository } from '../repositories/types'
+import { useWorkWindowMutations } from '../hooks/useWorkWindowMutations'
 
 interface Props {
   date: string
@@ -15,7 +16,6 @@ function windowDuration(start: string, end: string): number {
 }
 
 export function WorkedHoursCell({ date, workedHours, repository }: Props) {
-  const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
   const [draftStart, setDraftStart] = useState('')
   const [draftEnd, setDraftEnd] = useState('')
@@ -27,21 +27,7 @@ export function WorkedHoursCell({ date, workedHours, repository }: Props) {
     enabled: open,
   })
 
-  const addMutation = useMutation({
-    mutationFn: async ({ start, end }: { start: string; end: string }) => {
-      await repository.save({ id: crypto.randomUUID(), date, start, end })
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['workWindows', date] })
-    },
-  })
-
-  const removeMutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['workWindows', date] })
-    },
-  })
+  const { save: addMutation, remove: removeMutation } = useWorkWindowMutations(repository)
 
   useEffect(() => {
     if (!open) return
@@ -56,7 +42,7 @@ export function WorkedHoursCell({ date, workedHours, repository }: Props) {
 
   function handleAdd() {
     if (!draftStart || !draftEnd) return
-    addMutation.mutate({ start: draftStart, end: draftEnd })
+    addMutation.mutate({ id: crypto.randomUUID(), date, start: draftStart, end: draftEnd })
     setDraftStart('')
     setDraftEnd('')
   }

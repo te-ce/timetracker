@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { TimeEntry, TimeEntryRepository } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
+import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 
 interface Props {
   date: string
@@ -14,7 +15,6 @@ function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefine
 }
 
 export function TimeEntryPanel({ date, repository, customCategories = [] }: Props) {
-  const queryClient = useQueryClient()
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
 
   const { data: entries = [] } = useQuery({
@@ -25,15 +25,7 @@ export function TimeEntryPanel({ date, repository, customCategories = [] }: Prop
     },
   })
 
-  const saveMutation = useMutation({
-    mutationFn: (entry: TimeEntry) => repository.save(entry),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries'] }),
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries'] }),
-  })
+  const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(repository)
 
   function handleSave(category: string) {
     const raw = draft[category] ?? ''

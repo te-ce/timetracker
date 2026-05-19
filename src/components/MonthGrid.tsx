@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { TimeEntry, TimeEntryRepository, WorkWindowRepository } from '../repositories/types'
+import { useQuery } from '@tanstack/react-query'
+import type { TimeEntryRepository, WorkWindowRepository } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
 import { WorkedHoursCell } from './WorkedHoursCell'
+import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 import type { MonthGridRow } from '../domain/monthGrid'
 
 interface Props {
@@ -18,7 +19,6 @@ interface Props {
 }
 
 export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory, customCategories = [], dayTypes = new Map() }: Props) {
-  const queryClient = useQueryClient()
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
 
   const from = new Date(year, month - 1, 1)
@@ -34,15 +34,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
     queryFn: () => workWindowRepository.findByDateRange(from, to),
   })
 
-  const saveMutation = useMutation({
-    mutationFn: (entry: TimeEntry) => timeEntryRepository.save(entry),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries', year, month] }),
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => timeEntryRepository.delete(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries', year, month] }),
-  })
+  const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(timeEntryRepository)
 
   const rows = buildMonthGrid({
     year,

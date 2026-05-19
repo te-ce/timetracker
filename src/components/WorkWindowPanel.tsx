@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { WorkWindow, WorkWindowRepository } from '../repositories/types'
 import { calculateWorkedHours, calculateRestarbeitszeit } from '../domain/worktime'
+import { useWorkWindowMutations } from '../hooks/useWorkWindowMutations'
 
 interface Props {
   date: string
@@ -10,7 +11,6 @@ interface Props {
 }
 
 export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
-  const queryClient = useQueryClient()
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -22,15 +22,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
     queryFn: () => repository.findByDate(new Date(date)),
   })
 
-  const addMutation = useMutation({
-    mutationFn: (w: WorkWindow) => repository.save(w),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows'] }),
-  })
-
-  const removeMutation = useMutation({
-    mutationFn: (id: string) => repository.delete(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows'] }),
-  })
+  const { save: addMutation, remove: removeMutation } = useWorkWindowMutations(repository)
 
   const workedHours = calculateWorkedHours(windows)
   const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)

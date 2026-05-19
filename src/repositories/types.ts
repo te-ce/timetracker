@@ -92,3 +92,10 @@ export interface DayTypeOverrideRepository {
   findByDateRange(from: string, to: string): Promise<Map<string, DayTypeOverride>>
   delete(date: string): Promise<void>
 }
+
+export interface AutoCategoryOverrideRepository {
+  save(date: string, category: string): Promise<void>
+  findByDate(date: string): Promise<string | null>
+  findByDateRange(from: string, to: string): Promise<Map<string, string>>
+  delete(date: string): Promise<void>
+}

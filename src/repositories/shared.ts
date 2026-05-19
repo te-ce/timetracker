@@ -5,6 +5,7 @@ import { CloudWorkWindowRepository } from './cloud/work-window-repository'
 import { CloudSprintExportRepository } from './cloud/sprint-export-repository'
 import { CloudWorkLocationRepository } from './cloud/work-location-repository'
 import { CloudDayTypeOverrideRepository } from './cloud/day-type-override-repository'
+import { CloudAutoCategoryOverrideRepository } from './cloud/auto-category-override-repository'
 
 /**
  * Single shared storage adapter used by all repositories.
@@ -19,3 +20,4 @@ export const workWindowRepo = new CloudWorkWindowRepository(storage)
 export const sprintExportRepo = new CloudSprintExportRepository(storage)
 export const workLocationRepo = new CloudWorkLocationRepository(storage)
 export const dayTypeOverrideRepo = new CloudDayTypeOverrideRepository(storage)
+export const autoCategoryOverrideRepo = new CloudAutoCategoryOverrideRepository(storage)
