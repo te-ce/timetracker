@@ -67,6 +67,20 @@ describe('MonthCalendar', () => {
     expect(day20.className).toContain('bg-white')
   })
 
+  it('applies hatched style for compound today statuses', () => {
+    const dayStatusMap: Record<string, DayStatus> = {
+      '2026-05-19': 'today-tracked',
+    }
+    render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
+
+    const day19 = screen.getByText('19')
+    // Gets today's blue base + ring
+    expect(day19.className).toContain('bg-blue-100')
+    expect(day19.className).toContain('ring-2')
+    // Gets hatched inline style
+    expect(day19).toHaveStyle({ backgroundImage: expect.stringContaining('repeating-linear-gradient') })
+  })
+
   it('uses local date for onSelectDate regardless of timezone', async () => {
     // This test verifies toLocalIso is used (not toISOString which shifts in UTC+)
     const onSelectDate = vi.fn()

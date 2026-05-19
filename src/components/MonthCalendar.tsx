@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { toLocalIso } from '../domain/dateUtils'
 import type { DayStatus } from '../domain/dayStatus'
 
@@ -11,10 +12,23 @@ interface Props {
 
 const STATUS_COLORS: Record<DayStatus, string> = {
   'non-working': 'bg-gray-100 text-gray-400',
+  'future': 'bg-white text-gray-600 hover:bg-gray-50',
+  'today': 'bg-blue-100 text-blue-800 hover:bg-blue-200 ring-2 ring-blue-400',
+  'today-tracked': 'bg-blue-100 text-blue-800 hover:bg-blue-200 ring-2 ring-blue-400',
+  'today-needs-attention': 'bg-blue-100 text-blue-800 hover:bg-blue-200 ring-2 ring-blue-400',
   'tracked': 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
   'needs-attention': 'bg-red-100 text-red-700 hover:bg-red-200 ring-2 ring-red-300',
-  'today': 'bg-blue-100 text-blue-800 hover:bg-blue-200 ring-2 ring-blue-400',
-  'future': 'bg-white text-gray-600 hover:bg-gray-50',
+}
+
+const HATCHED_STYLES: Partial<Record<DayStatus, CSSProperties>> = {
+  'today-tracked': {
+    backgroundImage:
+      'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(16,185,129,0.25) 4px, rgba(16,185,129,0.25) 8px)',
+  },
+  'today-needs-attention': {
+    backgroundImage:
+      'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(239,68,68,0.2) 4px, rgba(239,68,68,0.2) 8px)',
+  },
 }
 
 const MONTH_NAMES = [
@@ -100,6 +114,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
               key={date.getDate()}
               onClick={() => onSelectDate(iso)}
               className={`rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
+              style={HATCHED_STYLES[status]}
             >
               {date.getDate()}
             </button>
