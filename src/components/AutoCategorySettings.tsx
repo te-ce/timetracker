@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { ConfigRepository, Category } from '../repositories/types'
+import type { ConfigRepository } from '../repositories/types'
 import { CATEGORIES } from '../repositories/types'
 
 interface Props {
@@ -15,7 +15,7 @@ export function AutoCategorySettings({ repository }: Props) {
   })
 
   const mutation = useMutation({
-    mutationFn: (category: Category | null) =>
+    mutationFn: (category: string | null) =>
       repository.save({ ...config!, autoCategory: category }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
@@ -33,7 +33,7 @@ export function AutoCategorySettings({ repository }: Props) {
         value={config.autoCategory ?? ''}
         onChange={(e) => {
           const val = e.target.value
-          mutation.mutate(val === '' ? null : (val as Category))
+          mutation.mutate(val === '' ? null : val)
         }}
         className="w-64 rounded border px-3 py-2 text-sm"
       >

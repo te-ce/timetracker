@@ -1,14 +1,12 @@
-import type { Category } from '../repositories/types'
-
 export type ExportStatus = 'pending' | 'exported'
 
 interface Props {
-  hoursPerCategory: Partial<Record<Category, number>>
+  hoursPerCategory: Record<string, number>
   exportStatus: ExportStatus
 }
 
 export function SprintReportPanel({ hoursPerCategory, exportStatus }: Props) {
-  const entries = Object.entries(hoursPerCategory) as [Category, number][]
+  const entries = Object.entries(hoursPerCategory)
   const total = entries.reduce((sum, [, h]) => sum + h, 0)
 
   return (

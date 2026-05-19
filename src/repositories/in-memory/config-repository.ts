@@ -6,6 +6,7 @@ export const defaultAppConfig: AppConfig = {
   federalState: null,
   sprintLengthDays: 10,
   sprintStartDate: null,
+  customCategories: [],
 }
 
 export class InMemoryConfigRepository implements ConfigRepository {

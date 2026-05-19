@@ -26,7 +26,7 @@ export const CATEGORIES: Category[] = [
 export interface TimeEntry {
   id: string
   date: string
-  category: Category
+  category: string
   hours: number
 }
 
@@ -39,10 +39,11 @@ export interface WorkWindow {
 
 export interface AppConfig {
   sollstunden: number
-  autoCategory: Category | null
+  autoCategory: string | null
   federalState: string | null
   sprintLengthDays: number
   sprintStartDate: string | null
+  customCategories: string[]
 }
 
 export interface TimeEntryRepository {

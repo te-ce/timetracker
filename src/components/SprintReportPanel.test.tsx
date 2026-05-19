@@ -1,10 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { SprintReportPanel } from './SprintReportPanel'
-import type { Category } from '../repositories/types'
 
 describe('SprintReportPanel', () => {
   it('displays hours per category for the sprint', () => {
-    const hours: Partial<Record<Category, number>> = { QA: 12, Infra: 6 }
+    const hours: Record<string, number> = { QA: 12, Infra: 6 }
     render(<SprintReportPanel hoursPerCategory={hours} exportStatus="pending" />)
     expect(screen.getByText('QA')).toBeInTheDocument()
     expect(screen.getByText('12h')).toBeInTheDocument()
@@ -13,7 +12,7 @@ describe('SprintReportPanel', () => {
   })
 
   it('shows ExportStatus badge', () => {
-    const hours: Partial<Record<Category, number>> = { QA: 5 }
+    const hours: Record<string, number> = { QA: 5 }
     render(<SprintReportPanel hoursPerCategory={hours} exportStatus="exported" />)
     expect(screen.getByText(/exported/i)).toBeInTheDocument()
   })

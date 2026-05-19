@@ -1,7 +1,5 @@
-import type { Category } from '../repositories/types'
-
 interface Props {
-  autoCategory: Category | null
+  autoCategory: string | null
   workedHours: number
   manualTotal: number
 }

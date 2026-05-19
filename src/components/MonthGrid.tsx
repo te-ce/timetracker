@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { TimeEntry, TimeEntryRepository, WorkWindowRepository, Category } from '../repositories/types'
+import type { TimeEntry, TimeEntryRepository, WorkWindowRepository } from '../repositories/types'
 import { CATEGORIES } from '../repositories/types'
 import { buildMonthGrid } from '../domain/monthGrid'
 import type { MonthGridRow } from '../domain/monthGrid'
@@ -10,7 +10,7 @@ interface Props {
   month: number
   timeEntryRepository: TimeEntryRepository
   workWindowRepository: WorkWindowRepository
-  autoCategory: Category
+  autoCategory: string
 }
 
 export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory }: Props) {
@@ -54,7 +54,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
     return `${date}::${category}`
   }
 
-  function handleBlur(row: MonthGridRow, category: Category) {
+  function handleBlur(row: MonthGridRow, category: string) {
     const key = draftKey(row.date, category)
     const raw = drafts[key]
     if (raw === undefined) return
@@ -80,7 +80,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
     })
   }
 
-  function getCellValue(row: MonthGridRow, category: Category): string {
+  function getCellValue(row: MonthGridRow, category: string): string {
     const key = draftKey(row.date, category)
     if (drafts[key] !== undefined) return drafts[key]
     const val = row.entries[category]

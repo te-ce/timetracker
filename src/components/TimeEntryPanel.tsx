@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { TimeEntry, TimeEntryRepository, Category } from '../repositories/types'
+import type { TimeEntry, TimeEntryRepository } from '../repositories/types'
 import { CATEGORIES } from '../repositories/types'
 
 interface Props {
@@ -8,13 +8,13 @@ interface Props {
   repository: TimeEntryRepository
 }
 
-function findEntry(entries: TimeEntry[], category: Category): TimeEntry | undefined {
+function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefined {
   return entries.find((e) => e.category === category)
 }
 
 export function TimeEntryPanel({ date, repository }: Props) {
   const queryClient = useQueryClient()
-  const [draft, setDraft] = useState<Partial<Record<Category, string>>>({})
+  const [draft, setDraft] = useState<Record<string, string | undefined>>({})
 
   const { data: entries = [] } = useQuery({
     queryKey: ['timeEntries', date],
@@ -34,7 +34,7 @@ export function TimeEntryPanel({ date, repository }: Props) {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries', date] }),
   })
 
-  function handleSave(category: Category) {
+  function handleSave(category: string) {
     const raw = draft[category] ?? ''
     const hours = parseFloat(raw)
     const existing = findEntry(entries, category)
