@@ -46,7 +46,7 @@ export function MonthView() {
     queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
   })
 
-  useQuery({
+  const { data: entries = [] } = useQuery({
     queryKey: ['timeEntries', year, month, 'month'],
     queryFn: () => timeEntryRepo.findByDateRange(from, to),
   })
@@ -55,8 +55,9 @@ export function MonthView() {
   const daysInMonth = to.getDate()
   const todayIso = toLocalIso(today)
 
-  // Compute worked hours per day
+  // Compute worked hours and entry totals per day
   const workedHoursPerDay: number[] = []
+  const entryTotalsPerDay: number[] = []
   let workDayCount = 0
 
   for (let day = 1; day <= daysInMonth; day++) {
@@ -65,6 +66,10 @@ export function MonthView() {
     const dayWindows = windows.filter((w) => w.date === iso)
     const worked = calculateWorkedHours(dayWindows)
     workedHoursPerDay.push(worked)
+
+    const dayEntries = entries.filter((e) => e.date === iso)
+    const entryTotal = dayEntries.reduce((sum, e) => sum + e.hours, 0)
+    entryTotalsPerDay.push(entryTotal)
 
     const override = dayTypeOverrides.get(iso)
     const dayType: DayType = override ?? classifyDay(date)
@@ -80,9 +85,13 @@ export function MonthView() {
     const iso = toLocalIso(date)
     const override = dayTypeOverrides.get(iso)
     const dayType: DayType = override ?? classifyDay(date)
+    const worked = workedHoursPerDay[day - 1]
+    const entryTotal = entryTotalsPerDay[day - 1]
+    const isEntriesBalanced = worked > 0 && Math.abs(worked - entryTotal) < 0.01
     dayStatusMap[iso] = getDayStatus({
       dayType,
-      hasWorkedHours: workedHoursPerDay[day - 1] > 0,
+      hasWorkedHours: worked > 0,
+      isEntriesBalanced,
       isoDate: iso,
       today: todayIso,
       hasAnyTrackedHours,
@@ -115,6 +124,7 @@ export function MonthView() {
       />
       <div className="flex flex-wrap gap-3 text-xs">
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-emerald-100 border border-emerald-300" /> Tracked</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-amber-100 border border-amber-300" /> Incomplete</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-red-100 border border-red-300" /> Needs attention</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-100 border border-blue-300" /> Today</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-gray-100 border border-gray-300" /> Non-working</span>

@@ -27,12 +27,12 @@ export function TimeEntryPanel({ date, repository, customCategories = [] }: Prop
 
   const saveMutation = useMutation({
     mutationFn: (entry: TimeEntry) => repository.save(entry),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries', date] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries'] }),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => repository.delete(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries', date] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries'] }),
   })
 
   function handleSave(category: string) {
