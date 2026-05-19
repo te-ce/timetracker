@@ -102,7 +102,48 @@ docs/
 
 ## Configuration
 
-The app requires a Microsoft Work/School account for login. Firebase and Azure AD configuration is managed via environment variables or the Firebase console. See the ADRs in `docs/adr/` for architectural decisions around authentication and data storage.
+The app requires two external services:
+
+- **MSAL / Azure AD** — login and Microsoft Graph API access for reading/writing SharePoint Excel files
+- **Firebase Firestore** — persistence and cross-device sync for time entries and settings
+
+### Environment Variables
+
+Create a `.env.local` file in the project root with the following variables:
+
+```env
+# Azure AD / MSAL
+VITE_MSAL_CLIENT_ID=<your-azure-app-client-id>
+VITE_MSAL_TENANT_ID=<your-azure-tenant-id>
+VITE_MSAL_REDIRECT_URI=http://localhost:5173
+
+# Firebase
+VITE_FIREBASE_API_KEY=<your-firebase-api-key>
+VITE_FIREBASE_AUTH_DOMAIN=<your-project>.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=<your-project-id>
+VITE_FIREBASE_STORAGE_BUCKET=<your-project>.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=<your-sender-id>
+VITE_FIREBASE_APP_ID=<your-app-id>
+```
+
+### Azure AD App Registration
+
+1. Go to [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps)
+2. Create a new registration (single-tenant or multi-tenant)
+3. Add a **Redirect URI**: `http://localhost:5173` (type: Single-page application)
+4. Under **API permissions**, add:
+   - `User.Read` (Microsoft Graph, delegated)
+   - `Files.ReadWrite` (Microsoft Graph, delegated) — for SharePoint Excel access
+5. Copy the **Application (client) ID** and **Directory (tenant) ID** into `.env.local`
+
+### Firebase Project Setup
+
+1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a project
+2. Enable **Firestore Database** (start in production mode)
+3. Go to **Project Settings → Your apps** and add a Web app
+4. Copy the Firebase config values into `.env.local`
+
+See `docs/adr/` for the full architectural decisions around authentication and persistence.
 
 ## License
 
