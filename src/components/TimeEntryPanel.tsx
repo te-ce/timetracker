@@ -1,18 +1,19 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntry, TimeEntryRepository } from '../repositories/types'
-import { CATEGORIES } from '../repositories/types'
+import { getAllCategories } from '../domain/categories'
 
 interface Props {
   date: string
   repository: TimeEntryRepository
+  customCategories?: string[]
 }
 
 function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefined {
   return entries.find((e) => e.category === category)
 }
 
-export function TimeEntryPanel({ date, repository }: Props) {
+export function TimeEntryPanel({ date, repository, customCategories = [] }: Props) {
   const queryClient = useQueryClient()
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
 
@@ -58,7 +59,7 @@ export function TimeEntryPanel({ date, repository }: Props) {
   return (
     <section aria-label="Time entries" className="flex flex-col gap-4">
       <ul className="flex flex-col gap-2">
-        {CATEGORIES.map((category) => {
+        {getAllCategories(customCategories).map((category) => {
           const existing = findEntry(entries, category)
           const value = draft[category] ?? (existing ? String(existing.hours) : '')
 

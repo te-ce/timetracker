@@ -127,6 +127,7 @@ export function DayView() {
       <TimeEntryPanel
         date={selectedDate}
         repository={timeEntryRepo}
+        customCategories={config?.customCategories ?? []}
       />
     </div>
   )
