@@ -29,4 +29,9 @@ export class InMemoryTimeEntryRepository implements TimeEntryRepository {
         .sort((left, right) => left.date.localeCompare(right.date)),
     )
   }
+
+  delete(id: string): Promise<void> {
+    this.entries.delete(id)
+    return Promise.resolve()
+  }
 }

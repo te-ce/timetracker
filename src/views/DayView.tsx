@@ -1,9 +1,11 @@
-import { InMemoryWorkWindowRepository } from '../repositories/in-memory'
+import { InMemoryWorkWindowRepository, InMemoryTimeEntryRepository } from '../repositories/in-memory'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
+import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { useAppStore } from '../stores/appStore'
 
-// Temporary in-memory repo until Firestore + MSAL auth is wired
+// Temporary in-memory repos until Firestore + MSAL auth is wired
 const workWindowRepo = new InMemoryWorkWindowRepository()
+const timeEntryRepo = new InMemoryTimeEntryRepository()
 
 const SOLLSTUNDEN = 8 // TODO: load from ConfigRepository
 
@@ -49,6 +51,11 @@ export function DayView() {
         date={selectedDate}
         sollstunden={SOLLSTUNDEN}
         repository={workWindowRepo}
+      />
+
+      <TimeEntryPanel
+        date={selectedDate}
+        repository={timeEntryRepo}
       />
     </div>
   )

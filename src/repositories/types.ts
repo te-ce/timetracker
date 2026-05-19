@@ -10,6 +10,19 @@ export type Category =
   | 'Architecture'
   | 'Testwatch'
 
+export const CATEGORIES: Category[] = [
+  'On Leave',
+  'Training, Events',
+  'Coremedia',
+  'QA',
+  'Support',
+  'CoPs',
+  'Bug/Maintenance',
+  'Infra',
+  'Architecture',
+  'Testwatch',
+]
+
 export interface TimeEntry {
   id: string
   date: string
@@ -35,6 +48,7 @@ export interface AppConfig {
 export interface TimeEntryRepository {
   save(entry: TimeEntry): Promise<void>
   findByDateRange(from: Date, to: Date): Promise<TimeEntry[]>
+  delete(id: string): Promise<void>
 }
 
 export interface WorkWindowRepository {
