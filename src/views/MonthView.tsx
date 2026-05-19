@@ -46,7 +46,7 @@ export function MonthView() {
 
   const sollstunden = config?.sollstunden ?? 8
   const daysInMonth = to.getDate()
-  const todayIso = today.toISOString().slice(0, 10)
+  const todayIso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   // Compute worked hours per day and day status map
   const workedHoursPerDay: number[] = []
@@ -55,7 +55,7 @@ export function MonthView() {
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day)
-    const iso = date.toISOString().slice(0, 10)
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
     const dayWindows = windows.filter((w) => w.date === iso)
     const worked = calculateWorkedHours(dayWindows)
     workedHoursPerDay.push(worked)
