@@ -1,20 +1,19 @@
-import { classifyDay } from '../domain/dayType'
-import type { DayType } from '../domain/dayType'
+import type { DayStatus } from '../domain/dayStatus'
 
 interface Props {
   year: number
   month: number // 0-indexed
   onSelectDate: (isoDate: string) => void
   onMonthChange?: (year: number, month: number) => void
+  dayStatusMap?: Record<string, DayStatus>
 }
 
-const DAY_TYPE_COLORS: Record<DayType, string> = {
-  WorkDay: 'bg-white hover:bg-gray-50',
-  Weekend: 'bg-gray-100 text-gray-400',
-  PublicHoliday: 'bg-amber-50 text-amber-700',
-  Vacation: 'bg-sky-50 text-sky-700',
-  SickDay: 'bg-red-50 text-red-700',
-  Absence: 'bg-purple-50 text-purple-700',
+const STATUS_COLORS: Record<DayStatus, string> = {
+  'non-working': 'bg-gray-100 text-gray-400',
+  'tracked': 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
+  'needs-attention': 'bg-red-100 text-red-700 hover:bg-red-200 ring-2 ring-red-300',
+  'today': 'bg-blue-100 text-blue-800 hover:bg-blue-200 ring-2 ring-blue-400',
+  'future': 'bg-white text-gray-600 hover:bg-gray-50',
 }
 
 const MONTH_NAMES = [
@@ -38,7 +37,7 @@ function toIso(date: Date): string {
   return `${y}-${m}-${d}`
 }
 
-export function MonthCalendar({ year, month, onSelectDate, onMonthChange }: Props) {
+export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {} }: Props) {
   const days = getDaysInMonth(year, month)
 
   function handlePrev() {
@@ -100,12 +99,13 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange }: Prop
         ))}
 
         {days.map((date) => {
-          const dayType = classifyDay(date)
+          const iso = toIso(date)
+          const status = dayStatusMap[iso] ?? 'future'
           return (
             <button
               key={date.getDate()}
-              onClick={() => onSelectDate(toIso(date))}
-              className={`rounded-lg px-2 py-2 text-center text-sm ${DAY_TYPE_COLORS[dayType]} border transition-colors`}
+              onClick={() => onSelectDate(iso)}
+              className={`rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
             >
               {date.getDate()}
             </button>
