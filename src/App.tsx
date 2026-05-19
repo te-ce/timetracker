@@ -2,14 +2,16 @@ import './App.css'
 import { useState } from 'react'
 import { DayView } from './views/DayView'
 import { MonthView } from './views/MonthView'
+import { MonthGridView } from './views/MonthGridView'
 import { SprintView } from './views/SprintView'
 import { SettingsView } from './views/SettingsView'
 import { useAppStore } from './stores/appStore'
 
-type View = 'month' | 'day' | 'sprint' | 'settings'
+type View = 'month' | 'grid' | 'day' | 'sprint' | 'settings'
 
 const NAV_ITEMS: { label: string; icon: string; view: View }[] = [
   { label: 'Month', icon: '📆', view: 'month' },
+  { label: 'Grid', icon: '📊', view: 'grid' },
   { label: 'Day', icon: '📅', view: 'day' },
   { label: 'Sprint', icon: '⚡', view: 'sprint' },
   { label: 'Settings', icon: '⚙️', view: 'settings' },
@@ -48,6 +50,7 @@ function App() {
       {/* Main content */}
       <main className="flex-1 p-8">
         {activeView === 'month' && <MonthView onSelectDate={handleDaySelect} />}
+        {activeView === 'grid' && <MonthGridView />}
         {activeView === 'day' && <DayView />}
         {activeView === 'sprint' && <SprintView />}
         {activeView === 'settings' && <SettingsView />}
