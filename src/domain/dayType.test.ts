@@ -19,6 +19,16 @@ describe('classifyDay', () => {
   it('classifies a weekday as WorkDay', () => {
     expect(classifyDay(MON)).toBe('WorkDay')
   })
+
+  it('classifies a weekday as PublicHoliday when in holiday set', () => {
+    const holidays = new Set(['2024-01-15'])
+    expect(classifyDay(MON, holidays)).toBe('PublicHoliday')
+  })
+
+  it('still classifies weekend even if in holiday set', () => {
+    const holidays = new Set(['2024-01-13'])
+    expect(classifyDay(SAT, holidays)).toBe('Weekend')
+  })
 })
 
 describe('isWorkWindowExpected', () => {

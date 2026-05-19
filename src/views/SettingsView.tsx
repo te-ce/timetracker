@@ -1,4 +1,5 @@
 import { AutoCategorySettings } from '../components/AutoCategorySettings'
+import { BundeslandSettings } from '../components/BundeslandSettings'
 import { InMemoryConfigRepository } from '../repositories/in-memory'
 
 // Temporary in-memory repo until Firestore + MSAL auth is wired
@@ -9,6 +10,7 @@ export function SettingsView() {
     <div className="flex flex-col gap-8">
       <h2 className="text-xl font-semibold">Settings</h2>
       <AutoCategorySettings repository={configRepo} />
+      <BundeslandSettings repository={configRepo} />
     </div>
   )
 }

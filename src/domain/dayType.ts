@@ -4,9 +4,14 @@ export type AutoBooking = { category: 'On Leave'; hours: number }
 
 const LEAVE_TYPES = new Set<DayType>(['Vacation', 'SickDay', 'Absence'])
 
-export function classifyDay(date: Date): DayType {
+export function classifyDay(date: Date, holidayDates?: Set<string>): DayType {
   const dow = date.getDay()
-  return dow === 0 || dow === 6 ? 'Weekend' : 'WorkDay'
+  if (dow === 0 || dow === 6) return 'Weekend'
+  if (holidayDates) {
+    const iso = date.toISOString().slice(0, 10)
+    if (holidayDates.has(iso)) return 'PublicHoliday'
+  }
+  return 'WorkDay'
 }
 
 export function isWorkWindowExpected(dayType: DayType): boolean {
