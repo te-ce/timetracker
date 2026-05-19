@@ -1,0 +1,95 @@
+import type { DayType } from './dayType'
+import type { TimeEntry, WorkWindow } from '../repositories/types'
+import { calculateWorkedHours } from './worktime'
+
+export interface MonthGridRow {
+  date: string
+  dayType: DayType
+  workedHours: number
+  entries: Record<string, number>
+  autoCategoryHours: number
+  autoCategoryOverride: number | null
+  hasUnaccountedHours: boolean
+}
+
+export interface MonthGridInput {
+  year: number
+  month: number
+  timeEntries: TimeEntry[]
+  workWindows: WorkWindow[]
+  dayTypes: Map<string, DayType>
+  autoCategory: string
+  autoCategoryOverrides: Map<string, string>
+  autoCategoryManualValues?: Map<string, number>
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate()
+}
+
+function padDay(year: number, month: number, day: number): string {
+  const m = String(month).padStart(2, '0')
+  const d = String(day).padStart(2, '0')
+  return `${year}-${m}-${d}`
+}
+
+export function buildMonthGrid(input: MonthGridInput): MonthGridRow[] {
+  const { year, month, workWindows, timeEntries } = input
+  const totalDays = daysInMonth(year, month)
+
+  // Group work windows by date
+  const windowsByDate = new Map<string, WorkWindow[]>()
+  for (const w of workWindows) {
+    const list = windowsByDate.get(w.date) ?? []
+    list.push(w)
+    windowsByDate.set(w.date, list)
+  }
+
+  // Group time entries by date
+  const entriesByDate = new Map<string, TimeEntry[]>()
+  for (const e of timeEntries) {
+    const list = entriesByDate.get(e.date) ?? []
+    list.push(e)
+    entriesByDate.set(e.date, list)
+  }
+
+  const rows: MonthGridRow[] = []
+
+  for (let day = 1; day <= totalDays; day++) {
+    const date = padDay(year, month, day)
+    const dayWindows = windowsByDate.get(date) ?? []
+    const dayEntries = entriesByDate.get(date) ?? []
+    const workedHours = calculateWorkedHours(dayWindows)
+
+    // Group entries by category
+    const entries: Record<string, number> = {}
+    let manualTotal = 0
+    for (const e of dayEntries) {
+      entries[e.category] = (entries[e.category] ?? 0) + e.hours
+      manualTotal += e.hours
+    }
+
+    const autoCategoryManualValue = input.autoCategoryManualValues?.get(date) ?? null
+    const computedAuto = Math.max(0, workedHours - manualTotal)
+    const autoCategoryHours = autoCategoryManualValue ?? computedAuto
+    const totalAccountedHours = manualTotal + autoCategoryHours
+    const hasUnaccountedHours = workedHours > 0 && totalAccountedHours < workedHours
+
+    rows.push({
+      date,
+      dayType: input.dayTypes.get(date) ?? classifyWeekday(year, month, day),
+      workedHours,
+      entries,
+      autoCategoryHours,
+      autoCategoryOverride: autoCategoryManualValue,
+      hasUnaccountedHours,
+    })
+  }
+
+  return rows
+}
+
+function classifyWeekday(year: number, month: number, day: number): DayType {
+  const dow = new Date(year, month - 1, day).getDay()
+  return dow === 0 || dow === 6 ? 'Weekend' : 'WorkDay'
+}
