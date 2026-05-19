@@ -1,36 +1,20 @@
 import type { StorageAdapter } from '../../storage/adapter'
 import type { SprintExport, SprintExportRepository } from '../types'
-
-const KEY = 'sprint-exports.json'
+import { JsonCollectionStore } from './json-store'
 
 export class CloudSprintExportRepository implements SprintExportRepository {
-  private adapter: StorageAdapter
-  private cache: SprintExport[] | null = null
+  private store: JsonCollectionStore<SprintExport>
 
   constructor(adapter: StorageAdapter) {
-    this.adapter = adapter
-  }
-
-  private async load(): Promise<SprintExport[]> {
-    if (this.cache) return this.cache
-    this.cache = (await this.adapter.get<SprintExport[]>(KEY)) ?? []
-    return this.cache
-  }
-
-  private async persist(): Promise<void> {
-    await this.adapter.put(KEY, this.cache)
+    this.store = new JsonCollectionStore(adapter, 'sprint-exports.json')
   }
 
   async save(sprintExport: SprintExport): Promise<void> {
-    const exports = await this.load()
-    const idx = exports.findIndex((e) => e.sprintIndex === sprintExport.sprintIndex)
-    if (idx >= 0) exports[idx] = sprintExport
-    else exports.push(sprintExport)
-    await this.persist()
+    await this.store.upsert(sprintExport, (e) => e.sprintIndex)
   }
 
   async findBySprintIndex(sprintIndex: number): Promise<SprintExport | null> {
-    const exports = await this.load()
-    return exports.find((e) => e.sprintIndex === sprintIndex) ?? null
+    return this.store.find((e) => e.sprintIndex === sprintIndex)
   }
 }
+

@@ -1,53 +1,28 @@
 import type { StorageAdapter } from '../../storage/adapter'
 import type { DayTypeOverride, DayTypeOverrideRepository } from '../types'
-
-const KEY = 'day-type-overrides.json'
-
-type OverrideStore = Record<string, DayTypeOverride>
+import { JsonRecordStore } from './json-store'
 
 export class CloudDayTypeOverrideRepository implements DayTypeOverrideRepository {
-  private adapter: StorageAdapter
-  private cache: OverrideStore | null = null
+  private store: JsonRecordStore<DayTypeOverride>
 
   constructor(adapter: StorageAdapter) {
-    this.adapter = adapter
-  }
-
-  private async load(): Promise<OverrideStore> {
-    if (this.cache) return this.cache
-    this.cache = (await this.adapter.get<OverrideStore>(KEY)) ?? {}
-    return this.cache
-  }
-
-  private async persist(): Promise<void> {
-    await this.adapter.put(KEY, this.cache)
+    this.store = new JsonRecordStore(adapter, 'day-type-overrides.json')
   }
 
   async save(date: string, dayType: DayTypeOverride): Promise<void> {
-    const store = await this.load()
-    store[date] = dayType
-    await this.persist()
+    await this.store.set(date, dayType)
   }
 
   async findByDate(date: string): Promise<DayTypeOverride | null> {
-    const store = await this.load()
-    return store[date] ?? null
+    return this.store.get(date)
   }
 
   async findByDateRange(from: string, to: string): Promise<Map<string, DayTypeOverride>> {
-    const store = await this.load()
-    const result = new Map<string, DayTypeOverride>()
-    for (const [date, dayType] of Object.entries(store)) {
-      if (date >= from && date <= to) {
-        result.set(date, dayType)
-      }
-    }
-    return result
+    return this.store.filterByKeyRange(from, to)
   }
 
   async delete(date: string): Promise<void> {
-    const store = await this.load()
-    delete store[date]
-    await this.persist()
+    await this.store.remove(date)
   }
 }
+

@@ -1,44 +1,26 @@
 import type { StorageAdapter } from '../../storage/adapter'
 import type { TimeEntry, TimeEntryRepository } from '../types'
-
-const KEY = 'time-entries.json'
+import { JsonCollectionStore } from './json-store'
 
 export class CloudTimeEntryRepository implements TimeEntryRepository {
-  private adapter: StorageAdapter
-  private cache: TimeEntry[] | null = null
+  private store: JsonCollectionStore<TimeEntry>
 
   constructor(adapter: StorageAdapter) {
-    this.adapter = adapter
-  }
-
-  private async load(): Promise<TimeEntry[]> {
-    if (this.cache) return this.cache
-    this.cache = (await this.adapter.get<TimeEntry[]>(KEY)) ?? []
-    return this.cache
-  }
-
-  private async persist(): Promise<void> {
-    await this.adapter.put(KEY, this.cache)
+    this.store = new JsonCollectionStore(adapter, 'time-entries.json')
   }
 
   async save(entry: TimeEntry): Promise<void> {
-    const entries = await this.load()
-    const idx = entries.findIndex((e) => e.id === entry.id)
-    if (idx >= 0) entries[idx] = entry
-    else entries.push(entry)
-    await this.persist()
+    await this.store.upsert(entry, (e) => e.id)
   }
 
   async findByDateRange(from: Date, to: Date): Promise<TimeEntry[]> {
-    const entries = await this.load()
     const fromIso = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`
     const toIso = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`
-    return entries.filter((e) => e.date >= fromIso && e.date <= toIso)
+    return this.store.filter((e) => e.date >= fromIso && e.date <= toIso)
   }
 
   async delete(id: string): Promise<void> {
-    const entries = await this.load()
-    this.cache = entries.filter((e) => e.id !== id)
-    await this.persist()
+    await this.store.remove(id, (e) => e.id)
   }
 }
+

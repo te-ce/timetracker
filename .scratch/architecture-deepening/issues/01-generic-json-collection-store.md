@@ -1,6 +1,6 @@
 # 01 — Generic JSON-Collection Store
 
-Status: ready-for-agent
+Status: done
 
 ## Problem
 
