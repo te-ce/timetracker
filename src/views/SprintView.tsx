@@ -3,51 +3,70 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../domain/sprint'
 import type { SprintConfig } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
-import { InMemorySprintExportRepository, InMemoryTimeEntryRepository } from '../repositories/in-memory'
-
-// TODO: load from ConfigRepository
-const DEFAULT_CONFIG: SprintConfig = { startDate: '2024-01-01', lengthDays: 14 }
+import { SprintConfigPanel } from '../components/SprintConfigPanel'
+import { InMemorySprintExportRepository, InMemoryTimeEntryRepository, InMemoryConfigRepository } from '../repositories/in-memory'
 
 const sprintExportRepo = new InMemorySprintExportRepository()
 const timeEntryRepo = new InMemoryTimeEntryRepository()
+const configRepo = new InMemoryConfigRepository()
 
 export function SprintView() {
   const queryClient = useQueryClient()
-  const today = new Date().toISOString().slice(0, 10)
-  const currentSprint = getSprintForDate(today, DEFAULT_CONFIG)
-  const [sprintIndex, setSprintIndex] = useState(currentSprint.index)
+  const [sprintIndex, setSprintIndex] = useState<number | null>(null)
 
-  const sprint = getSprintBoundaries(sprintIndex, DEFAULT_CONFIG)
+  const { data: config } = useQuery({
+    queryKey: ['config'],
+    queryFn: () => configRepo.get(),
+  })
+
+  const sprintConfig: SprintConfig = {
+    startDate: config?.sprintStartDate ?? '2024-01-01',
+    lengthDays: config?.sprintLengthDays ?? 14,
+  }
+
+  const today = new Date().toISOString().slice(0, 10)
+  const currentSprint = getSprintForDate(today, sprintConfig)
+  const activeIndex = sprintIndex ?? currentSprint.index
+
+  const sprint = getSprintBoundaries(activeIndex, sprintConfig)
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['timeEntries', 'sprint', sprintIndex],
+    queryKey: ['timeEntries', 'sprint', activeIndex, sprintConfig.startDate, sprintConfig.lengthDays],
     queryFn: () => timeEntryRepo.findByDateRange(new Date(sprint.start), new Date(sprint.end)),
   })
 
   const hoursPerCategory = aggregateSprintHours(entries, sprint)
 
   const { data: sprintExport } = useQuery({
-    queryKey: ['sprintExport', sprintIndex],
-    queryFn: () => sprintExportRepo.findBySprintIndex(sprintIndex),
+    queryKey: ['sprintExport', activeIndex],
+    queryFn: () => sprintExportRepo.findBySprintIndex(activeIndex),
   })
 
   const markExportedMutation = useMutation({
     mutationFn: () =>
       sprintExportRepo.save({
-        sprintIndex,
+        sprintIndex: activeIndex,
         status: 'exported',
         exportedAt: new Date().toISOString().slice(0, 10),
       }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['sprintExport', sprintIndex] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['sprintExport', activeIndex] }),
   })
 
   const exportStatus = sprintExport?.status ?? 'pending'
 
   return (
     <div className="flex flex-col gap-6">
+      <SprintConfigPanel
+        repository={configRepo}
+        onConfigChanged={() => {
+          void queryClient.invalidateQueries({ queryKey: ['config'] })
+          setSprintIndex(null)
+        }}
+      />
+
       <div className="flex items-center gap-4">
         <button
-          onClick={() => setSprintIndex((i) => i - 1)}
+          onClick={() => setSprintIndex(activeIndex - 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
         >
           ← Prev
@@ -59,10 +78,16 @@ export function SprintView() {
           </span>
         </h2>
         <button
-          onClick={() => setSprintIndex((i) => i + 1)}
+          onClick={() => setSprintIndex(activeIndex + 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
         >
           Next →
+        </button>
+        <button
+          onClick={() => setSprintIndex(null)}
+          className="rounded border px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+        >
+          Current
         </button>
       </div>
 

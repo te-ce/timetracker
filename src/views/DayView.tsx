@@ -95,6 +95,12 @@ export function DayView() {
         >
           Next →
         </button>
+        <button
+          className="rounded border px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+          onClick={() => setSelectedDate(new Date().toISOString().slice(0, 10))}
+        >
+          Today
+        </button>
       </div>
 
       <div className="flex items-center gap-4">
@@ -107,7 +113,7 @@ export function DayView() {
         </button>
         {workedHours > 0 && (
           <span className={`text-sm font-medium ${restarbeitszeit.isOvertime ? 'text-green-600' : 'text-amber-600'}`}>
-            {restarbeitszeit.isOvertime ? 'Overtime' : 'Remaining'}: {Math.abs(restarbeitszeit.value).toFixed(1)}h
+            {restarbeitszeit.isOvertime ? 'Overtime' : 'Remaining'}: {Math.abs(restarbeitszeit.value).toFixed(2)}h
           </span>
         )}
       </div>

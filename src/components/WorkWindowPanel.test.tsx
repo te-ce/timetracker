@@ -47,7 +47,7 @@ describe('WorkWindowPanel', () => {
     setup()
     await screen.findByText(/no work windows/i)
     await addWindow('09:00', '17:00')
-    expect(await screen.findByLabelText(/worked hours/i)).toHaveTextContent('8h worked')
+    expect(await screen.findByLabelText(/worked hours/i)).toHaveTextContent('8.00h worked')
   })
 
   it('shows Restarbeitszeit after the first WorkWindow is added', async () => {
@@ -61,7 +61,7 @@ describe('WorkWindowPanel', () => {
     setup()
     await screen.findByText(/no work windows/i)
     await addWindow('09:00', '15:00') // 6h worked, 8h target → 2h remaining
-    expect(await screen.findByLabelText(/restarbeitszeit/i)).toHaveTextContent('2h remaining')
+    expect(await screen.findByLabelText(/restarbeitszeit/i)).toHaveTextContent('2.00h remaining')
   })
 
   it('removes the window from the list when the user clicks Remove', async () => {

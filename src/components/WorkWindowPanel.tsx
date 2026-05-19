@@ -175,7 +175,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
               className="flex-1 rounded-lg border bg-white px-4 py-3 text-center shadow-sm"
             >
               <p className="text-xs text-gray-500">Worked</p>
-              <p className="text-lg font-bold">{workedHours}h worked</p>
+              <p className="text-lg font-bold">{workedHours.toFixed(2)}h worked</p>
             </div>
             <div
               aria-label="Restarbeitszeit"
@@ -191,9 +191,9 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
               <p className="text-xs text-gray-500">Remaining</p>
               <p className="text-lg font-bold">
                 {restarbeitszeit.value > 0
-                  ? `${restarbeitszeit.value}h remaining`
+                  ? `${restarbeitszeit.value.toFixed(2)}h remaining`
                   : restarbeitszeit.isOvertime
-                    ? `${Math.abs(restarbeitszeit.value)}h overtime`
+                    ? `${Math.abs(restarbeitszeit.value).toFixed(2)}h overtime`
                     : 'On target'}
               </p>
             </div>

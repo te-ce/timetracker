@@ -39,6 +39,12 @@ export function MonthGridView() {
         <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">←</button>
         <h2 className="text-lg font-semibold">{monthLabel}</h2>
         <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">→</button>
+        <button
+          onClick={() => { const now = new Date(); setYear(now.getFullYear()); setMonth(now.getMonth() + 1) }}
+          className="rounded border px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+        >
+          Today
+        </button>
       </div>
       <MonthGrid
         year={year}

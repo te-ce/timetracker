@@ -63,9 +63,21 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange }: Prop
         >
           ← Prev
         </button>
-        <h2 className="text-lg font-semibold">
-          {MONTH_NAMES[month]} {year}
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">
+            {MONTH_NAMES[month]} {year}
+          </h2>
+          <button
+            aria-label="Current month"
+            onClick={() => {
+              const now = new Date()
+              onMonthChange?.(now.getFullYear(), now.getMonth())
+            }}
+            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+          >
+            Today
+          </button>
+        </div>
         <button
           aria-label="Next month"
           onClick={handleNext}
