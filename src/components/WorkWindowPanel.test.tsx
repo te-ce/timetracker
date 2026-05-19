@@ -82,4 +82,41 @@ describe('WorkWindowPanel', () => {
     await screen.findByText(/no work windows/i)
     expect(screen.queryByLabelText(/restarbeitszeit/i)).not.toBeInTheDocument()
   })
+
+  it('clicking a window shows edit inputs with current values', async () => {
+    setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    await screen.findByText('09:00 – 17:00')
+    await userEvent.click(screen.getByText('09:00 – 17:00'))
+    expect(screen.getByDisplayValue('09:00')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('17:00')).toBeInTheDocument()
+  })
+
+  it('editing a window updates the stored time', async () => {
+    const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    await screen.findByText('09:00 – 17:00')
+    await userEvent.click(screen.getByText('09:00 – 17:00'))
+
+    const startInput = screen.getByDisplayValue('09:00')
+    await userEvent.clear(startInput)
+    await userEvent.type(startInput, '08:00')
+    await userEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    expect(await screen.findByText('08:00 – 17:00')).toBeInTheDocument()
+    const saved = await repo.findByDate(new Date(DATE))
+    expect(saved[0].start).toBe('08:00')
+  })
+
+  it('pressing Escape cancels editing without saving', async () => {
+    setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    await screen.findByText('09:00 – 17:00')
+    await userEvent.click(screen.getByText('09:00 – 17:00'))
+
+    const startInput = screen.getByDisplayValue('09:00')
+    await userEvent.clear(startInput)
+    await userEvent.type(startInput, '07:00')
+    await userEvent.keyboard('{Escape}')
+
+    expect(screen.getByText('09:00 – 17:00')).toBeInTheDocument()
+    expect(screen.queryByDisplayValue('07:00')).not.toBeInTheDocument()
+  })
 })

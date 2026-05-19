@@ -13,6 +13,9 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
   const queryClient = useQueryClient()
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editStart, setEditStart] = useState('')
+  const [editEnd, setEditEnd] = useState('')
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', date],
@@ -41,6 +44,24 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
 
   function handleRemove(id: string) {
     removeMutation.mutate(id)
+  }
+
+  function handleEditStart(w: WorkWindow) {
+    setEditingId(w.id)
+    setEditStart(w.start)
+    setEditEnd(w.end)
+  }
+
+  function handleEditSave() {
+    if (!editingId || !editStart || !editEnd) return
+    const existing = windows.find((w) => w.id === editingId)
+    if (!existing) return
+    addMutation.mutate({ ...existing, start: editStart, end: editEnd })
+    setEditingId(null)
+  }
+
+  function handleEditCancel() {
+    setEditingId(null)
   }
 
   return (
@@ -87,13 +108,62 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
                 key={w.id}
                 className="flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm shadow-sm"
               >
-                <span className="font-mono font-medium">{w.start} – {w.end}</span>
-                <button
-                  onClick={() => handleRemove(w.id)}
-                  className="text-xs text-gray-400 hover:text-red-500"
-                >
-                  Remove
-                </button>
+                {editingId === w.id ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={editStart}
+                        onChange={(e) => setEditStart(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') handleEditCancel()
+                          if (e.key === 'Enter') handleEditSave()
+                        }}
+                        className="rounded border px-2 py-1 text-sm"
+                      />
+                      <span>–</span>
+                      <input
+                        type="time"
+                        value={editEnd}
+                        onChange={(e) => setEditEnd(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') handleEditCancel()
+                          if (e.key === 'Enter') handleEditSave()
+                        }}
+                        className="rounded border px-2 py-1 text-sm"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleEditSave}
+                        className="text-xs text-indigo-600 hover:text-indigo-800"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleEditCancel}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span
+                      className="cursor-pointer font-mono font-medium hover:text-indigo-600"
+                      onClick={() => handleEditStart(w)}
+                    >
+                      {w.start} – {w.end}
+                    </span>
+                    <button
+                      onClick={() => handleRemove(w.id)}
+                      className="text-xs text-gray-400 hover:text-red-500"
+                    >
+                      Remove
+                    </button>
+                  </>
+                )}
               </li>
             ))}
           </ul>
