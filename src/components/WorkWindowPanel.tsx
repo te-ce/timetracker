@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { WorkWindow, WorkWindowRepository } from '../repositories/types'
 import { calculateWorkedHours, calculateRestarbeitszeit } from '../domain/worktime'
 
@@ -9,29 +10,37 @@ interface Props {
 }
 
 export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
-  const [windows, setWindows] = useState<WorkWindow[]>([])
+  const queryClient = useQueryClient()
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
 
-  useEffect(() => {
-    void repository.findByDate(new Date(date)).then(setWindows)
-  }, [date, repository])
+  const { data: windows = [] } = useQuery({
+    queryKey: ['workWindows', date],
+    queryFn: () => repository.findByDate(new Date(date)),
+  })
+
+  const addMutation = useMutation({
+    mutationFn: (w: WorkWindow) => repository.save(w),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows', date] }),
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: (id: string) => repository.delete(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['workWindows', date] }),
+  })
 
   const workedHours = calculateWorkedHours(windows)
   const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)
 
-  async function handleAdd() {
+  function handleAdd() {
     if (!start || !end) return
-    const window: WorkWindow = { id: crypto.randomUUID(), date, start, end }
-    await repository.save(window)
-    setWindows(await repository.findByDate(new Date(date)))
+    addMutation.mutate({ id: crypto.randomUUID(), date, start, end })
     setStart('')
     setEnd('')
   }
 
-  async function handleRemove(id: string) {
-    await repository.delete(id)
-    setWindows(await repository.findByDate(new Date(date)))
+  function handleRemove(id: string) {
+    removeMutation.mutate(id)
   }
 
   return (
@@ -57,7 +66,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
           />
         </label>
         <button
-          onClick={() => void handleAdd()}
+          onClick={handleAdd}
           className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40"
           disabled={!start || !end}
         >
@@ -80,7 +89,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
               >
                 <span className="font-mono font-medium">{w.start} – {w.end}</span>
                 <button
-                  onClick={() => void handleRemove(w.id)}
+                  onClick={() => handleRemove(w.id)}
                   className="text-xs text-gray-400 hover:text-red-500"
                 >
                   Remove

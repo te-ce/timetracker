@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryWorkWindowRepository } from '../repositories/in-memory'
 import { WorkWindowPanel } from './WorkWindowPanel'
 
@@ -8,7 +9,12 @@ const SOLLSTUNDEN = 8
 
 function setup(initialWindows = []) {
   const repo = new InMemoryWorkWindowRepository(initialWindows)
-  render(<WorkWindowPanel date={DATE} sollstunden={SOLLSTUNDEN} repository={repo} />)
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  render(
+    <QueryClientProvider client={queryClient}>
+      <WorkWindowPanel date={DATE} sollstunden={SOLLSTUNDEN} repository={repo} />
+    </QueryClientProvider>,
+  )
   return { repo }
 }
 

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntry, TimeEntryRepository, Category } from '../repositories/types'
 import { CATEGORIES } from '../repositories/types'
 
@@ -12,28 +13,36 @@ function findEntry(entries: TimeEntry[], category: Category): TimeEntry | undefi
 }
 
 export function TimeEntryPanel({ date, repository }: Props) {
-  const [entries, setEntries] = useState<TimeEntry[]>([])
+  const queryClient = useQueryClient()
   const [draft, setDraft] = useState<Partial<Record<Category, string>>>({})
-  const [loadKey, setLoadKey] = useState(0)
 
-  useEffect(() => {
-    let cancelled = false
-    const d = new Date(date)
-    void repository.findByDateRange(d, d).then((loaded) => {
-      if (!cancelled) setEntries(loaded)
-    })
-    return () => { cancelled = true }
-  }, [date, repository, loadKey])
+  const { data: entries = [] } = useQuery({
+    queryKey: ['timeEntries', date],
+    queryFn: () => {
+      const d = new Date(date)
+      return repository.findByDateRange(d, d)
+    },
+  })
 
-  async function handleSave(category: Category) {
+  const saveMutation = useMutation({
+    mutationFn: (entry: TimeEntry) => repository.save(entry),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries', date] }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => repository.delete(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['timeEntries', date] }),
+  })
+
+  function handleSave(category: Category) {
     const raw = draft[category] ?? ''
     const hours = parseFloat(raw)
     const existing = findEntry(entries, category)
 
     if (isNaN(hours) || hours === 0) {
-      if (existing) await repository.delete(existing.id)
+      if (existing) deleteMutation.mutate(existing.id)
     } else {
-      await repository.save({
+      saveMutation.mutate({
         id: existing?.id ?? crypto.randomUUID(),
         date,
         category,
@@ -42,7 +51,6 @@ export function TimeEntryPanel({ date, repository }: Props) {
     }
 
     setDraft((d) => ({ ...d, [category]: undefined }))
-    setLoadKey((k) => k + 1)
   }
 
   const totalHours = entries.reduce((sum, e) => sum + e.hours, 0)
@@ -70,9 +78,9 @@ export function TimeEntryPanel({ date, repository }: Props) {
                 onChange={(e) =>
                   setDraft((d) => ({ ...d, [category]: e.target.value }))
                 }
-                onBlur={() => void handleSave(category)}
+                onBlur={() => handleSave(category)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleSave(category)
+                  if (e.key === "Enter") handleSave(category)
                 }}
                 className="w-20 rounded border px-2 py-1 text-right text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
               />
