@@ -1,14 +1,27 @@
 import './App.css'
+import { useState } from 'react'
 import { DayView } from './views/DayView'
+import { MonthView } from './views/MonthView'
+import { useAppStore } from './stores/appStore'
 
-const NAV_ITEMS = [
-  { label: 'Day', icon: '📅' },
-  { label: 'Month', icon: '📆' },
-  { label: 'Sprint', icon: '⚡' },
-  { label: 'Settings', icon: '⚙️' },
+type View = 'month' | 'day' | 'sprint' | 'settings'
+
+const NAV_ITEMS: { label: string; icon: string; view: View }[] = [
+  { label: 'Month', icon: '📆', view: 'month' },
+  { label: 'Day', icon: '📅', view: 'day' },
+  { label: 'Sprint', icon: '⚡', view: 'sprint' },
+  { label: 'Settings', icon: '⚙️', view: 'settings' },
 ]
 
 function App() {
+  const [activeView, setActiveView] = useState<View>('month')
+  const setSelectedDate = useAppStore((s) => s.setSelectedDate)
+
+  function handleDaySelect(date: string) {
+    setSelectedDate(date)
+    setActiveView('day')
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900">
       {/* Sidebar */}
@@ -17,7 +30,12 @@ function App() {
         {NAV_ITEMS.map((item) => (
           <button
             key={item.label}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 first-of-type:bg-indigo-50 first-of-type:text-indigo-700"
+            onClick={() => setActiveView(item.view)}
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              activeView === item.view
+                ? 'bg-indigo-50 text-indigo-700'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
           >
             <span>{item.icon}</span>
             {item.label}
@@ -27,7 +45,10 @@ function App() {
 
       {/* Main content */}
       <main className="flex-1 p-8">
-        <DayView />
+        {activeView === 'month' && <MonthView onSelectDate={handleDaySelect} />}
+        {activeView === 'day' && <DayView />}
+        {activeView === 'sprint' && <p className="text-gray-400">Sprint — coming soon</p>}
+        {activeView === 'settings' && <p className="text-gray-400">Settings — coming soon</p>}
       </main>
     </div>
   )
