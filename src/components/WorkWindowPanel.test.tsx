@@ -34,7 +34,7 @@ describe('WorkWindowPanel', () => {
     setup()
     await screen.findByText(/no work windows/i)
     await addWindow('09:00', '17:00')
-    expect(await screen.findByText('09:00–17:00')).toBeInTheDocument()
+    expect(await screen.findByText('09:00 – 17:00')).toBeInTheDocument()
   })
 
   it('updates WorkedHours when a window is added', async () => {
@@ -62,7 +62,7 @@ describe('WorkWindowPanel', () => {
     setup()
     await screen.findByText(/no work windows/i)
     await addWindow('09:00', '17:00')
-    await screen.findByText('09:00–17:00')
+    await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByRole('button', { name: /remove/i }))
     expect(await screen.findByText(/no work windows/i)).toBeInTheDocument()
   })
