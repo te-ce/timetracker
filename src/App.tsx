@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { DayView } from './views/DayView'
 import { MonthView } from './views/MonthView'
 import { SprintView } from './views/SprintView'
+import { SettingsView } from './views/SettingsView'
 import { useAppStore } from './stores/appStore'
 
 type View = 'month' | 'day' | 'sprint' | 'settings'
@@ -49,7 +50,7 @@ function App() {
         {activeView === 'month' && <MonthView onSelectDate={handleDaySelect} />}
         {activeView === 'day' && <DayView />}
         {activeView === 'sprint' && <SprintView />}
-        {activeView === 'settings' && <p className="text-gray-400">Settings — coming soon</p>}
+        {activeView === 'settings' && <SettingsView />}
       </main>
     </div>
   )
