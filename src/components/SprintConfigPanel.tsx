@@ -50,6 +50,7 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
           aria-label="Start date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') saveMutation.mutate() }}
           className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
         />
       </label>
@@ -61,6 +62,7 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
           min="1"
           value={lengthDays}
           onChange={(e) => setLengthDays(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') saveMutation.mutate() }}
           className="w-20 rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
         />
       </label>

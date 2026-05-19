@@ -1,10 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { RouterProvider } from '@tanstack/react-router'
 import { PublicClientApplication } from '@azure/msal-browser'
 import { MsalProvider } from '@azure/msal-react'
 import { msalConfig } from './auth/msalConfig.ts'
-import App from './App.tsx'
+import { router } from './routes/router.ts'
 import './index.css'
 
 const msalInstance = new PublicClientApplication(msalConfig)
@@ -35,7 +36,7 @@ createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <MsalProvider instance={msalInstance}>
-        <App />
+        <RouterProvider router={router} />
       </MsalProvider>
     </QueryClientProvider>
   </StrictMode>,

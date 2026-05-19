@@ -1,30 +1,17 @@
 import './App.css'
-import { useState } from 'react'
-import { DayView } from './views/DayView'
-import { MonthView } from './views/MonthView'
-import { MonthGridView } from './views/MonthGridView'
-import { SprintView } from './views/SprintView'
-import { SettingsView } from './views/SettingsView'
-import { useAppStore } from './stores/appStore'
+import { Link, Outlet, useRouterState } from '@tanstack/react-router'
 
-type View = 'month' | 'grid' | 'day' | 'sprint' | 'settings'
-
-const NAV_ITEMS: { label: string; icon: string; view: View }[] = [
-  { label: 'Month', icon: '📆', view: 'month' },
-  { label: 'Grid', icon: '📊', view: 'grid' },
-  { label: 'Day', icon: '📅', view: 'day' },
-  { label: 'Sprint', icon: '⚡', view: 'sprint' },
-  { label: 'Settings', icon: '⚙️', view: 'settings' },
+const NAV_ITEMS: { label: string; icon: string; to: string }[] = [
+  { label: 'Month', icon: '📆', to: '/' },
+  { label: 'Grid', icon: '📊', to: '/grid' },
+  { label: 'Day', icon: '📅', to: '/day' },
+  { label: 'Sprint', icon: '⚡', to: '/sprint' },
+  { label: 'Settings', icon: '⚙️', to: '/settings' },
 ]
 
 function App() {
-  const [activeView, setActiveView] = useState<View>('month')
-  const setSelectedDate = useAppStore((s) => s.setSelectedDate)
-
-  function handleDaySelect(date: string) {
-    setSelectedDate(date)
-    setActiveView('day')
-  }
+  const routerState = useRouterState()
+  const currentPath = routerState.location.pathname
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900">
@@ -32,28 +19,24 @@ function App() {
       <nav className="flex w-56 flex-col gap-1 border-r bg-white p-4 pt-6" aria-label="Main navigation">
         <span className="mb-6 px-2 text-lg font-bold tracking-tight">Timetracker</span>
         {NAV_ITEMS.map((item) => (
-          <button
+          <Link
             key={item.label}
-            onClick={() => setActiveView(item.view)}
+            to={item.to}
             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              activeView === item.view
+              currentPath === item.to
                 ? 'bg-indigo-50 text-indigo-700'
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             <span>{item.icon}</span>
             {item.label}
-          </button>
+          </Link>
         ))}
       </nav>
 
       {/* Main content */}
       <main className="flex-1 p-8">
-        {activeView === 'month' && <MonthView onSelectDate={handleDaySelect} />}
-        {activeView === 'grid' && <MonthGridView />}
-        {activeView === 'day' && <DayView />}
-        {activeView === 'sprint' && <SprintView />}
-        {activeView === 'settings' && <SettingsView />}
+        <Outlet />
       </main>
     </div>
   )

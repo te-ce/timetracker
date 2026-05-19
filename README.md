@@ -6,14 +6,15 @@ A time-tracking Progressive Web App that logs working hours against predefined c
 
 - **React 19** + **TypeScript** — Single-page application
 - **Vite** — Build tool and dev server
+- **TanStack Router** — Type-safe file-based routing
+- **TanStack Query** — Async state management
 - **Tailwind CSS** — Utility-first styling
-- **Zustand** — State management
-- **Firebase (Firestore)** — Persistence and cross-device sync
+- **Zustand** — Client state management
+- **OneDrive App Folder** — Persistence (user's own cloud via Graph API)
 - **MSAL.js** — Microsoft Work/School login + Graph API access
 - **vite-plugin-pwa** — Offline support via service worker
 - **Vitest** + **React Testing Library** — Unit and component tests
 - **Playwright** — End-to-end tests
-- **MSW** — API mocking for tests
 
 ## Prerequisites
 
@@ -85,13 +86,14 @@ npm run e2e
 
 ```
 src/
-├── auth/          # Authentication (MSAL) configuration
 ├── components/    # Reusable UI components
 ├── domain/        # Domain models and business logic
-├── hooks/         # Custom React hooks
-├── mocks/         # MSW handlers for API mocking
-├── repositories/  # Data access layer (Firestore, Graph API)
+├── repositories/  # Data access layer (repository interfaces)
+│   ├── in-memory/ # In-memory implementations (tests, offline)
+│   └── cloud/     # OneDrive-backed implementations (production)
+├── storage/       # StorageAdapter abstraction (OneDrive Graph API)
 ├── stores/        # Zustand state stores
+├── routes/        # TanStack Router route definitions
 ├── test/          # Test setup and utilities
 └── views/         # Page-level view components
 e2e/               # Playwright end-to-end tests
@@ -100,30 +102,33 @@ docs/
 └── agents/        # Agent workflow documentation
 ```
 
+## Persistence Architecture
+
+Data is stored as JSON files in the user's **OneDrive App Folder** via Microsoft Graph API. No database or backend required — the user owns their data in their own cloud.
+
+```
+/Apps/Timetracker/
+  config.json          # App settings
+  time-entries.json    # All time bookings
+  work-windows.json    # Work duration blocks
+  sprint-exports.json  # Export status per sprint
+  work-locations.json  # Office/Remote per day
+  day-type-overrides.json  # Vacation/Sick/etc overrides
+```
+
+See [ADR 0005](docs/adr/0005-onedrive-app-folder-persistence.md) for details.
+
 ## Configuration
-
-The app requires two external services:
-
-- **MSAL / Azure AD** — login and Microsoft Graph API access for reading/writing SharePoint Excel files
-- **Firebase Firestore** — persistence and cross-device sync for time entries and settings
 
 ### Environment Variables
 
-Create a `.env.local` file in the project root with the following variables:
+Create a `.env.local` file in the project root:
 
 ```env
 # Azure AD / MSAL
 VITE_MSAL_CLIENT_ID=<your-azure-app-client-id>
 VITE_MSAL_TENANT_ID=<your-azure-tenant-id>
 VITE_MSAL_REDIRECT_URI=http://localhost:5173
-
-# Firebase
-VITE_FIREBASE_API_KEY=<your-firebase-api-key>
-VITE_FIREBASE_AUTH_DOMAIN=<your-project>.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=<your-project-id>
-VITE_FIREBASE_STORAGE_BUCKET=<your-project>.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=<your-sender-id>
-VITE_FIREBASE_APP_ID=<your-app-id>
 ```
 
 ### Azure AD App Registration
@@ -133,17 +138,11 @@ VITE_FIREBASE_APP_ID=<your-app-id>
 3. Add a **Redirect URI**: `http://localhost:5173` (type: Single-page application)
 4. Under **API permissions**, add:
    - `User.Read` (Microsoft Graph, delegated)
+   - `Files.ReadWrite.AppFolder` (Microsoft Graph, delegated) — for OneDrive app data
    - `Files.ReadWrite` (Microsoft Graph, delegated) — for SharePoint Excel access
 5. Copy the **Application (client) ID** and **Directory (tenant) ID** into `.env.local`
 
-### Firebase Project Setup
-
-1. Go to the [Firebase Console](https://console.firebase.google.com/) and create a project
-2. Enable **Firestore Database** (start in production mode)
-3. Go to **Project Settings → Your apps** and add a Web app
-4. Copy the Firebase config values into `.env.local`
-
-See `docs/adr/` for the full architectural decisions around authentication and persistence.
+See `docs/adr/` for the full architectural decisions.
 
 ## License
 

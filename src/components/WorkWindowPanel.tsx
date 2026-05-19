@@ -74,6 +74,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
             type="time"
             value={start}
             onChange={(e) => setStart(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
             className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </label>
@@ -83,6 +84,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
             type="time"
             value={end}
             onChange={(e) => setEnd(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
             className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </label>

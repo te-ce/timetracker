@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { IncompleteBanner } from '../components/IncompleteBanner'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
@@ -8,19 +9,23 @@ import { calculateWorkedHours } from '../domain/worktime'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { isDayComplete } from '../domain/dayCompletion'
 import { classifyDay } from '../domain/dayType'
+import { useAppStore } from '../stores/appStore'
 
 const workWindowRepo = new InMemoryWorkWindowRepository()
 const timeEntryRepo = new InMemoryTimeEntryRepository()
 const configRepo = new InMemoryConfigRepository()
 
-interface Props {
-  onSelectDate: (date: string) => void
-}
-
-export function MonthView({ onSelectDate }: Props) {
+export function MonthView() {
+  const navigate = useNavigate()
+  const setSelectedDate = useAppStore((s) => s.setSelectedDate)
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth())
+
+  function onSelectDate(date: string) {
+    setSelectedDate(date)
+    void navigate({ to: '/day' })
+  }
 
   const from = new Date(year, month, 1)
   const to = new Date(year, month + 1, 0)

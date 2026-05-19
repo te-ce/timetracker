@@ -1,16 +1,20 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import App from './App'
+import { RouterProvider, createMemoryHistory } from '@tanstack/react-router'
+import { router } from './routes/router'
 
 describe('App', () => {
-  it('renders the app shell with navigation', () => {
+  it('renders the app shell with navigation', async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const memoryHistory = createMemoryHistory({ initialEntries: ['/'] })
+    router.update({ history: memoryHistory })
+
     render(
       <QueryClientProvider client={queryClient}>
-        <App />
+        <RouterProvider router={router} />
       </QueryClientProvider>,
     )
-    expect(screen.getByText('Timetracker')).toBeInTheDocument()
+    expect(await screen.findByText('Timetracker')).toBeInTheDocument()
     expect(screen.getByRole('navigation')).toBeInTheDocument()
   })
 })

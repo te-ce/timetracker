@@ -132,6 +132,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                         setDrafts((d) => ({ ...d, [draftKey(row.date, cat)]: e.target.value }))
                       }
                       onBlur={() => handleBlur(row, cat)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                       className="w-14 rounded border px-1 py-0.5 text-right text-xs"
                     />
                   </td>
