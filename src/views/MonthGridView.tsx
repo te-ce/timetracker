@@ -1,15 +1,22 @@
 import { useState } from 'react'
-import { InMemoryTimeEntryRepository, InMemoryWorkWindowRepository } from '../repositories/in-memory'
+import { useQuery } from '@tanstack/react-query'
+import { InMemoryTimeEntryRepository, InMemoryWorkWindowRepository, InMemoryConfigRepository } from '../repositories/in-memory'
 import { MonthGrid } from '../components/MonthGrid'
 
 // Temporary in-memory repos until Firestore is wired
 const timeEntryRepo = new InMemoryTimeEntryRepository()
 const workWindowRepo = new InMemoryWorkWindowRepository()
+const configRepo = new InMemoryConfigRepository()
 
 export function MonthGridView() {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
+
+  const { data: config } = useQuery({
+    queryKey: ['config'],
+    queryFn: () => configRepo.get(),
+  })
 
   function prevMonth() {
     if (month === 1) { setYear(year - 1); setMonth(12) }
@@ -38,7 +45,8 @@ export function MonthGridView() {
         month={month}
         timeEntryRepository={timeEntryRepo}
         workWindowRepository={workWindowRepo}
-        autoCategory="Coremedia"
+        autoCategory={config?.autoCategory ?? 'Coremedia'}
+        customCategories={config?.customCategories ?? []}
       />
     </div>
   )

@@ -3,13 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../domain/sprint'
 import type { SprintConfig } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
-import { InMemorySprintExportRepository } from '../repositories/in-memory'
-import type { TimeEntry } from '../repositories/types'
+import { InMemorySprintExportRepository, InMemoryTimeEntryRepository } from '../repositories/in-memory'
 
 // TODO: load from ConfigRepository
 const DEFAULT_CONFIG: SprintConfig = { startDate: '2024-01-01', lengthDays: 14 }
 
 const sprintExportRepo = new InMemorySprintExportRepository()
+const timeEntryRepo = new InMemoryTimeEntryRepository()
 
 export function SprintView() {
   const queryClient = useQueryClient()
@@ -19,8 +19,11 @@ export function SprintView() {
 
   const sprint = getSprintBoundaries(sprintIndex, DEFAULT_CONFIG)
 
-  // TODO: load from TimeEntryRepository via useQuery
-  const entries: TimeEntry[] = []
+  const { data: entries = [] } = useQuery({
+    queryKey: ['timeEntries', 'sprint', sprintIndex],
+    queryFn: () => timeEntryRepo.findByDateRange(new Date(sprint.start), new Date(sprint.end)),
+  })
+
   const hoursPerCategory = aggregateSprintHours(entries, sprint)
 
   const { data: sprintExport } = useQuery({

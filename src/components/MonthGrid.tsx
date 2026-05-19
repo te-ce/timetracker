@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntry, TimeEntryRepository, WorkWindowRepository } from '../repositories/types'
-import { CATEGORIES } from '../repositories/types'
 import { buildMonthGrid } from '../domain/monthGrid'
+import { getAllCategories } from '../domain/categories'
 import type { MonthGridRow } from '../domain/monthGrid'
 
 interface Props {
@@ -11,9 +11,10 @@ interface Props {
   timeEntryRepository: TimeEntryRepository
   workWindowRepository: WorkWindowRepository
   autoCategory: string
+  customCategories?: string[]
 }
 
-export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory }: Props) {
+export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory, customCategories = [] }: Props) {
   const queryClient = useQueryClient()
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
 
@@ -87,6 +88,8 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
     return val ? String(val) : ''
   }
 
+  const allCategories = getAllCategories(customCategories)
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm" role="table">
@@ -94,7 +97,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
           <tr>
             <th className="px-2 py-1 text-left">Day</th>
             <th className="px-2 py-1 text-right" role="columnheader">Worked</th>
-            {CATEGORIES.map((cat) => (
+            {allCategories.map((cat) => (
               <th key={cat} className="px-2 py-1 text-right" role="columnheader">{cat}</th>
             ))}
             <th className="px-2 py-1 text-right" role="columnheader">Auto</th>
@@ -114,7 +117,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                 <td className="px-2 py-1 text-right" data-testid="worked-hours">
                   {row.workedHours > 0 ? row.workedHours : ''}
                 </td>
-                {CATEGORIES.map((cat) => (
+                {allCategories.map((cat) => (
                   <td key={cat} className="px-1 py-0.5">
                     <input
                       aria-label={`Hours for ${cat} on ${row.date}`}
