@@ -54,6 +54,24 @@ export function TimeEntryPanel({ date, repository, customCategories = [] }: Prop
     setDraft((d) => ({ ...d, [category]: undefined }))
   }
 
+  function handleIncrement(category: string, delta: number) {
+    const existing = findEntry(entries, category)
+    const current = existing?.hours ?? 0
+    const newHours = Math.max(0, current + delta)
+
+    if (newHours === 0) {
+      if (existing) deleteMutation.mutate(existing.id)
+    } else {
+      saveMutation.mutate({
+        id: existing?.id ?? crypto.randomUUID(),
+        date,
+        category,
+        hours: newHours,
+      })
+    }
+    setDraft((d) => ({ ...d, [category]: undefined }))
+  }
+
   const totalHours = entries.reduce((sum, e) => sum + e.hours, 0)
 
   return (
@@ -69,22 +87,38 @@ export function TimeEntryPanel({ date, repository, customCategories = [] }: Prop
               className="flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 shadow-sm"
             >
               <span className="text-sm font-medium">{category}</span>
-              <input
-                aria-label={`Hours for ${category}`}
-                type="number"
-                min="0"
-                step="0.5"
-                placeholder="0"
-                value={value}
-                onChange={(e) =>
-                  setDraft((d) => ({ ...d, [category]: e.target.value }))
-                }
-                onBlur={() => handleSave(category)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSave(category)
-                }}
-                className="w-20 rounded border px-2 py-1 text-right text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-              />
+              <div className="flex items-center gap-1">
+                <button
+                  aria-label={`Decrease ${category}`}
+                  onClick={() => handleIncrement(category, -0.25)}
+                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100"
+                >
+                  −
+                </button>
+                <input
+                  aria-label={`Hours for ${category}`}
+                  type="number"
+                  min="0"
+                  step="0.25"
+                  placeholder="0"
+                  value={value}
+                  onChange={(e) =>
+                    setDraft((d) => ({ ...d, [category]: e.target.value }))
+                  }
+                  onBlur={() => handleSave(category)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSave(category)
+                  }}
+                  className="w-16 rounded border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                />
+                <button
+                  aria-label={`Increase ${category}`}
+                  onClick={() => handleIncrement(category, 0.25)}
+                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100"
+                >
+                  +
+                </button>
+              </div>
             </li>
           )
         })}

@@ -31,14 +31,14 @@ export class CloudWorkWindowRepository implements WorkWindowRepository {
 
   async findByDate(date: Date): Promise<WorkWindow[]> {
     const windows = await this.load()
-    const iso = date.toISOString().slice(0, 10)
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
     return windows.filter((w) => w.date === iso)
   }
 
   async findByDateRange(from: Date, to: Date): Promise<WorkWindow[]> {
     const windows = await this.load()
-    const fromIso = from.toISOString().slice(0, 10)
-    const toIso = to.toISOString().slice(0, 10)
+    const fromIso = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`
+    const toIso = `${to.getFullYear()}-${String(to.getMonth() + 1).padStart(2, '0')}-${String(to.getDate()).padStart(2, '0')}`
     return windows.filter((w) => w.date >= fromIso && w.date <= toIso)
   }
 

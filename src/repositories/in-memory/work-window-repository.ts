@@ -1,8 +1,5 @@
 import type { WorkWindow, WorkWindowRepository } from '../types'
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
+import { toLocalIso } from '../../domain/dateUtils'
 
 export class InMemoryWorkWindowRepository implements WorkWindowRepository {
   private readonly windows = new Map<string, WorkWindow>()
@@ -20,7 +17,7 @@ export class InMemoryWorkWindowRepository implements WorkWindowRepository {
   }
 
   findByDate(date: Date): Promise<WorkWindow[]> {
-    const targetDate = toIsoDate(date)
+    const targetDate = toLocalIso(date)
 
     return Promise.resolve(
       [...this.windows.values()]
@@ -30,8 +27,8 @@ export class InMemoryWorkWindowRepository implements WorkWindowRepository {
   }
 
   findByDateRange(from: Date, to: Date): Promise<WorkWindow[]> {
-    const fromDate = toIsoDate(from)
-    const toDate = toIsoDate(to)
+    const fromDate = toLocalIso(from)
+    const toDate = toLocalIso(to)
 
     return Promise.resolve(
       [...this.windows.values()]

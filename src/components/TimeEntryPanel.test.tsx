@@ -77,4 +77,34 @@ describe('TimeEntryPanel', () => {
     ])
     expect(await screen.findByLabelText('Total booked hours')).toHaveTextContent('5h')
   })
+
+  it('increments hours by 0.25 when + button is clicked', async () => {
+    const { repo } = setup([{ id: '1', date: DATE, category: 'QA', hours: 2 }])
+    const btn = await screen.findByLabelText('Increase QA')
+    await userEvent.click(btn)
+    await waitFor(async () => {
+      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
+      expect(entries.find((e) => e.category === 'QA')?.hours).toBe(2.25)
+    })
+  })
+
+  it('decrements hours by 0.25 when - button is clicked', async () => {
+    const { repo } = setup([{ id: '1', date: DATE, category: 'QA', hours: 2 }])
+    const btn = await screen.findByLabelText('Decrease QA')
+    await userEvent.click(btn)
+    await waitFor(async () => {
+      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
+      expect(entries.find((e) => e.category === 'QA')?.hours).toBe(1.75)
+    })
+  })
+
+  it('does not go below 0 when decrementing', async () => {
+    const { repo } = setup([{ id: '1', date: DATE, category: 'QA', hours: 0.25 }])
+    const btn = await screen.findByLabelText('Decrease QA')
+    await userEvent.click(btn)
+    await waitFor(async () => {
+      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
+      expect(entries.find((e) => e.category === 'QA')).toBeUndefined()
+    })
+  })
 })

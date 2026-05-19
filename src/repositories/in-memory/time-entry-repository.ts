@@ -1,8 +1,5 @@
 import type { TimeEntry, TimeEntryRepository } from '../types'
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10)
-}
+import { toLocalIso } from '../../domain/dateUtils'
 
 export class InMemoryTimeEntryRepository implements TimeEntryRepository {
   private readonly entries = new Map<string, TimeEntry>()
@@ -20,8 +17,8 @@ export class InMemoryTimeEntryRepository implements TimeEntryRepository {
   }
 
   findByDateRange(from: Date, to: Date): Promise<TimeEntry[]> {
-    const fromDate = toIsoDate(from)
-    const toDate = toIsoDate(to)
+    const fromDate = toLocalIso(from)
+    const toDate = toLocalIso(to)
 
     return Promise.resolve(
       [...this.entries.values()]
