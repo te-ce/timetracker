@@ -1,7 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { PublicClientApplication } from '@azure/msal-browser'
+import { MsalProvider } from '@azure/msal-react'
+import { msalConfig } from './auth/msalConfig.ts'
 import App from './App.tsx'
 import './index.css'
+
+const msalInstance = new PublicClientApplication(msalConfig)
 
 async function enableMocking() {
   if (!import.meta.env.DEV) {
@@ -22,6 +27,8 @@ void enableMocking()
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <MsalProvider instance={msalInstance}>
+      <App />
+    </MsalProvider>
   </StrictMode>,
 )

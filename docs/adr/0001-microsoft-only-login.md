@@ -1,7 +1,7 @@
 # ADR 0001: Microsoft-only Login (Firebase Auth + Graph API)
 
 ## Status
-Accepted
+Superseded by [ADR 0003](0003-revised-tech-stack.md)
 
 ## Context
 The app requires two external services:

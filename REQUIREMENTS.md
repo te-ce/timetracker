@@ -139,22 +139,42 @@ Data should be synchronised across devices. The user logs in once — sync runs 
 
 ## 8. Tech Stack
 
+> See [ADR 0003](docs/adr/0003-revised-tech-stack.md) for the full decision record.
+
 ### Frontend
-- **React** (web app)
+- **React 18** (SPA, no SSR — app is fully auth-gated)
 - **TypeScript** — strict typing throughout the project
+- **Vite** — build tool and dev server
+
+### Auth & API
+- **MSAL.js** (`@azure/msal-browser` + `@azure/msal-react`) — Microsoft Work/School login; provides the MS Access Token for Graph API natively
+- **Microsoft Graph API** — reads/writes the SharePoint Excel file
+- **Firebase Firestore** — persistence and cross-device sync (independent of auth)
+
+### UI
+- **shadcn/ui** (Radix UI primitives) — accessible, unstyled components owned by the project
+- **Tailwind CSS** — utility-first styling
+
+### State management
+- **Zustand** — lightweight sliced stores per domain (entries, config, UI)
+
+### Offline / PWA
+- **vite-plugin-pwa** (Workbox) — service worker + offline cache
 
 ### Code Quality
 - **ESLint** with TypeScript support (`typescript-eslint`)
   - Rule [`@typescript-eslint/no-unnecessary-condition`](https://typescript-eslint.io/rules/no-unnecessary-condition/) is active (prevents dead branches from redundant conditions)
-- Further recommended `typescript-eslint` rules are evaluated as needed
 
 ### Testing
 - **Unit tests (Vitest)** — pure domain logic: time calculations, AutoCategory, sprint aggregation, DayType
 - **Component tests (React Testing Library)** — user-facing behaviour, no implementation details
 - **API mocking (Mock Service Worker)** — intercept Graph API at the network level
 - **E2E (Playwright)** — critical user flows: login, booking, export
-- Repository pattern for Firebase / Graph API → in-memory implementations in tests
+- Repository pattern for Firestore / Graph API → in-memory implementations in tests
 - → See [ADR 0002](docs/adr/0002-testing-strategy.md)
+
+### Mobile (future)
+- **Expo (React Native)** — domain logic and repository interfaces are portable
 
 ---
 
