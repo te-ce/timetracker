@@ -74,6 +74,15 @@ describe('InMemoryWorkWindowRepository', () => {
       afternoonWindow,
     ])
   })
+
+  it('saves and retrieves an open WorkWindow (end: null)', async () => {
+    const repository = new InMemoryWorkWindowRepository()
+    const openWindow: WorkWindow = { id: 'open-1', date: '2025-01-10', start: '09:00', end: null }
+
+    await repository.save(openWindow)
+
+    await expect(repository.findByDate(new Date('2025-01-10'))).resolves.toEqual([openWindow])
+  })
 })
 
 describe('InMemoryConfigRepository', () => {

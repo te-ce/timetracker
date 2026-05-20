@@ -37,7 +37,7 @@ export interface WorkWindow {
   id: string
   date: string
   start: string
-  end: string
+  end: string | null
 }
 
 export interface AppConfig {

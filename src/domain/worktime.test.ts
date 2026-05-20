@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { calculateWorkedHours, calculateRestarbeitszeit } from './worktime'
 import type { WorkWindow } from '../repositories/types'
 
-const makeWindow = (start: string, end: string): WorkWindow => ({
+const makeWindow = (start: string, end: string | null): WorkWindow => ({
   id: '1', date: '2024-01-15', start, end,
 })
 
@@ -26,6 +26,25 @@ describe('calculateWorkedHours', () => {
 
   it('handles a WorkWindow that spans midnight', () => {
     expect(calculateWorkedHours([makeWindow('23:00', '01:00')])).toBe(2)
+  })
+
+  it('skips an open WorkWindow (null end) when no now is provided', () => {
+    expect(calculateWorkedHours([makeWindow('09:00', null)])).toBe(0)
+  })
+
+  it('skips open windows but counts closed ones in a mixed list', () => {
+    const windows = [makeWindow('09:00', '12:00'), makeWindow('13:00', null)]
+    expect(calculateWorkedHours(windows)).toBe(3)
+  })
+
+  it('includes open window live duration when now is provided', () => {
+    const windows = [makeWindow('09:00', null)]
+    expect(calculateWorkedHours(windows, '11:00')).toBe(2)
+  })
+
+  it('sums closed and open windows when now is provided', () => {
+    const windows = [makeWindow('09:00', '12:00'), makeWindow('13:00', null)]
+    expect(calculateWorkedHours(windows, '15:00')).toBe(5)
   })
 })
 

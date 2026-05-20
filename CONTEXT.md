@@ -7,6 +7,8 @@ Contains no start or end time — only a duration.
 
 ## WorkedHours
 Σ duration of all WorkWindows for a day (in decimal hours).  
+Closed WorkWindows contribute their fixed `end − start` duration.  
+Open WorkWindows contribute a live `now − start` duration (updated every minute in DayView).  
 Serves as the basis for the AutoCategory: `Auto = WorkedHours − Σ manual TimeEntries`.  
 Distinct from **Sollstunden** (the configured daily target).
 
@@ -18,6 +20,16 @@ A duration block on a day during which the user actually worked.
 Can be entered as a **start/end time pair** (e.g. 09:00–12:30) from DayView, or as a **plain duration** (decimal hours, e.g. `3.5`) from the MonthGrid WorkedHours column.  
 A day may have multiple WorkWindows.  
 **WorkedHours** for a day = Σ duration of all WorkWindows that day.
+
+### Open WorkWindow
+A WorkWindow with a start time but no end (`end: null`). Represents an in-progress work session.  
+Contributes a **live duration** (`now − start`) to WorkedHours, updated on a 1-minute tick.  
+Excluded from duration calculations when `now` is unavailable (e.g. server-side or batch contexts).  
+At most one open WorkWindow per day is expected; if multiple exist, the one with the **latest start** is treated as the current session.
+
+### WorkWindow–Category Tracking link
+Starting category tracking (pressing **Start** on a TimeEntry category) automatically opens a WorkWindow for that day at the current local time — unless an open WorkWindow already exists for that day (same continuous session, different category).  
+Stopping category tracking (pressing **Stop**) closes the latest open WorkWindow for that day by setting its end to the current local time.
 
 ## Restarbeitszeit
 `Sollstunden − WorkedHours` for a day.  
@@ -58,6 +70,12 @@ Calculation: `WorkedHours − Σ manual TimeEntries`. Cannot be negative; floors
 The user may also manually override the auto-computed value. Clearing the override reverts to the computed value.  
 When `Σ all entries (including auto) < WorkedHours`, the day is flagged as having **unaccounted hours**.  
 Accepts both fixed categories and dynamic categories.
+
+## AutoCategory Override
+- Per-day override for AutoCategory is supported via `resolveAutoCategory()` function
+- Override takes precedence over global default setting
+- When cleared, reverts to the computed value from `calculateAutoCategory()`
+- Used in DayView and MonthGrid for per-day configuration
 
 ## DynamicCategory
 A user-defined or investment-sourced category beyond the 10 fixed ones.  

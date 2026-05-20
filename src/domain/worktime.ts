@@ -10,10 +10,12 @@ function parseMinutes(time: string): number {
   return h * 60 + m
 }
 
-export function calculateWorkedHours(windows: WorkWindow[]): number {
+export function calculateWorkedHours(windows: WorkWindow[], now?: string): number {
   return windows.reduce((total, w) => {
+    const endTime = w.end ?? now
+    if (endTime == null) return total
     const start = parseMinutes(w.start)
-    let end = parseMinutes(w.end)
+    let end = parseMinutes(endTime)
     if (end <= start) end += 24 * 60 // midnight-spanning
     return total + (end - start) / 60
   }, 0)
