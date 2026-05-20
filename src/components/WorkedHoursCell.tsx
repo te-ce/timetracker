@@ -67,7 +67,7 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
           {windows.map((w) => (
             <li key={w.id} className="flex items-center justify-between text-xs">
               <span>{w.start}–{w.end}</span>
-              <span className="text-gray-500 mr-1">{windowDuration(w.start, w.end).toFixed(1)}h</span>
+              <span className="text-gray-500 mr-1">{windowDuration(w.start, w.end).toFixed(2)}h</span>
               <button
                 onClick={() => removeMutation.mutate(w.id)}
                 className="text-red-400 hover:text-red-600"

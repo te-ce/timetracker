@@ -101,7 +101,6 @@ export function MonthView() {
       <MonthStatsPanel
         workedHoursPerDay={workedHoursPerDay}
         dates={dates}
-        workDayCount={workDayCount}
         sollstunden={sollstunden}
         overtimeCarryOver={overtimeCarryOver}
         today={todayIso}

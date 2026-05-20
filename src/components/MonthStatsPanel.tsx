@@ -1,32 +1,28 @@
-import { calculateMonthStats, calculateOvertimeToDate } from '../domain/monthStats'
+import { calculateOvertimeToDate } from '../domain/monthStats'
 
 interface Props {
   workedHoursPerDay: number[]
   dates: string[]
-  workDayCount: number
   sollstunden: number
   overtimeCarryOver: number
   today: string
 }
 
-export function MonthStatsPanel({ workedHoursPerDay, dates, workDayCount, sollstunden, overtimeCarryOver, today }: Props) {
-  const stats = calculateMonthStats(workedHoursPerDay, workDayCount, sollstunden)
+export function MonthStatsPanel({ workedHoursPerDay, dates, sollstunden, overtimeCarryOver, today }: Props) {
   const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, today, sollstunden)
   const cumulativeOvertime = overtimeCarryOver + toDate.value
 
   return (
-    <section aria-label="Month statistics" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-      <StatCard label="Total hours" value={`${stats.totalHours.toFixed(1)}h`} />
+    <section aria-label="Month statistics" className="grid grid-cols-2 gap-4">
       <StatCard
         label="Over/Undertime"
-        value={`${cumulativeOvertime >= 0 ? '+' : ''}${cumulativeOvertime.toFixed(1)}h`}
+        value={`${cumulativeOvertime >= 0 ? '+' : ''}${cumulativeOvertime.toFixed(2)}h`}
         highlight={cumulativeOvertime !== 0}
         positive={cumulativeOvertime >= 0}
       />
-      <StatCard label="Fulfillment" value={`${stats.fulfillmentPercent.toFixed(0)}%`} />
       <StatCard
         label="Needed today"
-        value={`${toDate.hoursNeededToday.toFixed(1)}h`}
+        value={`${toDate.hoursNeededToday.toFixed(2)}h`}
         highlight={toDate.hoursNeededToday > 0}
       />
     </section>
