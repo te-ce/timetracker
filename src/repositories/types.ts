@@ -1,27 +1,30 @@
 export type Category =
-  | 'On Leave'
-  | 'Training, Events'
-  | 'Coremedia'
-  | 'QA'
-  | 'Support'
-  | 'CoPs'
-  | 'Bug/Maintenance'
-  | 'Infra'
-  | 'Architecture'
-  | 'Testwatch'
+  | '_LEAVE'
+  | '_OTHER'
+  | '_COREMEDIA'
+  | '_RELEASE'
+  | '_SUPPORT'
+  | '_GUILDS'
+  | '_MAINT'
+  | '_INFRA'
+  | '_ARCH'
+  | '_TESTWATCH'
 
-export const CATEGORIES: Category[] = [
-  'On Leave',
-  'Training, Events',
-  'Coremedia',
-  'QA',
-  'Support',
-  'CoPs',
-  'Bug/Maintenance',
-  'Infra',
-  'Architecture',
-  'Testwatch',
+export const DEFAULT_CATEGORIES: Category[] = [
+  '_LEAVE',
+  '_OTHER',
+  '_COREMEDIA',
+  '_RELEASE',
+  '_SUPPORT',
+  '_GUILDS',
+  '_MAINT',
+  '_INFRA',
+  '_ARCH',
+  '_TESTWATCH',
 ]
+
+/** @deprecated Use DEFAULT_CATEGORIES instead */
+export const CATEGORIES = DEFAULT_CATEGORIES
 
 export interface TimeEntry {
   id: string

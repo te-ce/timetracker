@@ -3,7 +3,6 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo } from '../repositories/shared'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
-import { AutoCategoryRow } from '../components/AutoCategoryRow'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateRestarbeitszeit } from '../domain/worktime'
@@ -134,16 +133,12 @@ export function DayView() {
         repository={workWindowRepo}
       />
 
-      <AutoCategoryRow
-        autoCategory={autoCategory}
-        workedHours={workedHours}
-        manualTotal={manualTotal}
-      />
-
       <TimeEntryPanel
         date={selectedDate}
         repository={timeEntryRepo}
         customCategories={config?.customCategories ?? []}
+        autoCategory={autoCategory}
+        autoCategoryHours={Math.max(0, workedHours - manualTotal)}
       />
     </div>
   )

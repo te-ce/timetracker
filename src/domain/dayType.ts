@@ -1,6 +1,6 @@
 export type DayType = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'SickDay' | 'Absence'
 
-export type AutoBooking = { category: 'On Leave'; hours: number }
+export type AutoBooking = { category: '_LEAVE'; hours: number }
 
 const LEAVE_TYPES = new Set<DayType>(['Vacation', 'SickDay', 'Absence'])
 
@@ -19,5 +19,5 @@ export function isWorkWindowExpected(dayType: DayType): boolean {
 }
 
 export function getAutoBooking(dayType: DayType, sollstunden: number): AutoBooking | null {
-  return LEAVE_TYPES.has(dayType) ? { category: 'On Leave', hours: sollstunden } : null
+  return LEAVE_TYPES.has(dayType) ? { category: '_LEAVE', hours: sollstunden } : null
 }

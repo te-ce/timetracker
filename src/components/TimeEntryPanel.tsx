@@ -8,13 +8,15 @@ interface Props {
   date: string
   repository: TimeEntryRepository
   customCategories?: string[]
+  autoCategory?: string | null
+  autoCategoryHours?: number
 }
 
 function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefined {
   return entries.find((e) => e.category === category)
 }
 
-export function TimeEntryPanel({ date, repository, customCategories = [] }: Props) {
+export function TimeEntryPanel({ date, repository, customCategories = [], autoCategory = null, autoCategoryHours = 0 }: Props) {
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
 
   const { data: entries = [] } = useQuery({
@@ -64,21 +66,32 @@ export function TimeEntryPanel({ date, repository, customCategories = [] }: Prop
     setDraft((d) => ({ ...d, [category]: undefined }))
   }
 
-  const totalHours = entries.reduce((sum, e) => sum + e.hours, 0)
+  const totalHours = entries.reduce((sum, e) => sum + e.hours, 0) + autoCategoryHours
 
   return (
     <section aria-label="Time entries" className="flex flex-col gap-4">
       <ul className="flex flex-col gap-2">
         {getAllCategories(customCategories).map((category) => {
           const existing = findEntry(entries, category)
+          const isAutoTarget = autoCategory === category
+          const autoHrs = isAutoTarget ? autoCategoryHours : 0
+          const manualHours = existing?.hours ?? 0
+          const displayTotal = manualHours + autoHrs
           const value = draft[category] ?? (existing ? String(existing.hours) : '')
 
           return (
             <li
               key={category}
-              className="flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 shadow-sm"
+              className={`flex items-center justify-between rounded-lg border px-4 py-2.5 shadow-sm ${isAutoTarget && autoHrs > 0 ? 'border-indigo-300 bg-indigo-50' : 'bg-white'}`}
             >
-              <span className="text-sm font-medium">{category}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{category}</span>
+                {isAutoTarget && autoHrs > 0 && (
+                  <span className="rounded bg-indigo-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700">
+                    +{autoHrs.toFixed(2)} auto
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-1">
                 <button
                   aria-label={`Decrease ${category}`}
@@ -110,6 +123,9 @@ export function TimeEntryPanel({ date, repository, customCategories = [] }: Prop
                 >
                   +
                 </button>
+                {isAutoTarget && autoHrs > 0 && (
+                  <span className="ml-1 text-xs text-gray-500">= {displayTotal.toFixed(2)}</span>
+                )}
               </div>
             </li>
           )

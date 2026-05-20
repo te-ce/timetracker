@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ConfigRepository } from '../repositories/types'
-import { CATEGORIES } from '../repositories/types'
+import { CATEGORIES as DEFAULT_CATEGORIES } from '../repositories/types'
 
 interface Props {
   repository: ConfigRepository
@@ -24,7 +24,7 @@ export function CustomCategorySettings({ repository }: Props) {
 
   if (!config) return null
 
-  const allExisting = new Set([...CATEGORIES, ...config.customCategories])
+  const allExisting = new Set([...DEFAULT_CATEGORIES, ...config.customCategories])
 
   function handleAdd() {
     const trimmed = newCategory.trim()

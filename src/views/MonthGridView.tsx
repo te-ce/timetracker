@@ -57,7 +57,7 @@ export function MonthGridView() {
         month={month}
         timeEntryRepository={timeEntryRepo}
         workWindowRepository={workWindowRepo}
-        autoCategory={config?.autoCategory ?? 'Coremedia'}
+        autoCategory={config?.autoCategory ?? '_COREMEDIA'}
         customCategories={config?.customCategories ?? []}
         dayTypes={dayTypeOverrides}
       />

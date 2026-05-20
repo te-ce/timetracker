@@ -49,7 +49,7 @@ describe('getAutoBooking', () => {
     'books Sollstunden to "On Leave" for %s',
     (dayType) => {
       const booking = getAutoBooking(dayType, 8)
-      expect(booking).toEqual({ category: 'On Leave', hours: 8 })
+      expect(booking).toEqual({ category: '_LEAVE', hours: 8 })
     },
   )
 

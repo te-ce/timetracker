@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ConfigRepository } from '../repositories/types'
-import { CATEGORIES } from '../repositories/types'
+import { getAllCategories } from '../domain/categories'
 
 interface Props {
   repository: ConfigRepository
@@ -22,6 +22,8 @@ export function AutoCategorySettings({ repository }: Props) {
 
   if (!config) return null
 
+  const allCategories = getAllCategories(config.customCategories ?? [])
+
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor="auto-category-select" className="text-sm font-medium">
@@ -38,7 +40,7 @@ export function AutoCategorySettings({ repository }: Props) {
         className="w-64 rounded border px-3 py-2 text-sm"
       >
         <option value="">None (disabled)</option>
-        {CATEGORIES.map((c) => (
+        {allCategories.map((c) => (
           <option key={c} value={c}>
             {c}
           </option>

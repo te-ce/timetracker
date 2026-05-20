@@ -13,6 +13,7 @@ export interface DaySummary {
   workedHours: number
   entryTotal: number
   isEntriesBalanced: boolean
+  hasAutoCategory: boolean
   dayStatus: DayStatus
 }
 
@@ -21,6 +22,8 @@ export interface MonthSummaryInput {
   entries: TimeEntry[]
   dayTypeOverrides: Map<string, DayTypeOverride>
   today: string
+  globalAutoCategory: string | null
+  autoCategoryOverrides: Map<string, string>
 }
 
 export interface MonthSummaryResult {

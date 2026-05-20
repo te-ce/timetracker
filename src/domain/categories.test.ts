@@ -1,26 +1,26 @@
 import { describe, it, expect } from 'vitest'
 import { getAllCategories } from './categories'
-import { CATEGORIES } from '../repositories/types'
+import { DEFAULT_CATEGORIES } from '../repositories/types'
 
 describe('getAllCategories', () => {
-  it('returns fixed categories when no custom categories exist', () => {
+  it('returns default categories when no custom categories exist', () => {
     const result = getAllCategories([])
-    expect(result).toEqual(CATEGORIES)
+    expect(result).toEqual(DEFAULT_CATEGORIES)
   })
 
-  it('appends custom categories after fixed ones', () => {
+  it('appends custom categories after default ones', () => {
     const result = getAllCategories(['Investment A', 'Project X'])
-    expect(result).toEqual([...CATEGORIES, 'Investment A', 'Project X'])
+    expect(result).toEqual([...DEFAULT_CATEGORIES, 'Investment A', 'Project X'])
   })
 
-  it('deduplicates if custom category matches a fixed one', () => {
-    const result = getAllCategories(['QA', 'Investment A'])
-    expect(result).toEqual([...CATEGORIES, 'Investment A'])
+  it('deduplicates if custom category matches a default one', () => {
+    const result = getAllCategories(['_COREMEDIA', 'Investment A'])
+    expect(result).toEqual([...DEFAULT_CATEGORIES, 'Investment A'])
   })
 
   it('preserves order of custom categories', () => {
     const customs = ['Zebra', 'Alpha', 'Middle']
     const result = getAllCategories(customs)
-    expect(result.slice(CATEGORIES.length)).toEqual(customs)
+    expect(result.slice(DEFAULT_CATEGORIES.length)).toEqual(customs)
   })
 })
