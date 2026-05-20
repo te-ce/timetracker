@@ -62,8 +62,8 @@ describe('MonthCalendar', () => {
     expect(day19.className).toContain('ring-2')
     // Complete gets emerald
     expect(day15.className).toContain('bg-emerald-100')
-    // Untracked gets subtle amber/yellow
-    expect(day16.className).toContain('bg-amber-100')
+    // Untracked gets blue
+    expect(day16.className).toContain('bg-blue-100')
     // Future gets white
     expect(day20.className).toContain('bg-white')
   })
