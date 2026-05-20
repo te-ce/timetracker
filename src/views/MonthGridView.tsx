@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { timeEntryRepo, workWindowRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo } from '../repositories/shared'
+import { timeEntryRepo, workWindowRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
@@ -42,6 +42,11 @@ export function MonthGridView() {
   const { data: confirmedDays = new Set<string>() } = useQuery({
     queryKey: ['dayConfirmations', year, month],
     queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
+  })
+
+  const { data: workLocations = new Map() } = useQuery({
+    queryKey: ['workLocations', year, month],
+    queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
   })
 
   const sollstunden = config?.sollstunden ?? 8
@@ -94,11 +99,16 @@ export function MonthGridView() {
         timeEntryRepository={timeEntryRepo}
         workWindowRepository={workWindowRepo}
         dayConfirmationRepository={dayConfirmationRepo}
+        dayTypeOverrideRepository={dayTypeOverrideRepo}
+        workLocationRepository={workLocationRepo}
         autoCategory={config?.autoCategory ?? '_COREMEDIA'}
         customCategories={config?.customCategories ?? []}
         categoryOrder={config?.categoryOrder}
         dayTypes={dayTypeOverrides}
         confirmedDays={confirmedDays}
+        sprintStartDate={config?.sprintStartDate ?? null}
+        sprintLengthDays={config?.sprintLengthDays ?? 14}
+        workLocations={workLocations}
       />
     </div>
   )

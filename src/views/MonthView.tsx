@@ -3,7 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
 import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
-import { workWindowRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo } from '../repositories/shared'
+import { workWindowRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
@@ -55,6 +55,11 @@ export function MonthView() {
     queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
   })
 
+  const { data: workLocations = new Map() } = useQuery({
+    queryKey: ['workLocations', year, month],
+    queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
+  })
+
   const sollstunden = config?.sollstunden ?? 8
   const todayIso = toLocalIso(today)
 
@@ -82,10 +87,15 @@ export function MonthView() {
     targetMonth: monthKey,
   }).value
 
+  // Office percentage
+  const trackedWorkDays = days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
+  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
+  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
-        <div className="flex-1" />
+        <span className="text-xs text-gray-500">🏢 Office: {officePercent}% ({officeDays}/{trackedWorkDays.length} days)</span>
         <AutoCategoryPicker />
       </div>
       <MonthStatsPanel

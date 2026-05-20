@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryTimeEntryRepository, InMemoryWorkWindowRepository, InMemoryDayConfirmationRepository } from '../repositories/in-memory'
+import { InMemoryTimeEntryRepository, InMemoryWorkWindowRepository, InMemoryDayConfirmationRepository, InMemoryDayTypeOverrideRepository, InMemoryWorkLocationRepository } from '../repositories/in-memory'
 import { MonthGrid } from './MonthGrid'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
 import type { TimeEntry, WorkWindow } from '../repositories/types'
@@ -10,6 +10,8 @@ function setup(opts: { entries?: TimeEntry[]; windows?: WorkWindow[] } = {}) {
   const entryRepo = new InMemoryTimeEntryRepository(opts.entries ?? [])
   const windowRepo = new InMemoryWorkWindowRepository(opts.windows ?? [])
   const confirmRepo = new InMemoryDayConfirmationRepository()
+  const dayTypeRepo = new InMemoryDayTypeOverrideRepository()
+  const locationRepo = new InMemoryWorkLocationRepository()
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   render(
@@ -20,6 +22,8 @@ function setup(opts: { entries?: TimeEntry[]; windows?: WorkWindow[] } = {}) {
         timeEntryRepository={entryRepo}
         workWindowRepository={windowRepo}
         dayConfirmationRepository={confirmRepo}
+        dayTypeOverrideRepository={dayTypeRepo}
+        workLocationRepository={locationRepo}
         autoCategory="_COREMEDIA"
       />
     </QueryClientProvider>,

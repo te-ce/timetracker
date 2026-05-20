@@ -62,7 +62,7 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
 
   return (
     <td className="relative px-1 py-0.5" data-testid="worked-hours">
-      <div ref={ref} className="absolute z-10 top-0 left-0 w-56 rounded-lg border bg-white p-3 shadow-lg">
+      <div ref={ref} className="absolute z-50 top-0 left-0 w-56 rounded-lg border bg-white p-3 shadow-lg">
         <ul className="flex flex-col gap-1 mb-2">
           {windows.map((w) => (
             <li key={w.id} className="flex items-center justify-between text-xs">
