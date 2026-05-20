@@ -20,10 +20,11 @@ function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefine
 
 function formatElapsed(startedAt: string): string {
   const ms = Date.now() - new Date(startedAt).getTime()
-  const totalMinutes = Math.floor(ms / 60000)
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-  return `${h}:${String(m).padStart(2, '0')}`
+  const totalSeconds = Math.floor(ms / 1000)
+  const h = Math.floor(totalSeconds / 3600)
+  const m = Math.floor((totalSeconds % 3600) / 60)
+  const s = totalSeconds % 60
+  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
 export function TimeEntryPanel({ date, repository, timeTrackingRepository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0 }: Props) {
@@ -43,10 +44,10 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, custo
     queryFn: () => timeTrackingRepository.getActive(),
   })
 
-  // Tick every 30s to update elapsed display
+  // Tick every second to update elapsed display
   useEffect(() => {
     if (!activeTracking) return
-    const interval = setInterval(() => setTick((t) => t + 1), 30000)
+    const interval = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(interval)
   }, [activeTracking])
 
