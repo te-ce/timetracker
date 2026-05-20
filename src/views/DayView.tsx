@@ -254,6 +254,7 @@ export function DayView() {
         date={selectedDate}
         repository={timeEntryRepo}
         timeTrackingRepository={timeTrackingRepo}
+        workWindowRepository={workWindowRepo}
         customCategories={config?.customCategories ?? []}
         categoryOrder={config?.categoryOrder}
         autoCategory={autoCategory}

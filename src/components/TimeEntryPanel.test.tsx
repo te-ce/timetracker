@@ -1,22 +1,23 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryTimeEntryRepository, InMemoryTimeTrackingRepository } from '../repositories/in-memory'
+import { InMemoryTimeEntryRepository, InMemoryTimeTrackingRepository, InMemoryWorkWindowRepository } from '../repositories/in-memory'
 import { TimeEntryPanel } from './TimeEntryPanel'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
 
 const DATE = '2024-01-15'
 
-function setup(initialEntries = []) {
+function setup(initialEntries = [], initialWindows = []) {
   const repo = new InMemoryTimeEntryRepository(initialEntries)
   const trackingRepo = new InMemoryTimeTrackingRepository()
+  const workWindowRepo = new InMemoryWorkWindowRepository(initialWindows)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <TimeEntryPanel date={DATE} repository={repo} timeTrackingRepository={trackingRepo} />
+      <TimeEntryPanel date={DATE} repository={repo} timeTrackingRepository={trackingRepo} workWindowRepository={workWindowRepo} />
     </QueryClientProvider>,
   )
-  return { repo, trackingRepo }
+  return { repo, trackingRepo, workWindowRepo }
 }
 
 describe('TimeEntryPanel', () => {
@@ -106,6 +107,74 @@ describe('TimeEntryPanel', () => {
     await waitFor(async () => {
       const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
       expect(entries.find((e) => e.category === '_SUPPORT')).toBeUndefined()
+    })
+  })
+
+  it('starting category tracking opens a WorkWindow when none exists', async () => {
+    const { trackingRepo, workWindowRepo } = setup()
+    await screen.findByLabelText('Start tracking _SUPPORT')
+    await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
+    await waitFor(async () => {
+      const windows = await workWindowRepo.findByDate(new Date(DATE))
+      expect(windows).toHaveLength(1)
+      expect(windows[0].end).toBeNull()
+    })
+  })
+
+  it('starting category tracking does not open a second WorkWindow when one is already open', async () => {
+    const openWindow = { id: 'existing', date: DATE, start: '09:00', end: null }
+    const { workWindowRepo } = setup([], [openWindow])
+    await screen.findByLabelText('Start tracking _SUPPORT')
+    await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
+    await waitFor(async () => {
+      const windows = await workWindowRepo.findByDate(new Date(DATE))
+      expect(windows.filter((w) => w.end === null)).toHaveLength(1)
+    })
+  })
+
+  it('switching categories keeps the existing open WorkWindow open and does not create a new one', async () => {
+    const { workWindowRepo } = setup()
+    await screen.findByLabelText('Start tracking _SUPPORT')
+    await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
+    await waitFor(async () => {
+      const windows = await workWindowRepo.findByDate(new Date(DATE))
+      expect(windows).toHaveLength(1)
+      expect(windows[0].end).toBeNull()
+    })
+    // Switch to a different category
+    await userEvent.click(screen.getByLabelText('Start tracking _INFRA'))
+    await waitFor(async () => {
+      const windows = await workWindowRepo.findByDate(new Date(DATE))
+      expect(windows).toHaveLength(1)
+      expect(windows[0].end).toBeNull()
+    })
+  })
+
+  it('stopping category tracking closes the latest open WorkWindow', async () => {
+    const { workWindowRepo } = setup()
+    await screen.findByLabelText('Start tracking _SUPPORT')
+    await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
+    await waitFor(async () => {
+      const windows = await workWindowRepo.findByDate(new Date(DATE))
+      expect(windows[0].end).toBeNull()
+    })
+    await userEvent.click(screen.getByLabelText('Stop tracking _SUPPORT'))
+    await waitFor(async () => {
+      const windows = await workWindowRepo.findByDate(new Date(DATE))
+      expect(windows[0].end).not.toBeNull()
+      expect(windows[0].end).toMatch(/^\d{2}:\d{2}$/)
+    })
+  })
+
+  it('stopping tracking is a no-op on WorkWindows when none are open', async () => {
+    const { workWindowRepo } = setup()
+    await screen.findByLabelText('Start tracking _SUPPORT')
+    await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
+    await userEvent.click(screen.getByLabelText('Stop tracking _SUPPORT'))
+    // windows now closed; stop again does nothing
+    await waitFor(async () => {
+      const windows = await workWindowRepo.findByDate(new Date(DATE))
+      expect(windows).toHaveLength(1) // still just the one, not a new one
     })
   })
 })

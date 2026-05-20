@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { WorkWindow, WorkWindowRepository } from '../repositories/types'
 import { calculateWorkedHours, calculateRestarbeitszeit } from '../domain/worktime'
@@ -16,20 +16,34 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editStart, setEditStart] = useState('')
   const [editEnd, setEditEnd] = useState('')
+  const [nowTime, setNowTime] = useState<string | undefined>(undefined)
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', date],
     queryFn: () => repository.findByDate(new Date(date)),
   })
 
+  const hasOpenWindow = windows.some((w) => w.end === null)
+
+  useEffect(() => {
+    if (!hasOpenWindow) { setNowTime(undefined); return }
+    const tick = () => {
+      const d = new Date()
+      setNowTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
+    }
+    tick()
+    const id = setInterval(tick, 60_000)
+    return () => clearInterval(id)
+  }, [hasOpenWindow])
+
   const { save: addMutation, remove: removeMutation } = useWorkWindowMutations(repository)
 
-  const workedHours = calculateWorkedHours(windows)
+  const workedHours = calculateWorkedHours(windows, nowTime)
   const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)
 
   function handleAdd() {
-    if (!start || !end) return
-    addMutation.mutate({ id: crypto.randomUUID(), date, start, end })
+    if (!start) return
+    addMutation.mutate({ id: crypto.randomUUID(), date, start, end: end || null })
     setStart('')
     setEnd('')
   }
@@ -41,19 +55,24 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
   function handleEditStart(w: WorkWindow) {
     setEditingId(w.id)
     setEditStart(w.start)
-    setEditEnd(w.end)
+    setEditEnd(w.end ?? '')
   }
 
   function handleEditSave() {
-    if (!editingId || !editStart || !editEnd) return
+    if (!editingId || !editStart) return
     const existing = windows.find((w) => w.id === editingId)
     if (!existing) return
-    addMutation.mutate({ ...existing, start: editStart, end: editEnd })
+    addMutation.mutate({ ...existing, start: editStart, end: editEnd || null })
     setEditingId(null)
   }
 
   function handleEditCancel() {
     setEditingId(null)
+  }
+
+  function nowHHMM() {
+    const d = new Date()
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
   return (
@@ -62,28 +81,46 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
       <div className="flex items-end gap-3 rounded-xl border bg-white p-4 shadow-sm">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Start
-          <input
-            type="time"
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
-            className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
+          <div className="flex gap-1">
+            <input
+              type="time"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+              className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            <button
+              type="button"
+              onClick={() => setStart(nowHHMM())}
+              className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+            >
+              Now
+            </button>
+          </div>
         </label>
         <label className="flex flex-col gap-1 text-sm font-medium">
           End
-          <input
-            type="time"
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
-            className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          />
+          <div className="flex gap-1">
+            <input
+              type="time"
+              value={end}
+              onChange={(e) => setEnd(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+              className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            />
+            <button
+              type="button"
+              onClick={() => setEnd(nowHHMM())}
+              className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+            >
+              Now
+            </button>
+          </div>
         </label>
         <button
           onClick={handleAdd}
           className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40"
-          disabled={!start || !end}
+          disabled={!start}
         >
           Add
         </button>
@@ -115,6 +152,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
                         }}
                         className="rounded border px-2 py-1 text-sm"
                       />
+                      <button type="button" onClick={() => setEditStart(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
                       <span>–</span>
                       <input
                         type="time"
@@ -126,6 +164,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
                         }}
                         className="rounded border px-2 py-1 text-sm"
                       />
+                      <button type="button" onClick={() => setEditEnd(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -148,7 +187,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
                       className="cursor-pointer font-mono font-medium hover:text-indigo-600"
                       onClick={() => handleEditStart(w)}
                     >
-                      {w.start} – {w.end}
+                      {w.start} – {w.end ?? '…'}
                     </span>
                     <button
                       onClick={() => handleRemove(w.id)}

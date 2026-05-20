@@ -119,4 +119,52 @@ describe('WorkWindowPanel', () => {
     expect(screen.getByText('09:00 – 17:00')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('07:00')).not.toBeInTheDocument()
   })
+
+  it('Add button is enabled when only start is set (no end required)', async () => {
+    setup()
+    await screen.findByText(/no work windows/i)
+    await userEvent.type(screen.getByLabelText(/start/i), '09:00')
+    expect(screen.getByRole('button', { name: /add/i })).not.toBeDisabled()
+  })
+
+  it('saves an open WorkWindow when Add is clicked with only a start time', async () => {
+    const { repo } = setup()
+    await screen.findByText(/no work windows/i)
+    await userEvent.type(screen.getByLabelText(/start/i), '09:00')
+    await userEvent.click(screen.getByRole('button', { name: /add/i }))
+    const windows = await repo.findByDate(new Date(DATE))
+    expect(windows[0].start).toBe('09:00')
+    expect(windows[0].end).toBeNull()
+  })
+
+  it('displays an open WorkWindow as "HH:MM – …"', async () => {
+    setup([{ id: 'w1', date: DATE, start: '09:00', end: null }])
+    expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
+  })
+
+  it('"Now" buttons fill start and end fields with current HH:MM', async () => {
+    setup()
+    await screen.findByText(/no work windows/i)
+    const nowButtons = screen.getAllByRole('button', { name: /now/i })
+    await userEvent.click(nowButtons[0]) // start Now
+    const startInput = screen.getByLabelText(/start/i) as HTMLInputElement
+    expect(startInput.value).toMatch(/^\d{2}:\d{2}$/)
+    await userEvent.click(nowButtons[1]) // end Now
+    const endInput = screen.getByLabelText(/end/i) as HTMLInputElement
+    expect(endInput.value).toMatch(/^\d{2}:\d{2}$/)
+  })
+
+  it('edit form saves with no end, storing end: null', async () => {
+    const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    await screen.findByText('09:00 – 17:00')
+    await userEvent.click(screen.getByText('09:00 – 17:00'))
+
+    const endInput = screen.getByDisplayValue('17:00')
+    await userEvent.clear(endInput)
+    await userEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    const saved = await repo.findByDate(new Date(DATE))
+    expect(saved[0].end).toBeNull()
+    expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
+  })
 })
