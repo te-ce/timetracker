@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react'
 import { toLocalIso } from '../domain/dateUtils'
 import type { DayStatus } from '../domain/dayStatus'
 
@@ -14,15 +13,10 @@ const STATUS_COLORS: Record<DayStatus, string> = {
   'non-working': 'bg-gray-100 text-gray-400',
   'leave': 'bg-purple-100 text-purple-700',
   'future': 'bg-white text-gray-600 hover:bg-gray-50',
-  'today': 'bg-blue-100 text-blue-800 hover:bg-blue-200 ring-2 ring-blue-400',
+  'today': 'bg-white text-gray-900 hover:bg-gray-50 ring-2 ring-blue-400',
   'tracked': 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
-  'incomplete': 'bg-amber-100 text-amber-800 hover:bg-amber-200 ring-2 ring-amber-300',
-  'untracked': 'bg-red-100 text-red-700 hover:bg-red-200 ring-2 ring-red-300',
-}
-
-const TODAY_HATCHED: CSSProperties = {
-  backgroundImage:
-    'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(59,130,246,0.2) 4px, rgba(59,130,246,0.2) 8px)',
+  'incomplete': 'bg-blue-100 text-blue-800 hover:bg-blue-200 ring-2 ring-blue-300',
+  'untracked': 'bg-amber-100 text-amber-700',
 }
 
 const MONTH_NAMES = [
@@ -103,14 +97,17 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
         {days.map((date) => {
           const iso = toLocalIso(date)
           const status = dayStatusMap[iso] ?? 'future'
+          const isToday = status === 'today'
           return (
             <button
               key={date.getDate()}
               onClick={() => onSelectDate(iso)}
-              className={`rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
-              style={status === 'today' ? TODAY_HATCHED : undefined}
+              className={`relative rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
             >
               {date.getDate()}
+              {isToday && (
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-blue-500" />
+              )}
             </button>
           )
         })}

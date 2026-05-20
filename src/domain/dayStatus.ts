@@ -14,11 +14,12 @@ interface DayStatusInput {
   hasWorkedHours: boolean
   isEntriesBalanced: boolean
   hasAutoCategory: boolean
+  isConfirmed?: boolean
   isoDate: string
   today: string
 }
 
-export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAutoCategory, isoDate, today }: DayStatusInput): DayStatus {
+export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAutoCategory, isConfirmed = false, isoDate, today }: DayStatusInput): DayStatus {
   // Leave days (Vacation, SickDay, Absence)
   if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') return 'leave'
 
@@ -34,6 +35,7 @@ export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAu
   // Past work days
   if (!hasWorkedHours) return 'untracked'
 
+  if (isConfirmed) return 'tracked'
   const effectivelyBalanced = isEntriesBalanced || hasAutoCategory
   if (effectivelyBalanced) return 'tracked'
   return 'incomplete'

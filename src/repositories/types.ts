@@ -47,6 +47,7 @@ export interface AppConfig {
   sprintLengthDays: number
   sprintStartDate: string | null
   customCategories: string[]
+  categoryOrder?: string[]
 }
 
 export interface TimeEntryRepository {
@@ -101,4 +102,11 @@ export interface AutoCategoryOverrideRepository {
   findByDate(date: string): Promise<string | null>
   findByDateRange(from: string, to: string): Promise<Map<string, string>>
   delete(date: string): Promise<void>
+}
+
+export interface DayConfirmationRepository {
+  confirm(date: string): Promise<void>
+  unconfirm(date: string): Promise<void>
+  isConfirmed(date: string): Promise<boolean>
+  findConfirmedInRange(from: string, to: string): Promise<Set<string>>
 }

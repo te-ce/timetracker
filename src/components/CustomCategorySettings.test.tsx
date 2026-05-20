@@ -30,6 +30,8 @@ describe('CustomCategorySettings', () => {
     setup({ ...baseConfig, customCategories: ['Investment A', 'Project X'] })
     expect(await screen.findByText('Investment A')).toBeInTheDocument()
     expect(screen.getByText('Project X')).toBeInTheDocument()
+    // Also shows default categories
+    expect(screen.getByText('_COREMEDIA')).toBeInTheDocument()
   })
 
   it('adds a new custom category on submit', async () => {

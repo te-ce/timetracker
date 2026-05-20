@@ -8,6 +8,7 @@ interface Props {
   date: string
   repository: TimeEntryRepository
   customCategories?: string[]
+  categoryOrder?: string[]
   autoCategory?: string | null
   autoCategoryHours?: number
 }
@@ -16,7 +17,7 @@ function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefine
   return entries.find((e) => e.category === category)
 }
 
-export function TimeEntryPanel({ date, repository, customCategories = [], autoCategory = null, autoCategoryHours = 0 }: Props) {
+export function TimeEntryPanel({ date, repository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0 }: Props) {
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
 
   const { data: entries = [] } = useQuery({
@@ -71,7 +72,7 @@ export function TimeEntryPanel({ date, repository, customCategories = [], autoCa
   return (
     <section aria-label="Time entries" className="flex flex-col gap-4">
       <ul className="flex flex-col gap-2">
-        {getAllCategories(customCategories).map((category) => {
+        {getAllCategories(customCategories, categoryOrder).map((category) => {
           const existing = findEntry(entries, category)
           const isAutoTarget = autoCategory === category
           const autoHrs = isAutoTarget ? autoCategoryHours : 0

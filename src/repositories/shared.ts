@@ -6,6 +6,7 @@ import { CloudSprintExportRepository } from './cloud/sprint-export-repository'
 import { CloudWorkLocationRepository } from './cloud/work-location-repository'
 import { CloudDayTypeOverrideRepository } from './cloud/day-type-override-repository'
 import { CloudAutoCategoryOverrideRepository } from './cloud/auto-category-override-repository'
+import { CloudDayConfirmationRepository } from './cloud/day-confirmation-repository'
 
 /**
  * Single shared storage adapter used by all repositories.
@@ -21,3 +22,4 @@ export const sprintExportRepo = new CloudSprintExportRepository(storage)
 export const workLocationRepo = new CloudWorkLocationRepository(storage)
 export const dayTypeOverrideRepo = new CloudDayTypeOverrideRepository(storage)
 export const autoCategoryOverrideRepo = new CloudAutoCategoryOverrideRepository(storage)
+export const dayConfirmationRepo = new CloudDayConfirmationRepository(storage)

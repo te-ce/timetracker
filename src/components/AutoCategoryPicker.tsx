@@ -1,22 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { ConfigRepository } from '../repositories/types'
+import { configRepo } from '../repositories/shared'
 import { getAllCategories } from '../domain/categories'
 
-interface Props {
-  repository: ConfigRepository
-}
-
-export function AutoCategorySettings({ repository }: Props) {
+export function AutoCategoryPicker() {
   const queryClient = useQueryClient()
 
   const { data: config } = useQuery({
     queryKey: ['config'],
-    queryFn: () => repository.get(),
+    queryFn: () => configRepo.get(),
   })
 
   const mutation = useMutation({
     mutationFn: (category: string | null) =>
-      repository.save({ ...config!, autoCategory: category }),
+      configRepo.save({ ...config!, autoCategory: category }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
 
@@ -25,30 +21,25 @@ export function AutoCategorySettings({ repository }: Props) {
   const allCategories = getAllCategories(config.customCategories ?? [], config.categoryOrder)
 
   return (
-    <div className="flex flex-col gap-2">
-      <label htmlFor="auto-category-select" className="text-sm font-medium">
-        Auto Category
+    <div className="flex items-center gap-2 text-sm">
+      <label htmlFor="auto-cat-inline" className="text-gray-500 text-xs font-medium">
+        Auto:
       </label>
       <select
-        id="auto-category-select"
+        id="auto-cat-inline"
         aria-label="Auto category"
         value={config.autoCategory ?? ''}
         onChange={(e) => {
           const val = e.target.value
           mutation.mutate(val === '' ? null : val)
         }}
-        className="w-64 rounded border px-3 py-2 text-sm"
+        className="rounded border px-2 py-1 text-xs"
       >
-        <option value="">None (disabled)</option>
+        <option value="">None</option>
         {allCategories.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
+          <option key={c} value={c}>{c}</option>
         ))}
       </select>
-      <p className="text-xs text-gray-500">
-        Remaining hours after manual entries auto-fill this category.
-      </p>
     </div>
   )
 }

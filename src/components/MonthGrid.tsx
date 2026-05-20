@@ -15,10 +15,11 @@ interface Props {
   workWindowRepository: WorkWindowRepository
   autoCategory: string
   customCategories?: string[]
+  categoryOrder?: string[]
   dayTypes?: Map<string, DayType>
 }
 
-export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory, customCategories = [], dayTypes = new Map() }: Props) {
+export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map() }: Props) {
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
 
   const from = new Date(year, month - 1, 1)
@@ -79,54 +80,62 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
   function getCellValue(row: MonthGridRow, category: string): string {
     const key = draftKey(row.date, category)
     if (drafts[key] !== undefined) return drafts[key]
-    // Include auto category hours in the category's displayed value
     const manual = row.entries[category] ?? 0
     const autoHours = category === autoCategory ? row.autoCategoryHours : 0
     const val = manual + autoHours
     return val ? String(parseFloat(val.toFixed(2))) : ''
   }
 
-  const allCategories = getAllCategories(customCategories)
+  const allCategories = getAllCategories(customCategories, categoryOrder)
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm" role="table">
-        <thead>
+    <div className="overflow-x-auto max-h-[75vh] overflow-y-auto relative">
+      <table className="w-full text-sm border-collapse" role="table">
+        <thead className="sticky top-0 z-20 bg-white shadow-sm">
           <tr>
-            <th className="px-2 py-1 text-left">Day</th>
-            <th className="px-2 py-1 text-right" role="columnheader">Worked</th>
-            <th className="w-px border-l border-gray-300"></th>
+            <th className="sticky left-0 z-30 bg-white px-2 py-1.5 text-left w-12 border-b">Day</th>
+            <th className="sticky left-12 z-30 bg-white px-2 py-1.5 text-right w-16 border-b" role="columnheader">Worked</th>
+            <th className="w-px border-l border-b border-gray-300"></th>
             {allCategories.map((cat) => (
-              <th key={cat} className="px-2 py-1 text-right" role="columnheader">{cat}</th>
+              <th
+                key={cat}
+                className="px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b"
+                role="columnheader"
+                title={cat}
+              >
+                <span className="block truncate text-xs">{cat}</span>
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
+          {rows.map((row, idx) => {
             const isNonWorkDay = row.dayType !== 'WorkDay'
+            const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/70'
             return (
               <tr
                 key={row.date}
                 role="row"
                 aria-label={row.date}
-                className={isNonWorkDay ? 'opacity-50' : ''}
+                className={`${rowBg} ${isNonWorkDay ? 'opacity-50' : ''}`}
               >
-                <td className="px-2 py-1 font-mono">{row.date.slice(8)}</td>
+                <td className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs ${rowBg}`}>{row.date.slice(8)}</td>
                 <WorkedHoursCell
                   date={row.date}
                   workedHours={parseFloat(row.workedHours.toFixed(2))}
                   repository={workWindowRepository}
+                  className={`sticky left-12 z-10 ${rowBg}`}
                 />
-                <td className="w-px border-l border-gray-300"></td>
+                <td className="w-px border-l border-gray-200"></td>
                 {allCategories.map((cat) => {
                   const isAutoTarget = cat === autoCategory
                   const hasAutoHours = isAutoTarget && row.autoCategoryHours > 0
                   return (
-                    <td key={cat} className="px-1 py-0.5">
+                    <td key={cat} className="px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem]">
                       {isAutoTarget && !row.entries[cat] && hasAutoHours ? (
                         <span
-                          className="inline-block w-14 rounded px-1 py-0.5 text-right text-xs text-gray-400"
+                          className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-400"
                           data-testid="auto-category"
                         >
                           {parseFloat(row.autoCategoryHours.toFixed(2))}
@@ -143,7 +152,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                           }
                           onBlur={() => handleBlur(row, cat)}
                           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                          className={`w-14 rounded border px-1 py-0.5 text-right text-xs ${hasAutoHours ? 'bg-indigo-50' : ''}`}
+                          className={`w-full rounded border px-1 py-0.5 text-right text-xs ${hasAutoHours ? 'bg-indigo-50' : ''}`}
                         />
                       )}
                     </td>
@@ -153,10 +162,10 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
             )
           })}
         </tbody>
-        <tfoot>
+        <tfoot className="sticky bottom-0 z-20 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
           <tr className="border-t font-semibold">
-            <td className="px-2 py-1">Total</td>
-            <td className="px-2 py-1 text-right" data-testid="total-worked">{totalWorked.toFixed(2)}</td>
+            <td className="sticky left-0 z-30 bg-white px-2 py-1">Total</td>
+            <td className="sticky left-12 z-30 bg-white px-2 py-1 text-right" data-testid="total-worked">{totalWorked.toFixed(2)}</td>
             <td className="w-px border-l border-gray-300"></td>
             {allCategories.map((cat) => {
               const catTotal = rows.reduce((sum, row) => {
@@ -165,7 +174,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                 return sum + manual + autoHours
               }, 0)
               return (
-                <td key={cat} className="px-2 py-1 text-right">
+                <td key={cat} className="px-1 py-1 text-right text-xs w-16 min-w-[4rem] max-w-[4rem]">
                   {catTotal > 0 ? catTotal.toFixed(2) : ''}
                 </td>
               )

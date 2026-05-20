@@ -44,4 +44,8 @@ describe('getDayStatus', () => {
   it('returns "tracked" when auto category absorbs remaining', () => {
     expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, hasAutoCategory: true, isoDate: '2026-05-15', today })).toBe('tracked')
   })
+
+  it('returns "tracked" when day is confirmed even if unbalanced', () => {
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, hasAutoCategory: false, isConfirmed: true, isoDate: '2026-05-15', today })).toBe('tracked')
+  })
 })

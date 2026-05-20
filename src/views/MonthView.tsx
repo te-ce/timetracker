@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
-import { workWindowRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo } from '../repositories/shared'
+import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
+import { workWindowRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo } from '../repositories/shared'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
@@ -49,6 +50,11 @@ export function MonthView() {
     queryFn: () => timeEntryRepo.findByDateRange(from, to),
   })
 
+  const { data: confirmedDays = new Set<string>() } = useQuery({
+    queryKey: ['dayConfirmations', year, month],
+    queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
+  })
+
   const sollstunden = config?.sollstunden ?? 8
   const todayIso = toLocalIso(today)
 
@@ -57,6 +63,7 @@ export function MonthView() {
     entries,
     dayTypeOverrides,
     today: todayIso,
+    confirmedDays,
   })
 
   const dates = days.map((d) => d.date)
@@ -77,6 +84,10 @@ export function MonthView() {
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex items-center justify-between">
+        <div className="flex-1" />
+        <AutoCategoryPicker />
+      </div>
       <MonthStatsPanel
         workedHoursPerDay={workedHoursPerDay}
         dates={dates}
@@ -94,9 +105,9 @@ export function MonthView() {
       />
       <div className="flex flex-wrap gap-3 text-xs">
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-emerald-100 border border-emerald-300" /> Tracked</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-amber-100 border border-amber-300" /> Incomplete</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-red-100 border border-red-300" /> Untracked</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-100 border border-blue-300" style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(59,130,246,0.2) 4px, rgba(59,130,246,0.2) 8px)' }} /> Today</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-100 border border-blue-300" /> Incomplete</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-amber-100 border border-amber-300" /> Untracked</span>
+        <span className="flex items-center gap-1"><span className="relative inline-block h-3 w-3 rounded bg-white border border-gray-300"><span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-blue-500" /></span> Today</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-purple-100 border border-purple-300" /> Leave</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-gray-100 border border-gray-300" /> Non-working</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-white border border-gray-300" /> Future</span>

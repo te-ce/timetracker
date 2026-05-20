@@ -57,28 +57,28 @@ describe('MonthCalendar', () => {
     // Saturday + Sunday get non-working style (gray)
     expect(day17.className).toContain('bg-gray-100')
     expect(day18.className).toContain('bg-gray-100')
-    // Tuesday (today) gets blue
-    expect(day19.className).toContain('bg-blue-100')
+    // Tuesday (today) gets white bg with blue ring
+    expect(day19.className).toContain('bg-white')
+    expect(day19.className).toContain('ring-2')
     // Tracked gets emerald
     expect(day15.className).toContain('bg-emerald-100')
-    // Untracked gets red
-    expect(day16.className).toContain('bg-red-100')
+    // Untracked gets subtle amber/yellow
+    expect(day16.className).toContain('bg-amber-100')
     // Future gets white
     expect(day20.className).toContain('bg-white')
   })
 
-  it('applies hatched style for today', () => {
+  it('applies today indicator dot', () => {
     const dayStatusMap: Record<string, DayStatus> = {
       '2026-05-19': 'today',
     }
     render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
 
     const day19 = screen.getByText('19')
-    // Gets today's blue base + ring
-    expect(day19.className).toContain('bg-blue-100')
+    // Gets today's white bg + blue ring
+    expect(day19.className).toContain('bg-white')
     expect(day19.className).toContain('ring-2')
-    // Gets hatched inline style
-    expect(day19).toHaveStyle({ backgroundImage: expect.stringContaining('repeating-linear-gradient') })
+    expect(day19.className).toContain('ring-blue-400')
   })
 
   it('uses local date for onSelectDate regardless of timezone', async () => {

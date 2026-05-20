@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { timeEntryRepo, workWindowRepo, configRepo, dayTypeOverrideRepo } from '../repositories/shared'
+import { timeEntryRepo, workWindowRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
+import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
@@ -38,6 +39,11 @@ export function MonthGridView() {
     queryFn: () => timeEntryRepo.findByDateRange(from, to),
   })
 
+  const { data: confirmedDays = new Set<string>() } = useQuery({
+    queryKey: ['dayConfirmations', year, month],
+    queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
+  })
+
   const sollstunden = config?.sollstunden ?? 8
 
   const { days, workedHoursPerDay } = buildMonthSummaries(year, month, {
@@ -45,6 +51,7 @@ export function MonthGridView() {
     entries,
     dayTypeOverrides,
     today: todayIso,
+    confirmedDays,
   })
   const dates = days.map((d) => d.date)
   const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
@@ -76,6 +83,9 @@ export function MonthGridView() {
         >
           Today
         </button>
+        <div className="ml-auto">
+          <AutoCategoryPicker />
+        </div>
       </div>
       <OvertimeBar overtimeToDate={toDate.value} hoursNeededToday={toDate.hoursNeededToday} />
       <MonthGrid
@@ -85,6 +95,7 @@ export function MonthGridView() {
         workWindowRepository={workWindowRepo}
         autoCategory={config?.autoCategory ?? '_COREMEDIA'}
         customCategories={config?.customCategories ?? []}
+        categoryOrder={config?.categoryOrder}
         dayTypes={dayTypeOverrides}
       />
     </div>

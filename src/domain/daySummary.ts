@@ -24,6 +24,7 @@ export interface MonthSummaryInput {
   today: string
   globalAutoCategory?: string | null
   autoCategoryOverrides?: Map<string, string>
+  confirmedDays?: Set<string>
 }
 
 export interface MonthSummaryResult {
@@ -34,7 +35,7 @@ export interface MonthSummaryResult {
 }
 
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
-  const { windows, entries, dayTypeOverrides, today, globalAutoCategory = null, autoCategoryOverrides = new Map() } = input
+  const { windows, entries, dayTypeOverrides, today, globalAutoCategory = null, autoCategoryOverrides = new Map(), confirmedDays = new Set() } = input
   const daysInMonth = new Date(year, month, 0).getDate()
 
   // Group by date for efficient lookup
@@ -77,6 +78,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
       hasWorkedHours: workedHours > 0,
       isEntriesBalanced: workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01,
       hasAutoCategory,
+      isConfirmed: confirmedDays.has(iso),
       isoDate: iso,
       today,
     })

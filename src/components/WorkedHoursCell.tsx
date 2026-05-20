@@ -7,6 +7,7 @@ interface Props {
   date: string
   workedHours: number
   repository: WorkWindowRepository
+  className?: string
 }
 
 function windowDuration(start: string, end: string): number {
@@ -15,7 +16,7 @@ function windowDuration(start: string, end: string): number {
   return (eh * 60 + em - sh * 60 - sm) / 60
 }
 
-export function WorkedHoursCell({ date, workedHours, repository }: Props) {
+export function WorkedHoursCell({ date, workedHours, repository, className = '' }: Props) {
   const [open, setOpen] = useState(false)
   const [draftStart, setDraftStart] = useState('')
   const [draftEnd, setDraftEnd] = useState('')
@@ -50,7 +51,7 @@ export function WorkedHoursCell({ date, workedHours, repository }: Props) {
   if (!open) {
     return (
       <td
-        className="px-2 py-1 text-right cursor-pointer hover:bg-indigo-50"
+        className={`px-2 py-1 text-right cursor-pointer hover:bg-indigo-50 ${className}`}
         data-testid="worked-hours"
         onClick={() => setOpen(true)}
       >

@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo } from '../repositories/shared'
+import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo, dayConfirmationRepo } from '../repositories/shared'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
+import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateRestarbeitszeit } from '../domain/worktime'
@@ -58,6 +59,32 @@ export function DayView() {
     queryFn: () => autoCategoryOverrideRepo.findByDate(selectedDate),
   })
 
+  const { data: isConfirmed = false } = useQuery({
+    queryKey: ['dayConfirmation', selectedDate],
+    queryFn: () => dayConfirmationRepo.isConfirmed(selectedDate),
+  })
+
+  const { data: monthConfirmedDays = new Set<string>() } = useQuery({
+    queryKey: ['dayConfirmations', parseInt(selectedDate.slice(0, 4)), parseInt(selectedDate.slice(5, 7))],
+    queryFn: () => {
+      const y = parseInt(selectedDate.slice(0, 4))
+      const m = parseInt(selectedDate.slice(5, 7))
+      const mFrom = toLocalIso(new Date(y, m - 1, 1))
+      const mTo = toLocalIso(new Date(y, m, 0))
+      return dayConfirmationRepo.findConfirmedInRange(mFrom, mTo)
+    },
+  })
+
+  const queryClient = useQueryClient()
+  const confirmMutation = useMutation({
+    mutationFn: (confirmed: boolean) =>
+      confirmed ? dayConfirmationRepo.confirm(selectedDate) : dayConfirmationRepo.unconfirm(selectedDate),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmation', selectedDate] })
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
+    },
+  })
+
   const sollstunden = config?.sollstunden ?? 8
   const workedHours = calculateWorkedHours(windows)
   const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
@@ -92,6 +119,7 @@ export function DayView() {
     entries: monthEntries,
     dayTypeOverrides: monthDayTypeOverrides,
     today: todayIso,
+    confirmedDays: monthConfirmedDays,
   })
   const monthDates = monthDays.map((d) => d.date)
   const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, monthDates, todayIso, sollstunden)
@@ -156,6 +184,17 @@ export function DayView() {
         >
           {workLocation === 'Office' ? '🏢 Office' : workLocation === 'Remote' ? '🏠 Remote' : '📍 Set location'}
         </button>
+        <AutoCategoryPicker />
+        <label className="flex items-center gap-1.5 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isConfirmed}
+            onChange={(e) => confirmMutation.mutate(e.target.checked)}
+            className="rounded border-gray-300"
+            aria-label="Confirm day"
+          />
+          <span className="text-gray-600">Confirmed</span>
+        </label>
         {workedHours > 0 && (
           <span className={`text-sm font-medium ${restarbeitszeit.isOvertime ? 'text-green-600' : 'text-amber-600'}`}>
             {restarbeitszeit.isOvertime ? 'Overtime' : 'Remaining'}: {Math.abs(restarbeitszeit.value).toFixed(2)}h
@@ -175,6 +214,7 @@ export function DayView() {
         date={selectedDate}
         repository={timeEntryRepo}
         customCategories={config?.customCategories ?? []}
+        categoryOrder={config?.categoryOrder}
         autoCategory={autoCategory}
         autoCategoryHours={Math.max(0, workedHours - manualTotal)}
       />
