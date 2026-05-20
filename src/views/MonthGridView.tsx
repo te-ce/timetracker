@@ -2,10 +2,14 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { timeEntryRepo, workWindowRepo, configRepo, dayTypeOverrideRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
+import { OvertimeBar } from '../components/OvertimeBar'
+import { calculateOvertimeToDate } from '../domain/monthStats'
+import { buildMonthSummaries } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
 
 export function MonthGridView() {
   const today = new Date()
+  const todayIso = toLocalIso(today)
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
 
@@ -23,6 +27,27 @@ export function MonthGridView() {
     queryKey: ['dayTypeOverrides', year, month],
     queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
   })
+
+  const { data: windows = [] } = useQuery({
+    queryKey: ['workWindows', year, month, 'grid'],
+    queryFn: () => workWindowRepo.findByDateRange(from, to),
+  })
+
+  const { data: entries = [] } = useQuery({
+    queryKey: ['timeEntries', year, month, 'grid'],
+    queryFn: () => timeEntryRepo.findByDateRange(from, to),
+  })
+
+  const sollstunden = config?.sollstunden ?? 8
+
+  const { days, workedHoursPerDay } = buildMonthSummaries(year, month, {
+    windows,
+    entries,
+    dayTypeOverrides,
+    today: todayIso,
+  })
+  const dates = days.map((d) => d.date)
+  const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
 
   function prevMonth() {
     if (month === 1) { setYear(year - 1); setMonth(12) }
@@ -52,6 +77,7 @@ export function MonthGridView() {
           Today
         </button>
       </div>
+      <OvertimeBar overtimeToDate={toDate.value} hoursNeededToday={toDate.hoursNeededToday} />
       <MonthGrid
         year={year}
         month={month}

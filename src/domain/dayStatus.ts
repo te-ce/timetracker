@@ -2,14 +2,12 @@ import type { DayType } from './dayType'
 
 export type DayStatus =
   | 'non-working'
+  | 'leave'
   | 'future'
   | 'today'
-  | 'today-tracked'
-  | 'today-incomplete'
-  | 'today-needs-attention'
   | 'tracked'
   | 'incomplete'
-  | 'needs-attention'
+  | 'untracked'
 
 interface DayStatusInput {
   dayType: DayType
@@ -18,28 +16,25 @@ interface DayStatusInput {
   hasAutoCategory: boolean
   isoDate: string
   today: string
-  hasAnyTrackedHours: boolean
 }
 
-export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAutoCategory, isoDate, today, hasAnyTrackedHours }: DayStatusInput): DayStatus {
-  // 1. Non-working and future are terminal
+export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAutoCategory, isoDate, today }: DayStatusInput): DayStatus {
+  // Leave days (Vacation, SickDay, Absence)
+  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') return 'leave'
+
+  // Non-working (Weekend, PublicHoliday)
   if (dayType !== 'WorkDay') return 'non-working'
+
+  // Future days
   if (isoDate > today) return hasWorkedHours ? 'tracked' : 'future'
 
-  // Hours are effectively balanced when entries cover worked hours OR auto-category absorbs the rest
+  // Today
+  if (isoDate === today) return 'today'
+
+  // Past work days
+  if (!hasWorkedHours) return 'untracked'
+
   const effectivelyBalanced = isEntriesBalanced || hasAutoCategory
-
-  // 2. Today — combine with secondary status
-  if (isoDate === today) {
-    if (hasWorkedHours && effectivelyBalanced) return 'today-tracked'
-    if (hasWorkedHours && !effectivelyBalanced) return 'today-incomplete'
-    if (hasAnyTrackedHours) return 'today-needs-attention'
-    return 'today'
-  }
-
-  // 3. Past work days
-  if (hasWorkedHours && effectivelyBalanced) return 'tracked'
-  if (hasWorkedHours && !effectivelyBalanced) return 'incomplete'
-  if (!hasAnyTrackedHours) return 'future'
-  return 'needs-attention'
+  if (effectivelyBalanced) return 'tracked'
+  return 'incomplete'
 }

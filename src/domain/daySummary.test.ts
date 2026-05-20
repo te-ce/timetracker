@@ -78,7 +78,7 @@ describe('buildMonthSummaries', () => {
     })
 
     expect(result.days[0].dayType).toBe('Vacation')
-    expect(result.days[0].dayStatus).toBe('non-working')
+    expect(result.days[0].dayStatus).toBe('leave')
   })
 
   it('counts only WorkDays in workDayCount', () => {
@@ -112,7 +112,7 @@ describe('buildMonthSummaries', () => {
     expect(withHours.hasAnyTrackedHours).toBe(true)
   })
 
-  it('marks today with compound status', () => {
+  it('marks today with today status', () => {
     const result = buildMonthSummaries(2026, 5, {
       windows: [{ id: 'w1', date: '2026-05-19', start: '09:00', end: '17:00' }],
       entries: [{ id: '1', date: '2026-05-19', category: 'QA', hours: 8 }],
@@ -120,6 +120,6 @@ describe('buildMonthSummaries', () => {
       today,
     })
 
-    expect(result.days[18].dayStatus).toBe('today-tracked')
+    expect(result.days[18].dayStatus).toBe('today')
   })
 })

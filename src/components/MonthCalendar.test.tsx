@@ -42,7 +42,7 @@ describe('MonthCalendar', () => {
       '2026-05-18': 'non-working',  // Sunday
       '2026-05-19': 'today',        // Tuesday
       '2026-05-15': 'tracked',      // Friday (work day with hours)
-      '2026-05-16': 'needs-attention', // Past Friday without hours
+      '2026-05-16': 'untracked',    // Past Friday without hours
       '2026-05-20': 'future',       // Wednesday
     }
     render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
@@ -61,15 +61,15 @@ describe('MonthCalendar', () => {
     expect(day19.className).toContain('bg-blue-100')
     // Tracked gets emerald
     expect(day15.className).toContain('bg-emerald-100')
-    // Needs attention gets red
+    // Untracked gets red
     expect(day16.className).toContain('bg-red-100')
     // Future gets white
     expect(day20.className).toContain('bg-white')
   })
 
-  it('applies hatched style for compound today statuses', () => {
+  it('applies hatched style for today', () => {
     const dayStatusMap: Record<string, DayStatus> = {
-      '2026-05-19': 'today-tracked',
+      '2026-05-19': 'today',
     }
     render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
 

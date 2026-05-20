@@ -59,6 +59,8 @@ export function MonthView() {
     today: todayIso,
   })
 
+  const dates = days.map((d) => d.date)
+
   const dayStatusMap: Record<string, DayStatus> = {}
   for (const day of days) {
     dayStatusMap[day.date] = day.dayStatus
@@ -77,9 +79,11 @@ export function MonthView() {
     <div className="flex flex-col gap-6">
       <MonthStatsPanel
         workedHoursPerDay={workedHoursPerDay}
+        dates={dates}
         workDayCount={workDayCount}
         sollstunden={sollstunden}
         overtimeCarryOver={overtimeCarryOver}
+        today={todayIso}
       />
       <MonthCalendar
         year={year}
@@ -91,8 +95,9 @@ export function MonthView() {
       <div className="flex flex-wrap gap-3 text-xs">
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-emerald-100 border border-emerald-300" /> Tracked</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-amber-100 border border-amber-300" /> Incomplete</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-red-100 border border-red-300" /> Needs attention</span>
-        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-100 border border-blue-300" /> Today</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-red-100 border border-red-300" /> Untracked</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-100 border border-blue-300" style={{ backgroundImage: 'repeating-linear-gradient(135deg, transparent, transparent 4px, rgba(59,130,246,0.2) 4px, rgba(59,130,246,0.2) 8px)' }} /> Today</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-purple-100 border border-purple-300" /> Leave</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-gray-100 border border-gray-300" /> Non-working</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-white border border-gray-300" /> Future</span>
       </div>

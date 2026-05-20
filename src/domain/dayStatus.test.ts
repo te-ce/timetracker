@@ -4,51 +4,44 @@ import { getDayStatus, type DayStatus } from './dayStatus'
 describe('getDayStatus', () => {
   const today = '2026-05-19'
 
-  it('returns "non-working" for weekends/holidays/vacation/etc', () => {
-    expect(getDayStatus({ dayType: 'Weekend', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-17', today, hasAnyTrackedHours: true })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'PublicHoliday', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-01', today, hasAnyTrackedHours: true })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'Vacation', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-12', today, hasAnyTrackedHours: true })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'SickDay', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-12', today, hasAnyTrackedHours: true })).toBe('non-working')
-    expect(getDayStatus({ dayType: 'Absence', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-12', today, hasAnyTrackedHours: true })).toBe('non-working')
+  it('returns "non-working" for weekends and public holidays', () => {
+    expect(getDayStatus({ dayType: 'Weekend', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-17', today })).toBe('non-working')
+    expect(getDayStatus({ dayType: 'PublicHoliday', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-01', today })).toBe('non-working')
+  })
+
+  it('returns "leave" for Vacation, SickDay, Absence', () => {
+    expect(getDayStatus({ dayType: 'Vacation', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-12', today })).toBe('leave')
+    expect(getDayStatus({ dayType: 'SickDay', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-12', today })).toBe('leave')
+    expect(getDayStatus({ dayType: 'Absence', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-12', today })).toBe('leave')
   })
 
   it('returns "tracked" for past work days with balanced entries', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: true, isoDate: '2026-05-15', today, hasAnyTrackedHours: true })).toBe('tracked')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: true, hasAutoCategory: false, isoDate: '2026-05-15', today })).toBe('tracked')
   })
 
   it('returns "incomplete" for past work days with hours but unbalanced entries', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, isoDate: '2026-05-15', today, hasAnyTrackedHours: true })).toBe('incomplete')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-15', today })).toBe('incomplete')
   })
 
-  it('returns "needs-attention" for past work days without hours when month has tracked hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-15', today, hasAnyTrackedHours: true })).toBe('needs-attention')
+  it('returns "untracked" for past work days without hours', () => {
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-15', today })).toBe('untracked')
   })
 
-  it('returns "future" for past work days without hours when no hours tracked at all', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-15', today, hasAnyTrackedHours: false })).toBe('future')
-  })
-
-  it('returns "today" for current day work day without hours and no tracked month', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, isoDate: today, today, hasAnyTrackedHours: false })).toBe('today')
-  })
-
-  it('returns "today-needs-attention" for today without hours when month has tracked hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, isoDate: today, today, hasAnyTrackedHours: true })).toBe('today-needs-attention')
-  })
-
-  it('returns "today-tracked" for today with hours and balanced entries', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: true, isoDate: today, today, hasAnyTrackedHours: true })).toBe('today-tracked')
-  })
-
-  it('returns "today-incomplete" for today with hours but unbalanced entries', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, isoDate: today, today, hasAnyTrackedHours: true })).toBe('today-incomplete')
+  it('returns "today" for current day', () => {
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: today, today })).toBe('today')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: true, hasAutoCategory: false, isoDate: today, today })).toBe('today')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, hasAutoCategory: false, isoDate: today, today })).toBe('today')
   })
 
   it('returns "future" for work days in the future without hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, isoDate: '2026-05-20', today, hasAnyTrackedHours: true })).toBe('future')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: false, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-20', today })).toBe('future')
   })
 
   it('returns "tracked" for future days that already have hours', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: true, isoDate: '2026-05-20', today, hasAnyTrackedHours: true })).toBe('tracked')
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: true, hasAutoCategory: false, isoDate: '2026-05-20', today })).toBe('tracked')
+  })
+
+  it('returns "tracked" when auto category absorbs remaining', () => {
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, hasAutoCategory: true, isoDate: '2026-05-15', today })).toBe('tracked')
   })
 })

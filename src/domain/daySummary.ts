@@ -22,8 +22,8 @@ export interface MonthSummaryInput {
   entries: TimeEntry[]
   dayTypeOverrides: Map<string, DayTypeOverride>
   today: string
-  globalAutoCategory: string | null
-  autoCategoryOverrides: Map<string, string>
+  globalAutoCategory?: string | null
+  autoCategoryOverrides?: Map<string, string>
 }
 
 export interface MonthSummaryResult {
@@ -34,7 +34,7 @@ export interface MonthSummaryResult {
 }
 
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
-  const { windows, entries, dayTypeOverrides, today } = input
+  const { windows, entries, dayTypeOverrides, today, globalAutoCategory = null, autoCategoryOverrides = new Map() } = input
   const daysInMonth = new Date(year, month, 0).getDate()
 
   // Group by date for efficient lookup
@@ -52,8 +52,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     entriesByDate.set(e.date, list)
   }
 
-  // First pass: compute per-day base values
-  const days: Array<Omit<DaySummary, 'dayStatus'>> = []
+  const days: DaySummary[] = []
   const workedHoursPerDay: number[] = []
   let workDayCount = 0
 
@@ -71,29 +70,29 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     if (dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(workedHours)
 
+    const hasAutoCategory = !!(autoCategoryOverrides.get(iso) ?? globalAutoCategory)
+
+    const dayStatus = getDayStatus({
+      dayType,
+      hasWorkedHours: workedHours > 0,
+      isEntriesBalanced: workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01,
+      hasAutoCategory,
+      isoDate: iso,
+      today,
+    })
+
     days.push({
       date: iso,
       dayType,
       workedHours,
       entryTotal,
       isEntriesBalanced: workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01,
+      hasAutoCategory,
+      dayStatus,
     })
   }
 
   const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)
 
-  // Second pass: compute dayStatus (needs hasAnyTrackedHours from full month)
-  const result: DaySummary[] = days.map((d) => ({
-    ...d,
-    dayStatus: getDayStatus({
-      dayType: d.dayType,
-      hasWorkedHours: d.workedHours > 0,
-      isEntriesBalanced: d.isEntriesBalanced,
-      isoDate: d.date,
-      today,
-      hasAnyTrackedHours,
-    }),
-  }))
-
-  return { days: result, workDayCount, workedHoursPerDay, hasAnyTrackedHours }
+  return { days, workDayCount, workedHoursPerDay, hasAnyTrackedHours }
 }

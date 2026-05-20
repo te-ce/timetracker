@@ -3,9 +3,12 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo } from '../repositories/shared'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
+import { OvertimeBar } from '../components/OvertimeBar'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateRestarbeitszeit } from '../domain/worktime'
+import { calculateOvertimeToDate } from '../domain/monthStats'
+import { buildMonthSummaries } from '../domain/daySummary'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
 import type { WorkLocation } from '../repositories/types'
@@ -59,6 +62,39 @@ export function DayView() {
   const workedHours = calculateWorkedHours(windows)
   const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
   const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)
+
+  // Month-level overtime calculation
+  const selectedYear = parseInt(selectedDate.slice(0, 4))
+  const selectedMonth = parseInt(selectedDate.slice(5, 7))
+  const monthFrom = new Date(selectedYear, selectedMonth - 1, 1)
+  const monthTo = new Date(selectedYear, selectedMonth, 0)
+  const monthFromIso = toLocalIso(monthFrom)
+  const monthToIso = toLocalIso(monthTo)
+
+  const { data: monthWindows = [] } = useQuery({
+    queryKey: ['workWindows', selectedYear, selectedMonth, 'dayOvertime'],
+    queryFn: () => workWindowRepo.findByDateRange(monthFrom, monthTo),
+  })
+
+  const { data: monthEntries = [] } = useQuery({
+    queryKey: ['timeEntries', selectedYear, selectedMonth, 'dayOvertime'],
+    queryFn: () => timeEntryRepo.findByDateRange(monthFrom, monthTo),
+  })
+
+  const { data: monthDayTypeOverrides = new Map() } = useQuery({
+    queryKey: ['dayTypeOverrides', selectedYear, selectedMonth, 'dayOvertime'],
+    queryFn: () => dayTypeOverrideRepo.findByDateRange(monthFromIso, monthToIso),
+  })
+
+  const todayIso = toLocalIso(new Date())
+  const { days: monthDays, workedHoursPerDay } = buildMonthSummaries(selectedYear, selectedMonth, {
+    windows: monthWindows,
+    entries: monthEntries,
+    dayTypeOverrides: monthDayTypeOverrides,
+    today: todayIso,
+  })
+  const monthDates = monthDays.map((d) => d.date)
+  const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, monthDates, todayIso, sollstunden)
 
   const dayOverrides = new Map<string, string>()
   if (autoCategoryOverride) dayOverrides.set(selectedDate, autoCategoryOverride)
@@ -126,6 +162,8 @@ export function DayView() {
           </span>
         )}
       </div>
+
+      <OvertimeBar overtimeToDate={overtimeToDate.value} hoursNeededToday={overtimeToDate.hoursNeededToday} />
 
       <WorkWindowPanel
         date={selectedDate}
