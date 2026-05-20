@@ -93,10 +93,12 @@ export function MonthGridView() {
         month={month}
         timeEntryRepository={timeEntryRepo}
         workWindowRepository={workWindowRepo}
+        dayConfirmationRepository={dayConfirmationRepo}
         autoCategory={config?.autoCategory ?? '_COREMEDIA'}
         customCategories={config?.customCategories ?? []}
         categoryOrder={config?.categoryOrder}
         dayTypes={dayTypeOverrides}
+        confirmedDays={confirmedDays}
       />
     </div>
   )

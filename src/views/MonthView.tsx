@@ -104,7 +104,7 @@ export function MonthView() {
         dayStatusMap={dayStatusMap}
       />
       <div className="flex flex-wrap gap-3 text-xs">
-        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-emerald-100 border border-emerald-300" /> Tracked</span>
+        <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-emerald-100 border border-emerald-300" /> Complete</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-blue-100 border border-blue-300" /> Incomplete</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-amber-100 border border-amber-300" /> Untracked</span>
         <span className="flex items-center gap-1"><span className="relative inline-block h-3 w-3 rounded bg-white border border-gray-300"><span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-blue-500" /></span> Today</span>

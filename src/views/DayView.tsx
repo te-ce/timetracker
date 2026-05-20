@@ -77,8 +77,34 @@ export function DayView() {
 
   const queryClient = useQueryClient()
   const confirmMutation = useMutation({
-    mutationFn: (confirmed: boolean) =>
-      confirmed ? dayConfirmationRepo.confirm(selectedDate) : dayConfirmationRepo.unconfirm(selectedDate),
+    mutationFn: async () => {
+      const autoHours = Math.max(0, calculateWorkedHours(windows) - entries.reduce((s, e) => s + e.hours, 0))
+      const resolvedAuto = resolveAutoCategory({
+        date: selectedDate,
+        globalDefault: config?.autoCategory ?? null,
+        dayOverrides: autoCategoryOverride ? new Map([[selectedDate, autoCategoryOverride]]) : new Map(),
+      })
+      // Persist auto hours as a real time entry
+      if (resolvedAuto && autoHours > 0) {
+        const existing = entries.find((e) => e.category === resolvedAuto)
+        await timeEntryRepo.save({
+          id: existing?.id ?? crypto.randomUUID(),
+          date: selectedDate,
+          category: resolvedAuto,
+          hours: (existing?.hours ?? 0) + autoHours,
+        })
+      }
+      await dayConfirmationRepo.confirm(selectedDate)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmation', selectedDate] })
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
+      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+    },
+  })
+
+  const unconfirmMutation = useMutation({
+    mutationFn: () => dayConfirmationRepo.unconfirm(selectedDate),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['dayConfirmation', selectedDate] })
       void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
@@ -185,16 +211,24 @@ export function DayView() {
           {workLocation === 'Office' ? '🏢 Office' : workLocation === 'Remote' ? '🏠 Remote' : '📍 Set location'}
         </button>
         <AutoCategoryPicker />
-        <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={isConfirmed}
-            onChange={(e) => confirmMutation.mutate(e.target.checked)}
-            className="rounded border-gray-300"
+        {isConfirmed ? (
+          <button
+            onClick={() => unconfirmMutation.mutate()}
+            className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+            aria-label="Unconfirm day"
+          >
+            ✓ Confirmed
+          </button>
+        ) : (
+          <button
+            onClick={() => confirmMutation.mutate()}
+            disabled={workedHours === 0}
+            className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label="Confirm day"
-          />
-          <span className="text-gray-600">Confirmed</span>
-        </label>
+          >
+            Confirm
+          </button>
+        )}
         {workedHours > 0 && (
           <span className={`text-sm font-medium ${restarbeitszeit.isOvertime ? 'text-green-600' : 'text-amber-600'}`}>
             {restarbeitszeit.isOvertime ? 'Overtime' : 'Remaining'}: {Math.abs(restarbeitszeit.value).toFixed(2)}h

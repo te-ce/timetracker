@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ConfigRepository } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
@@ -12,6 +12,8 @@ export function CustomCategorySettings({ repository }: Props) {
   const [newCategory, setNewCategory] = useState('')
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
+  const dragIdx = useRef<number | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   const { data: config } = useQuery({
     queryKey: ['config'],
@@ -53,7 +55,6 @@ export function CustomCategorySettings({ repository }: Props) {
     }
     const newOrder = categories.map((c, i) => (i === idx ? trimmed : c))
     const newCustom = (config!.customCategories ?? []).map((c) => (c === oldName ? trimmed : c))
-    // If renaming a default, add the new name as custom and keep order
     const wasCustom = (config!.customCategories ?? []).includes(oldName)
     if (!wasCustom) {
       newCustom.push(trimmed)
@@ -62,18 +63,33 @@ export function CustomCategorySettings({ repository }: Props) {
     setEditingIdx(null)
   }
 
-  function handleMoveUp(idx: number) {
-    if (idx === 0) return
-    const newOrder = [...categories]
-    ;[newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]]
-    saveMutation.mutate({ categoryOrder: newOrder })
+  function handleDragStart(idx: number) {
+    dragIdx.current = idx
   }
 
-  function handleMoveDown(idx: number) {
-    if (idx === categories.length - 1) return
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault()
+    setDragOverIdx(idx)
+  }
+
+  function handleDrop(idx: number) {
+    const from = dragIdx.current
+    if (from === null || from === idx) {
+      dragIdx.current = null
+      setDragOverIdx(null)
+      return
+    }
     const newOrder = [...categories]
-    ;[newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]]
+    const [moved] = newOrder.splice(from, 1)
+    newOrder.splice(idx, 0, moved)
     saveMutation.mutate({ categoryOrder: newOrder })
+    dragIdx.current = null
+    setDragOverIdx(null)
+  }
+
+  function handleDragEnd() {
+    dragIdx.current = null
+    setDragOverIdx(null)
   }
 
   return (
@@ -82,21 +98,16 @@ export function CustomCategorySettings({ repository }: Props) {
 
       <ul className="flex flex-col gap-1">
         {categories.map((cat, idx) => (
-          <li key={cat} className="flex items-center gap-2 rounded border bg-white px-3 py-1.5 text-sm">
-            <div className="flex flex-col">
-              <button
-                aria-label={`Move ${cat} up`}
-                onClick={() => handleMoveUp(idx)}
-                disabled={idx === 0}
-                className="text-xs leading-none text-gray-400 hover:text-gray-700 disabled:opacity-30"
-              >▲</button>
-              <button
-                aria-label={`Move ${cat} down`}
-                onClick={() => handleMoveDown(idx)}
-                disabled={idx === categories.length - 1}
-                className="text-xs leading-none text-gray-400 hover:text-gray-700 disabled:opacity-30"
-              >▼</button>
-            </div>
+          <li
+            key={cat}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDrop={() => handleDrop(idx)}
+            onDragEnd={handleDragEnd}
+            className={`flex items-center gap-2 rounded border bg-white px-3 py-1.5 text-sm cursor-grab active:cursor-grabbing ${dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50' : ''}`}
+          >
+            <span className="text-gray-300 select-none" aria-hidden>⠿</span>
             {editingIdx === idx ? (
               <input
                 aria-label={`Rename ${cat}`}
@@ -145,7 +156,7 @@ export function CustomCategorySettings({ repository }: Props) {
       </div>
 
       <p className="text-xs text-gray-500">
-        Drag or use arrows to reorder. Double-click to rename. Changes apply across all views.
+        Drag to reorder. Double-click to rename. Changes apply across all views.
       </p>
     </div>
   )

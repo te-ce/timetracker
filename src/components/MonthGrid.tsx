@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import type { TimeEntryRepository, WorkWindowRepository } from '../repositories/types'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { TimeEntryRepository, WorkWindowRepository, DayConfirmationRepository } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
@@ -13,13 +13,15 @@ interface Props {
   month: number
   timeEntryRepository: TimeEntryRepository
   workWindowRepository: WorkWindowRepository
+  dayConfirmationRepository: DayConfirmationRepository
   autoCategory: string
   customCategories?: string[]
   categoryOrder?: string[]
   dayTypes?: Map<string, DayType>
+  confirmedDays?: Set<string>
 }
 
-export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map() }: Props) {
+export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, dayConfirmationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set() }: Props) {
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
 
   const from = new Date(year, month - 1, 1)
@@ -36,6 +38,36 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
   })
 
   const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(timeEntryRepository)
+
+  const queryClient = useQueryClient()
+  const gridConfirmMutation = useMutation({
+    mutationFn: async (row: MonthGridRow) => {
+      const autoHours = row.autoCategoryHours
+      if (autoCategory && autoHours > 0) {
+        const existing = entries.find((e) => e.date === row.date && e.category === autoCategory)
+        await timeEntryRepository.save({
+          id: existing?.id ?? crypto.randomUUID(),
+          date: row.date,
+          category: autoCategory,
+          hours: (existing?.hours ?? 0) + autoHours,
+        })
+      }
+      await dayConfirmationRepository.confirm(row.date)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmation'] })
+    },
+  })
+
+  const gridUnconfirmMutation = useMutation({
+    mutationFn: (date: string) => dayConfirmationRepository.unconfirm(date),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmation'] })
+    },
+  })
 
   const rows = buildMonthGrid({
     year,
@@ -107,6 +139,9 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                 <span className="block truncate text-xs">{cat}</span>
               </th>
             ))}
+            <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200">
+              <span className="text-xs">✓</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -131,14 +166,20 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                 {allCategories.map((cat) => {
                   const isAutoTarget = cat === autoCategory
                   const hasAutoHours = isAutoTarget && row.autoCategoryHours > 0
+                  const isDayConfirmed = confirmedDays.has(row.date)
                   return (
                     <td key={cat} className="px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem]">
-                      {isAutoTarget && !row.entries[cat] && hasAutoHours ? (
+                      {isDayConfirmed || (isAutoTarget && !row.entries[cat] && hasAutoHours) ? (
                         <span
                           className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-400"
-                          data-testid="auto-category"
+                          data-testid={isAutoTarget && !isDayConfirmed ? 'auto-category' : undefined}
                         >
-                          {parseFloat(row.autoCategoryHours.toFixed(2))}
+                          {(() => {
+                            const manual = row.entries[cat] ?? 0
+                            const auto = isAutoTarget ? row.autoCategoryHours : 0
+                            const val = manual + auto
+                            return val ? parseFloat(val.toFixed(2)) : ''
+                          })()}
                         </span>
                       ) : (
                         <input
@@ -158,6 +199,25 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                     </td>
                   )
                 })}
+                <td className="px-0.5 py-0.5 w-10 text-center border-l border-gray-200">
+                  {row.workedHours > 0 && !isNonWorkDay && (
+                    confirmedDays.has(row.date) ? (
+                      <button
+                        aria-label={`Unconfirm ${row.date}`}
+                        onClick={() => gridUnconfirmMutation.mutate(row.date)}
+                        className="text-emerald-600 text-xs font-bold hover:text-emerald-800"
+                        title="Confirmed — click to undo"
+                      >✓</button>
+                    ) : (
+                      <button
+                        aria-label={`Confirm ${row.date}`}
+                        onClick={() => gridConfirmMutation.mutate(row)}
+                        className="text-gray-300 text-xs hover:text-gray-600"
+                        title="Confirm day"
+                      >○</button>
+                    )
+                  )}
+                </td>
               </tr>
             )
           })}
@@ -179,6 +239,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                 </td>
               )
             })}
+            <td className="w-10 border-l border-gray-200"></td>
           </tr>
         </tfoot>
       </table>

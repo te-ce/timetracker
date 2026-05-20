@@ -54,7 +54,7 @@ describe('buildMonthSummaries', () => {
     })
 
     expect(result.days[0].isEntriesBalanced).toBe(true)
-    expect(result.days[0].dayStatus).toBe('tracked')
+    expect(result.days[0].dayStatus).toBe('complete')
   })
 
   it('marks incomplete when entries do not match worked hours', () => {

@@ -5,7 +5,7 @@ export type DayStatus =
   | 'leave'
   | 'future'
   | 'today'
-  | 'tracked'
+  | 'complete'
   | 'incomplete'
   | 'untracked'
 
@@ -27,7 +27,7 @@ export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAu
   if (dayType !== 'WorkDay') return 'non-working'
 
   // Future days
-  if (isoDate > today) return hasWorkedHours ? 'tracked' : 'future'
+  if (isoDate > today) return hasWorkedHours ? 'complete' : 'future'
 
   // Today
   if (isoDate === today) return 'today'
@@ -35,8 +35,8 @@ export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAu
   // Past work days
   if (!hasWorkedHours) return 'untracked'
 
-  if (isConfirmed) return 'tracked'
+  if (isConfirmed) return 'complete'
   const effectivelyBalanced = isEntriesBalanced || hasAutoCategory
-  if (effectivelyBalanced) return 'tracked'
+  if (effectivelyBalanced) return 'complete'
   return 'incomplete'
 }
