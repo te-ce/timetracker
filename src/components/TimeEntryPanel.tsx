@@ -1,12 +1,13 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import type { TimeEntry, TimeEntryRepository } from '../repositories/types'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import type { TimeEntry, TimeEntryRepository, TimeTrackingRepository } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 
 interface Props {
   date: string
   repository: TimeEntryRepository
+  timeTrackingRepository: TimeTrackingRepository
   customCategories?: string[]
   categoryOrder?: string[]
   autoCategory?: string | null
@@ -17,8 +18,17 @@ function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefine
   return entries.find((e) => e.category === category)
 }
 
-export function TimeEntryPanel({ date, repository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0 }: Props) {
+function formatElapsed(startedAt: string): string {
+  const ms = Date.now() - new Date(startedAt).getTime()
+  const totalMinutes = Math.floor(ms / 60000)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  return `${h}:${String(m).padStart(2, '0')}`
+}
+
+export function TimeEntryPanel({ date, repository, timeTrackingRepository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0 }: Props) {
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
+  const [tick, setTick] = useState(0)
 
   const { data: entries = [] } = useQuery({
     queryKey: ['timeEntries', date],
@@ -28,7 +38,61 @@ export function TimeEntryPanel({ date, repository, customCategories = [], catego
     },
   })
 
+  const { data: activeTracking = null } = useQuery({
+    queryKey: ['activeTracking'],
+    queryFn: () => timeTrackingRepository.getActive(),
+  })
+
+  // Tick every 30s to update elapsed display
+  useEffect(() => {
+    if (!activeTracking) return
+    const interval = setInterval(() => setTick((t) => t + 1), 30000)
+    return () => clearInterval(interval)
+  }, [activeTracking])
+
+  const queryClient = useQueryClient()
   const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(repository)
+
+  const startTrackingMutation = useMutation({
+    mutationFn: async (category: string) => {
+      // Stop any active tracking first
+      const stopped = await timeTrackingRepository.stop()
+      if (stopped && stopped.hours > 0) {
+        const existing = entries.find((e) => e.category === stopped.category && e.date === stopped.date)
+        await repository.save({
+          id: existing?.id ?? crypto.randomUUID(),
+          date: stopped.date,
+          category: stopped.category,
+          hours: Math.round(((existing?.hours ?? 0) + stopped.hours) * 100) / 100,
+        })
+      }
+      // Start new tracking
+      await timeTrackingRepository.start(date, category)
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['activeTracking'] })
+      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+    },
+  })
+
+  const stopTrackingMutation = useMutation({
+    mutationFn: async () => {
+      const stopped = await timeTrackingRepository.stop()
+      if (stopped && stopped.hours > 0) {
+        const existing = entries.find((e) => e.category === stopped.category && e.date === stopped.date)
+        await repository.save({
+          id: existing?.id ?? crypto.randomUUID(),
+          date: stopped.date,
+          category: stopped.category,
+          hours: Math.round(((existing?.hours ?? 0) + stopped.hours) * 100) / 100,
+        })
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['activeTracking'] })
+      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+    },
+  })
 
   function handleSave(category: string) {
     const raw = draft[category] ?? ''
@@ -79,11 +143,12 @@ export function TimeEntryPanel({ date, repository, customCategories = [], catego
           const manualHours = existing?.hours ?? 0
           const displayTotal = manualHours + autoHrs
           const value = draft[category] ?? (existing ? String(existing.hours) : '')
+          const isTracking = activeTracking?.category === category && activeTracking?.date === date
 
           return (
             <li
               key={category}
-              className={`flex items-center justify-between rounded-lg border px-4 py-2.5 shadow-sm ${isAutoTarget && autoHrs > 0 ? 'border-indigo-300 bg-indigo-50' : 'bg-white'}`}
+              className={`flex items-center justify-between rounded-lg border px-4 py-2.5 shadow-sm ${isTracking ? 'border-green-400 bg-green-50' : isAutoTarget && autoHrs > 0 ? 'border-indigo-300 bg-indigo-50' : 'bg-white'}`}
             >
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">{category}</span>
@@ -92,8 +157,30 @@ export function TimeEntryPanel({ date, repository, customCategories = [], catego
                     +{autoHrs.toFixed(2)} auto
                   </span>
                 )}
+                {isTracking && (
+                  <span className="rounded bg-green-200 px-1.5 py-0.5 text-[10px] font-bold text-green-800 tabular-nums">
+                    ⏱ {formatElapsed(activeTracking!.startedAt)}
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1">
+                {isTracking ? (
+                  <button
+                    aria-label={`Stop tracking ${category}`}
+                    onClick={() => stopTrackingMutation.mutate()}
+                    className="rounded border border-red-300 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100"
+                  >
+                    ⏹ Stop
+                  </button>
+                ) : (
+                  <button
+                    aria-label={`Start tracking ${category}`}
+                    onClick={() => startTrackingMutation.mutate(category)}
+                    className="rounded border border-green-300 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-100"
+                  >
+                    ▶ Start
+                  </button>
+                )}
                 <button
                   aria-label={`Decrease ${category}`}
                   onClick={() => handleIncrement(category, -0.25)}

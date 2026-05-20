@@ -110,3 +110,15 @@ export interface DayConfirmationRepository {
   isConfirmed(date: string): Promise<boolean>
   findConfirmedInRange(from: string, to: string): Promise<Set<string>>
 }
+
+export interface ActiveTracking {
+  category: string
+  date: string
+  startedAt: string // ISO timestamp
+}
+
+export interface TimeTrackingRepository {
+  start(date: string, category: string): Promise<void>
+  stop(): Promise<{ category: string; date: string; hours: number } | null>
+  getActive(): Promise<ActiveTracking | null>
+}

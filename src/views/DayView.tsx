@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo, dayConfirmationRepo } from '../repositories/shared'
+import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo, dayConfirmationRepo, timeTrackingRepo } from '../repositories/shared'
 import { WorkWindowPanel } from '../components/WorkWindowPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
@@ -247,6 +247,7 @@ export function DayView() {
       <TimeEntryPanel
         date={selectedDate}
         repository={timeEntryRepo}
+        timeTrackingRepository={timeTrackingRepo}
         customCategories={config?.customCategories ?? []}
         categoryOrder={config?.categoryOrder}
         autoCategory={autoCategory}

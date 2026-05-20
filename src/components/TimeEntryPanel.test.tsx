@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryTimeEntryRepository } from '../repositories/in-memory'
+import { InMemoryTimeEntryRepository, InMemoryTimeTrackingRepository } from '../repositories/in-memory'
 import { TimeEntryPanel } from './TimeEntryPanel'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
 
@@ -9,13 +9,14 @@ const DATE = '2024-01-15'
 
 function setup(initialEntries = []) {
   const repo = new InMemoryTimeEntryRepository(initialEntries)
+  const trackingRepo = new InMemoryTimeTrackingRepository()
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <TimeEntryPanel date={DATE} repository={repo} />
+      <TimeEntryPanel date={DATE} repository={repo} timeTrackingRepository={trackingRepo} />
     </QueryClientProvider>,
   )
-  return { repo }
+  return { repo, trackingRepo }
 }
 
 describe('TimeEntryPanel', () => {
