@@ -294,11 +294,11 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                       repository={workWindowRepository}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}`}
                     />
-                    <td className="px-0.5 py-0.5 w-14 text-center border-l border-gray-200">
+                    <td className="px-0.5 py-0.5 w-16 text-center border-l border-gray-200">
                       <select
                         value={row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')}
                         onChange={(e) => dayTypeMutation.mutate({ date: row.date, value: e.target.value })}
-                        className="w-full text-[10px] rounded border px-0.5 py-0.5"
+                        className="w-full text-[10px] rounded border px-0.5 py-0.5 pr-4 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%2010%2010%22%3E%3Cpath%20d%3D%22M2%203l3%204%203-4%22%20fill%3D%22%23666%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_2px_center]"
                         aria-label={`Day type ${row.date}`}
                       >
                         <option value="WorkDay">Work</option>

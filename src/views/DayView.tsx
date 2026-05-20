@@ -159,15 +159,21 @@ export function DayView() {
     dayOverrides,
   })
 
-  function handleLocationToggle() {
-    const next: WorkLocation | null =
-      workLocation === null ? 'Office' : workLocation === 'Office' ? 'Remote' : null
-    if (next) {
-      void workLocationRepo.save(selectedDate, next)
-    } else {
-      void workLocationRepo.delete(selectedDate)
-    }
-  }
+  const locationMutation = useMutation({
+    mutationFn: async () => {
+      const next: WorkLocation | null =
+        workLocation === null ? 'Office' : workLocation === 'Office' ? 'Remote' : null
+      if (next) {
+        await workLocationRepo.save(selectedDate, next)
+      } else {
+        await workLocationRepo.delete(selectedDate)
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['workLocation', selectedDate] })
+      void queryClient.invalidateQueries({ queryKey: ['workLocations'] })
+    },
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -204,7 +210,7 @@ export function DayView() {
       <div className="flex items-center gap-4">
         <DayTypePicker date={selectedDate} repository={dayTypeOverrideRepo} />
         <button
-          onClick={handleLocationToggle}
+          onClick={() => locationMutation.mutate()}
           className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
           aria-label="Work location"
         >

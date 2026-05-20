@@ -12,29 +12,22 @@ export class CloudTimeTrackingRepository implements TimeTrackingRepository {
       date,
       startedAt: new Date().toISOString(),
     }
-    await this.adapter.write(KEY, JSON.stringify(tracking))
+    await this.adapter.put(KEY, tracking)
   }
 
   async stop(): Promise<{ category: string; date: string; hours: number } | null> {
-    const raw = await this.adapter.read(KEY)
-    if (!raw) return null
+    const tracking = await this.adapter.get<ActiveTracking>(KEY)
+    if (!tracking) return null
 
-    const tracking: ActiveTracking = JSON.parse(raw)
     const elapsed = (Date.now() - new Date(tracking.startedAt).getTime()) / (1000 * 60 * 60)
-    const hours = Math.round(elapsed * 100) / 100 // round to 2 decimals
+    const hours = Math.round(elapsed * 100) / 100
 
-    await this.adapter.write(KEY, '')
+    await this.adapter.delete(KEY)
     if (hours <= 0) return null
     return { category: tracking.category, date: tracking.date, hours }
   }
 
   async getActive(): Promise<ActiveTracking | null> {
-    const raw = await this.adapter.read(KEY)
-    if (!raw) return null
-    try {
-      return JSON.parse(raw) as ActiveTracking
-    } catch {
-      return null
-    }
+    return this.adapter.get<ActiveTracking>(KEY)
   }
 }
