@@ -27,59 +27,59 @@ async function addWindow(start: string, end: string) {
 describe('WorkPeriodPanel', () => {
   it('shows an empty state message when no WorkPeriods exist', async () => {
     setup()
-    expect(await screen.findByText(/no work windows/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no work periods/i)).toBeInTheDocument()
   })
 
   it('does not show Restarbeitszeit when no WorkPeriods exist', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     expect(screen.queryByLabelText(/restarbeitszeit/i)).not.toBeInTheDocument()
   })
 
   it('shows the window in the list after the user adds it', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await addWindow('09:00', '17:00')
     expect(await screen.findByText('09:00 – 17:00')).toBeInTheDocument()
   })
 
   it('updates WorkedHours when a window is added', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await addWindow('09:00', '17:00')
     expect(await screen.findByLabelText(/worked hours/i)).toHaveTextContent('8.00h worked')
   })
 
   it('shows Restarbeitszeit after the first WorkPeriod is added', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await addWindow('09:00', '17:00')
     expect(await screen.findByLabelText(/restarbeitszeit/i)).toBeInTheDocument()
   })
 
   it('shows correct remaining hours in Restarbeitszeit', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await addWindow('09:00', '15:00') // 6h worked, 8h target → 2h remaining
     expect(await screen.findByLabelText(/restarbeitszeit/i)).toHaveTextContent('2.00h remaining')
   })
 
   it('removes the window from the list when the user clicks Remove', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await addWindow('09:00', '17:00')
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByRole('button', { name: /remove/i }))
-    expect(await screen.findByText(/no work windows/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no work periods/i)).toBeInTheDocument()
   })
 
   it('hides Restarbeitszeit again when the last WorkPeriod is removed', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await addWindow('09:00', '17:00')
     await screen.findByLabelText(/restarbeitszeit/i)
     await userEvent.click(screen.getByRole('button', { name: /remove/i }))
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     expect(screen.queryByLabelText(/restarbeitszeit/i)).not.toBeInTheDocument()
   })
 
@@ -122,14 +122,14 @@ describe('WorkPeriodPanel', () => {
 
   it('Add button is enabled when only start is set (no end required)', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await userEvent.type(screen.getByLabelText(/start/i), '09:00')
     expect(screen.getByRole('button', { name: /add/i })).not.toBeDisabled()
   })
 
   it('saves an open WorkPeriod when Add is clicked with only a start time', async () => {
     const { repo } = setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     await userEvent.type(screen.getByLabelText(/start/i), '09:00')
     await userEvent.click(screen.getByRole('button', { name: /add/i }))
     const windows = await repo.findByDate(new Date(DATE))
@@ -144,7 +144,7 @@ describe('WorkPeriodPanel', () => {
 
   it('"Now" buttons fill start and end fields with current HH:MM', async () => {
     setup()
-    await screen.findByText(/no work windows/i)
+    await screen.findByText(/no work periods/i)
     const nowButtons = screen.getAllByRole('button', { name: /now/i })
     await userEvent.click(nowButtons[0]) // start Now
     const startInput = screen.getByLabelText(/start/i) as HTMLInputElement

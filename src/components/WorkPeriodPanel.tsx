@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
 import { calculateWorkedHours, calculateRestarbeitszeit } from '../domain/worktime'
+import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
   sollstunden: number
   repository: WorkPeriodRepository
 }
+
 
 export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
   const [start, setStart] = useState('')
@@ -23,6 +25,7 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
     queryFn: () => repository.findByDate(new Date(date)),
   })
 
+  const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
   const hasOpenWindow = windows.some((w) => w.end === null)
 
   useEffect(() => {
@@ -43,7 +46,10 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
 
   function handleAdd() {
     if (!start) return
-    addMutation.mutate({ id: crypto.randomUUID(), date, start, end: end || null })
+    const incoming: WorkPeriod = { id: crypto.randomUUID(), date, start, end: end || null }
+    const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
+    addMutation.mutate(merged)
+    absorbed.forEach((id) => removeMutation.mutate(id))
     setStart('')
     setEnd('')
   }
@@ -62,12 +68,22 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
     if (!editingId || !editStart) return
     const existing = windows.find((w) => w.id === editingId)
     if (!existing) return
-    addMutation.mutate({ ...existing, start: editStart, end: editEnd || null })
+    const incoming: WorkPeriod = { ...existing, start: editStart, end: editEnd || null }
+    const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
+    addMutation.mutate(merged)
+    absorbed.forEach((id) => removeMutation.mutate(id))
     setEditingId(null)
   }
 
   function handleEditCancel() {
     setEditingId(null)
+  }
+
+  function handleMerge(a: WorkPeriod, b: WorkPeriod) {
+    // a.start <= b.start (sorted), a.end !== null
+    const laterEnd = b.end === null ? null : (a.end! >= b.end ? a.end : b.end)
+    addMutation.mutate({ ...a, end: laterEnd })
+    removeMutation.mutate(b.id)
   }
 
   function nowHHMM() {
@@ -77,7 +93,7 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
 
   return (
     <section aria-label="Work windows" className="flex flex-col gap-6">
-      {/* Add window form */}
+      {/* Add period form */}
       <div className="flex items-end gap-3 rounded-xl border bg-white p-4 shadow-sm">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Start
@@ -126,79 +142,84 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
         </button>
       </div>
 
-      {/* Windows list + summary */}
-      {windows.length === 0 ? (
+      {/* Periods list + summary */}
+      {sorted.length === 0 ? (
         <p className="rounded-xl border border-dashed bg-white p-6 text-center text-sm text-gray-400">
-          No work windows recorded — add your first time block above.
+          No work periods recorded — add your first time block above.
         </p>
       ) : (
         <div className="flex flex-col gap-3">
           <ul className="flex flex-col gap-2">
-            {windows.map((w) => (
-              <li
-                key={w.id}
-                className="flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm shadow-sm"
-              >
-                {editingId === w.id ? (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="time"
-                        value={editStart}
-                        onChange={(e) => setEditStart(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') handleEditCancel()
-                          if (e.key === 'Enter') handleEditSave()
-                        }}
-                        className="rounded border px-2 py-1 text-sm"
-                      />
-                      <button type="button" onClick={() => setEditStart(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
-                      <span>–</span>
-                      <input
-                        type="time"
-                        value={editEnd}
-                        onChange={(e) => setEditEnd(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Escape') handleEditCancel()
-                          if (e.key === 'Enter') handleEditSave()
-                        }}
-                        className="rounded border px-2 py-1 text-sm"
-                      />
-                      <button type="button" onClick={() => setEditEnd(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
-                    </div>
-                    <div className="flex gap-2">
+            {sorted.map((w, i) => {
+              const next = i < sorted.length - 1 ? sorted[i + 1] : null
+              const canMergeWithNext = next !== null && w.end !== null
+              return (
+                  <li key={w.id} className="relative flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm shadow-sm">
+                    {editingId === w.id ? (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="time"
+                            value={editStart}
+                            onChange={(e) => setEditStart(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') handleEditCancel()
+                              if (e.key === 'Enter') handleEditSave()
+                            }}
+                            className="rounded border px-2 py-1 text-sm"
+                          />
+                          <button type="button" onClick={() => setEditStart(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
+                          <span>–</span>
+                          <input
+                            type="time"
+                            value={editEnd}
+                            onChange={(e) => setEditEnd(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') handleEditCancel()
+                              if (e.key === 'Enter') handleEditSave()
+                            }}
+                            className="rounded border px-2 py-1 text-sm"
+                          />
+                          <button type="button" onClick={() => setEditEnd(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={handleEditSave} className="text-xs text-indigo-600 hover:text-indigo-800">Save</button>
+                          <button onClick={handleEditCancel} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          className="cursor-pointer font-mono font-medium hover:text-indigo-600"
+                          onClick={() => handleEditStart(w)}
+                        >
+                          {w.start} – {w.end ?? '…'}
+                        </span>
+                        <button
+                          onClick={() => handleRemove(w.id)}
+                          className="text-xs text-gray-400 hover:text-red-500"
+                        >
+                          Remove
+                        </button>
+                      </>
+                    )}
+                  {canMergeWithNext && (
+                    <div className="group absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 translate-y-1/2">
                       <button
-                        onClick={handleEditSave}
-                        className="text-xs text-indigo-600 hover:text-indigo-800"
+                        onClick={() => handleMerge(w, next)}
+                        className="cursor-pointer select-none text-base leading-none text-gray-400 opacity-30 transition-all hover:scale-125 hover:text-indigo-500 hover:opacity-100"
+                        aria-label={`Merge ${w.start}–${w.end} with ${next.start}–${next.end ?? '…'}`}
                       >
-                        Save
+                        🔗
                       </button>
-                      <button
-                        onClick={handleEditCancel}
-                        className="text-xs text-gray-400 hover:text-gray-600"
-                      >
-                        Cancel
-                      </button>
+                      <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        Merge periods
+                      </span>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <span
-                      className="cursor-pointer font-mono font-medium hover:text-indigo-600"
-                      onClick={() => handleEditStart(w)}
-                    >
-                      {w.start} – {w.end ?? '…'}
-                    </span>
-                    <button
-                      onClick={() => handleRemove(w.id)}
-                      className="text-xs text-gray-400 hover:text-red-500"
-                    >
-                      Remove
-                    </button>
-                  </>
-                )}
-              </li>
-            ))}
+                  )}
+                </li>
+              )
+            })}
           </ul>
 
           {/* Stats row */}
