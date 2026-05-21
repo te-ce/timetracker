@@ -1,44 +1,65 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../domain/sprint'
-import type { SprintConfig } from '../domain/sprint'
-import { SprintReportPanel } from '../components/SprintReportPanel'
-import { SprintConfigPanel } from '../components/SprintConfigPanel'
-import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/shared'
-import { getAllCategories } from '../domain/categories'
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  getSprintBoundaries,
+  getSprintForDate,
+  aggregateSprintHours,
+} from '../domain/sprint';
+import type { SprintConfig } from '../domain/sprint';
+import { SprintReportPanel } from '../components/SprintReportPanel';
+import { SprintConfigPanel } from '../components/SprintConfigPanel';
+import {
+  sprintExportRepo,
+  timeEntryRepo,
+  configRepo,
+} from '../repositories/shared';
+import { getAllCategories } from '../domain/categories';
 
 export function SprintView() {
-  const queryClient = useQueryClient()
-  const [sprintIndex, setSprintIndex] = useState<number | null>(null)
+  const queryClient = useQueryClient();
+  const [sprintIndex, setSprintIndex] = useState<number | null>(null);
 
   const { data: config } = useQuery({
     queryKey: ['config'],
     queryFn: () => configRepo.get(),
-  })
+  });
 
   const sprintConfig: SprintConfig = {
     startDate: config?.sprintStartDate ?? '2024-01-01',
     lengthDays: config?.sprintLengthDays ?? 14,
-  }
+  };
 
-  const today = new Date().toISOString().slice(0, 10)
-  const currentSprint = getSprintForDate(today, sprintConfig)
-  const activeIndex = sprintIndex ?? currentSprint.index
+  const today = new Date().toISOString().slice(0, 10);
+  const currentSprint = getSprintForDate(today, sprintConfig);
+  const activeIndex = sprintIndex ?? currentSprint.index;
 
-  const sprint = getSprintBoundaries(activeIndex, sprintConfig)
+  const sprint = getSprintBoundaries(activeIndex, sprintConfig);
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['timeEntries', 'sprint', activeIndex, sprintConfig.startDate, sprintConfig.lengthDays],
-    queryFn: () => timeEntryRepo.findByDateRange(new Date(sprint.start), new Date(sprint.end)),
-  })
+    queryKey: [
+      'timeEntries',
+      'sprint',
+      activeIndex,
+      sprintConfig.startDate,
+      sprintConfig.lengthDays,
+    ],
+    queryFn: () =>
+      timeEntryRepo.findByDateRange(
+        new Date(sprint.start),
+        new Date(sprint.end),
+      ),
+  });
 
-  const hoursPerCategory = aggregateSprintHours(entries, sprint)
-  const allCategories = getAllCategories(config?.customCategories ?? [], config?.categoryOrder)
+  const hoursPerCategory = aggregateSprintHours(entries, sprint);
+  const allCategories = getAllCategories(
+    config?.customCategories ?? [],
+    config?.categoryOrder,
+  );
 
   const { data: sprintExport } = useQuery({
     queryKey: ['sprintExport', activeIndex],
     queryFn: () => sprintExportRepo.findBySprintIndex(activeIndex),
-  })
+  });
 
   const markExportedMutation = useMutation({
     mutationFn: () =>
@@ -47,10 +68,13 @@ export function SprintView() {
         status: 'exported',
         exportedAt: new Date().toISOString().slice(0, 10),
       }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['sprintExport', activeIndex] }),
-  })
+    onSuccess: () =>
+      void queryClient.invalidateQueries({
+        queryKey: ['sprintExport', activeIndex],
+      }),
+  });
 
-  const exportStatus = sprintExport?.status ?? 'pending'
+  const exportStatus = sprintExport?.status ?? 'pending';
 
   return (
     <div className="flex flex-col gap-6">
@@ -64,7 +88,9 @@ export function SprintView() {
         <div className="flex flex-1 items-center justify-center gap-2">
           <h2 className="text-lg font-semibold">
             Sprint {sprint.index + 1}
-            <span className="ml-2 text-sm font-normal text-gray-500">{sprint.start} → {sprint.end}</span>
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              {sprint.start} → {sprint.end}
+            </span>
           </h2>
           <button
             onClick={() => setSprintIndex(null)}
@@ -81,21 +107,19 @@ export function SprintView() {
           Next →
         </button>
       </div>
-
+      <SprintConfigPanel
+        repository={configRepo}
+        onConfigChanged={() => {
+          void queryClient.invalidateQueries({ queryKey: ['config'] });
+          setSprintIndex(null);
+        }}
+      />
       <SprintReportPanel
         hoursPerCategory={hoursPerCategory}
         allCategories={allCategories}
         exportStatus={exportStatus}
         onMarkExported={() => markExportedMutation.mutate()}
       />
-
-      <SprintConfigPanel
-        repository={configRepo}
-        onConfigChanged={() => {
-          void queryClient.invalidateQueries({ queryKey: ['config'] })
-          setSprintIndex(null)
-        }}
-      />
     </div>
-  )
+  );
 }
