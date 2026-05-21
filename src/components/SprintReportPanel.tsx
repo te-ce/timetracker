@@ -1,14 +1,32 @@
+import { useState } from 'react'
+
 export type ExportStatus = 'pending' | 'exported'
 
 interface Props {
   hoursPerCategory: Record<string, number>
   allCategories: string[]
   exportStatus: ExportStatus
-  onMarkExported?: () => void
+  exportReady?: boolean
+  onExport?: () => Promise<void>
 }
 
-export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatus, onMarkExported }: Props) {
+export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatus, exportReady = false, onExport }: Props) {
   const total = allCategories.reduce((sum, cat) => sum + (hoursPerCategory[cat] ?? 0), 0)
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | null>(null)
+
+  async function handleExport() {
+    if (!onExport) return
+    setExportError(null)
+    setExporting(true)
+    try {
+      await onExport()
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <section aria-label="Sprint report" className="flex flex-col gap-4">
@@ -40,14 +58,27 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
 
       <div className="rounded-lg border bg-indigo-50 px-4 py-3 text-right text-sm font-semibold">Total: {total}h</div>
 
-      {exportStatus === 'pending' && onMarkExported && (
-        <button
-          onClick={onMarkExported}
-          className="self-end rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-        >
-          Mark as Exported
-        </button>
+      {exportStatus === 'pending' && onExport && (
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={() => void handleExport()}
+            disabled={exporting || !exportReady}
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+            title={!exportReady ? 'Configure SharePoint URL, sheet, and category mapping in Settings first' : undefined}
+          >
+            {exporting ? 'Exporting…' : 'Export to SharePoint'}
+          </button>
+          {!exportReady && (
+            <p className="text-xs text-gray-400">
+              Complete SharePoint setup in Settings to enable export.
+            </p>
+          )}
+          {exportError && (
+            <p role="alert" className="text-xs text-red-600">{exportError}</p>
+          )}
+        </div>
       )}
     </section>
   )
 }
+

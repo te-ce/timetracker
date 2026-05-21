@@ -6,10 +6,13 @@ import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
 import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/shared'
 import { getAllCategories } from '../domain/categories'
+import { writeSprintData } from '../services/excelService'
+import { useAuthStore } from '../stores/authStore'
 
 export function SprintView() {
   const queryClient = useQueryClient()
   const [sprintIndex, setSprintIndex] = useState<number | null>(null)
+  const accessToken = useAuthStore((s) => s.accessToken)
 
   const { data: config } = useQuery({
     queryKey: ['config'],
@@ -55,6 +58,20 @@ export function SprintView() {
 
   const exportStatus = sprintExport?.status ?? 'pending'
 
+  const sharepointUrl = config?.sharepointUrl ?? null
+  const targetSheet = config?.targetSheet ?? null
+  const categoryMapping = config?.categoryMapping ?? {}
+  const exportReady =
+    !!sharepointUrl && !!targetSheet && Object.keys(categoryMapping).length > 0 && !!accessToken
+
+  async function handleExport(): Promise<void> {
+    if (!sharepointUrl || !targetSheet || !accessToken) {
+      throw new Error('SharePoint URL, sheet, or auth token is missing.')
+    }
+    await writeSprintData(sharepointUrl, targetSheet, categoryMapping, hoursPerCategory, accessToken)
+    await markExportedMutation.mutateAsync()
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center">
@@ -97,7 +114,8 @@ export function SprintView() {
         hoursPerCategory={hoursPerCategory}
         allCategories={allCategories}
         exportStatus={exportStatus}
-        onMarkExported={() => markExportedMutation.mutate()}
+        exportReady={exportReady}
+        onExport={handleExport}
       />
     </div>
   )

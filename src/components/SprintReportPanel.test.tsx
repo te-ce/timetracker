@@ -29,43 +29,72 @@ describe('SprintReportPanel', () => {
     expect(screen.getByText(/exported/i)).toBeInTheDocument()
   })
 
-  it('shows Mark as Exported button when pending', () => {
-    const onExport = vi.fn()
+  it('shows Export to SharePoint button when pending and onExport provided', () => {
     render(
       <SprintReportPanel
         hoursPerCategory={{ QA: 5 }}
         allCategories={['QA']}
         exportStatus="pending"
-        onMarkExported={onExport}
+        exportReady
+        onExport={vi.fn().mockResolvedValue(undefined)}
       />,
     )
-    expect(screen.getByRole('button', { name: /mark as exported/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /export to sharepoint/i })).toBeInTheDocument()
   })
 
-  it('calls onMarkExported when button clicked', async () => {
-    const onExport = vi.fn()
+  it('calls onExport when button clicked', async () => {
+    const onExport = vi.fn().mockResolvedValue(undefined)
     render(
       <SprintReportPanel
         hoursPerCategory={{ QA: 5 }}
         allCategories={['QA']}
         exportStatus="pending"
-        onMarkExported={onExport}
+        exportReady
+        onExport={onExport}
       />,
     )
-    await userEvent.click(screen.getByRole('button', { name: /mark as exported/i }))
+    await userEvent.click(screen.getByRole('button', { name: /export to sharepoint/i }))
     expect(onExport).toHaveBeenCalledOnce()
   })
 
+  it('disables export button when exportReady is false', () => {
+    render(
+      <SprintReportPanel
+        hoursPerCategory={{ QA: 5 }}
+        allCategories={['QA']}
+        exportStatus="pending"
+        exportReady={false}
+        onExport={vi.fn().mockResolvedValue(undefined)}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /export to sharepoint/i })).toBeDisabled()
+  })
+
   it('hides export button when already exported', () => {
-    const onExport = vi.fn()
     render(
       <SprintReportPanel
         hoursPerCategory={{ QA: 5 }}
         allCategories={['QA']}
         exportStatus="exported"
-        onMarkExported={onExport}
+        exportReady
+        onExport={vi.fn().mockResolvedValue(undefined)}
       />,
     )
-    expect(screen.queryByRole('button', { name: /mark as exported/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /export to sharepoint/i })).not.toBeInTheDocument()
+  })
+
+  it('shows error message when export fails', async () => {
+    const onExport = vi.fn().mockRejectedValue(new Error('Network error'))
+    render(
+      <SprintReportPanel
+        hoursPerCategory={{ QA: 5 }}
+        allCategories={['QA']}
+        exportStatus="pending"
+        exportReady
+        onExport={onExport}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: /export to sharepoint/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network error')
   })
 })
