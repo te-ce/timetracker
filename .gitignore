@@ -16,6 +16,9 @@ test-results
 .env.local
 *.local
 
+# Generated reports
+architecture-report.html
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
