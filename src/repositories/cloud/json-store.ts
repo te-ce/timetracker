@@ -20,6 +20,10 @@ export class JsonCollectionStore<T> {
     return this.cache
   }
 
+  clearCache(): void {
+    this.cache = null
+  }
+
   async upsert(item: T, idFn: (item: T) => unknown): Promise<void> {
     const items = await this.getAll()
     const id = idFn(item)
@@ -68,6 +72,10 @@ export class JsonRecordStore<V> {
     if (this.cache) return this.cache
     this.cache = (await this.adapter.get<Record<string, V>>(this.key)) ?? {}
     return this.cache
+  }
+
+  clearCache(): void {
+    this.cache = null
   }
 
   async set(recordKey: string, value: V): Promise<void> {

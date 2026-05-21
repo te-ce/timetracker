@@ -22,4 +22,8 @@ export class CloudTimeEntryRepository implements TimeEntryRepository {
   async delete(id: string): Promise<void> {
     await this.store.remove(id, (e) => e.id)
   }
+
+  clearCache(): void {
+    this.store.clearCache()
+  }
 }

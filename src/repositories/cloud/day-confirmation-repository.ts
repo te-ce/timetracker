@@ -30,4 +30,8 @@ export class CloudDayConfirmationRepository implements DayConfirmationRepository
     }
     return result
   }
+
+  clearCache(): void {
+    this.store.clearCache()
+  }
 }

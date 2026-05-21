@@ -27,4 +27,8 @@ export class CloudWorkPeriodRepository implements WorkPeriodRepository {
   async delete(id: string): Promise<void> {
     await this.store.remove(id, (w) => w.id)
   }
+
+  clearCache(): void {
+    this.store.clearCache()
+  }
 }

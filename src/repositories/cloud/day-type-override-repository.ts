@@ -24,4 +24,8 @@ export class CloudDayTypeOverrideRepository implements DayTypeOverrideRepository
   async delete(date: string): Promise<void> {
     await this.store.remove(date)
   }
+
+  clearCache(): void {
+    this.store.clearCache()
+  }
 }

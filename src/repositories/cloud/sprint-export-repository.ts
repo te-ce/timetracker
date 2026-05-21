@@ -16,4 +16,8 @@ export class CloudSprintExportRepository implements SprintExportRepository {
   async findBySprintIndex(sprintIndex: number): Promise<SprintExport | null> {
     return this.store.find((e) => e.sprintIndex === sprintIndex)
   }
+
+  clearCache(): void {
+    this.store.clearCache()
+  }
 }

@@ -34,4 +34,8 @@ export class CloudConfigRepository implements ConfigRepository {
     this.cache = { ...config }
     await this.adapter.put(KEY, config)
   }
+
+  clearCache(): void {
+    this.cache = null
+  }
 }
