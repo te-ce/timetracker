@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react'
+import { useState, useRef, useEffect, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntryRepository, WorkPeriodRepository, DayConfirmationRepository, DayTypeOverrideRepository, WorkLocationRepository, DayTypeOverride, WorkLocation } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
@@ -20,6 +20,23 @@ const STATUS_DOT: Record<DayStatus, string> = {
   'non-working': 'bg-gray-300',
   'leave': 'bg-purple-400',
 }
+
+const STATUS_LEGEND: Array<{ color: string; label: string }> = [
+  { color: 'bg-emerald-400', label: 'Confirmed / balanced' },
+  { color: 'bg-amber-400', label: 'Logged, needs balancing' },
+  { color: 'bg-blue-400', label: 'No hours logged' },
+  { color: 'bg-indigo-400', label: 'Today' },
+  { color: 'bg-purple-400', label: 'Vacation / sick / absence' },
+  { color: 'bg-gray-300', label: 'Future / non-working' },
+]
+
+const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'WorkDay', label: 'Work Day' },
+  { value: 'Vacation', label: 'Vacation' },
+  { value: 'SickDay', label: 'Sick Day' },
+  { value: 'PublicHoliday', label: 'Public Holiday' },
+  { value: 'Absence', label: 'Absence' },
+]
 
 interface Props {
   year: number
@@ -43,6 +60,13 @@ interface Props {
 interface SprintGroup {
   label: string
   rows: MonthGridRow[]
+}
+
+interface DotPopoverState {
+  date: string
+  currentDayType: string
+  top: number
+  left: number
 }
 
 function computeSprintGroups(rows: MonthGridRow[], sprintStartDate: string | null, sprintLengthDays: number): SprintGroup[] {
@@ -80,10 +104,30 @@ function computeSprintGroups(rows: MonthGridRow[], sprintStartDate: string | nul
 
 export function MonthGrid({ year, month, timeEntryRepository, workPeriodRepository, dayConfirmationRepository, dayTypeOverrideRepository, workLocationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set(), sprintStartDate = null, sprintLengthDays = 14, workLocations = new Map(), defaultWorkLocation = null }: Props) {
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
+  const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
 
   const from = new Date(year, month - 1, 1)
   const to = new Date(year, month, 0)
   const todayIso = toLocalIso(new Date())
+
+  useEffect(() => {
+    if (!dotPopover) return
+    function handleClick(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setDotPopover(null)
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setDotPopover(null)
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [dotPopover])
 
   const { data: entries = [] } = useQuery({
     queryKey: ['timeEntries', year, month],
@@ -227,6 +271,18 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
     locationMutation.mutate({ date, location: next })
   }
 
+  function handleDotClick(e: React.MouseEvent<HTMLButtonElement>, row: MonthGridRow) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const currentDayType = row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')
+    setDotPopover({ date: row.date, currentDayType, top: rect.bottom + 6, left: rect.left })
+  }
+
+  function handleDayTypeSelect(value: string) {
+    if (!dotPopover) return
+    dayTypeMutation.mutate({ date: dotPopover.date, value })
+    setDotPopover(null)
+  }
+
   const allCategories = getAllCategories(customCategories, categoryOrder)
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, sprintStartDate, sprintLengthDays)
@@ -236,7 +292,8 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
   const officeDays = workDaysWithLocation.filter((r) => workLocations.get(r.date) === 'Office').length
   const officePercent = workDaysWithLocation.length > 0 ? Math.round((officeDays / workDaysWithLocation.length) * 100) : 0
 
-  const colCount = allCategories.length + 5 // day + status + worked + separator + categories + type + location + confirm
+  // day + status + worked + location + separator + categories + confirm
+  const colCount = allCategories.length + 6
 
   let globalRowIdx = 0
 
@@ -252,8 +309,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
               <th className="sticky left-0 z-30 bg-white px-2 py-1.5 text-left w-12 border-b">Day</th>
               <th className="sticky left-12 z-30 bg-white px-1 py-1.5 w-5 border-b" title="Status"></th>
               <th className="sticky left-[4.25rem] z-30 bg-white px-2 py-1.5 text-right w-16 border-b" role="columnheader">Worked</th>
-              <th className="px-1 py-1.5 text-center w-14 border-b text-xs border-l border-gray-200">Type</th>
-              <th className="px-1 py-1.5 text-center w-10 border-b text-xs">📍</th>
+              <th className="px-1 py-1.5 text-center w-10 border-b text-xs border-l border-gray-200">📍</th>
               <th className="w-px border-l border-b border-gray-300"></th>
               {allCategories.map((cat) => (
                 <th
@@ -291,7 +347,13 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                       {row.date.slice(8)}<span className="text-gray-400 ml-0.5">{dayLabel}</span>
                     </td>
                     <td className={`sticky left-12 z-10 px-1 py-1 ${rowBg}`}>
-                      <span className={`inline-block h-2 w-2 rounded-full ${STATUS_DOT[status]}`} title={status} />
+                      <button
+                        onClick={(e) => handleDotClick(e, row)}
+                        className="inline-flex items-center justify-center rounded-full hover:ring-2 hover:ring-offset-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        aria-label={`Day status: ${status}. Click to change day type.`}
+                      >
+                        <span className={`inline-block h-2 w-2 rounded-full ${STATUS_DOT[status]}`} />
+                      </button>
                     </td>
                     <WorkedHoursCell
                       date={row.date}
@@ -299,21 +361,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                       repository={workPeriodRepository}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}`}
                     />
-                    <td className="px-0.5 py-0.5 w-16 text-center border-l border-gray-200">
-                      <select
-                        value={row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')}
-                        onChange={(e) => dayTypeMutation.mutate({ date: row.date, value: e.target.value })}
-                        className="w-full text-[10px] rounded border px-0.5 py-0.5 pr-4 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%2010%2010%22%3E%3Cpath%20d%3D%22M2%203l3%204%203-4%22%20fill%3D%22%23666%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_2px_center]"
-                        aria-label={`Day type ${row.date}`}
-                      >
-                        <option value="WorkDay">Work Day</option>
-                        <option value="Vacation">Vacation</option>
-                        <option value="SickDay">Sick Day</option>
-                        <option value="PublicHoliday">Public Holiday</option>
-                        <option value="Absence">Absence</option>
-                      </select>
-                    </td>
-                    <td className="px-0 py-0 w-10 text-center">
+                    <td className="px-0 py-0 w-10 text-center border-l border-gray-200">
                       <button
                         onClick={() => cycleLocation(row.date)}
                         className="w-full h-full text-xs hover:bg-gray-100 py-1"
@@ -399,7 +447,6 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                       <td className="sticky left-12 z-10 bg-indigo-50/40"></td>
                       <td className="sticky left-[4.25rem] z-10 bg-indigo-50/40 px-2 py-0.5 text-right text-xs font-medium">{sprintWorked.toFixed(2)}</td>
                       <td></td>
-                      <td></td>
                       <td className="w-px border-l border-gray-200"></td>
                       {allCategories.map((cat) => {
                         const catTotal = group.rows.reduce((sum, row) => {
@@ -426,7 +473,6 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
               <td className="sticky left-12 z-30 bg-white"></td>
               <td className="sticky left-[4.25rem] z-30 bg-white px-2 py-1 text-right" data-testid="total-worked">{totalWorked.toFixed(2)}</td>
               <td></td>
-              <td></td>
               <td className="w-px border-l border-gray-300"></td>
               {allCategories.map((cat) => {
                 const catTotal = rows.reduce((sum, row) => {
@@ -445,6 +491,44 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
           </tfoot>
         </table>
       </div>
+
+      {/* Status dot popover — fixed, outside overflow container */}
+      {dotPopover && (
+        <div
+          ref={popoverRef}
+          style={{ top: dotPopover.top, left: dotPopover.left }}
+          className="fixed z-[300] w-52 rounded-lg border bg-white p-3 shadow-lg"
+        >
+          {/* Color legend */}
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Status legend</p>
+          <ul className="mb-3 flex flex-col gap-1">
+            {STATUS_LEGEND.map((item) => (
+              <li key={item.label} className="flex items-center gap-2 text-xs text-gray-600">
+                <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${item.color}`} />
+                {item.label}
+              </li>
+            ))}
+          </ul>
+
+          {/* Day type selector */}
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Day type</p>
+          <div className="flex flex-wrap gap-1">
+            {DAY_TYPE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleDayTypeSelect(opt.value)}
+                className={`rounded px-2 py-0.5 text-xs transition-colors ${
+                  dotPopover.currentDayType === opt.value
+                    ? 'bg-indigo-600 text-white'
+                    : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
