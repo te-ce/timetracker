@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { timeEntryRepo, workPeriodRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
-import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
-import { CategoryReorderPopover } from '../components/CategoryReorderPopover'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
@@ -14,14 +12,40 @@ export function MonthGridView() {
   const todayIso = toLocalIso(today)
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
+  const queryClient = useQueryClient()
+  const from = new Date(year, month - 1, 1)
+  const to = new Date(year, month, 0)
+
+  const categoryReorderMutation = useMutation({
+    mutationFn: async (categoryOrder: string[]) => {
+      const cfg = await configRepo.get()
+      return configRepo.save({ ...cfg, categoryOrder })
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+  })
+
+  const categoryRenameMutation = useMutation({
+    mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
+      const cfg = await configRepo.get()
+      const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
+      const newOrder = (cfg.categoryOrder ?? []).map((c) => (c === oldName ? newName : c))
+      await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder })
+      const currentEntries = await timeEntryRepo.findByDateRange(from, to)
+      for (const entry of currentEntries.filter((e) => e.category === oldName)) {
+        await timeEntryRepo.save({ ...entry, category: newName })
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['config'] })
+      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+    },
+  })
 
   const { data: config } = useQuery({
     queryKey: ['config'],
     queryFn: () => configRepo.get(),
   })
 
-  const from = new Date(year, month - 1, 1)
-  const to = new Date(year, month, 0)
   const fromIso = toLocalIso(from)
   const toIso = toLocalIso(to)
 
@@ -79,22 +103,20 @@ export function MonthGridView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-4">
-        <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">←</button>
-        <h2 className="inline-block min-w-[11rem] text-lg font-semibold">{monthLabel}</h2>
-        <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">→</button>
-        <button
-          onClick={() => { const now = new Date(); setYear(now.getFullYear()); setMonth(now.getMonth() + 1) }}
-          className="rounded border px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
-        >
-          Today
-        </button>
-        <div className="ml-auto flex items-center gap-2">
-          <CategoryReorderPopover repository={configRepo} />
-          <AutoCategoryPicker />
+      <div className="flex items-center">
+        <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">← Prev</button>
+        <div className="flex flex-1 items-center justify-center gap-2">
+          <h2 className="text-lg font-semibold">{monthLabel}</h2>
+          <button
+            onClick={() => { const now = new Date(); setYear(now.getFullYear()); setMonth(now.getMonth() + 1) }}
+            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+          >
+            Today
+          </button>
         </div>
+        <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">Next →</button>
       </div>
-      <OvertimeBar overtimeToDate={toDate.value} hoursNeededToday={toDate.hoursNeededToday} />
+      <OvertimeBar sollstunden={sollstunden} overtimeToDate={toDate.value} hoursNeededToday={toDate.hoursNeededToday} />
       <MonthGrid
         year={year}
         month={month}
@@ -108,10 +130,12 @@ export function MonthGridView() {
         categoryOrder={config?.categoryOrder}
         dayTypes={dayTypeOverrides}
         confirmedDays={confirmedDays}
-        sprintStartDate={config?.sprintStartDate ?? null}
+        sprintStartDate={config?.sprintStartDate ?? '2024-01-01'}
         sprintLengthDays={config?.sprintLengthDays ?? 14}
         workLocations={workLocations}
         defaultWorkLocation={config?.defaultWorkLocation ?? null}
+        onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
+        onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       />
     </div>
   )

@@ -121,4 +121,99 @@ describe('MonthGrid', () => {
       expect(screen.getByTestId('total-worked')).toHaveTextContent('11.00')
     })
   })
+
+  describe('column rename', () => {
+    function setupWithRename(onRename: ReturnType<typeof vi.fn>) {
+      const entryRepo = new InMemoryTimeEntryRepository([])
+      const windowRepo = new InMemoryWorkPeriodRepository([])
+      const confirmRepo = new InMemoryDayConfirmationRepository()
+      const dayTypeRepo = new InMemoryDayTypeOverrideRepository()
+      const locationRepo = new InMemoryWorkLocationRepository()
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MonthGrid
+            year={2026}
+            month={5}
+            timeEntryRepository={entryRepo}
+            workPeriodRepository={windowRepo}
+            dayConfirmationRepository={confirmRepo}
+            dayTypeOverrideRepository={dayTypeRepo}
+            workLocationRepository={locationRepo}
+            autoCategory="_COREMEDIA"
+            onCategoryRename={onRename}
+          />
+        </QueryClientProvider>,
+      )
+      return { entryRepo }
+    }
+
+    it('double-clicking a column header shows an edit input', async () => {
+      const onRename = vi.fn()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      await userEvent.dblClick(header.querySelector('span')!)
+      expect(screen.getByDisplayValue('_SUPPORT')).toBeInTheDocument()
+    })
+
+    it('pressing Enter commits the rename', async () => {
+      const onRename = vi.fn()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      await userEvent.dblClick(header.querySelector('span')!)
+      const input = screen.getByDisplayValue('_SUPPORT')
+      await userEvent.clear(input)
+      await userEvent.type(input, 'Support{Enter}')
+      expect(onRename).toHaveBeenCalledWith('_SUPPORT', 'Support')
+    })
+
+    it('pressing Escape cancels without calling onCategoryRename', async () => {
+      const onRename = vi.fn()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      await userEvent.dblClick(header.querySelector('span')!)
+      await userEvent.keyboard('{Escape}')
+      expect(onRename).not.toHaveBeenCalled()
+      expect(screen.queryByDisplayValue('_SUPPORT')).not.toBeInTheDocument()
+    })
+
+    it('does not call onCategoryRename when name is unchanged', async () => {
+      const onRename = vi.fn()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      await userEvent.dblClick(header.querySelector('span')!)
+      const input = screen.getByDisplayValue('_SUPPORT')
+      await userEvent.click(input)
+      await userEvent.tab() // blur without changing
+      expect(onRename).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('column reorder', () => {
+    it('column headers are draggable when onCategoryReorder is provided', async () => {
+      const entryRepo = new InMemoryTimeEntryRepository([])
+      const windowRepo = new InMemoryWorkPeriodRepository([])
+      const confirmRepo = new InMemoryDayConfirmationRepository()
+      const dayTypeRepo = new InMemoryDayTypeOverrideRepository()
+      const locationRepo = new InMemoryWorkLocationRepository()
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MonthGrid
+            year={2026}
+            month={5}
+            timeEntryRepository={entryRepo}
+            workPeriodRepository={windowRepo}
+            dayConfirmationRepository={confirmRepo}
+            dayTypeOverrideRepository={dayTypeRepo}
+            workLocationRepository={locationRepo}
+            autoCategory="_COREMEDIA"
+            onCategoryReorder={vi.fn()}
+          />
+        </QueryClientProvider>,
+      )
+      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      expect(header).toHaveAttribute('draggable', 'true')
+    })
+  })
 })

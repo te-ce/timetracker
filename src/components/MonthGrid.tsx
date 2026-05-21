@@ -55,6 +55,8 @@ interface Props {
   sprintLengthDays?: number
   workLocations?: Map<string, WorkLocation>
   defaultWorkLocation?: WorkLocation | null
+  onCategoryReorder?: (order: string[]) => void
+  onCategoryRename?: (oldName: string, newName: string) => void
 }
 
 interface SprintGroup {
@@ -102,10 +104,14 @@ function computeSprintGroups(rows: MonthGridRow[], sprintStartDate: string | nul
   return groups
 }
 
-export function MonthGrid({ year, month, timeEntryRepository, workPeriodRepository, dayConfirmationRepository, dayTypeOverrideRepository, workLocationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set(), sprintStartDate = null, sprintLengthDays = 14, workLocations = new Map(), defaultWorkLocation = null }: Props) {
+export function MonthGrid({ year, month, timeEntryRepository, workPeriodRepository, dayConfirmationRepository, dayTypeOverrideRepository, workLocationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set(), sprintStartDate = null, sprintLengthDays = 14, workLocations = new Map(), defaultWorkLocation = null, onCategoryReorder, onCategoryRename }: Props) {
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const colDragIdx = useRef<number | null>(null)
+  const [colDragOverIdx, setColDragOverIdx] = useState<number | null>(null)
+  const [editingCat, setEditingCat] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
 
   const from = new Date(year, month - 1, 1)
   const to = new Date(year, month, 0)
@@ -279,6 +285,43 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
     setDotPopover(null)
   }
 
+  function handleColDragStart(idx: number) {
+    colDragIdx.current = idx
+  }
+
+  function handleColDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault()
+    setColDragOverIdx(idx)
+  }
+
+  function handleColDrop(idx: number, categories: string[]) {
+    const from = colDragIdx.current
+    if (from === null || from === idx) {
+      colDragIdx.current = null
+      setColDragOverIdx(null)
+      return
+    }
+    const newOrder = [...categories]
+    const [moved] = newOrder.splice(from, 1)
+    newOrder.splice(idx, 0, moved)
+    onCategoryReorder?.(newOrder)
+    colDragIdx.current = null
+    setColDragOverIdx(null)
+  }
+
+  function handleColDragEnd() {
+    colDragIdx.current = null
+    setColDragOverIdx(null)
+  }
+
+  function commitRename(oldName: string) {
+    const newName = editValue.trim()
+    setEditingCat(null)
+    if (newName && newName !== oldName) {
+      onCategoryRename?.(oldName, newName)
+    }
+  }
+
   const allCategories = getAllCategories(customCategories, categoryOrder)
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, sprintStartDate, sprintLengthDays)
@@ -307,14 +350,40 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
               <th className="sticky left-[4.25rem] z-30 bg-white px-2 py-1.5 text-right w-16 border-b" role="columnheader">Worked</th>
               <th className="px-1 py-1.5 text-center w-10 border-b text-xs border-l border-gray-200">📍</th>
               <th className="w-px border-l border-b border-gray-300"></th>
-              {allCategories.map((cat) => (
+              {allCategories.map((cat, catIdx) => (
                 <th
                   key={cat}
-                  className="px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b"
+                  draggable={editingCat !== cat && !!onCategoryReorder}
+                  onDragStart={() => handleColDragStart(catIdx)}
+                  onDragOver={(e) => handleColDragOver(e, catIdx)}
+                  onDrop={() => handleColDrop(catIdx, allCategories)}
+                  onDragEnd={handleColDragEnd}
+                  className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b select-none ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''} ${colDragOverIdx === catIdx ? 'bg-indigo-50' : ''}`}
                   role="columnheader"
-                  title={cat}
+                  title={onCategoryRename ? 'Double-click to rename' : cat}
                 >
-                  <span className="block truncate text-xs">{cat}</span>
+                  {editingCat === cat ? (
+                    <input
+                      autoFocus
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => commitRename(cat)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitRename(cat)
+                        if (e.key === 'Escape') setEditingCat(null)
+                      }}
+                      className="w-full bg-transparent text-xs border-b border-indigo-400 focus:outline-none text-left"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span
+                      className={`block truncate text-xs ${onCategoryRename ? 'cursor-text' : ''}`}
+                      onDoubleClick={() => { if (onCategoryRename) { setEditingCat(cat); setEditValue(cat) } }}
+                    >
+                      {cat}
+                    </span>
+                  )}
                 </th>
               ))}
               <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200">
@@ -404,23 +473,21 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                         </td>
                       )
                     })}
-                    <td className="px-0.5 py-0.5 w-10 text-center border-l border-gray-200">
+                    <td
+                      className={`w-10 text-center border-l border-gray-200 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
+                      onClick={() => {
+                        if (isNonWorkDay) return
+                        confirmedDays.has(row.date)
+                          ? gridUnconfirmMutation.mutate(row.date)
+                          : gridConfirmMutation.mutate(row)
+                      }}
+                      aria-label={confirmedDays.has(row.date) ? `Unconfirm ${row.date}` : `Confirm ${row.date}`}
+                      title={confirmedDays.has(row.date) ? 'Confirmed — click to undo' : 'Confirm day'}
+                    >
                       {!isNonWorkDay && (
-                        confirmedDays.has(row.date) ? (
-                          <button
-                            aria-label={`Unconfirm ${row.date}`}
-                            onClick={() => gridUnconfirmMutation.mutate(row.date)}
-                            className="text-emerald-600 text-xs font-bold hover:text-emerald-800"
-                            title="Confirmed — click to undo"
-                          >✓</button>
-                        ) : (
-                          <button
-                            aria-label={`Confirm ${row.date}`}
-                            onClick={() => gridConfirmMutation.mutate(row)}
-                            className="text-gray-300 text-xs hover:text-gray-600"
-                            title="Confirm day"
-                          >○</button>
-                        )
+                        <span className={`text-xs font-bold ${confirmedDays.has(row.date) ? 'text-emerald-600' : 'text-gray-300'}`}>
+                          {confirmedDays.has(row.date) ? '✓' : '○'}
+                        </span>
                       )}
                     </td>
                   </tr>
