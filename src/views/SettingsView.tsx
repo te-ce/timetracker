@@ -3,6 +3,7 @@ import { BundeslandSettings } from '../components/BundeslandSettings'
 import { CustomCategorySettings } from '../components/CustomCategorySettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
+import { SheetSelector } from '../components/SheetSelector'
 import { configRepo } from '../repositories/shared'
 
 export function SettingsView() {
@@ -14,6 +15,7 @@ export function SettingsView() {
       <DefaultLocationSettings repository={configRepo} />
       <CustomCategorySettings repository={configRepo} />
       <SharePointSettings repository={configRepo} />
+      <SheetSelector repository={configRepo} />
     </div>
   )
 }
