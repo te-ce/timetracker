@@ -260,7 +260,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
       dayType: row.dayType,
       hasWorkedHours: row.workedHours > 0,
       isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
-      hasAutoCategory: !!autoCategory,
+      hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
       isConfirmed: confirmedDays.has(row.date),
       isoDate: row.date,
       today: todayIso,
@@ -360,7 +360,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                   onDragEnd={handleColDragEnd}
                   className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b select-none ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''} ${colDragOverIdx === catIdx ? 'bg-indigo-50' : ''}`}
                   role="columnheader"
-                  title={onCategoryRename ? 'Double-click to rename' : cat}
+                  title={cat === autoCategory ? `${cat} — auto category (absorbs remaining hours)` : onCategoryRename ? 'Double-click to rename' : cat}
                 >
                   {editingCat === cat ? (
                     <input
@@ -383,6 +383,9 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                     >
                       {cat}
                     </span>
+                  )}
+                  {cat === autoCategory && (
+                    <span aria-hidden="true" className="block text-center text-[9px] text-indigo-400 font-medium leading-none mt-0.5 tracking-wide">auto</span>
                   )}
                 </th>
               ))}

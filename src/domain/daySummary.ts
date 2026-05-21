@@ -71,7 +71,8 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     if (dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(workedHours)
 
-    const hasAutoCategory = !!(autoCategoryOverrides.get(iso) ?? globalAutoCategory)
+    const autoCategory = autoCategoryOverrides.get(iso) ?? globalAutoCategory
+    const hasAutoCategory = !!autoCategory && entryTotal <= workedHours
 
     const dayStatus = getDayStatus({
       dayType,
