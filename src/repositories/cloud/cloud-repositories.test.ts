@@ -1,7 +1,7 @@
 import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'
 import { CloudTimeEntryRepository } from './time-entry-repository'
-import { CloudWorkWindowRepository } from './work-window-repository'
+import { CloudWorkPeriodRepository } from './work-period-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
 import { CloudWorkLocationRepository } from './work-location-repository'
 import { CloudDayTypeOverrideRepository } from './day-type-override-repository'
@@ -60,10 +60,10 @@ describe('CloudTimeEntryRepository', () => {
   })
 })
 
-describe('CloudWorkWindowRepository', () => {
+describe('CloudWorkPeriodRepository', () => {
   it('saves and finds by date', async () => {
     const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkWindowRepository(adapter)
+    const repo = new CloudWorkPeriodRepository(adapter)
     await repo.save({ id: 'w1', date: '2024-01-15', start: '09:00', end: '17:00' })
     const results = await repo.findByDate(new Date('2024-01-15'))
     expect(results).toHaveLength(1)
@@ -72,7 +72,7 @@ describe('CloudWorkWindowRepository', () => {
 
   it('finds by date range', async () => {
     const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkWindowRepository(adapter)
+    const repo = new CloudWorkPeriodRepository(adapter)
     await repo.save({ id: 'w1', date: '2024-01-15', start: '09:00', end: '12:00' })
     await repo.save({ id: 'w2', date: '2024-01-16', start: '10:00', end: '18:00' })
     const results = await repo.findByDateRange(new Date('2024-01-15'), new Date('2024-01-16'))
@@ -81,7 +81,7 @@ describe('CloudWorkWindowRepository', () => {
 
   it('deletes window', async () => {
     const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkWindowRepository(adapter)
+    const repo = new CloudWorkPeriodRepository(adapter)
     await repo.save({ id: 'w1', date: '2024-01-15', start: '09:00', end: '17:00' })
     await repo.delete('w1')
     const results = await repo.findByDate(new Date('2024-01-15'))

@@ -1,6 +1,6 @@
 export * from './config-repository'
 export * from './time-entry-repository'
-export * from './work-window-repository'
+export * from './work-period-repository'
 export * from './sprint-export-repository'
 export * from './work-location-repository'
 export * from './day-type-override-repository'

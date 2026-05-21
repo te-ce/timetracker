@@ -1,13 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryWorkWindowRepository } from '../repositories/in-memory'
+import { InMemoryWorkPeriodRepository } from '../repositories/in-memory'
 import { WorkedHoursCell } from './WorkedHoursCell'
 
 const DATE = '2024-01-15'
 
 function setup(initialWindows: Array<{ id: string; date: string; start: string; end: string }> = []) {
-  const repo = new InMemoryWorkWindowRepository(initialWindows)
+  const repo = new InMemoryWorkPeriodRepository(initialWindows)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>

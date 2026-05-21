@@ -1,5 +1,5 @@
 import type { DayType } from './dayType'
-import type { TimeEntry, WorkWindow } from '../repositories/types'
+import type { TimeEntry, WorkPeriod } from '../repositories/types'
 import { calculateWorkedHours } from './worktime'
 
 export interface MonthGridRow {
@@ -16,7 +16,7 @@ export interface MonthGridInput {
   year: number
   month: number
   timeEntries: TimeEntry[]
-  workWindows: WorkWindow[]
+  workPeriods: WorkPeriod[]
   dayTypes: Map<string, DayType>
   autoCategory: string
   autoCategoryOverrides: Map<string, string>
@@ -34,12 +34,12 @@ function padDay(year: number, month: number, day: number): string {
 }
 
 export function buildMonthGrid(input: MonthGridInput): MonthGridRow[] {
-  const { year, month, workWindows, timeEntries } = input
+  const { year, month, workPeriods, timeEntries } = input
   const totalDays = daysInMonth(year, month)
 
-  // Group work windows by date
-  const windowsByDate = new Map<string, WorkWindow[]>()
-  for (const w of workWindows) {
+  // Group work periods by date
+  const windowsByDate = new Map<string, WorkPeriod[]>()
+  for (const w of workPeriods) {
     const list = windowsByDate.get(w.date) ?? []
     list.push(w)
     windowsByDate.set(w.date, list)

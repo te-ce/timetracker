@@ -68,7 +68,7 @@ export function SprintView() {
           ← Prev
         </button>
         <h2 className="text-lg font-semibold">
-          Sprint {sprint.index + 1}
+          <span className="inline-block min-w-[5.5rem]">Sprint {sprint.index + 1}</span>
           <span className="ml-2 text-sm font-normal text-gray-500">
             {sprint.start} → {sprint.end}
           </span>

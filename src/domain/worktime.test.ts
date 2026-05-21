@@ -1,21 +1,21 @@
 import { describe, it, expect } from 'vitest'
 import { calculateWorkedHours, calculateRestarbeitszeit } from './worktime'
-import type { WorkWindow } from '../repositories/types'
+import type { WorkPeriod } from '../repositories/types'
 
-const makeWindow = (start: string, end: string | null): WorkWindow => ({
+const makeWindow = (start: string, end: string | null): WorkPeriod => ({
   id: '1', date: '2024-01-15', start, end,
 })
 
 describe('calculateWorkedHours', () => {
-  it('returns 0 when there are no WorkWindows', () => {
+  it('returns 0 when there are no WorkPeriods', () => {
     expect(calculateWorkedHours([])).toBe(0)
   })
 
-  it('returns the duration in decimal hours for a single WorkWindow', () => {
+  it('returns the duration in decimal hours for a single WorkPeriod', () => {
     expect(calculateWorkedHours([makeWindow('09:00', '17:00')])).toBe(8)
   })
 
-  it('sums durations across multiple WorkWindows', () => {
+  it('sums durations across multiple WorkPeriods', () => {
     const windows = [makeWindow('09:00', '12:00'), makeWindow('13:00', '17:00')]
     expect(calculateWorkedHours(windows)).toBe(7)
   })
@@ -24,11 +24,11 @@ describe('calculateWorkedHours', () => {
     expect(calculateWorkedHours([makeWindow('09:00', '09:30')])).toBe(0.5)
   })
 
-  it('handles a WorkWindow that spans midnight', () => {
+  it('handles a WorkPeriod that spans midnight', () => {
     expect(calculateWorkedHours([makeWindow('23:00', '01:00')])).toBe(2)
   })
 
-  it('skips an open WorkWindow (null end) when no now is provided', () => {
+  it('skips an open WorkPeriod (null end) when no now is provided', () => {
     expect(calculateWorkedHours([makeWindow('09:00', null)])).toBe(0)
   })
 

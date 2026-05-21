@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
-import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
-import { workWindowRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
+import { workPeriodRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
@@ -34,7 +33,7 @@ export function MonthView() {
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', year, month, 'month'],
-    queryFn: () => workWindowRepo.findByDateRange(from, to),
+    queryFn: () => workPeriodRepo.findByDateRange(from, to),
   })
 
   const fromIso = toLocalIso(from)
@@ -94,9 +93,8 @@ export function MonthView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center">
         <span className="text-xs text-gray-500">🏢 Office: {officePercent}% ({officeDays}/{trackedWorkDays.length} days)</span>
-        <AutoCategoryPicker />
       </div>
       <MonthStatsPanel
         workedHoursPerDay={workedHoursPerDay}

@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { WorkWindow, WorkWindowRepository } from '../repositories/types'
+import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
 import { calculateWorkedHours, calculateRestarbeitszeit } from '../domain/worktime'
-import { useWorkWindowMutations } from '../hooks/useWorkWindowMutations'
+import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
 
 interface Props {
   date: string
   sollstunden: number
-  repository: WorkWindowRepository
+  repository: WorkPeriodRepository
 }
 
-export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
+export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -36,7 +36,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
     return () => clearInterval(id)
   }, [hasOpenWindow])
 
-  const { save: addMutation, remove: removeMutation } = useWorkWindowMutations(repository)
+  const { save: addMutation, remove: removeMutation } = useWorkPeriodMutations(repository)
 
   const workedHours = calculateWorkedHours(windows, nowTime)
   const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)
@@ -52,7 +52,7 @@ export function WorkWindowPanel({ date, sollstunden, repository }: Props) {
     removeMutation.mutate(id)
   }
 
-  function handleEditStart(w: WorkWindow) {
+  function handleEditStart(w: WorkPeriod) {
     setEditingId(w.id)
     setEditStart(w.start)
     setEditEnd(w.end ?? '')

@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { workWindowRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo, dayConfirmationRepo, timeTrackingRepo } from '../repositories/shared'
-import { WorkWindowPanel } from '../components/WorkWindowPanel'
+import { workPeriodRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOverrideRepo, autoCategoryOverrideRepo, dayConfirmationRepo, timeTrackingRepo } from '../repositories/shared'
+import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
+import { CategoryReorderPopover } from '../components/CategoryReorderPopover'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateRestarbeitszeit } from '../domain/worktime'
@@ -38,7 +39,7 @@ export function DayView() {
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', selectedDate],
-    queryFn: () => workWindowRepo.findByDate(new Date(selectedDate)),
+    queryFn: () => workPeriodRepo.findByDate(new Date(selectedDate)),
   })
 
   const { data: entries = [] } = useQuery({
@@ -126,7 +127,7 @@ export function DayView() {
 
   const { data: monthWindows = [] } = useQuery({
     queryKey: ['workWindows', selectedYear, selectedMonth, 'dayOvertime'],
-    queryFn: () => workWindowRepo.findByDateRange(monthFrom, monthTo),
+    queryFn: () => workPeriodRepo.findByDateRange(monthFrom, monthTo),
   })
 
   const { data: monthEntries = [] } = useQuery({
@@ -159,10 +160,13 @@ export function DayView() {
     dayOverrides,
   })
 
+  const defaultWorkLocation = config?.defaultWorkLocation ?? null
+  const effectiveLocation: WorkLocation | null = workLocation ?? defaultWorkLocation
+
   const locationMutation = useMutation({
     mutationFn: async () => {
       const next: WorkLocation | null =
-        workLocation === null ? 'Office' : workLocation === 'Office' ? 'Remote' : null
+        effectiveLocation === null ? 'Office' : effectiveLocation === 'Office' ? 'Remote' : null
       if (next) {
         await workLocationRepo.save(selectedDate, next)
       } else {
@@ -188,7 +192,7 @@ export function DayView() {
         >
           ← Prev
         </button>
-        <h2 className="text-xl font-semibold">{formatDate(selectedDate)}</h2>
+        <h2 className="inline-block min-w-[19rem] text-xl font-semibold">{formatDate(selectedDate)}</h2>
         <button
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
           onClick={() => {
@@ -214,9 +218,10 @@ export function DayView() {
           className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
           aria-label="Work location"
         >
-          {workLocation === 'Office' ? '🏢 Office' : workLocation === 'Remote' ? '🏠 Remote' : '📍 Set location'}
+          {effectiveLocation === 'Office' ? '🏢 Office' : effectiveLocation === 'Remote' ? '🏠 Remote' : '📍 Set location'}
         </button>
         <AutoCategoryPicker />
+        <CategoryReorderPopover repository={configRepo} />
         {isConfirmed ? (
           <button
             onClick={() => unconfirmMutation.mutate()}
@@ -244,17 +249,17 @@ export function DayView() {
 
       <OvertimeBar overtimeToDate={overtimeToDate.value} hoursNeededToday={overtimeToDate.hoursNeededToday} />
 
-      <WorkWindowPanel
+      <WorkPeriodPanel
         date={selectedDate}
         sollstunden={sollstunden}
-        repository={workWindowRepo}
+        repository={workPeriodRepo}
       />
 
       <TimeEntryPanel
         date={selectedDate}
         repository={timeEntryRepo}
         timeTrackingRepository={timeTrackingRepo}
-        workWindowRepository={workWindowRepo}
+        workPeriodRepository={workPeriodRepo}
         customCategories={config?.customCategories ?? []}
         categoryOrder={config?.categoryOrder}
         autoCategory={autoCategory}

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { timeEntryRepo, workWindowRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
+import { timeEntryRepo, workPeriodRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
+import { CategoryReorderPopover } from '../components/CategoryReorderPopover'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
@@ -31,7 +32,7 @@ export function MonthGridView() {
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', year, month, 'grid'],
-    queryFn: () => workWindowRepo.findByDateRange(from, to),
+    queryFn: () => workPeriodRepo.findByDateRange(from, to),
   })
 
   const { data: entries = [] } = useQuery({
@@ -80,7 +81,7 @@ export function MonthGridView() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">←</button>
-        <h2 className="text-lg font-semibold">{monthLabel}</h2>
+        <h2 className="inline-block min-w-[11rem] text-lg font-semibold">{monthLabel}</h2>
         <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">→</button>
         <button
           onClick={() => { const now = new Date(); setYear(now.getFullYear()); setMonth(now.getMonth() + 1) }}
@@ -88,7 +89,8 @@ export function MonthGridView() {
         >
           Today
         </button>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <CategoryReorderPopover repository={configRepo} />
           <AutoCategoryPicker />
         </div>
       </div>
@@ -97,7 +99,7 @@ export function MonthGridView() {
         year={year}
         month={month}
         timeEntryRepository={timeEntryRepo}
-        workWindowRepository={workWindowRepo}
+        workPeriodRepository={workPeriodRepo}
         dayConfirmationRepository={dayConfirmationRepo}
         dayTypeOverrideRepository={dayTypeOverrideRepo}
         workLocationRepository={workLocationRepo}
@@ -109,6 +111,7 @@ export function MonthGridView() {
         sprintStartDate={config?.sprintStartDate ?? null}
         sprintLengthDays={config?.sprintLengthDays ?? 14}
         workLocations={workLocations}
+        defaultWorkLocation={config?.defaultWorkLocation ?? null}
       />
     </div>
   )

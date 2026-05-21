@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { WorkWindowRepository } from '../repositories/types'
-import { useWorkWindowMutations } from '../hooks/useWorkWindowMutations'
+import type { WorkPeriodRepository } from '../repositories/types'
+import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
 
 interface Props {
   date: string
   workedHours: number
-  repository: WorkWindowRepository
+  repository: WorkPeriodRepository
   className?: string
 }
 
-function windowDuration(start: string, end: string): number {
+function windowDuration(start: string, end: string | null): number {
+  if (!end) return 0
   const [sh, sm] = start.split(':').map(Number)
   const [eh, em] = end.split(':').map(Number)
   return (eh * 60 + em - sh * 60 - sm) / 60
@@ -21,6 +22,8 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
   const [draftStart, setDraftStart] = useState('')
   const [draftEnd, setDraftEnd] = useState('')
   const ref = useRef<HTMLDivElement>(null)
+  const cellRef = useRef<HTMLTableCellElement>(null)
+  const [dialogPos, setDialogPos] = useState({ top: 0, left: 0 })
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', date, 'cell'],
@@ -28,7 +31,7 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
     enabled: open,
   })
 
-  const { save: addMutation, remove: removeMutation } = useWorkWindowMutations(repository)
+  const { save: addMutation, remove: removeMutation } = useWorkPeriodMutations(repository)
 
   useEffect(() => {
     if (!open) return
@@ -51,9 +54,16 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
   if (!open) {
     return (
       <td
+        ref={cellRef}
         className={`px-2 py-1 text-right cursor-pointer hover:bg-indigo-50 ${className}`}
         data-testid="worked-hours"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (cellRef.current) {
+            const rect = cellRef.current.getBoundingClientRect()
+            setDialogPos({ top: rect.bottom + 4, left: rect.left })
+          }
+          setOpen(true)
+        }}
       >
         {workedHours > 0 ? workedHours : ''}
       </td>
@@ -61,13 +71,17 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
   }
 
   return (
-    <td className="relative px-1 py-0.5" data-testid="worked-hours">
-      <div ref={ref} className="absolute z-50 top-0 left-0 w-56 rounded-lg border bg-white p-3 shadow-lg">
+    <td className="px-2 py-1 text-right" data-testid="worked-hours">
+      <div
+        ref={ref}
+        style={{ top: dialogPos.top, left: dialogPos.left }}
+        className="fixed z-[200] w-56 rounded-lg border bg-white p-3 shadow-lg"
+      >
         <ul className="flex flex-col gap-1 mb-2">
           {windows.map((w) => (
             <li key={w.id} className="flex items-center justify-between text-xs">
-              <span>{w.start}–{w.end}</span>
-              <span className="text-gray-500 mr-1">{windowDuration(w.start, w.end).toFixed(2)}h</span>
+              <span>{w.start}–{w.end ?? '…'}</span>
+              <span className="text-gray-500 mr-1">{w.end ? windowDuration(w.start, w.end).toFixed(2) + 'h' : '…'}</span>
               <button
                 onClick={() => removeMutation.mutate(w.id)}
                 className="text-red-400 hover:text-red-600"

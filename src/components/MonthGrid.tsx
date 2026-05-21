@@ -1,6 +1,6 @@
 import { useState, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { TimeEntryRepository, WorkWindowRepository, DayConfirmationRepository, DayTypeOverrideRepository, WorkLocationRepository, DayTypeOverride, WorkLocation } from '../repositories/types'
+import type { TimeEntryRepository, WorkPeriodRepository, DayConfirmationRepository, DayTypeOverrideRepository, WorkLocationRepository, DayTypeOverride, WorkLocation } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
 import type { DayStatus } from '../domain/dayStatus'
 import { getDayStatus } from '../domain/dayStatus'
@@ -25,7 +25,7 @@ interface Props {
   year: number
   month: number
   timeEntryRepository: TimeEntryRepository
-  workWindowRepository: WorkWindowRepository
+  workPeriodRepository: WorkPeriodRepository
   dayConfirmationRepository: DayConfirmationRepository
   dayTypeOverrideRepository: DayTypeOverrideRepository
   workLocationRepository: WorkLocationRepository
@@ -37,6 +37,7 @@ interface Props {
   sprintStartDate?: string | null
   sprintLengthDays?: number
   workLocations?: Map<string, WorkLocation>
+  defaultWorkLocation?: WorkLocation | null
 }
 
 interface SprintGroup {
@@ -77,7 +78,7 @@ function computeSprintGroups(rows: MonthGridRow[], sprintStartDate: string | nul
   return groups
 }
 
-export function MonthGrid({ year, month, timeEntryRepository, workWindowRepository, dayConfirmationRepository, dayTypeOverrideRepository, workLocationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set(), sprintStartDate = null, sprintLengthDays = 14, workLocations = new Map() }: Props) {
+export function MonthGrid({ year, month, timeEntryRepository, workPeriodRepository, dayConfirmationRepository, dayTypeOverrideRepository, workLocationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set(), sprintStartDate = null, sprintLengthDays = 14, workLocations = new Map(), defaultWorkLocation = null }: Props) {
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
 
   const from = new Date(year, month - 1, 1)
@@ -91,7 +92,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', year, month],
-    queryFn: () => workWindowRepository.findByDateRange(from, to),
+    queryFn: () => workPeriodRepository.findByDateRange(from, to),
   })
 
   const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(timeEntryRepository)
@@ -158,7 +159,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
     year,
     month,
     timeEntries: entries,
-    workWindows: windows,
+    workPeriods: windows,
     dayTypes,
     autoCategory,
     autoCategoryOverrides: new Map(),
@@ -217,8 +218,12 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
   }
 
   function cycleLocation(date: string) {
-    const current = workLocations.get(date) ?? null
-    const next: WorkLocation | null = current === null ? 'Office' : current === 'Office' ? 'Remote' : null
+    const explicit = workLocations.get(date) ?? null
+    const effective = explicit ?? defaultWorkLocation
+    const next: WorkLocation | null =
+      effective === null ? 'Office'
+      : effective === 'Office' ? 'Remote'
+      : null
     locationMutation.mutate({ date, location: next })
   }
 
@@ -248,7 +253,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
               <th className="sticky left-12 z-30 bg-white px-1 py-1.5 w-5 border-b" title="Status"></th>
               <th className="sticky left-[4.25rem] z-30 bg-white px-2 py-1.5 text-right w-16 border-b" role="columnheader">Worked</th>
               <th className="px-1 py-1.5 text-center w-14 border-b text-xs border-l border-gray-200">Type</th>
-              <th className="px-1 py-1.5 text-center w-10 border-b text-xs">Loc</th>
+              <th className="px-1 py-1.5 text-center w-10 border-b text-xs">📍</th>
               <th className="w-px border-l border-b border-gray-300"></th>
               {allCategories.map((cat) => (
                 <th
@@ -272,7 +277,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const rowBg = globalRowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50/70'
                 const status = getRowStatus(row)
-                const loc = workLocations.get(row.date) ?? null
+                const loc = workLocations.get(row.date) ?? defaultWorkLocation ?? null
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
                 globalRowIdx++
                 return (
@@ -291,7 +296,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                     <WorkedHoursCell
                       date={row.date}
                       workedHours={parseFloat(row.workedHours.toFixed(2))}
-                      repository={workWindowRepository}
+                      repository={workPeriodRepository}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}`}
                     />
                     <td className="px-0.5 py-0.5 w-16 text-center border-l border-gray-200">
@@ -301,17 +306,17 @@ export function MonthGrid({ year, month, timeEntryRepository, workWindowReposito
                         className="w-full text-[10px] rounded border px-0.5 py-0.5 pr-4 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2210%22%20height%3D%2210%22%20viewBox%3D%220%200%2010%2010%22%3E%3Cpath%20d%3D%22M2%203l3%204%203-4%22%20fill%3D%22%23666%22%2F%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[right_2px_center]"
                         aria-label={`Day type ${row.date}`}
                       >
-                        <option value="WorkDay">Work</option>
-                        <option value="Vacation">Vac</option>
-                        <option value="SickDay">Sick</option>
-                        <option value="PublicHoliday">Hol</option>
-                        <option value="Absence">Abs</option>
+                        <option value="WorkDay">Work Day</option>
+                        <option value="Vacation">Vacation</option>
+                        <option value="SickDay">Sick Day</option>
+                        <option value="PublicHoliday">Public Holiday</option>
+                        <option value="Absence">Absence</option>
                       </select>
                     </td>
-                    <td className="px-0.5 py-0.5 w-10 text-center">
+                    <td className="px-0 py-0 w-10 text-center">
                       <button
                         onClick={() => cycleLocation(row.date)}
-                        className="text-xs hover:bg-gray-100 rounded px-1"
+                        className="w-full h-full text-xs hover:bg-gray-100 py-1"
                         aria-label={`Location ${row.date}`}
                         title={loc ?? 'Not set'}
                       >

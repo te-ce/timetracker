@@ -1,14 +1,14 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryTimeEntryRepository, InMemoryWorkWindowRepository, InMemoryDayConfirmationRepository, InMemoryDayTypeOverrideRepository, InMemoryWorkLocationRepository } from '../repositories/in-memory'
+import { InMemoryTimeEntryRepository, InMemoryWorkPeriodRepository, InMemoryDayConfirmationRepository, InMemoryDayTypeOverrideRepository, InMemoryWorkLocationRepository } from '../repositories/in-memory'
 import { MonthGrid } from './MonthGrid'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
-import type { TimeEntry, WorkWindow } from '../repositories/types'
+import type { TimeEntry, WorkPeriod } from '../repositories/types'
 
-function setup(opts: { entries?: TimeEntry[]; windows?: WorkWindow[] } = {}) {
+function setup(opts: { entries?: TimeEntry[]; windows?: WorkPeriod[] } = {}) {
   const entryRepo = new InMemoryTimeEntryRepository(opts.entries ?? [])
-  const windowRepo = new InMemoryWorkWindowRepository(opts.windows ?? [])
+  const windowRepo = new InMemoryWorkPeriodRepository(opts.windows ?? [])
   const confirmRepo = new InMemoryDayConfirmationRepository()
   const dayTypeRepo = new InMemoryDayTypeOverrideRepository()
   const locationRepo = new InMemoryWorkLocationRepository()
@@ -20,7 +20,7 @@ function setup(opts: { entries?: TimeEntry[]; windows?: WorkWindow[] } = {}) {
         year={2026}
         month={5}
         timeEntryRepository={entryRepo}
-        workWindowRepository={windowRepo}
+        workPeriodRepository={windowRepo}
         dayConfirmationRepository={confirmRepo}
         dayTypeOverrideRepository={dayTypeRepo}
         workLocationRepository={locationRepo}
@@ -50,7 +50,7 @@ describe('MonthGrid', () => {
     expect(rows.length).toBe(33)
   })
 
-  it('displays workedHours computed from WorkWindows', async () => {
+  it('displays workedHours computed from WorkPeriods', async () => {
     setup({
       windows: [
         { id: 'w1', date: '2026-05-01', start: '09:00', end: '12:00' },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyDay, isWorkWindowExpected, getAutoBooking } from './dayType'
+import { classifyDay, isWorkPeriodExpected, getAutoBooking } from './dayType'
 import type { DayType } from './dayType'
 
 // 2024-01-13 = Saturday, 2024-01-14 = Sunday, 2024-01-15 = Monday
@@ -31,15 +31,15 @@ describe('classifyDay', () => {
   })
 })
 
-describe('isWorkWindowExpected', () => {
+describe('isWorkPeriodExpected', () => {
   it('returns true only for WorkDay', () => {
-    expect(isWorkWindowExpected('WorkDay')).toBe(true)
+    expect(isWorkPeriodExpected('WorkDay')).toBe(true)
   })
 
   it.each<DayType>(['Weekend', 'PublicHoliday', 'Vacation', 'SickDay', 'Absence'])(
     'returns false for %s',
     (dayType) => {
-      expect(isWorkWindowExpected(dayType)).toBe(false)
+      expect(isWorkPeriodExpected(dayType)).toBe(false)
     },
   )
 })

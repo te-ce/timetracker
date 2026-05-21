@@ -1,22 +1,22 @@
-import type { WorkWindow, WorkWindowRepository } from '../types'
+import type { WorkPeriod, WorkPeriodRepository } from '../types'
 import { toLocalIso } from '../../domain/dateUtils'
 
-export class InMemoryWorkWindowRepository implements WorkWindowRepository {
-  private readonly windows = new Map<string, WorkWindow>()
+export class InMemoryWorkPeriodRepository implements WorkPeriodRepository {
+  private readonly windows = new Map<string, WorkPeriod>()
 
-  constructor(initialWindows: WorkWindow[] = []) {
+  constructor(initialWindows: WorkPeriod[] = []) {
     for (const window of initialWindows) {
       this.windows.set(window.id, { ...window })
     }
   }
 
-  save(window: WorkWindow): Promise<void> {
+  save(window: WorkPeriod): Promise<void> {
     this.windows.set(window.id, { ...window })
 
     return Promise.resolve()
   }
 
-  findByDate(date: Date): Promise<WorkWindow[]> {
+  findByDate(date: Date): Promise<WorkPeriod[]> {
     const targetDate = toLocalIso(date)
 
     return Promise.resolve(
@@ -26,7 +26,7 @@ export class InMemoryWorkWindowRepository implements WorkWindowRepository {
     )
   }
 
-  findByDateRange(from: Date, to: Date): Promise<WorkWindow[]> {
+  findByDateRange(from: Date, to: Date): Promise<WorkPeriod[]> {
     const fromDate = toLocalIso(from)
     const toDate = toLocalIso(to)
 

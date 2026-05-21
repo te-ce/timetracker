@@ -33,7 +33,7 @@ export interface TimeEntry {
   hours: number
 }
 
-export interface WorkWindow {
+export interface WorkPeriod {
   id: string
   date: string
   start: string
@@ -48,6 +48,7 @@ export interface AppConfig {
   sprintStartDate: string | null
   customCategories: string[]
   categoryOrder?: string[]
+  defaultWorkLocation?: WorkLocation | null
 }
 
 export interface TimeEntryRepository {
@@ -56,10 +57,10 @@ export interface TimeEntryRepository {
   delete(id: string): Promise<void>
 }
 
-export interface WorkWindowRepository {
-  save(window: WorkWindow): Promise<void>
-  findByDate(date: Date): Promise<WorkWindow[]>
-  findByDateRange(from: Date, to: Date): Promise<WorkWindow[]>
+export interface WorkPeriodRepository {
+  save(window: WorkPeriod): Promise<void>
+  findByDate(date: Date): Promise<WorkPeriod[]>
+  findByDateRange(from: Date, to: Date): Promise<WorkPeriod[]>
   delete(id: string): Promise<void>
 }
 

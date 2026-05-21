@@ -7,7 +7,7 @@ describe('buildMonthGrid', () => {
       year: 2026,
       month: 5,
       timeEntries: [],
-      workWindows: [],
+      workPeriods: [],
       dayTypes: new Map(),
       autoCategory: 'Coremedia',
       autoCategoryOverrides: new Map(),
@@ -18,12 +18,12 @@ describe('buildMonthGrid', () => {
     expect(rows[30].date).toBe('2026-05-31')
   })
 
-  it('calculates workedHours from WorkWindows per day', () => {
+  it('calculates workedHours from WorkPeriods per day', () => {
     const rows = buildMonthGrid({
       year: 2026,
       month: 5,
       timeEntries: [],
-      workWindows: [
+      workPeriods: [
         { id: '1', date: '2026-05-01', start: '09:00', end: '12:00' },
         { id: '2', date: '2026-05-01', start: '13:00', end: '17:00' },
         { id: '3', date: '2026-05-02', start: '08:00', end: '16:30' },
@@ -48,7 +48,7 @@ describe('buildMonthGrid', () => {
         { id: '3', date: '2026-05-01', category: 'QA', hours: 1 },
         { id: '4', date: '2026-05-02', category: 'Infra', hours: 4 },
       ],
-      workWindows: [],
+      workPeriods: [],
       dayTypes: new Map(),
       autoCategory: 'Coremedia',
       autoCategoryOverrides: new Map(),
@@ -66,7 +66,7 @@ describe('buildMonthGrid', () => {
         { id: '1', date: '2026-05-01', category: 'QA', hours: 2 },
         { id: '2', date: '2026-05-01', category: 'Support', hours: 1 },
       ],
-      workWindows: [
+      workPeriods: [
         { id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' },
       ],
       dayTypes: new Map(),
@@ -85,7 +85,7 @@ describe('buildMonthGrid', () => {
       timeEntries: [
         { id: '1', date: '2026-05-01', category: 'QA', hours: 2 },
       ],
-      workWindows: [
+      workPeriods: [
         { id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' },
       ],
       dayTypes: new Map(),
@@ -107,7 +107,7 @@ describe('buildMonthGrid', () => {
       year: 2026,
       month: 5,
       timeEntries: [],
-      workWindows: [],
+      workPeriods: [],
       dayTypes: new Map(),
       autoCategory: 'Coremedia',
       autoCategoryOverrides: new Map(),
@@ -124,7 +124,7 @@ describe('buildMonthGrid', () => {
       year: 2026,
       month: 5,
       timeEntries: [],
-      workWindows: [],
+      workPeriods: [],
       dayTypes: new Map([['2026-05-01', 'PublicHoliday']]),
       autoCategory: 'Coremedia',
       autoCategoryOverrides: new Map(),

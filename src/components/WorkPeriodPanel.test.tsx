@@ -1,18 +1,18 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryWorkWindowRepository } from '../repositories/in-memory'
-import { WorkWindowPanel } from './WorkWindowPanel'
+import { InMemoryWorkPeriodRepository } from '../repositories/in-memory'
+import { WorkPeriodPanel } from './WorkPeriodPanel'
 
 const DATE = '2024-01-15'
 const SOLLSTUNDEN = 8
 
 function setup(initialWindows = []) {
-  const repo = new InMemoryWorkWindowRepository(initialWindows)
+  const repo = new InMemoryWorkPeriodRepository(initialWindows)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <WorkWindowPanel date={DATE} sollstunden={SOLLSTUNDEN} repository={repo} />
+      <WorkPeriodPanel date={DATE} sollstunden={SOLLSTUNDEN} repository={repo} />
     </QueryClientProvider>,
   )
   return { repo }
@@ -24,13 +24,13 @@ async function addWindow(start: string, end: string) {
   await userEvent.click(screen.getByRole('button', { name: /add/i }))
 }
 
-describe('WorkWindowPanel', () => {
-  it('shows an empty state message when no WorkWindows exist', async () => {
+describe('WorkPeriodPanel', () => {
+  it('shows an empty state message when no WorkPeriods exist', async () => {
     setup()
     expect(await screen.findByText(/no work windows/i)).toBeInTheDocument()
   })
 
-  it('does not show Restarbeitszeit when no WorkWindows exist', async () => {
+  it('does not show Restarbeitszeit when no WorkPeriods exist', async () => {
     setup()
     await screen.findByText(/no work windows/i)
     expect(screen.queryByLabelText(/restarbeitszeit/i)).not.toBeInTheDocument()
@@ -50,7 +50,7 @@ describe('WorkWindowPanel', () => {
     expect(await screen.findByLabelText(/worked hours/i)).toHaveTextContent('8.00h worked')
   })
 
-  it('shows Restarbeitszeit after the first WorkWindow is added', async () => {
+  it('shows Restarbeitszeit after the first WorkPeriod is added', async () => {
     setup()
     await screen.findByText(/no work windows/i)
     await addWindow('09:00', '17:00')
@@ -73,7 +73,7 @@ describe('WorkWindowPanel', () => {
     expect(await screen.findByText(/no work windows/i)).toBeInTheDocument()
   })
 
-  it('hides Restarbeitszeit again when the last WorkWindow is removed', async () => {
+  it('hides Restarbeitszeit again when the last WorkPeriod is removed', async () => {
     setup()
     await screen.findByText(/no work windows/i)
     await addWindow('09:00', '17:00')
@@ -127,7 +127,7 @@ describe('WorkWindowPanel', () => {
     expect(screen.getByRole('button', { name: /add/i })).not.toBeDisabled()
   })
 
-  it('saves an open WorkWindow when Add is clicked with only a start time', async () => {
+  it('saves an open WorkPeriod when Add is clicked with only a start time', async () => {
     const { repo } = setup()
     await screen.findByText(/no work windows/i)
     await userEvent.type(screen.getByLabelText(/start/i), '09:00')
@@ -137,7 +137,7 @@ describe('WorkWindowPanel', () => {
     expect(windows[0].end).toBeNull()
   })
 
-  it('displays an open WorkWindow as "HH:MM – …"', async () => {
+  it('displays an open WorkPeriod as "HH:MM – …"', async () => {
     setup([{ id: 'w1', date: DATE, start: '09:00', end: null }])
     expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
   })

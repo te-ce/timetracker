@@ -14,7 +14,7 @@ export function classifyDay(date: Date, holidayDates?: Set<string>): DayType {
   return 'WorkDay'
 }
 
-export function isWorkWindowExpected(dayType: DayType): boolean {
+export function isWorkPeriodExpected(dayType: DayType): boolean {
   return dayType === 'WorkDay'
 }
 

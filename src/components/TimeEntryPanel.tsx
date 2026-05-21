@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { TimeEntry, TimeEntryRepository, TimeTrackingRepository, WorkWindowRepository } from '../repositories/types'
+import type { TimeEntry, TimeEntryRepository, TimeTrackingRepository, WorkPeriodRepository } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 
@@ -8,7 +8,7 @@ interface Props {
   date: string
   repository: TimeEntryRepository
   timeTrackingRepository: TimeTrackingRepository
-  workWindowRepository?: WorkWindowRepository
+  workPeriodRepository?: WorkPeriodRepository
   customCategories?: string[]
   categoryOrder?: string[]
   autoCategory?: string | null
@@ -28,7 +28,7 @@ function formatElapsed(startedAt: string): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-export function TimeEntryPanel({ date, repository, timeTrackingRepository, workWindowRepository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0 }: Props) {
+export function TimeEntryPanel({ date, repository, timeTrackingRepository, workPeriodRepository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0 }: Props) {
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
   const [tick, setTick] = useState(0)
 
@@ -60,20 +60,20 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workW
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
-  async function openWorkWindow(trackingDate: string): Promise<void> {
-    if (!workWindowRepository) return
-    const existing = await workWindowRepository.findByDate(new Date(trackingDate))
+  async function openWorkPeriod(trackingDate: string): Promise<void> {
+    if (!workPeriodRepository) return
+    const existing = await workPeriodRepository.findByDate(new Date(trackingDate))
     if (existing.some((w) => w.end === null)) return
-    await workWindowRepository.save({ id: crypto.randomUUID(), date: trackingDate, start: nowHHMM(), end: null })
+    await workPeriodRepository.save({ id: crypto.randomUUID(), date: trackingDate, start: nowHHMM(), end: null })
   }
 
-  async function closeLatestOpenWorkWindow(trackingDate: string): Promise<void> {
-    if (!workWindowRepository) return
-    const windows = await workWindowRepository.findByDate(new Date(trackingDate))
+  async function closeLatestOpenWorkPeriod(trackingDate: string): Promise<void> {
+    if (!workPeriodRepository) return
+    const windows = await workPeriodRepository.findByDate(new Date(trackingDate))
     const open = windows.filter((w) => w.end === null)
     if (open.length === 0) return
     const latest = open.reduce((a, b) => (a.start > b.start ? a : b))
-    await workWindowRepository.save({ ...latest, end: nowHHMM() })
+    await workPeriodRepository.save({ ...latest, end: nowHHMM() })
   }
 
   const startTrackingMutation = useMutation({
@@ -89,9 +89,9 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workW
           hours: Math.round(((existing?.hours ?? 0) + stopped.hours) * 100) / 100,
         })
       }
-      // Don't close open WorkWindow when switching categories — it spans the whole session
+      // Don't close open WorkPeriod when switching categories — it spans the whole session
       await timeTrackingRepository.start(date, category)
-      await openWorkWindow(date)
+      await openWorkPeriod(date)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['activeTracking'] })
@@ -113,7 +113,7 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workW
           hours: Math.round(((existing?.hours ?? 0) + stopped.hours) * 100) / 100,
         })
       }
-      if (active) await closeLatestOpenWorkWindow(active.date)
+      if (active) await closeLatestOpenWorkPeriod(active.date)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['activeTracking'] })

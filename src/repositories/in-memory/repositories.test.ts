@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   InMemoryConfigRepository,
   InMemoryTimeEntryRepository,
-  InMemoryWorkWindowRepository,
+  InMemoryWorkPeriodRepository,
   InMemorySprintExportRepository,
   InMemoryWorkLocationRepository,
 } from './index'
-import type { AppConfig, TimeEntry, WorkWindow, SprintExport, WorkLocation } from '../types'
+import type { AppConfig, TimeEntry, WorkPeriod, SprintExport, WorkLocation } from '../types'
 
 const firstEntry: TimeEntry = {
   id: 'entry-1',
@@ -22,14 +22,14 @@ const secondEntry: TimeEntry = {
   hours: 1.5,
 }
 
-const morningWindow: WorkWindow = {
+const morningWindow: WorkPeriod = {
   id: 'window-1',
   date: '2025-01-10',
   start: '09:00',
   end: '12:00',
 }
 
-const afternoonWindow: WorkWindow = {
+const afternoonWindow: WorkPeriod = {
   id: 'window-2',
   date: '2025-01-10',
   start: '13:00',
@@ -57,9 +57,9 @@ describe('InMemoryTimeEntryRepository', () => {
   })
 })
 
-describe('InMemoryWorkWindowRepository', () => {
+describe('InMemoryWorkPeriodRepository', () => {
   it('stores, loads and deletes windows', async () => {
-    const repository = new InMemoryWorkWindowRepository([morningWindow])
+    const repository = new InMemoryWorkPeriodRepository([morningWindow])
 
     await repository.save(afternoonWindow)
 
@@ -75,9 +75,9 @@ describe('InMemoryWorkWindowRepository', () => {
     ])
   })
 
-  it('saves and retrieves an open WorkWindow (end: null)', async () => {
-    const repository = new InMemoryWorkWindowRepository()
-    const openWindow: WorkWindow = { id: 'open-1', date: '2025-01-10', start: '09:00', end: null }
+  it('saves and retrieves an open WorkPeriod (end: null)', async () => {
+    const repository = new InMemoryWorkPeriodRepository()
+    const openWindow: WorkPeriod = { id: 'open-1', date: '2025-01-10', start: '09:00', end: null }
 
     await repository.save(openWindow)
 

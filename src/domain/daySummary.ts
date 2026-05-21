@@ -1,6 +1,6 @@
 import type { DayType } from './dayType'
 import type { DayStatus } from './dayStatus'
-import type { TimeEntry, WorkWindow } from '../repositories/types'
+import type { TimeEntry, WorkPeriod } from '../repositories/types'
 import type { DayTypeOverride } from '../repositories/types'
 import { classifyDay } from './dayType'
 import { calculateWorkedHours } from './worktime'
@@ -18,7 +18,7 @@ export interface DaySummary {
 }
 
 export interface MonthSummaryInput {
-  windows: WorkWindow[]
+  windows: WorkPeriod[]
   entries: TimeEntry[]
   dayTypeOverrides: Map<string, DayTypeOverride>
   today: string
@@ -39,7 +39,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
   const daysInMonth = new Date(year, month, 0).getDate()
 
   // Group by date for efficient lookup
-  const windowsByDate = new Map<string, WorkWindow[]>()
+  const windowsByDate = new Map<string, WorkPeriod[]>()
   for (const w of windows) {
     const list = windowsByDate.get(w.date) ?? []
     list.push(w)

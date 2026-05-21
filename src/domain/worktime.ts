@@ -1,4 +1,4 @@
-import type { WorkWindow } from '../repositories/types'
+import type { WorkPeriod } from '../repositories/types'
 
 export type Restarbeitszeit = {
   value: number
@@ -10,7 +10,7 @@ function parseMinutes(time: string): number {
   return h * 60 + m
 }
 
-export function calculateWorkedHours(windows: WorkWindow[], now?: string): number {
+export function calculateWorkedHours(windows: WorkPeriod[], now?: string): number {
   return windows.reduce((total, w) => {
     const endTime = w.end ?? now
     if (endTime == null) return total

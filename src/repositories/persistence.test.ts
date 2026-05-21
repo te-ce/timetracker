@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { LocalStorageAdapter } from '../storage/localstorage-adapter'
-import { CloudWorkWindowRepository } from './cloud/work-window-repository'
+import { CloudWorkPeriodRepository } from './cloud/work-period-repository'
 import { CloudTimeEntryRepository } from './cloud/time-entry-repository'
 
 describe('LocalStorage persistence', () => {
@@ -10,11 +10,11 @@ describe('LocalStorage persistence', () => {
 
   it('work windows persist across repository instances', async () => {
     const storage = new LocalStorageAdapter('test_')
-    const repo1 = new CloudWorkWindowRepository(storage)
+    const repo1 = new CloudWorkPeriodRepository(storage)
     await repo1.save({ id: 'w1', date: '2026-05-19', start: '09:00', end: '12:00' })
 
     // New repo instance same storage = simulates page reload
-    const repo2 = new CloudWorkWindowRepository(storage)
+    const repo2 = new CloudWorkPeriodRepository(storage)
     const windows = await repo2.findByDate(new Date(2026, 4, 19))
     expect(windows).toHaveLength(1)
     expect(windows[0].id).toBe('w1')
@@ -33,7 +33,7 @@ describe('LocalStorage persistence', () => {
 
   it('data saved in DayView date query is found by MonthView date range query', async () => {
     const storage = new LocalStorageAdapter('test_')
-    const repo = new CloudWorkWindowRepository(storage)
+    const repo = new CloudWorkPeriodRepository(storage)
 
     // Simulate DayView saving a work window
     await repo.save({ id: 'w1', date: '2026-05-19', start: '09:00', end: '17:00' })

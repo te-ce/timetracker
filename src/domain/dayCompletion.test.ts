@@ -10,11 +10,11 @@ describe('isDayComplete', () => {
     expect(isDayComplete('Absence', false)).toBe(true)
   })
 
-  it('returns true for WorkDay with at least one WorkWindow', () => {
+  it('returns true for WorkDay with at least one WorkPeriod', () => {
     expect(isDayComplete('WorkDay', true)).toBe(true)
   })
 
-  it('returns false for WorkDay with no WorkWindows', () => {
+  it('returns false for WorkDay with no WorkPeriods', () => {
     expect(isDayComplete('WorkDay', false)).toBe(false)
   })
 })

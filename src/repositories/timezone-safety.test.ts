@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { CloudWorkWindowRepository } from './cloud/work-window-repository'
+import { CloudWorkPeriodRepository } from './cloud/work-period-repository'
 import { CloudTimeEntryRepository } from './cloud/time-entry-repository'
 import { InMemoryStorageAdapter } from '../storage/in-memory-adapter'
 
 describe('Timezone-safe date queries', () => {
   it('findByDate uses local date, not UTC (no off-by-one in UTC+ timezones)', async () => {
     const storage = new InMemoryStorageAdapter()
-    const repo = new CloudWorkWindowRepository(storage)
+    const repo = new CloudWorkPeriodRepository(storage)
     await repo.save({ id: 'w1', date: '2026-05-19', start: '09:00', end: '17:00' })
 
     // new Date(2026, 4, 19) in UTC+2 = 2026-05-18T22:00:00Z
@@ -18,7 +18,7 @@ describe('Timezone-safe date queries', () => {
 
   it('findByDateRange boundaries use local dates', async () => {
     const storage = new InMemoryStorageAdapter()
-    const repo = new CloudWorkWindowRepository(storage)
+    const repo = new CloudWorkPeriodRepository(storage)
     await repo.save({ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' })
     await repo.save({ id: 'w2', date: '2026-05-31', start: '09:00', end: '17:00' })
     await repo.save({ id: 'w3', date: '2026-06-01', start: '09:00', end: '17:00' })
@@ -44,7 +44,7 @@ describe('Timezone-safe date queries', () => {
 
   it('shared repo: MonthView sees data saved in DayView', async () => {
     const storage = new InMemoryStorageAdapter()
-    const repo = new CloudWorkWindowRepository(storage)
+    const repo = new CloudWorkPeriodRepository(storage)
 
     // DayView saves work window for May 19
     await repo.save({ id: 'w1', date: '2026-05-19', start: '08:00', end: '12:00' })
