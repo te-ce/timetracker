@@ -199,8 +199,7 @@ export function DayView() {
   const selectedDayType =
     monthDayTypeOverrides.get(selectedDate) ??
     classifyDay(new Date(selectedDate));
-  const isEntriesBalanced =
-    workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01;
+  const isEntriesBalanced = workedHours > 0 && manualTotal >= workedHours - 0.01;
   const hasAutoCategory = !!autoCategory && manualTotal <= workedHours;
   const dayStatus = getDayStatus({
     dayType: selectedDayType,
@@ -308,9 +307,11 @@ export function DayView() {
           </button>
         ) : (
           <div className="flex items-center gap-2">
-            <span className={`rounded px-2 py-1 text-xs font-medium ${badge.bg} ${badge.text}`}>
-              {badge.label}
-            </span>
+            {dayStatus !== 'today' && (
+              <span className={`rounded px-2 py-1 text-xs font-medium ${badge.bg} ${badge.text}`}>
+                {badge.label}
+              </span>
+            )}
             <button
               onClick={() => confirmMutation.mutate()}
               className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
