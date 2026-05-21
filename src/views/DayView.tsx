@@ -4,11 +4,8 @@ import { workPeriodRepo, timeEntryRepo, configRepo, workLocationRepo, dayTypeOve
 import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
-import { AutoCategoryPicker } from '../components/AutoCategoryPicker'
-import { CategoryReorderPopover } from '../components/CategoryReorderPopover'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { calculateWorkedHours } from '../domain/worktime'
-import { calculateRestarbeitszeit } from '../domain/worktime'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
@@ -115,7 +112,7 @@ export function DayView() {
   const sollstunden = config?.sollstunden ?? 8
   const workedHours = calculateWorkedHours(windows)
   const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
-  const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)
+
 
   // Month-level overtime calculation
   const selectedYear = parseInt(selectedDate.slice(0, 4))
@@ -163,6 +160,16 @@ export function DayView() {
   const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
   const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation
 
+  const autoCategoryMutation = useMutation({
+    mutationFn: (cat: string | null) => configRepo.save({ ...config!, autoCategory: cat }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+  })
+
+  const categoryReorderMutation = useMutation({
+    mutationFn: (categoryOrder: string[]) => configRepo.save({ ...config!, categoryOrder }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+  })
+
   const locationMutation = useMutation({
     mutationFn: async () => {
       const next: WorkLocation = effectiveLocation === 'Remote' ? 'Office' : 'Remote'
@@ -187,7 +194,15 @@ export function DayView() {
         >
           ← Prev
         </button>
-        <h2 className="inline-block min-w-[19rem] text-xl font-semibold">{formatDate(selectedDate)}</h2>
+        <div className="flex flex-1 items-center justify-center gap-2">
+          <h2 className="text-xl font-semibold">{formatDate(selectedDate)}</h2>
+          <button
+            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+            onClick={() => setSelectedDate(toLocalIso(new Date()))}
+          >
+            Today
+          </button>
+        </div>
         <button
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
           onClick={() => {
@@ -197,12 +212,6 @@ export function DayView() {
           }}
         >
           Next →
-        </button>
-        <button
-          className="rounded border px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
-          onClick={() => setSelectedDate(toLocalIso(new Date()))}
-        >
-          Today
         </button>
       </div>
 
@@ -215,8 +224,6 @@ export function DayView() {
         >
           {effectiveLocation === 'Office' ? '🏢 Office' : '🏠 Remote'}
         </button>
-        <AutoCategoryPicker />
-        <CategoryReorderPopover repository={configRepo} />
         {isConfirmed ? (
           <button
             onClick={() => unconfirmMutation.mutate()}
@@ -234,14 +241,9 @@ export function DayView() {
             Confirm
           </button>
         )}
-        {workedHours > 0 && (
-          <span className={`text-sm font-medium ${restarbeitszeit.isOvertime ? 'text-green-600' : 'text-amber-600'}`}>
-            {restarbeitszeit.isOvertime ? 'Overtime' : 'Remaining'}: {Math.abs(restarbeitszeit.value).toFixed(2)}h
-          </span>
-        )}
       </div>
 
-      <OvertimeBar overtimeToDate={overtimeToDate.value} hoursNeededToday={overtimeToDate.hoursNeededToday} />
+      <OvertimeBar sollstunden={sollstunden} overtimeToDate={overtimeToDate.value} hoursNeededToday={overtimeToDate.hoursNeededToday} />
 
       <WorkPeriodPanel
         date={selectedDate}
@@ -258,6 +260,8 @@ export function DayView() {
         categoryOrder={config?.categoryOrder}
         autoCategory={autoCategory}
         autoCategoryHours={Math.max(0, workedHours - manualTotal)}
+        onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
+        onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
       />
     </div>
   )

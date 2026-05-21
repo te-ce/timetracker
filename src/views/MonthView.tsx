@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { MonthStatsPanel } from '../components/MonthStatsPanel'
+import { OvertimeBar } from '../components/OvertimeBar'
 import { workPeriodRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
 import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
+import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
 import { toLocalIso } from '../domain/dateUtils'
@@ -71,6 +73,7 @@ export function MonthView() {
   })
 
   const dates = days.map((d) => d.date)
+  const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
 
   const dayStatusMap: Record<string, DayStatus> = {}
   for (const day of days) {
@@ -93,16 +96,6 @@ export function MonthView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center">
-        <span className="text-xs text-gray-500">🏢 Office: {officePercent}% ({officeDays}/{trackedWorkDays.length} days)</span>
-      </div>
-      <MonthStatsPanel
-        workedHoursPerDay={workedHoursPerDay}
-        dates={dates}
-        sollstunden={sollstunden}
-        overtimeCarryOver={overtimeCarryOver}
-        today={todayIso}
-      />
       <MonthCalendar
         year={year}
         month={monthIdx}
@@ -119,6 +112,17 @@ export function MonthView() {
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-gray-100 border border-gray-300" /> Non-working</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-white border border-gray-300" /> Future</span>
       </div>
+      <OvertimeBar sollstunden={sollstunden} overtimeToDate={overtimeToDate.value} hoursNeededToday={overtimeToDate.hoursNeededToday} />
+      <div className="flex items-center">
+        <span className="text-xs text-gray-500">🏢 Office: {officePercent}% ({officeDays}/{trackedWorkDays.length} days)</span>
+      </div>
+      <MonthStatsPanel
+        workedHoursPerDay={workedHoursPerDay}
+        dates={dates}
+        sollstunden={sollstunden}
+        overtimeCarryOver={overtimeCarryOver}
+        today={todayIso}
+      />
     </div>
   )
 }

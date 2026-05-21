@@ -5,6 +5,7 @@ import type { SprintConfig } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
 import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/shared'
+import { getAllCategories } from '../domain/categories'
 
 export function SprintView() {
   const queryClient = useQueryClient()
@@ -32,6 +33,7 @@ export function SprintView() {
   })
 
   const hoursPerCategory = aggregateSprintHours(entries, sprint)
+  const allCategories = getAllCategories(config?.customCategories ?? [], config?.categoryOrder)
 
   const { data: sprintExport } = useQuery({
     queryKey: ['sprintExport', activeIndex],
@@ -52,45 +54,46 @@ export function SprintView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SprintConfigPanel
-        repository={configRepo}
-        onConfigChanged={() => {
-          void queryClient.invalidateQueries({ queryKey: ['config'] })
-          setSprintIndex(null)
-        }}
-      />
-
-      <div className="flex items-center gap-4">
+      <div className="flex items-center">
         <button
           onClick={() => setSprintIndex(activeIndex - 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
         >
           ← Prev
         </button>
-        <h2 className="text-lg font-semibold">
-          <span className="inline-block min-w-[5.5rem]">Sprint {sprint.index + 1}</span>
-          <span className="ml-2 text-sm font-normal text-gray-500">
-            {sprint.start} → {sprint.end}
-          </span>
-        </h2>
+        <div className="flex flex-1 items-center justify-center gap-2">
+          <h2 className="text-lg font-semibold">
+            Sprint {sprint.index + 1}
+            <span className="ml-2 text-sm font-normal text-gray-500">{sprint.start} → {sprint.end}</span>
+          </h2>
+          <button
+            onClick={() => setSprintIndex(null)}
+            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+          >
+            Current
+          </button>
+        </div>
         <button
           onClick={() => setSprintIndex(activeIndex + 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
         >
           Next →
         </button>
-        <button
-          onClick={() => setSprintIndex(null)}
-          className="rounded border px-3 py-1 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
-        >
-          Current
-        </button>
       </div>
 
       <SprintReportPanel
         hoursPerCategory={hoursPerCategory}
+        allCategories={allCategories}
         exportStatus={exportStatus}
         onMarkExported={() => markExportedMutation.mutate()}
+      />
+
+      <SprintConfigPanel
+        repository={configRepo}
+        onConfigChanged={() => {
+          void queryClient.invalidateQueries({ queryKey: ['config'] })
+          setSprintIndex(null)
+        }}
       />
     </div>
   )
