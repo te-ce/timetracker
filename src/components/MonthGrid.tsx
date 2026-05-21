@@ -327,11 +327,6 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, sprintStartDate, sprintLengthDays)
 
-  // Office percentage
-  const workDaysWithLocation = rows.filter((r) => r.dayType === 'WorkDay' && r.workedHours > 0)
-  const officeDays = workDaysWithLocation.filter((r) => workLocations.get(r.date) === 'Office').length
-  const officePercent = workDaysWithLocation.length > 0 ? Math.round((officeDays / workDaysWithLocation.length) * 100) : 0
-
   // day + status + worked + location + separator + categories + confirm
   const colCount = allCategories.length + 6
 
@@ -339,9 +334,6 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="text-xs text-gray-500">
-        🏢 Office: {officePercent}% ({officeDays}/{workDaysWithLocation.length} days)
-      </div>
       <div className="overflow-x-auto max-h-[75vh] overflow-y-auto relative">
         <table className="w-full text-sm border-collapse" role="table">
           <thead className="sticky top-0 z-20 bg-white shadow-sm">

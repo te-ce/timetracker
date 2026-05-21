@@ -95,6 +95,10 @@ export function MonthGridView() {
   const dates = days.map((d) => d.date)
   const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
 
+  const trackedWorkDays = days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
+  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
+  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
+
   function prevMonth() {
     if (month === 1) { setYear(year - 1); setMonth(12) }
     else setMonth(month - 1)
@@ -126,7 +130,14 @@ export function MonthGridView() {
         </div>
         <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">Next →</button>
       </div>
-      <OvertimeBar sollstunden={sollstunden} overtimeToDate={toDate.value} hoursNeededToday={toDate.hoursNeededToday} />
+      <OvertimeBar
+        sollstunden={sollstunden}
+        overtimeToDate={toDate.value}
+        hoursNeededToday={toDate.hoursNeededToday}
+        officeDays={officeDays}
+        totalWorkDays={trackedWorkDays.length}
+        officePercent={officePercent}
+      />
       <MonthGrid
         year={year}
         month={month}

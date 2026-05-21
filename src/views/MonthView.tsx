@@ -112,10 +112,14 @@ export function MonthView() {
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-gray-100 border border-gray-300" /> Non-working</span>
         <span className="flex items-center gap-1"><span className="inline-block h-3 w-3 rounded bg-white border border-gray-300" /> Future</span>
       </div>
-      <OvertimeBar sollstunden={sollstunden} overtimeToDate={overtimeToDate.value} hoursNeededToday={overtimeToDate.hoursNeededToday} />
-      <div className="flex items-center">
-        <span className="text-xs text-gray-500">🏢 Office: {officePercent}% ({officeDays}/{trackedWorkDays.length} days)</span>
-      </div>
+      <OvertimeBar
+        sollstunden={sollstunden}
+        overtimeToDate={overtimeToDate.value}
+        hoursNeededToday={overtimeToDate.hoursNeededToday}
+        officeDays={officeDays}
+        totalWorkDays={trackedWorkDays.length}
+        officePercent={officePercent}
+      />
       <MonthStatsPanel
         workedHoursPerDay={workedHoursPerDay}
         dates={dates}
