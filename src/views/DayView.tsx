@@ -211,17 +211,22 @@ export function DayView() {
     today: todayIso,
   });
 
-  const STATUS_BADGE: Record<DayStatus, { bg: string; text: string; label: string }> = {
+  const STATUS_BADGE: Record<Exclude<DayStatus, 'today'>, { bg: string; text: string; label: string }> = {
     complete: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Complete' },
     'needs-review': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Needs review' },
     untracked: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Untracked' },
-    today: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Today' },
     future: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Future' },
     'non-working': { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Non-working' },
     leave: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Leave' },
   };
 
-  const badge = STATUS_BADGE[dayStatus];
+  // For today, resolve the actual work status instead of showing "Today"
+  const badgeStatus: Exclude<DayStatus, 'today'> | null = (() => {
+    if (dayStatus !== 'today') return dayStatus;
+    if (!workedHours) return null;
+    if (isConfirmed || isEntriesBalanced || hasAutoCategory) return 'complete';
+    return 'needs-review';
+  })();
 
   const autoCategoryMutation = useMutation({
     mutationFn: (cat: string | null) =>
@@ -307,9 +312,9 @@ export function DayView() {
           </button>
         ) : (
           <div className="flex items-center gap-2">
-            {dayStatus !== 'today' && (
-              <span className={`rounded px-2 py-1 text-xs font-medium ${badge.bg} ${badge.text}`}>
-                {badge.label}
+            {badgeStatus !== null && badgeStatus !== 'future' && (
+              <span className={`rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}>
+                {STATUS_BADGE[badgeStatus].label}
               </span>
             )}
             <button
