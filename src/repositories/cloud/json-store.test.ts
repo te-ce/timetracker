@@ -85,6 +85,15 @@ describe('JsonCollectionStore', () => {
     adapter.data['items.json'] = []
     expect(await store.getAll()).toEqual([{ id: 'x', value: 42 }])
   })
+
+  it('clearCache forces re-read from adapter on next getAll', async () => {
+    adapter.data['items.json'] = [{ id: 'x', value: 42 }]
+    await store.getAll()
+    // Update adapter while cache is warm
+    adapter.data['items.json'] = [{ id: 'x', value: 99 }]
+    store.clearCache()
+    expect(await store.getAll()).toEqual([{ id: 'x', value: 99 }])
+  })
 })
 
 describe('JsonRecordStore', () => {
@@ -138,5 +147,13 @@ describe('JsonRecordStore', () => {
     await store.getAll()
     adapter.data['records.json'] = {}
     expect(await store.get('x')).toBe('hello')
+  })
+
+  it('clearCache forces re-read from adapter on next get', async () => {
+    adapter.data['records.json'] = { x: 'hello' }
+    await store.getAll()
+    adapter.data['records.json'] = { x: 'updated' }
+    store.clearCache()
+    expect(await store.get('x')).toBe('updated')
   })
 })
