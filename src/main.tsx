@@ -6,6 +6,7 @@ import { MsalProvider } from '@azure/msal-react'
 import { msalInstance } from './auth/msalInstance.ts'
 import { readBootstrapConfig, isSetupSkipped } from './auth/bootstrapConfig.ts'
 import { SetupWizard } from './components/SetupWizard.tsx'
+import { useMsalSync } from './hooks/useMsalSync.ts'
 import { router } from './routes/router.ts'
 import './index.css'
 
@@ -34,6 +35,12 @@ void enableMocking()
 
 const needsSetup = !readBootstrapConfig() && !isSetupSkipped()
 
+/** Mounts useMsalSync — only rendered inside <MsalProvider> */
+function MsalSync() {
+  useMsalSync()
+  return null
+}
+
 function Root() {
   const [showSetup, setShowSetup] = useState(needsSetup)
 
@@ -47,7 +54,12 @@ function Root() {
     </QueryClientProvider>
   )
 
-  return msalInstance ? <MsalProvider instance={msalInstance}>{app}</MsalProvider> : app
+  return msalInstance ? (
+    <MsalProvider instance={msalInstance}>
+      <MsalSync />
+      {app}
+    </MsalProvider>
+  ) : app
 }
 
 createRoot(rootElement).render(
