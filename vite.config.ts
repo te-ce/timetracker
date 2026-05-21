@@ -1,7 +1,7 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
-import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   plugins: [
@@ -13,9 +13,7 @@ export default defineConfig({
         name: 'Timetracker',
         short_name: 'Timetracker',
         theme_color: '#ffffff',
-        icons: [
-          { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' },
-        ],
+        icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' }],
       },
     }),
   ],
@@ -27,4 +25,8 @@ export default defineConfig({
     exclude: ['e2e/**'],
     css: true,
   },
-})
+  server: {
+    host: 'timetracker.localhost',
+    port: 5173,
+  },
+});
