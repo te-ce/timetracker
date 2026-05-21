@@ -262,12 +262,8 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
   }
 
   function cycleLocation(date: string) {
-    const explicit = workLocations.get(date) ?? null
-    const effective = explicit ?? defaultWorkLocation
-    const next: WorkLocation | null =
-      effective === null ? 'Office'
-      : effective === 'Office' ? 'Remote'
-      : null
+    const effective: WorkLocation = workLocations.get(date) ?? defaultWorkLocation ?? 'Remote'
+    const next: WorkLocation = effective === 'Remote' ? 'Office' : 'Remote'
     locationMutation.mutate({ date, location: next })
   }
 
@@ -333,7 +329,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const rowBg = globalRowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50/70'
                 const status = getRowStatus(row)
-                const loc = workLocations.get(row.date) ?? defaultWorkLocation ?? null
+                const loc: WorkLocation = workLocations.get(row.date) ?? defaultWorkLocation ?? 'Remote'
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
                 globalRowIdx++
                 return (
@@ -368,7 +364,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                         aria-label={`Location ${row.date}`}
                         title={loc ?? 'Not set'}
                       >
-                        {loc === 'Office' ? '🏢' : loc === 'Remote' ? '🏠' : '·'}
+                        {loc === 'Office' ? '🏢' : '🏠'}
                       </button>
                     </td>
                     <td className="w-px border-l border-gray-200"></td>
@@ -409,7 +405,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                       )
                     })}
                     <td className="px-0.5 py-0.5 w-10 text-center border-l border-gray-200">
-                      {row.workedHours > 0 && !isNonWorkDay && (
+                      {!isNonWorkDay && (
                         confirmedDays.has(row.date) ? (
                           <button
                             aria-label={`Unconfirm ${row.date}`}

@@ -160,18 +160,13 @@ export function DayView() {
     dayOverrides,
   })
 
-  const defaultWorkLocation = config?.defaultWorkLocation ?? null
-  const effectiveLocation: WorkLocation | null = workLocation ?? defaultWorkLocation
+  const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
+  const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation
 
   const locationMutation = useMutation({
     mutationFn: async () => {
-      const next: WorkLocation | null =
-        effectiveLocation === null ? 'Office' : effectiveLocation === 'Office' ? 'Remote' : null
-      if (next) {
-        await workLocationRepo.save(selectedDate, next)
-      } else {
-        await workLocationRepo.delete(selectedDate)
-      }
+      const next: WorkLocation = effectiveLocation === 'Remote' ? 'Office' : 'Remote'
+      await workLocationRepo.save(selectedDate, next)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['workLocation', selectedDate] })
@@ -218,7 +213,7 @@ export function DayView() {
           className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
           aria-label="Work location"
         >
-          {effectiveLocation === 'Office' ? '🏢 Office' : effectiveLocation === 'Remote' ? '🏠 Remote' : '📍 Set location'}
+          {effectiveLocation === 'Office' ? '🏢 Office' : '🏠 Remote'}
         </button>
         <AutoCategoryPicker />
         <CategoryReorderPopover repository={configRepo} />
@@ -233,8 +228,7 @@ export function DayView() {
         ) : (
           <button
             onClick={() => confirmMutation.mutate()}
-            disabled={workedHours === 0}
-            className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
             aria-label="Confirm day"
           >
             Confirm
