@@ -1,11 +1,14 @@
-import { StrictMode } from 'react'
+import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { MsalProvider } from '@azure/msal-react'
 import { msalInstance } from './auth/msalInstance.ts'
+import { readBootstrapConfig, isSetupSkipped } from './auth/bootstrapConfig.ts'
+import { SetupWizard } from './components/SetupWizard.tsx'
 import { router } from './routes/router.ts'
 import './index.css'
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 1000 * 60 },
@@ -29,14 +32,26 @@ if (rootElement === null) {
 
 void enableMocking()
 
-const app = (
-  <StrictMode>
+const needsSetup = !readBootstrapConfig() && !isSetupSkipped()
+
+function Root() {
+  const [showSetup, setShowSetup] = useState(needsSetup)
+
+  if (showSetup) {
+    return <SetupWizard onSkip={() => setShowSetup(false)} />
+  }
+
+  const app = (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
     </QueryClientProvider>
-  </StrictMode>
-)
+  )
+
+  return msalInstance ? <MsalProvider instance={msalInstance}>{app}</MsalProvider> : app
+}
 
 createRoot(rootElement).render(
-  msalInstance ? <MsalProvider instance={msalInstance}>{app}</MsalProvider> : app,
+  <StrictMode>
+    <Root />
+  </StrictMode>,
 )
