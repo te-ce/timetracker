@@ -57,6 +57,7 @@ interface Props {
   defaultWorkLocation?: WorkLocation | null
   onCategoryReorder?: (order: string[]) => void
   onCategoryRename?: (oldName: string, newName: string) => void
+  onAutoCategoryChange?: (category: string) => void
 }
 
 interface SprintGroup {
@@ -104,7 +105,7 @@ function computeSprintGroups(rows: MonthGridRow[], sprintStartDate: string | nul
   return groups
 }
 
-export function MonthGrid({ year, month, timeEntryRepository, workPeriodRepository, dayConfirmationRepository, dayTypeOverrideRepository, workLocationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set(), sprintStartDate = null, sprintLengthDays = 14, workLocations = new Map(), defaultWorkLocation = null, onCategoryReorder, onCategoryRename }: Props) {
+export function MonthGrid({ year, month, timeEntryRepository, workPeriodRepository, dayConfirmationRepository, dayTypeOverrideRepository, workLocationRepository, autoCategory, customCategories = [], categoryOrder, dayTypes = new Map(), confirmedDays = new Set(), sprintStartDate = null, sprintLengthDays = 14, workLocations = new Map(), defaultWorkLocation = null, onCategoryReorder, onCategoryRename, onAutoCategoryChange }: Props) {
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -384,9 +385,22 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                       {cat}
                     </span>
                   )}
-                  {cat === autoCategory && (
-                    <span aria-hidden="true" className="block text-center text-[9px] text-indigo-400 font-medium leading-none mt-0.5 tracking-wide">auto</span>
-                  )}
+                  {/* Fixed-height badge row keeps all headers the same height */}
+                  <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
+                    {cat === autoCategory ? (
+                      <span className="text-[9px] text-indigo-400 font-medium tracking-wide leading-none">auto</span>
+                    ) : onAutoCategoryChange ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onAutoCategoryChange(cat) }}
+                        className="text-[9px] text-gray-300 hover:text-indigo-400 leading-none transition-colors"
+                        title={`Set "${cat}" as auto category`}
+                      >
+                        ○
+                      </button>
+                    ) : (
+                      <span className="text-[9px] leading-none">&nbsp;</span>
+                    )}
+                  </span>
                 </th>
               ))}
               <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200">

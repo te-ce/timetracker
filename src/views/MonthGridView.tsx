@@ -25,6 +25,14 @@ export function MonthGridView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
 
+  const autoCategoryMutation = useMutation({
+    mutationFn: async (category: string) => {
+      const cfg = await configRepo.get()
+      return configRepo.save({ ...cfg, autoCategory: category })
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+  })
+
   const categoryRenameMutation = useMutation({
     mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
       const cfg = await configRepo.get()
@@ -138,6 +146,7 @@ export function MonthGridView() {
         defaultWorkLocation={config?.defaultWorkLocation ?? null}
         onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
         onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
+        onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
       />
     </div>
   )
