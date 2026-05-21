@@ -12,4 +12,4 @@ export const msalConfig: Configuration = {
 }
 
 /** Scopes required for Microsoft Graph API (SharePoint Excel access) */
-export const graphScopes = ['User.Read', 'Files.ReadWrite']
+export const graphScopes = ['User.Read', 'Files.ReadWrite.All']
