@@ -301,6 +301,18 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
                 >
                   +
                 </button>
+                {existing && (
+                  <button
+                    aria-label={`Clear ${category}`}
+                    onClick={() => {
+                      deleteMutation.mutate(existing.id)
+                      setDraft((d) => ({ ...d, [category]: undefined }))
+                    }}
+                    className="rounded border px-2 py-0.5 text-sm text-gray-400 hover:border-red-300 hover:text-red-500"
+                  >
+                    ×
+                  </button>
+                )}
                 {isAutoTarget && autoHrs > 0 && (
                   <span className="ml-1 text-xs text-gray-500">= {displayTotal.toFixed(2)}</span>
                 )}

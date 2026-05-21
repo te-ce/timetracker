@@ -246,6 +246,16 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
     })
   }
 
+  function clearCell(date: string, category: string) {
+    const existing = entries.find((e) => e.date === date && e.category === category)
+    if (existing) deleteMutation.mutate(existing.id)
+    setDrafts((d) => {
+      const next = { ...d }
+      delete next[draftKey(date, category)]
+      return next
+    })
+  }
+
   function getCellValue(row: MonthGridRow, category: string): string {
     const key = draftKey(row.date, category)
     if (drafts[key] !== undefined) return drafts[key]
@@ -465,19 +475,30 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                               })()}
                             </span>
                           ) : (
-                            <input
-                              aria-label={`Hours for ${cat} on ${row.date}`}
-                              type="number"
-                              min="0"
-                              step="0.5"
-                              value={getCellValue(row, cat)}
-                              onChange={(e) =>
-                                setDrafts((d) => ({ ...d, [draftKey(row.date, cat)]: e.target.value }))
-                              }
-                              onBlur={() => handleBlur(row, cat)}
-                              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-                              className={`w-full rounded border px-1 py-0.5 text-right text-xs ${hasAutoHours ? 'bg-indigo-50' : ''}`}
-                            />
+                            <div className="relative group/cell">
+                              <input
+                                aria-label={`Hours for ${cat} on ${row.date}`}
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={getCellValue(row, cat)}
+                                onChange={(e) =>
+                                  setDrafts((d) => ({ ...d, [draftKey(row.date, cat)]: e.target.value }))
+                                }
+                                onBlur={() => handleBlur(row, cat)}
+                                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                                className={`w-full rounded border px-1 py-0.5 text-right text-xs ${hasAutoHours ? 'bg-indigo-50' : ''}`}
+                              />
+                              {getCellValue(row, cat) !== '' && (
+                                <button
+                                  onClick={() => clearCell(row.date, cat)}
+                                  aria-label={`Clear ${cat} on ${row.date}`}
+                                  className="absolute -top-1.5 -right-1.5 z-10 hidden group-hover/cell:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-100 text-[9px] font-bold text-red-500 hover:bg-red-200 leading-none"
+                                >
+                                  ×
+                                </button>
+                              )}
+                            </div>
                           )}
                         </td>
                       )
