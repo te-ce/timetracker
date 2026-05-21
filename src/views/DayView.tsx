@@ -19,6 +19,8 @@ import { calculateOvertimeToDate } from '../domain/monthStats';
 import { buildMonthSummaries } from '../domain/daySummary';
 import { resolveAutoCategory } from '../domain/autoCategoryOverride';
 import { toLocalIso } from '../domain/dateUtils';
+import { getDayStatus, type DayStatus } from '../domain/dayStatus';
+import { classifyDay } from '../domain/dayType';
 import type { WorkLocation } from '../repositories/types';
 
 function formatDate(iso: string): string {
@@ -194,6 +196,34 @@ export function DayView() {
     config?.defaultWorkLocation ?? 'Remote';
   const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation;
 
+  const selectedDayType =
+    monthDayTypeOverrides.get(selectedDate) ??
+    classifyDay(new Date(selectedDate));
+  const isEntriesBalanced =
+    workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01;
+  const hasAutoCategory = !!autoCategory && manualTotal <= workedHours;
+  const dayStatus = getDayStatus({
+    dayType: selectedDayType,
+    hasWorkedHours: workedHours > 0,
+    isEntriesBalanced,
+    hasAutoCategory,
+    isConfirmed,
+    isoDate: selectedDate,
+    today: todayIso,
+  });
+
+  const STATUS_BADGE: Record<DayStatus, { bg: string; text: string; label: string }> = {
+    complete: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Complete' },
+    incomplete: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Incomplete' },
+    untracked: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Untracked' },
+    today: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Today' },
+    future: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Future' },
+    'non-working': { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Non-working' },
+    leave: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Leave' },
+  };
+
+  const badge = STATUS_BADGE[dayStatus];
+
   const autoCategoryMutation = useMutation({
     mutationFn: (cat: string | null) =>
       configRepo.save({ ...config!, autoCategory: cat }),
@@ -277,13 +307,18 @@ export function DayView() {
             ✓ Confirmed
           </button>
         ) : (
-          <button
-            onClick={() => confirmMutation.mutate()}
-            className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
-            aria-label="Confirm day"
-          >
-            Confirm
-          </button>
+          <div className="flex items-center gap-2">
+            <span className={`rounded px-2 py-1 text-xs font-medium ${badge.bg} ${badge.text}`}>
+              {badge.label}
+            </span>
+            <button
+              onClick={() => confirmMutation.mutate()}
+              className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              aria-label="Confirm day"
+            >
+              Confirm
+            </button>
+          </div>
         )}
       </div>
 
