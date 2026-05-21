@@ -59,6 +59,8 @@ npm run preview
 | `npm run lint` | Run ESLint |
 | `npm run test` | Run unit/component tests (Vitest) |
 | `npm run e2e` | Run end-to-end tests (Playwright) |
+| `npm run test:unit` | Run only unit tests |
+| `npm run test:component` | Run only component tests |
 
 ## Running Tests
 
