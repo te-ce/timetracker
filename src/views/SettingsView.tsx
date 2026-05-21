@@ -2,6 +2,7 @@ import { AutoCategorySettings } from '../components/AutoCategorySettings'
 import { BundeslandSettings } from '../components/BundeslandSettings'
 import { CustomCategorySettings } from '../components/CustomCategorySettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
+import { ExcelMappingSettings } from '../components/ExcelMappingSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
 import { SheetSelector } from '../components/SheetSelector'
 import { configRepo } from '../repositories/shared'
@@ -16,6 +17,7 @@ export function SettingsView() {
       <CustomCategorySettings repository={configRepo} />
       <SharePointSettings repository={configRepo} />
       <SheetSelector repository={configRepo} />
+      <ExcelMappingSettings repository={configRepo} />
     </div>
   )
 }
