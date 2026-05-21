@@ -22,7 +22,7 @@ export function AutoCategorySettings({ repository }: Props) {
 
   if (!config) return null
 
-  const allCategories = getAllCategories(config.customCategories ?? [], config.categoryOrder)
+  const allCategories = getAllCategories(config.customCategories, config.categoryOrder)
 
   return (
     <div className="flex flex-col gap-2">

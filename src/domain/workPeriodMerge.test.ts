@@ -82,7 +82,7 @@ describe('mergeAdjacentInto', () => {
   it('does not merge incoming-end into p-start when incoming end is null', () => {
     const incoming = period('a', '09:00', null) // open
     const p = period('b', '09:00', '10:00')
-    const { merged, absorbed } = mergeAdjacentInto([incoming, p], incoming)
+    const { absorbed } = mergeAdjacentInto([incoming, p], incoming)
     // merged.end is null so the second branch never fires
     expect(absorbed).toHaveLength(0)
   })

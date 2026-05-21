@@ -210,7 +210,7 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
           const manualHours = existing?.hours ?? 0
           const displayTotal = manualHours + autoHrs
           const value = draft[category] ?? (existing ? String(existing.hours) : '')
-          const isTracking = activeTracking?.category === category && activeTracking?.date === date
+          const isTracking = activeTracking !== null && activeTracking.category === category && activeTracking.date === date
 
           return (
             <li
@@ -247,9 +247,9 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
                     +{autoHrs.toFixed(2)} auto
                   </span>
                 )}
-                {isTracking && (
+                {activeTracking && isTracking && (
                   <span className="rounded bg-green-200 px-1.5 py-0.5 text-[10px] font-bold text-green-800 tabular-nums">
-                    ⏱ {formatElapsed(activeTracking!.startedAt)}
+                    ⏱ {formatElapsed(activeTracking.startedAt)}
                   </span>
                 )}
               </div>

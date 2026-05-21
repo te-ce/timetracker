@@ -18,7 +18,7 @@ export function AutoCategoryPicker() {
 
   if (!config) return null
 
-  const allCategories = getAllCategories(config.customCategories ?? [], config.categoryOrder)
+  const allCategories = getAllCategories(config.customCategories, config.categoryOrder)
 
   return (
     <div className="flex items-center gap-2 text-sm">

@@ -6,6 +6,7 @@ import { workPeriodRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConf
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
+import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 import { toLocalIso } from '../domain/dateUtils'
 
 export function MonthView() {
@@ -39,7 +40,7 @@ export function MonthView() {
   const fromIso = toLocalIso(from)
   const toIso = toLocalIso(to)
 
-  const { data: dayTypeOverrides = new Map() } = useQuery({
+  const { data: dayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
     queryKey: ['dayTypeOverrides', year, month],
     queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
   })
@@ -54,7 +55,7 @@ export function MonthView() {
     queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
   })
 
-  const { data: workLocations = new Map() } = useQuery({
+  const { data: workLocations = new Map<string, WorkLocation>() } = useQuery({
     queryKey: ['workLocations', year, month],
     queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
   })
@@ -62,7 +63,7 @@ export function MonthView() {
   const sollstunden = config?.sollstunden ?? 8
   const todayIso = toLocalIso(today)
 
-  const { days, workDayCount, workedHoursPerDay } = buildMonthSummaries(year, month, {
+  const { days, workedHoursPerDay } = buildMonthSummaries(year, month, {
     windows,
     entries,
     dayTypeOverrides,

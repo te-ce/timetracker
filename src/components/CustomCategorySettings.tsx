@@ -28,12 +28,13 @@ export function CustomCategorySettings({ repository }: Props) {
 
   if (!config) return null
 
-  const categories = getAllCategories(config.customCategories ?? [], config.categoryOrder)
+  const { customCategories } = config
+  const categories = getAllCategories(customCategories, config.categoryOrder)
 
   function handleAdd() {
     const trimmed = newCategory.trim()
     if (!trimmed || categories.includes(trimmed)) return
-    const newCustom = [...(config!.customCategories ?? []), trimmed]
+    const newCustom = [...customCategories, trimmed]
     const newOrder = [...categories, trimmed]
     saveMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })
     setNewCategory('')
@@ -42,7 +43,7 @@ export function CustomCategorySettings({ repository }: Props) {
   function handleRemove(idx: number) {
     const cat = categories[idx]
     const newOrder = categories.filter((_, i) => i !== idx)
-    const newCustom = (config!.customCategories ?? []).filter((c) => c !== cat)
+    const newCustom = customCategories.filter((c) => c !== cat)
     saveMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })
   }
 
@@ -54,8 +55,8 @@ export function CustomCategorySettings({ repository }: Props) {
       return
     }
     const newOrder = categories.map((c, i) => (i === idx ? trimmed : c))
-    const newCustom = (config!.customCategories ?? []).map((c) => (c === oldName ? trimmed : c))
-    const wasCustom = (config!.customCategories ?? []).includes(oldName)
+    const newCustom = customCategories.map((c) => (c === oldName ? trimmed : c))
+    const wasCustom = customCategories.includes(oldName)
     if (!wasCustom) {
       newCustom.push(trimmed)
     }

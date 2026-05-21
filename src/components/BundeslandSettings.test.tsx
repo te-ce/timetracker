@@ -18,6 +18,7 @@ describe('BundeslandSettings', () => {
       federalState: 'NW',
       sprintLengthDays: 10,
       sprintStartDate: null,
+      customCategories: [],
     }
     const repo = new InMemoryConfigRepository(config)
     render(<BundeslandSettings repository={repo} />, { wrapper })
@@ -41,6 +42,7 @@ describe('BundeslandSettings', () => {
       federalState: 'HE',
       sprintLengthDays: 10,
       sprintStartDate: null,
+      customCategories: [],
     }
     const repo = new InMemoryConfigRepository(config)
     render(<BundeslandSettings repository={repo} />, { wrapper })

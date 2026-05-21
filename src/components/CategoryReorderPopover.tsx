@@ -38,7 +38,7 @@ export function CategoryReorderPopover({ repository }: Props) {
 
   if (!config) return null
 
-  const categories = getAllCategories(config.customCategories ?? [], config.categoryOrder)
+  const categories = getAllCategories(config.customCategories, config.categoryOrder)
 
   function handleDragStart(idx: number) {
     dragIdx.current = idx

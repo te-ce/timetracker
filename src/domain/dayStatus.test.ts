@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getDayStatus, type DayStatus } from './dayStatus'
+import { getDayStatus } from './dayStatus'
 
 describe('getDayStatus', () => {
   const today = '2026-05-19'

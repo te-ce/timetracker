@@ -11,6 +11,7 @@ interface Props {
 export function MonthStatsPanel({ workedHoursPerDay, dates, sollstunden, overtimeCarryOver, today }: Props) {
   const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, today, sollstunden)
   const cumulativeOvertime = overtimeCarryOver + toDate.value
+  const hoursNeededToday = Math.max(0, sollstunden - toDate.workedToday)
 
   return (
     <section aria-label="Month statistics" className="grid grid-cols-2 gap-4">
@@ -22,8 +23,8 @@ export function MonthStatsPanel({ workedHoursPerDay, dates, sollstunden, overtim
       />
       <StatCard
         label="Needed today"
-        value={`${toDate.hoursNeededToday.toFixed(2)}h`}
-        highlight={toDate.hoursNeededToday > 0}
+        value={`${hoursNeededToday.toFixed(2)}h`}
+        highlight={hoursNeededToday > 0}
       />
     </section>
   )

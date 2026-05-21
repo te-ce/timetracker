@@ -5,10 +5,13 @@ import type { StorageAdapter } from './adapter'
  * Writes go to both — primary is source of truth, secondary is offline cache.
  */
 export class FallbackStorageAdapter implements StorageAdapter {
-  constructor(
-    private primary: StorageAdapter,
-    private fallback: StorageAdapter,
-  ) {}
+  private primary: StorageAdapter
+  private fallback: StorageAdapter
+
+  constructor(primary: StorageAdapter, fallback: StorageAdapter) {
+    this.primary = primary
+    this.fallback = fallback
+  }
 
   async get<T>(key: string): Promise<T | null> {
     try {

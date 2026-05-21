@@ -123,7 +123,7 @@ describe('MonthGrid', () => {
   })
 
   describe('column rename', () => {
-    function setupWithRename(onRename: ReturnType<typeof vi.fn>) {
+    function setupWithRename(onRename: (oldName: string, newName: string) => void) {
       const entryRepo = new InMemoryTimeEntryRepository([])
       const windowRepo = new InMemoryWorkPeriodRepository([])
       const confirmRepo = new InMemoryDayConfirmationRepository()
@@ -149,7 +149,7 @@ describe('MonthGrid', () => {
     }
 
     it('double-clicking a column header shows an edit input', async () => {
-      const onRename = vi.fn()
+      const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
       await userEvent.dblClick(header.querySelector('span')!)
@@ -157,7 +157,7 @@ describe('MonthGrid', () => {
     })
 
     it('pressing Enter commits the rename', async () => {
-      const onRename = vi.fn()
+      const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
       await userEvent.dblClick(header.querySelector('span')!)
@@ -168,7 +168,7 @@ describe('MonthGrid', () => {
     })
 
     it('pressing Escape cancels without calling onCategoryRename', async () => {
-      const onRename = vi.fn()
+      const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
       await userEvent.dblClick(header.querySelector('span')!)
@@ -178,7 +178,7 @@ describe('MonthGrid', () => {
     })
 
     it('does not call onCategoryRename when name is unchanged', async () => {
-      const onRename = vi.fn()
+      const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
       await userEvent.dblClick(header.querySelector('span')!)

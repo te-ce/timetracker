@@ -3,10 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryWorkPeriodRepository } from '../repositories/in-memory'
 import { WorkPeriodPanel } from './WorkPeriodPanel'
+import type { WorkPeriod } from '../repositories/types'
 
 const DATE = '2024-01-15'
 
-function setup(initialWindows = []) {
+function setup(initialWindows: WorkPeriod[] = []) {
   const repo = new InMemoryWorkPeriodRepository(initialWindows)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -118,10 +119,10 @@ describe('WorkPeriodPanel', () => {
     await screen.findByText(/no work periods/i)
     const nowButtons = screen.getAllByRole('button', { name: /now/i })
     await userEvent.click(nowButtons[0]) // start Now
-    const startInput = screen.getByLabelText(/start/i) as HTMLInputElement
+    const startInput = screen.getByLabelText<HTMLInputElement>(/start/i)
     expect(startInput.value).toMatch(/^\d{2}:\d{2}$/)
     await userEvent.click(nowButtons[1]) // end Now
-    const endInput = screen.getByLabelText(/end/i) as HTMLInputElement
+    const endInput = screen.getByLabelText<HTMLInputElement>(/end/i)
     expect(endInput.value).toMatch(/^\d{2}:\d{2}$/)
   })
 

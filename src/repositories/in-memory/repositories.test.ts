@@ -6,7 +6,7 @@ import {
   InMemorySprintExportRepository,
   InMemoryWorkLocationRepository,
 } from './index'
-import type { AppConfig, TimeEntry, WorkPeriod, SprintExport, WorkLocation } from '../types'
+import type { AppConfig, TimeEntry, WorkPeriod, SprintExport } from '../types'
 
 const firstEntry: TimeEntry = {
   id: 'entry-1',

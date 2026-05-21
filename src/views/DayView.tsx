@@ -21,7 +21,7 @@ import { resolveAutoCategory } from '../domain/autoCategoryOverride';
 import { toLocalIso } from '../domain/dateUtils';
 import { getDayStatus, type DayStatus } from '../domain/dayStatus';
 import { classifyDay } from '../domain/dayType';
-import type { WorkLocation } from '../repositories/types';
+import type { DayTypeOverride, WorkLocation } from '../repositories/types';
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -100,8 +100,8 @@ export function DayView() {
         date: selectedDate,
         globalDefault: config?.autoCategory ?? null,
         dayOverrides: autoCategoryOverride
-          ? new Map([[selectedDate, autoCategoryOverride]])
-          : new Map(),
+          ? new Map<string, string>([[selectedDate, autoCategoryOverride]])
+          : new Map<string, string>(),
       });
       // Persist auto hours as a real time entry
       if (resolvedAuto && autoHours > 0) {
@@ -156,7 +156,7 @@ export function DayView() {
     queryFn: () => timeEntryRepo.findByDateRange(monthFrom, monthTo),
   });
 
-  const { data: monthDayTypeOverrides = new Map() } = useQuery({
+  const { data: monthDayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
     queryKey: ['dayTypeOverrides', selectedYear, selectedMonth, 'dayOvertime'],
     queryFn: () =>
       dayTypeOverrideRepo.findByDateRange(monthFromIso, monthToIso),

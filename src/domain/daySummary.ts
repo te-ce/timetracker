@@ -35,7 +35,7 @@ export interface MonthSummaryResult {
 }
 
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
-  const { windows, entries, dayTypeOverrides, today, globalAutoCategory = null, autoCategoryOverrides = new Map(), confirmedDays = new Set() } = input
+  const { windows, entries, dayTypeOverrides, today, globalAutoCategory = null, autoCategoryOverrides = new Map<string, string>(), confirmedDays = new Set<string>() } = input
   const daysInMonth = new Date(year, month, 0).getDate()
 
   // Group by date for efficient lookup

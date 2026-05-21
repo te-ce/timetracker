@@ -6,14 +6,16 @@ function createMockAdapter(): StorageAdapter & { data: Record<string, unknown> }
   const data: Record<string, unknown> = {}
   return {
     data,
-    async get<T>(key: string): Promise<T | null> {
-      return (data[key] as T) ?? null
+    get<T>(key: string): Promise<T | null> {
+      return Promise.resolve((data[key] as T) ?? null)
     },
-    async put<T>(key: string, value: T): Promise<void> {
+    put<T>(key: string, value: T): Promise<void> {
       data[key] = value
+      return Promise.resolve()
     },
-    async delete(key: string): Promise<void> {
+    delete(key: string): Promise<void> {
       delete data[key]
+      return Promise.resolve()
     },
   }
 }

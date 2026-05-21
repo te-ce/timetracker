@@ -4,7 +4,11 @@ import type { ActiveTracking, TimeTrackingRepository } from '../types'
 const KEY = 'active-tracking.json'
 
 export class CloudTimeTrackingRepository implements TimeTrackingRepository {
-  constructor(private adapter: StorageAdapter) {}
+  private adapter: StorageAdapter
+
+  constructor(adapter: StorageAdapter) {
+    this.adapter = adapter
+  }
 
   async start(date: string, category: string): Promise<void> {
     const tracking: ActiveTracking = {

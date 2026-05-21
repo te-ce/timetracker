@@ -6,6 +6,7 @@ import { OvertimeBar } from '../components/OvertimeBar'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
+import type { DayTypeOverride } from '../repositories/types'
 
 export function MonthGridView() {
   const today = new Date()
@@ -58,7 +59,7 @@ export function MonthGridView() {
   const fromIso = toLocalIso(from)
   const toIso = toLocalIso(to)
 
-  const { data: dayTypeOverrides = new Map() } = useQuery({
+  const { data: dayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
     queryKey: ['dayTypeOverrides', year, month],
     queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
   })

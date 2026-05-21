@@ -20,7 +20,8 @@ describe('toLocalIso', () => {
     // Verify our function returns the local date regardless of UTC conversion
     expect(toLocalIso(date)).toBe('2026-05-19')
     // Compare with the broken approach:
-    const utcIso = date.toISOString().slice(0, 10)
+    const _utcIso = date.toISOString().slice(0, 10)
+    expect(_utcIso).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     // In UTC+X timezones, this would be '2026-05-18'
     // We can't assert the exact UTC value in CI (depends on TZ), but we CAN
     // assert that toLocalIso always matches the constructor args:

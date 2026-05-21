@@ -440,7 +440,7 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                         onClick={() => cycleLocation(row.date)}
                         className="w-full h-full text-xs hover:bg-gray-100 py-1"
                         aria-label={`Location ${row.date}`}
-                        title={loc ?? 'Not set'}
+                        title={loc}
                       >
                         {loc === 'Office' ? '🏢' : '🏠'}
                       </button>
@@ -486,9 +486,11 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                       className={`w-10 text-center border-l border-gray-200 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
                       onClick={() => {
                         if (isNonWorkDay) return
-                        confirmedDays.has(row.date)
-                          ? gridUnconfirmMutation.mutate(row.date)
-                          : gridConfirmMutation.mutate(row)
+                        if (confirmedDays.has(row.date)) {
+                          gridUnconfirmMutation.mutate(row.date)
+                        } else {
+                          gridConfirmMutation.mutate(row)
+                        }
                       }}
                       aria-label={confirmedDays.has(row.date) ? `Unconfirm ${row.date}` : `Confirm ${row.date}`}
                       title={confirmedDays.has(row.date) ? 'Confirmed — click to undo' : 'Confirm day'}

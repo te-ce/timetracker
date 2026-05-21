@@ -4,10 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryTimeEntryRepository, InMemoryTimeTrackingRepository, InMemoryWorkPeriodRepository } from '../repositories/in-memory'
 import { TimeEntryPanel } from './TimeEntryPanel'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
+import type { TimeEntry, WorkPeriod } from '../repositories/types'
 
 const DATE = '2024-01-15'
 
-function setup(initialEntries = [], initialWindows = []) {
+function setup(initialEntries: TimeEntry[] = [], initialWindows: WorkPeriod[] = []) {
   const repo = new InMemoryTimeEntryRepository(initialEntries)
   const trackingRepo = new InMemoryTimeTrackingRepository()
   const workPeriodRepo = new InMemoryWorkPeriodRepository(initialWindows)
@@ -111,7 +112,7 @@ describe('TimeEntryPanel', () => {
   })
 
   it('starting category tracking opens a WorkPeriod when none exists', async () => {
-    const { trackingRepo, workPeriodRepo } = setup()
+    const { workPeriodRepo } = setup()
     await screen.findByLabelText('Start tracking _SUPPORT')
     await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
     await waitFor(async () => {
@@ -179,7 +180,7 @@ describe('TimeEntryPanel', () => {
   })
 
   describe('auto-category toggle', () => {
-    function setupWithAutoCategory(autoCategory: string, onAutoCategoryChange: ReturnType<typeof vi.fn>) {
+    function setupWithAutoCategory(autoCategory: string, onAutoCategoryChange: (cat: string | null) => void) {
       const repo = new InMemoryTimeEntryRepository([])
       const trackingRepo = new InMemoryTimeTrackingRepository()
       const workPeriodRepo = new InMemoryWorkPeriodRepository([])
@@ -199,7 +200,7 @@ describe('TimeEntryPanel', () => {
     }
 
     it('renders toggle buttons for each category when onAutoCategoryChange is provided', async () => {
-      const onChange = vi.fn()
+      const onChange = vi.fn() as (cat: string | null) => void
       setupWithAutoCategory('_SUPPORT', onChange)
       // filled circle on the active auto category
       expect(await screen.findByLabelText('Unset _SUPPORT as auto category')).toBeInTheDocument()
@@ -208,14 +209,14 @@ describe('TimeEntryPanel', () => {
     })
 
     it('calls onAutoCategoryChange(null) when clicking the active auto category toggle', async () => {
-      const onChange = vi.fn()
+      const onChange = vi.fn() as (cat: string | null) => void
       setupWithAutoCategory('_SUPPORT', onChange)
       await userEvent.click(await screen.findByLabelText('Unset _SUPPORT as auto category'))
       expect(onChange).toHaveBeenCalledWith(null)
     })
 
     it('calls onAutoCategoryChange(category) when clicking a non-active toggle', async () => {
-      const onChange = vi.fn()
+      const onChange = vi.fn() as (cat: string | null) => void
       setupWithAutoCategory('_SUPPORT', onChange)
       await userEvent.click(await screen.findByLabelText('Set _INFRA as auto category'))
       expect(onChange).toHaveBeenCalledWith('_INFRA')
