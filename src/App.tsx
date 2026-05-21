@@ -1,5 +1,7 @@
 import './App.css'
 import { Link, Outlet, useRouterState } from '@tanstack/react-router'
+import { useAuthStore } from './stores/authStore'
+import { useMsalSync } from './hooks/useMsalSync'
 
 const NAV_ITEMS: { label: string; icon: string; to: string }[] = [
   { label: 'Month', icon: '📆', to: '/' },
@@ -12,6 +14,9 @@ const NAV_ITEMS: { label: string; icon: string; to: string }[] = [
 function App() {
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  useMsalSync()
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900">
@@ -30,6 +35,12 @@ function App() {
             {item.label}
           </Link>
         ))}
+        <div className="ml-auto flex items-center gap-1.5 text-xs text-gray-400" title={isAuthenticated ? 'Synced with OneDrive' : 'Offline — sign in to sync'}>
+          <span aria-label={isAuthenticated ? 'OneDrive sync active' : 'Offline mode'}>
+            {isAuthenticated ? '☁️' : '💾'}
+          </span>
+          <span className="hidden sm:inline">{isAuthenticated ? 'Synced' : 'Offline'}</span>
+        </div>
       </nav>
 
       {/* Main content */}
