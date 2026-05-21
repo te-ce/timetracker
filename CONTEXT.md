@@ -117,6 +117,23 @@ Each rule tracks a `materializedDates` set (ISO strings) — days where the rule
 If a date is in the set, the rule does not re-create the entry (even if the user deleted it).  
 Materialization happens on app load: scan from last materialization date to today.
 
+## BootstrapConfig
+
+The minimal configuration required to initialize MSAL before the app can function.  
+Contains: **`clientId`** (Azure AD Application ID) and **`tenantId`** (Azure AD Directory ID).  
+Stored in `localStorage` under a dedicated key — never synced to OneDrive.  
+Must be available before MSAL initialization; therefore it cannot live in `AppConfig`.  
+When absent, the app runs in **local-only mode** with all Microsoft features disabled.
+
+## SyncMode
+
+The persistence mode the app is currently operating in.
+
+- `offline` — no Microsoft account active; all data is stored in browser localStorage only. Data does not leave the device.
+- `synced` — a Microsoft account is authenticated; all data is read from and written to the OneDrive App Folder, with localStorage as an offline fallback cache.
+
+The app is fully functional in either mode. Switching from `offline` to `synced` happens when the user signs in via Settings; the first write after sign-in uploads any locally-held data to OneDrive.
+
 ## ExcelMapping
 
 The configured association between an app category and an Excel row in the SharePoint workbook.  
