@@ -2,6 +2,7 @@ import { AutoCategorySettings } from '../components/AutoCategorySettings'
 import { BundeslandSettings } from '../components/BundeslandSettings'
 import { CustomCategorySettings } from '../components/CustomCategorySettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
+import { SharePointSettings } from '../components/SharePointSettings'
 import { configRepo } from '../repositories/shared'
 
 export function SettingsView() {
@@ -12,6 +13,7 @@ export function SettingsView() {
       <BundeslandSettings repository={configRepo} />
       <DefaultLocationSettings repository={configRepo} />
       <CustomCategorySettings repository={configRepo} />
+      <SharePointSettings repository={configRepo} />
     </div>
   )
 }
