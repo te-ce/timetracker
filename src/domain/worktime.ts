@@ -16,7 +16,7 @@ export function calculateWorkedHours(windows: WorkWindow[], now?: string): numbe
     if (endTime == null) return total
     const start = parseMinutes(w.start)
     let end = parseMinutes(endTime)
-    if (end <= start) end += 24 * 60 // midnight-spanning
+    if (end < start) end += 24 * 60 // midnight-spanning
     return total + (end - start) / 60
   }, 0)
 }
