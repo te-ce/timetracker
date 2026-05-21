@@ -78,7 +78,7 @@ describe('MonthCalendar', () => {
     // Gets today's white bg + blue ring
     expect(day19.className).toContain('bg-white')
     expect(day19.className).toContain('ring-2')
-    expect(day19.className).toContain('ring-blue-400')
+    expect(day19.className).toContain('ring-orange-400')
   })
 
   it('uses local date for onSelectDate regardless of timezone', async () => {
