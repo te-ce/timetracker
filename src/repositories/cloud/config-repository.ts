@@ -10,6 +10,9 @@ const DEFAULT_CONFIG: AppConfig = {
   sprintLengthDays: 14,
   sprintStartDate: null,
   customCategories: [],
+  sharepointUrl: null,
+  targetSheet: null,
+  categoryMapping: {},
 }
 
 export class CloudConfigRepository implements ConfigRepository {

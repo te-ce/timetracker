@@ -117,6 +117,27 @@ Each rule tracks a `materializedDates` set (ISO strings) — days where the rule
 If a date is in the set, the rule does not re-create the entry (even if the user deleted it).  
 Materialization happens on app load: scan from last materialization date to today.
 
+## ExcelMapping
+
+The configured association between an app category and an Excel row in the SharePoint workbook.  
+Stored as a `Record<string, string>` in AppConfig (`categoryMapping`): category key → Excel Task ID.  
+At export time, each mapped category's sprint hours are written to the row identified by that Task ID.  
+Unmapped categories are silently skipped.
+
+## TargetSheet
+
+The Excel worksheet tab selected by the user as the destination for sprint data.  
+Stored in AppConfig as `targetSheet: string | null`.  
+Populated by reading the workbook's sheet names via Graph API and letting the user select one.  
+One sheet is active at a time; the user updates it in Settings when the sprint sheet changes (e.g. at sprint start).
+
+## SharePointWorkbook
+
+The Excel file in SharePoint identified by its SharePoint URL, entered once in Settings (`sharepointUrl`).  
+Accessed via Microsoft Graph API using the `/shares/{encodedUrl}/driveItem` endpoint.  
+Holds the time-tracking template: fixed category rows + investment rows.  
+The source for investment row discovery (→ DynamicCategory) and the write target for ExcelMapping export.
+
 ## DaySummary
 
 The computed state of a single day within a month. Combines raw data (WorkWindows, TimeEntries, DayType overrides) into a single summary:

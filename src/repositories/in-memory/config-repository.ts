@@ -7,6 +7,9 @@ export const defaultAppConfig: AppConfig = {
   sprintLengthDays: 10,
   sprintStartDate: null,
   customCategories: [],
+  sharepointUrl: null,
+  targetSheet: null,
+  categoryMapping: {},
 }
 
 export class InMemoryConfigRepository implements ConfigRepository {

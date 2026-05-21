@@ -49,6 +49,12 @@ export interface AppConfig {
   customCategories: string[]
   categoryOrder?: string[]
   defaultWorkLocation?: WorkLocation | null
+  /** SharePoint URL of the Excel workbook used for sprint export */
+  sharepointUrl?: string | null
+  /** Name of the worksheet tab to write sprint data into */
+  targetSheet?: string | null
+  /** Maps app category keys to Excel Task IDs for export */
+  categoryMapping?: Record<string, string>
 }
 
 export interface TimeEntryRepository {
