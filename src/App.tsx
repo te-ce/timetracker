@@ -36,7 +36,9 @@ function App() {
 
       {/* Main content */}
       <main className="flex-1 p-6">
-        <Outlet />
+        <div className="mx-auto w-full max-w-6xl">
+          <Outlet />
+        </div>
       </main>
     </div>
   )
