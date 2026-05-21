@@ -140,11 +140,36 @@ VITE_MSAL_REDIRECT_URI=http://localhost:5173
 3. Add a **Redirect URI**: `http://localhost:5173` (type: Single-page application)
 4. Under **API permissions**, add:
    - `User.Read` (Microsoft Graph, delegated)
-   - `Files.ReadWrite.AppFolder` (Microsoft Graph, delegated) — for OneDrive app data
-   - `Files.ReadWrite` (Microsoft Graph, delegated) — for SharePoint Excel access
+   - `Files.ReadWrite.All` (Microsoft Graph, delegated) — covers both OneDrive App Folder storage and SharePoint Excel access
 5. Copy the **Application (client) ID** and **Directory (tenant) ID** into `.env.local`
 
+> **Note:** `Files.ReadWrite.All` is required (not `Files.ReadWrite`) because SharePoint-hosted files are outside the user's personal drive.
+
 See `docs/adr/` for the full architectural decisions.
+
+## Cloud Sync & OneDrive Persistence
+
+The app works fully offline using browser `localStorage`. To sync data across devices and enable SharePoint export, sign in with a Microsoft account.
+
+### Sign in
+
+1. Open **Settings → Cloud Sync**
+2. Click **Sign in with Microsoft** and complete the OAuth flow
+3. The nav bar shows ☁️ when synced, 💾 when offline
+
+On first sign-in, any locally-held data is automatically uploaded to your OneDrive App Folder. From then on all reads/writes go to OneDrive (with localStorage as an offline cache).
+
+### SharePoint Excel Export
+
+Before exporting sprint hours to SharePoint, configure the export in **Settings**:
+
+1. **SharePoint URL** — paste the full URL of the Excel workbook (`.xlsx`) from SharePoint
+2. **Target Sheet** — select the worksheet tab to write hours into
+3. **Category Mapping** — map each app category to the corresponding row in the Excel template (by Task ID); investment rows can be imported as DynamicCategories
+
+Once configured, open the **Sprint Report** for any sprint and click **Export to SharePoint**.
+
+> Sign-in is required for both OneDrive persistence and SharePoint export.
 
 ## License
 
