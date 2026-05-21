@@ -1,12 +1,12 @@
 import { create } from 'zustand'
 
 interface AuthState {
-  /** The Microsoft Access Token used for Graph API calls. Null when not logged in. */
-  accessToken: string | null
-  setAccessToken: (token: string | null) => void
+  /** True when a Microsoft account is signed in via MSAL. */
+  isAuthenticated: boolean
+  setIsAuthenticated: (authenticated: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()((set) => ({
-  accessToken: null,
-  setAccessToken: (token) => set({ accessToken: token }),
+  isAuthenticated: false,
+  setIsAuthenticated: (authenticated) => set({ isAuthenticated: authenticated }),
 }))

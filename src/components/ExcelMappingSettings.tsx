@@ -6,6 +6,7 @@ import { listRows } from '../services/excelService'
 import { getAllCategories } from '../domain/categories'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
 import { useAuthStore } from '../stores/authStore'
+import { getAccessToken } from '../auth/msalInstance'
 
 interface Props {
   repository: ConfigRepository
@@ -13,7 +14,7 @@ interface Props {
 
 export function ExcelMappingSettings({ repository }: Props) {
   const queryClient = useQueryClient()
-  const accessToken = useAuthStore((s) => s.accessToken)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const { data: config } = useQuery({ queryKey: ['config'], queryFn: () => repository.get() })
 
@@ -24,14 +25,15 @@ export function ExcelMappingSettings({ repository }: Props) {
 
   const sharepointUrl = config?.sharepointUrl
   const targetSheet = config?.targetSheet
-  const isReady = !!sharepointUrl && !!targetSheet && !!accessToken
+  const isReady = !!sharepointUrl && !!targetSheet && isAuthenticated
 
   async function handleLoadRows() {
-    if (!sharepointUrl || !targetSheet || !accessToken) return
+    if (!sharepointUrl || !targetSheet || !isAuthenticated) return
     setLoadError(null)
     setLoadingRows(true)
     try {
-      const rows = await listRows(sharepointUrl, targetSheet, accessToken)
+      const token = await getAccessToken()
+      const rows = await listRows(sharepointUrl, targetSheet, token)
       setExcelRows(rows)
       setLocalMapping(config?.categoryMapping ?? {})
     } catch (err) {

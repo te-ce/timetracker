@@ -8,11 +8,12 @@ import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/sha
 import { getAllCategories } from '../domain/categories'
 import { writeSprintData } from '../services/excelService'
 import { useAuthStore } from '../stores/authStore'
+import { getAccessToken } from '../auth/msalInstance'
 
 export function SprintView() {
   const queryClient = useQueryClient()
   const [sprintIndex, setSprintIndex] = useState<number | null>(null)
-  const accessToken = useAuthStore((s) => s.accessToken)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const { data: config } = useQuery({
     queryKey: ['config'],
@@ -62,13 +63,14 @@ export function SprintView() {
   const targetSheet = config?.targetSheet ?? null
   const categoryMapping = config?.categoryMapping ?? {}
   const exportReady =
-    !!sharepointUrl && !!targetSheet && Object.keys(categoryMapping).length > 0 && !!accessToken
+    !!sharepointUrl && !!targetSheet && Object.keys(categoryMapping).length > 0 && isAuthenticated
 
   async function handleExport(): Promise<void> {
-    if (!sharepointUrl || !targetSheet || !accessToken) {
+    if (!sharepointUrl || !targetSheet || !isAuthenticated) {
       throw new Error('SharePoint URL, sheet, or auth token is missing.')
     }
-    await writeSprintData(sharepointUrl, targetSheet, categoryMapping, hoursPerCategory, accessToken)
+    const token = await getAccessToken()
+    await writeSprintData(sharepointUrl, targetSheet, categoryMapping, hoursPerCategory, token)
     await markExportedMutation.mutateAsync()
   }
 

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ConfigRepository } from '../repositories/types'
 import { listSheets } from '../services/excelService'
 import { useAuthStore } from '../stores/authStore'
+import { getAccessToken } from '../auth/msalInstance'
 
 interface Props {
   repository: ConfigRepository
@@ -10,7 +11,7 @@ interface Props {
 
 export function SheetSelector({ repository }: Props) {
   const queryClient = useQueryClient()
-  const accessToken = useAuthStore((s) => s.accessToken)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const { data: config } = useQuery({ queryKey: ['config'], queryFn: () => repository.get() })
 
@@ -21,11 +22,12 @@ export function SheetSelector({ repository }: Props) {
   const sharepointUrl = config?.sharepointUrl
 
   async function handleLoadSheets() {
-    if (!sharepointUrl || !accessToken) return
+    if (!sharepointUrl || !isAuthenticated) return
     setLoadError(null)
     setLoadingSheets(true)
     try {
-      const result = await listSheets(sharepointUrl, accessToken)
+      const token = await getAccessToken()
+      const result = await listSheets(sharepointUrl, token)
       setSheets(result)
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load sheets')
@@ -44,7 +46,7 @@ export function SheetSelector({ repository }: Props) {
 
   if (!config) return null
 
-  const isReady = !!sharepointUrl && !!accessToken
+  const isReady = !!sharepointUrl && isAuthenticated
   const currentSheet = config.targetSheet ?? ''
 
   return (
@@ -63,7 +65,9 @@ export function SheetSelector({ repository }: Props) {
           {loadingSheets ? 'Loading…' : 'Load sheets'}
         </button>
         {!isReady && (
-          <span className="text-xs text-gray-400">Enter a SharePoint URL first</span>
+          <span className="text-xs text-gray-400">
+            {!sharepointUrl ? "Enter a SharePoint URL first" : "Sign in to load sheets"}
+          </span>
         )}
       </div>
 
