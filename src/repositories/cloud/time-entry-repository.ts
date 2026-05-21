@@ -23,4 +23,3 @@ export class CloudTimeEntryRepository implements TimeEntryRepository {
     await this.store.remove(id, (e) => e.id)
   }
 }
-

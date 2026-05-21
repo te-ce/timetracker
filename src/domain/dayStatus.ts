@@ -1,13 +1,6 @@
 import type { DayType } from './dayType'
 
-export type DayStatus =
-  | 'non-working'
-  | 'leave'
-  | 'future'
-  | 'today'
-  | 'complete'
-  | 'needs-review'
-  | 'untracked'
+export type DayStatus = 'non-working' | 'leave' | 'future' | 'today' | 'complete' | 'needs-review' | 'untracked'
 
 interface DayStatusInput {
   dayType: DayType
@@ -19,7 +12,15 @@ interface DayStatusInput {
   today: string
 }
 
-export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAutoCategory, isConfirmed = false, isoDate, today }: DayStatusInput): DayStatus {
+export function getDayStatus({
+  dayType,
+  hasWorkedHours,
+  isEntriesBalanced,
+  hasAutoCategory,
+  isConfirmed = false,
+  isoDate,
+  today,
+}: DayStatusInput): DayStatus {
   // Leave days (Vacation, SickDay, Absence)
   if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') return 'leave'
 

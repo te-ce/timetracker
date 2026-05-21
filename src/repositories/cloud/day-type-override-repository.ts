@@ -25,4 +25,3 @@ export class CloudDayTypeOverrideRepository implements DayTypeOverrideRepository
     await this.store.remove(date)
   }
 }
-

@@ -7,10 +7,12 @@ Status: ready-for-agent
 Implement the primary app view: a month calendar. Each day is colour-coded by DayType. Tapping a day opens the Tagesdetailansicht. An in-app banner warns about past incomplete WorkDays.
 
 A day is **complete** when:
+
 - It is not a WorkDay (Weekend, PublicHoliday, Vacation, etc.) — automatically complete, **or**
 - At least one WorkWindow has been recorded (AutoCategory covers the rest)
 
 End-to-end slice:
+
 - Month calendar grid, navigable by month
 - Each day cell shows: date, DayType colour, WorkedHours summary if any WorkWindows exist
 - Click/tap opens the Tagesdetailansicht (built in slices #03, #04, #05, #06)

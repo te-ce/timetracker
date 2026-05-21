@@ -18,7 +18,14 @@ describe('CloudConfigRepository', () => {
   it('persists and retrieves config', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudConfigRepository(adapter)
-    await repo.save({ sollstunden: 7, autoCategory: 'QA', federalState: 'HH', sprintLengthDays: 10, sprintStartDate: '2024-01-01', customCategories: ['Custom1'] })
+    await repo.save({
+      sollstunden: 7,
+      autoCategory: 'QA',
+      federalState: 'HH',
+      sprintLengthDays: 10,
+      sprintStartDate: '2024-01-01',
+      customCategories: ['Custom1'],
+    })
     // New instance to verify persistence through adapter
     const repo2 = new CloudConfigRepository(adapter)
     const config = await repo2.get()

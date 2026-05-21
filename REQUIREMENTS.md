@@ -14,20 +14,21 @@ A time-tracking app that logs hours against predefined categories and exports th
 
 ### 1.1 Fixed Categories (columns in the Excel template)
 
-| # | Category | Description |
-|---|---|---|
-| 1 | **On Leave** | Holiday, sick leave, other absence |
-| 2 | **Training, Events** | Training, team events, celebrations |
-| 3 | **Coremedia** | Ceremonies, sprint planning, retros, etc. |
-| 4 | **QA** | Quality assurance / testing activities |
-| 5 | **Support** | Customer support |
-| 6 | **CoPs** | Communities of Practice / guilds |
-| 7 | **Bug/Maintenance** | Bug fixes and maintenance tasks |
-| 8 | **Infra** | Infrastructure work |
-| 9 | **Architecture** | Architecture tasks |
-| 10 | **Testwatch** | Testwatch-specific activities |
+| #   | Category             | Description                               |
+| --- | -------------------- | ----------------------------------------- |
+| 1   | **On Leave**         | Holiday, sick leave, other absence        |
+| 2   | **Training, Events** | Training, team events, celebrations       |
+| 3   | **Coremedia**        | Ceremonies, sprint planning, retros, etc. |
+| 4   | **QA**               | Quality assurance / testing activities    |
+| 5   | **Support**          | Customer support                          |
+| 6   | **CoPs**             | Communities of Practice / guilds          |
+| 7   | **Bug/Maintenance**  | Bug fixes and maintenance tasks           |
+| 8   | **Infra**            | Infrastructure work                       |
+| 9   | **Architecture**     | Architecture tasks                        |
+| 10  | **Testwatch**        | Testwatch-specific activities             |
 
 ### 1.2 Automatic Remaining Category (AutoCategory)
+
 - A **global default** AutoCategory is set in Settings — freely chosen by the user from fixed or dynamic categories
 - Per-day override possible from DayView or MonthGrid (changes which category receives auto hours for that day)
 - That category receives: `actual worked hours for the day − Σ all manual bookings`
@@ -38,6 +39,7 @@ A time-tracking app that logs hours against predefined categories and exports th
 - The automatic category is visually distinguished (greyed out when computed)
 
 ### 1.3 Investment / Dynamic Columns
+
 - Investments are additional rows in the Excel after the fixed categories
 - The app reads the investment rows from the Excel via Graph API during mapping setup
 - Bookable categories are automatically created in the app from those rows (name = description or Task ID from Excel)
@@ -56,11 +58,13 @@ A time-tracking app that logs hours against predefined categories and exports th
 - The Microsoft Access Token from login (Firebase Auth + Microsoft provider) is used for Graph API calls
 
 ### Export triggers
+
 - **Manual:** The user can export at any time; marks the sprint as `exported`
 - **Automatic:** The user configures how many days after sprint end an automatic export occurs — unless already exported manually
 - Each sprint has an **ExportStatus** (`pending` / `exported`); a manual export prevents the automatic one
 
 ### Table structure
+
 - Columns: **Task ID** | **Effort (decimal)** | **Description** — Task ID and Description are pre-filled and are **not** modified by the app
 - Row order: fixed categories first (On Leave through Testwatch), then investment rows
 - The app writes only the **effort** value (sprint total per category, decimal)
@@ -69,6 +73,7 @@ A time-tracking app that logs hours against predefined categories and exports th
 - Write process: the app locates the mapped row by Task ID → writes the effort value
 
 ### Mapping
+
 - The user configures once: app category → row (by Task ID from the Excel)
 - Investments: the app reads investment rows from the Excel automatically and creates bookable categories
 - Unmapped categories are skipped at export
@@ -114,6 +119,7 @@ A time-tracking app that logs hours against predefined categories and exports th
 ## 6. Sprint Report
 
 ### Sprint Configuration
+
 - The user configures the sprint once in Settings:
   - **Sprint start date** — the exact date the first sprint began (ISO date, e.g. `2024-01-08`)
   - **Sprint duration** — length in weeks (e.g. 2 weeks)
@@ -121,6 +127,7 @@ A time-tracking app that logs hours against predefined categories and exports th
 - The configuration can be updated at any time; all sprint boundaries recalculate immediately
 
 ### Sprint Report
+
 - At the end of a sprint: summary of all tracked hours **per category**
 - Displayed as a sprint closing report for the elapsed sprint period
 
@@ -130,15 +137,16 @@ A time-tracking app that logs hours against predefined categories and exports th
 
 Data should be synchronised across devices. The user logs in once — sync runs automatically in the background. Evaluated options:
 
-| Option | Login | Offline | Free Tier | Rating |
-|---|---|---|---|---|
-| **Firebase (Firestore)** | Google, Apple, GitHub, and more | ✅ automatic (SDK) | 1 GB / 50k reads/day – no pausing | ⭐⭐⭐⭐⭐ |
-| **Atlas Device Sync** | Google, Apple, Email, etc. | ✅ best-in-class (Realm) | 512 MB – no pausing | ⭐⭐⭐⭐⭐ |
-| **Supabase** | Google, Apple, GitHub, etc. | ❌ manual | 500 MB – **pauses after 1 week** | ⭐⭐⭐ |
-| **Appwrite Cloud** | Google, Apple, 30+ OAuth | ❌ manual | 2 GB – **pauses after 1 week** | ⭐⭐⭐ |
-| **PocketBase** | OAuth (self-hosted) | ❌ | free but requires own server | ⭐ |
+| Option                   | Login                           | Offline                  | Free Tier                         | Rating     |
+| ------------------------ | ------------------------------- | ------------------------ | --------------------------------- | ---------- |
+| **Firebase (Firestore)** | Google, Apple, GitHub, and more | ✅ automatic (SDK)       | 1 GB / 50k reads/day – no pausing | ⭐⭐⭐⭐⭐ |
+| **Atlas Device Sync**    | Google, Apple, Email, etc.      | ✅ best-in-class (Realm) | 512 MB – no pausing               | ⭐⭐⭐⭐⭐ |
+| **Supabase**             | Google, Apple, GitHub, etc.     | ❌ manual                | 500 MB – **pauses after 1 week**  | ⭐⭐⭐     |
+| **Appwrite Cloud**       | Google, Apple, 30+ OAuth        | ❌ manual                | 2 GB – **pauses after 1 week**    | ⭐⭐⭐     |
+| **PocketBase**           | OAuth (self-hosted)             | ❌                       | free but requires own server      | ⭐         |
 
 ### Decision: Firebase (Firestore + Firebase Auth with Microsoft provider)
+
 - User logs in with a **Microsoft Work/School account** — one-time login
 - Firebase Auth simultaneously provides the Microsoft Access Token for Microsoft Graph API
 - Time entries and configuration are stored in Firestore under `users/{uid}/`
@@ -154,30 +162,37 @@ Data should be synchronised across devices. The user logs in once — sync runs 
 > See [ADR 0003](docs/adr/0003-revised-tech-stack.md) for the full decision record.
 
 ### Frontend
+
 - **React 18** (SPA, no SSR — app is fully auth-gated)
 - **TypeScript** — strict typing throughout the project
 - **Vite** — build tool and dev server
 
 ### Auth & API
+
 - **MSAL.js** (`@azure/msal-browser` + `@azure/msal-react`) — Microsoft Work/School login; provides the MS Access Token for Graph API natively
 - **Microsoft Graph API** — reads/writes the SharePoint Excel file
 - **Firebase Firestore** — persistence and cross-device sync (independent of auth)
 
 ### UI
+
 - **shadcn/ui** (Radix UI primitives) — accessible, unstyled components owned by the project
 - **Tailwind CSS** — utility-first styling
 
 ### State management
+
 - **Zustand** — lightweight sliced stores per domain (entries, config, UI)
 
 ### Offline / PWA
+
 - **vite-plugin-pwa** (Workbox) — service worker + offline cache
 
 ### Code Quality
+
 - **ESLint** with TypeScript support (`typescript-eslint`)
   - Rule [`@typescript-eslint/no-unnecessary-condition`](https://typescript-eslint.io/rules/no-unnecessary-condition/) is active (prevents dead branches from redundant conditions)
 
 ### Testing
+
 - **Unit tests (Vitest)** — pure domain logic: time calculations, AutoCategory, sprint aggregation, DayType
 - **Component tests (React Testing Library)** — user-facing behaviour, no implementation details
 - **API mocking (Mock Service Worker)** — intercept Graph API at the network level
@@ -186,6 +201,7 @@ Data should be synchronised across devices. The user logs in once — sync runs 
 - → See [ADR 0002](docs/adr/0002-testing-strategy.md)
 
 ### Mobile (future)
+
 - **Expo (React Native)** — domain logic and repository interfaces are portable
 
 ---
@@ -250,10 +266,10 @@ Data should be synchronised across devices. The user logs in once — sync runs 
 
 ## 13. Non-Functional Requirements
 
-| Requirement | Description |
-|---|---|
-| Configurability | Daily Sollstunden, sprint length, federal state, investment categories, AutoCategory |
-| Extensibility | Number of investment columns may grow |
-| Data integrity | Existing entries are not unintentionally overwritten during export |
-| Automatic export | Requires a server-side scheduler (Firebase Cloud Functions + Cloud Scheduler) |
-| Platform | Web (React), potentially mobile later |
+| Requirement      | Description                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------ |
+| Configurability  | Daily Sollstunden, sprint length, federal state, investment categories, AutoCategory |
+| Extensibility    | Number of investment columns may grow                                                |
+| Data integrity   | Existing entries are not unintentionally overwritten during export                   |
+| Automatic export | Requires a server-side scheduler (Firebase Cloud Functions + Cloud Scheduler)        |
+| Platform         | Web (React), potentially mobile later                                                |

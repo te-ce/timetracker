@@ -20,8 +20,7 @@ export function CategoryReorderPopover({ repository }: Props) {
   })
 
   const saveMutation = useMutation({
-    mutationFn: (categoryOrder: string[]) =>
-      repository.save({ ...config!, categoryOrder }),
+    mutationFn: (categoryOrder: string[]) => repository.save({ ...config!, categoryOrder }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
 
@@ -93,7 +92,9 @@ export function CategoryReorderPopover({ repository }: Props) {
                 onDragEnd={handleDragEnd}
                 className={`flex items-center gap-2 rounded border px-2 py-1 text-xs cursor-grab active:cursor-grabbing select-none ${dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50' : 'bg-white'}`}
               >
-                <span className="text-gray-300" aria-hidden>⠿</span>
+                <span className="text-gray-300" aria-hidden>
+                  ⠿
+                </span>
                 <span className="flex-1 truncate">{cat}</span>
               </li>
             ))}

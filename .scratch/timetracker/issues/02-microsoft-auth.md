@@ -9,11 +9,13 @@ Implement sign-in and sign-out using Microsoft Work/School Account via Firebase 
 Per ADR-0001, Microsoft is the only supported login provider.
 
 The human completing this slice must first:
+
 1. Create a Firebase project in the Firebase console and enable the Microsoft OAuth provider
 2. Register an Azure app (Entra ID) with the required redirect URIs and expose the `Files.ReadWrite` / `Sites.ReadWrite.All` scopes
 3. Populate `.env` with `VITE_FIREBASE_*` values and the Azure client/tenant IDs
 
 Once credentials exist, the implementation covers:
+
 - Sign-in screen with "Sign in with Microsoft" button
 - Firebase Auth `signInWithPopup` (or redirect) using the Microsoft provider
 - Store/refresh the Microsoft Access Token (handle expiry via Firebase token-refresh)

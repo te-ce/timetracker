@@ -6,21 +6,23 @@ Status: ready-for-agent
 
 Implement DayType classification for each day. DayType determines whether WorkWindows are expected and whether automatic TimeEntry booking occurs.
 
-| DayType | WorkWindow expected? | Auto-booking |
-|---|---|---|
-| WorkDay | Yes | — |
-| Weekend | No | — |
-| PublicHoliday | No | — |
-| Vacation | No | Sollstunden → On Leave |
-| SickDay | No | Sollstunden → On Leave |
-| Absence | No | Sollstunden → On Leave |
+| DayType       | WorkWindow expected? | Auto-booking           |
+| ------------- | -------------------- | ---------------------- |
+| WorkDay       | Yes                  | —                      |
+| Weekend       | No                   | —                      |
+| PublicHoliday | No                   | —                      |
+| Vacation      | No                   | Sollstunden → On Leave |
+| SickDay       | No                   | Sollstunden → On Leave |
+| Absence       | No                   | Sollstunden → On Leave |
 
 Rules:
+
 - Weekends (Saturday/Sunday) are automatically classified as `Weekend` — no manual override needed
 - All other DayTypes can be set manually by the user on a per-day basis
 - For Vacation, SickDay, and Absence: a TimeEntry for `On Leave` equal to `Sollstunden` is automatically created (and removed if the day is reclassified)
 
 End-to-end slice:
+
 - DayType selector in the Tagesdetailansicht (not shown for Weekends)
 - Auto-booking logic for leave types
 - DayType persisted via `ConfigRepository` / `WorkWindowRepository` → Firestore

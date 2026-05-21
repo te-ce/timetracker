@@ -14,8 +14,7 @@ export function DefaultLocationSettings({ repository }: Props) {
   })
 
   const mutation = useMutation({
-    mutationFn: (loc: WorkLocation) =>
-      repository.save({ ...config!, defaultWorkLocation: loc }),
+    mutationFn: (loc: WorkLocation) => repository.save({ ...config!, defaultWorkLocation: loc }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
 
@@ -41,9 +40,7 @@ export function DefaultLocationSettings({ repository }: Props) {
           </button>
         ))}
       </div>
-      <p className="text-xs text-gray-500">
-        Used as the default location for days with no explicit override.
-      </p>
+      <p className="text-xs text-gray-500">Used as the default location for days with no explicit override.</p>
     </div>
   )
 }

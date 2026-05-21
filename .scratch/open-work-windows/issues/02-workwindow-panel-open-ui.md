@@ -9,6 +9,7 @@ Update `WorkWindowPanel` so users can add a WorkWindow with only a start time (e
 End-to-end scope: UI form changes → mutation call → list display.
 
 Behaviour:
+
 - Add form: end field is optional. "Add" button enabled when start is set (end may be empty).
 - Open window in list displays as `HH:MM – …` (em-dash + ellipsis when end is null).
 - Edit form: end field is optional; save allowed with no end. Both start and end fields have a "Now" button that sets the field to current local `HH:MM`.

@@ -21,18 +21,26 @@ export function MonthStatsPanel({ workedHoursPerDay, dates, sollstunden, overtim
         highlight={cumulativeOvertime !== 0}
         positive={cumulativeOvertime >= 0}
       />
-      <StatCard
-        label="Needed today"
-        value={`${hoursNeededToday.toFixed(2)}h`}
-        highlight={hoursNeededToday > 0}
-      />
+      <StatCard label="Needed today" value={`${hoursNeededToday.toFixed(2)}h`} highlight={hoursNeededToday > 0} />
     </section>
   )
 }
 
-function StatCard({ label, value, highlight, positive }: { label: string; value: string; highlight?: boolean; positive?: boolean }) {
+function StatCard({
+  label,
+  value,
+  highlight,
+  positive,
+}: {
+  label: string
+  value: string
+  highlight?: boolean
+  positive?: boolean
+}) {
   const colorClass = highlight
-    ? positive ? 'border-green-300 bg-green-50' : 'border-amber-300 bg-amber-50'
+    ? positive
+      ? 'border-green-300 bg-green-50'
+      : 'border-amber-300 bg-amber-50'
     : 'bg-white'
   return (
     <div className={`rounded-xl border px-4 py-4 shadow-sm ${colorClass}`}>

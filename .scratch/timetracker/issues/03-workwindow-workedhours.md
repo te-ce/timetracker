@@ -7,6 +7,7 @@ Status: ready-for-agent
 Implement the WorkWindow tracking layer for a single day. A WorkWindow is a start/end time pair representing an actual work period. Multiple WorkWindows per day are supported.
 
 End-to-end slice:
+
 - UI to add and remove WorkWindows for a day (accessible from the Tagesdetailansicht placeholder)
 - `WorkedHours` calculation: Σ duration of all WorkWindows for the day
 - `Restarbeitszeit` display: `Sollstunden − WorkedHours` — shown only once at least one WorkWindow exists; positive = still missing, negative = Überstunden

@@ -1,7 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryTimeEntryRepository, InMemoryTimeTrackingRepository, InMemoryWorkPeriodRepository } from '../repositories/in-memory'
+import {
+  InMemoryTimeEntryRepository,
+  InMemoryTimeTrackingRepository,
+  InMemoryWorkPeriodRepository,
+} from '../repositories/in-memory'
 import { TimeEntryPanel } from './TimeEntryPanel'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
 import type { TimeEntry, WorkPeriod } from '../repositories/types'
@@ -15,7 +19,12 @@ function setup(initialEntries: TimeEntry[] = [], initialWindows: WorkPeriod[] = 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <TimeEntryPanel date={DATE} repository={repo} timeTrackingRepository={trackingRepo} workPeriodRepository={workPeriodRepo} />
+      <TimeEntryPanel
+        date={DATE}
+        repository={repo}
+        timeTrackingRepository={trackingRepo}
+        workPeriodRepository={workPeriodRepo}
+      />
     </QueryClientProvider>,
   )
   return { repo, trackingRepo, workPeriodRepo }

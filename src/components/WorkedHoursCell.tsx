@@ -87,7 +87,9 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
   }
 
   const dateLabel = new Date(date + 'T12:00').toLocaleDateString('en-GB', {
-    weekday: 'long', day: 'numeric', month: 'long',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
   })
 
   if (!open) {
@@ -141,23 +143,51 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
                           type="time"
                           value={editStart}
                           onChange={(e) => setEditStart(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleEditSave(); if (e.key === 'Escape') setEditingId(null) }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleEditSave()
+                            if (e.key === 'Escape') setEditingId(null)
+                          }}
                           className="rounded border px-1.5 py-0.5 text-sm w-24"
                         />
-                        <button type="button" onClick={() => setEditStart(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
+                        <button
+                          type="button"
+                          onClick={() => setEditStart(nowHHMM())}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          Now
+                        </button>
                         <span className="text-gray-400">–</span>
                         <input
                           type="time"
                           value={editEnd}
                           onChange={(e) => setEditEnd(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleEditSave(); if (e.key === 'Escape') setEditingId(null) }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleEditSave()
+                            if (e.key === 'Escape') setEditingId(null)
+                          }}
                           className="rounded border px-1.5 py-0.5 text-sm w-24"
                         />
-                        <button type="button" onClick={() => setEditEnd(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
+                        <button
+                          type="button"
+                          onClick={() => setEditEnd(nowHHMM())}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          Now
+                        </button>
                       </div>
                       <div className="flex gap-2 ml-2 shrink-0">
-                        <button onClick={handleEditSave} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Save</button>
-                        <button onClick={() => setEditingId(null)} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
+                        <button
+                          onClick={handleEditSave}
+                          className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => setEditingId(null)}
+                          className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                          Cancel
+                        </button>
                       </div>
                     </>
                   ) : (
@@ -192,13 +222,17 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
         {/* Add form */}
         <div className="border-t px-5 py-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <label htmlFor={`wpc-start-${date}`} className="text-xs font-medium text-gray-600 w-10 shrink-0">Start</label>
+            <label htmlFor={`wpc-start-${date}`} className="text-xs font-medium text-gray-600 w-10 shrink-0">
+              Start
+            </label>
             <input
               id={`wpc-start-${date}`}
               type="time"
               value={draftStart}
               onChange={(e) => setDraftStart(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAdd()
+              }}
               className="flex-1 rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
             <button
@@ -210,13 +244,17 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <label htmlFor={`wpc-end-${date}`} className="text-xs font-medium text-gray-600 w-10 shrink-0">End</label>
+            <label htmlFor={`wpc-end-${date}`} className="text-xs font-medium text-gray-600 w-10 shrink-0">
+              End
+            </label>
             <input
               id={`wpc-end-${date}`}
               type="time"
               value={draftEnd}
               onChange={(e) => setDraftEnd(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAdd()
+              }}
               className="flex-1 rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
             <button

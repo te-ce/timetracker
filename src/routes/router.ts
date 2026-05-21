@@ -29,9 +29,8 @@ const dayRoute = createRoute({
   path: '/day',
   component: DayView,
   validateSearch: (search: Record<string, unknown>) => ({
-    date: (typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date))
-      ? search.date
-      : toLocalIso(new Date()),
+    date:
+      typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : toLocalIso(new Date()),
   }),
 })
 
@@ -63,13 +62,7 @@ const settingsRoute = createRoute({
   component: SettingsView,
 })
 
-const routeTree = rootRoute.addChildren([
-  monthRoute,
-  dayRoute,
-  gridRoute,
-  sprintRoute,
-  settingsRoute,
-])
+const routeTree = rootRoute.addChildren([monthRoute, dayRoute, gridRoute, sprintRoute, settingsRoute])
 
 export const router = createRouter({ routeTree })
 

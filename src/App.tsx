@@ -23,9 +23,7 @@ function App() {
             key={item.label}
             to={item.to}
             className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              currentPath === item.to
-                ? 'bg-indigo-50 text-indigo-700'
-                : 'text-gray-700 hover:bg-gray-100'
+              currentPath === item.to ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
             <span aria-hidden="true">{item.icon}</span>

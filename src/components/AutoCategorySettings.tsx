@@ -15,8 +15,7 @@ export function AutoCategorySettings({ repository }: Props) {
   })
 
   const mutation = useMutation({
-    mutationFn: (category: string | null) =>
-      repository.save({ ...config!, autoCategory: category }),
+    mutationFn: (category: string | null) => repository.save({ ...config!, autoCategory: category }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
 
@@ -46,9 +45,7 @@ export function AutoCategorySettings({ repository }: Props) {
           </option>
         ))}
       </select>
-      <p className="text-xs text-gray-500">
-        Remaining hours after manual entries auto-fill this category.
-      </p>
+      <p className="text-xs text-gray-500">Remaining hours after manual entries auto-fill this category.</p>
     </div>
   )
 }

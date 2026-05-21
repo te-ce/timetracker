@@ -7,15 +7,18 @@ Status: ready-for-agent
 Implement Sprint management: configure a sprint cadence once and let the app calculate all boundaries automatically. Show a per-sprint summary of tracked hours per category.
 
 Sprint config (Settings):
+
 - Sprint length in weeks (e.g. 2)
 - Sprint start date (one-time, then auto-calculated forward)
 
 Sprint report screen:
+
 - Select a sprint (current or past)
 - Σ TimeEntry hours per category for the sprint period
 - ExportStatus badge: `pending` / `exported`
 
 ExportStatus:
+
 - Starts as `pending`
 - Set to `exported` by the manual export flow (slice #12)
 - `exported` sprint is not re-exported automatically

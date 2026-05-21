@@ -66,9 +66,7 @@ describe('buildMonthGrid', () => {
         { id: '1', date: '2026-05-01', category: 'QA', hours: 2 },
         { id: '2', date: '2026-05-01', category: 'Support', hours: 1 },
       ],
-      workPeriods: [
-        { id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' },
-      ],
+      workPeriods: [{ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' }],
       dayTypes: new Map(),
       autoCategory: 'Coremedia',
       autoCategoryOverrides: new Map(),
@@ -82,12 +80,8 @@ describe('buildMonthGrid', () => {
     const rows = buildMonthGrid({
       year: 2026,
       month: 5,
-      timeEntries: [
-        { id: '1', date: '2026-05-01', category: 'QA', hours: 2 },
-      ],
-      workPeriods: [
-        { id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' },
-      ],
+      timeEntries: [{ id: '1', date: '2026-05-01', category: 'QA', hours: 2 }],
+      workPeriods: [{ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' }],
       dayTypes: new Map(),
       autoCategory: 'Coremedia',
       autoCategoryOverrides: new Map(),
@@ -113,10 +107,10 @@ describe('buildMonthGrid', () => {
       autoCategoryOverrides: new Map(),
     })
 
-    expect(rows[0].dayType).toBe('WorkDay')  // May 1 = Friday
-    expect(rows[1].dayType).toBe('Weekend')  // May 2 = Saturday
-    expect(rows[2].dayType).toBe('Weekend')  // May 3 = Sunday
-    expect(rows[3].dayType).toBe('WorkDay')  // May 4 = Monday
+    expect(rows[0].dayType).toBe('WorkDay') // May 1 = Friday
+    expect(rows[1].dayType).toBe('Weekend') // May 2 = Saturday
+    expect(rows[2].dayType).toBe('Weekend') // May 3 = Sunday
+    expect(rows[3].dayType).toBe('WorkDay') // May 4 = Monday
   })
 
   it('uses explicit dayType from map over auto-classification', () => {

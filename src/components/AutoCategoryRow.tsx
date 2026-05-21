@@ -25,9 +25,7 @@ export function AutoCategoryRow({ autoCategory, workedHours, manualTotal }: Prop
       <div className="flex items-center gap-2">
         <span className="font-mono text-sm font-bold">{hours}h</span>
         {isOverbooked && (
-          <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-            Overbooking
-          </span>
+          <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Overbooking</span>
         )}
       </div>
     </div>

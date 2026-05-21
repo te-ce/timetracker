@@ -9,8 +9,7 @@ export function useDayTypeOverrideMutations(repository: DayTypeOverrideRepositor
   }
 
   const save = useMutation({
-    mutationFn: ({ date, dayType }: { date: string; dayType: DayTypeOverride }) =>
-      repository.save(date, dayType),
+    mutationFn: ({ date, dayType }: { date: string; dayType: DayTypeOverride }) => repository.save(date, dayType),
     onSuccess: invalidate,
   })
 

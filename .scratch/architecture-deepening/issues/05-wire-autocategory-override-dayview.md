@@ -10,7 +10,7 @@ In `DayView.tsx` (lines 59-63):
 const autoCategory = resolveAutoCategory({
   date: selectedDate,
   globalDefault: config?.autoCategory ?? null,
-  dayOverrides: new Map(),  // ← always empty
+  dayOverrides: new Map(), // ← always empty
 })
 ```
 

@@ -7,11 +7,13 @@ Status: ready-for-human
 Implement automatic sprint export: if a sprint has not been manually exported, the app exports it automatically N days after the sprint ends. N is configured by the user in Settings.
 
 The human completing this slice must first:
+
 1. Enable Firebase Cloud Functions (Blaze plan required) in the Firebase console
 2. Enable Cloud Scheduler API in Google Cloud
 3. Deploy the function after implementation
 
 Implementation:
+
 - Settings: "Auto-export N days after sprint end" — configurable integer
 - Firebase Cloud Function (scheduled via Cloud Scheduler): runs daily, checks all sprints where `sprintEndDate + N days ≤ today` and `ExportStatus = pending`
 - For each matching sprint: performs the same export logic as the manual export (slice #12) using a service account or stored token

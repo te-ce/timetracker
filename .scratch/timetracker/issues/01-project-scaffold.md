@@ -7,6 +7,7 @@ Status: ready-for-agent
 Bootstrap the complete development environment for the Timetracker React app. This is the foundation every other slice builds on. The result is a running dev server, a green test suite, and clean Repository interfaces that all future Firestore/Graph API implementations will satisfy.
 
 Set up:
+
 - React + TypeScript + Vite
 - ESLint with `typescript-eslint` (including `@typescript-eslint/no-unnecessary-condition`)
 - Vitest + React Testing Library (RTL)
@@ -15,6 +16,7 @@ Set up:
 - Firebase SDK wired (no auth, no Firestore reads/writes yet — just initialised with placeholder config)
 
 Define Repository interfaces in a `src/repositories/` module:
+
 - `TimeEntryRepository`
 - `WorkWindowRepository`
 - `ConfigRepository`

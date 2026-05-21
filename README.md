@@ -51,16 +51,16 @@ npm run preview
 
 ## Available Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start Vite dev server with HMR |
-| `npm run build` | Type-check and build for production |
-| `npm run preview` | Serve the production build locally |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run unit/component tests (Vitest) |
-| `npm run e2e` | Run end-to-end tests (Playwright) |
-| `npm run test:unit` | Run only unit tests |
-| `npm run test:component` | Run only component tests |
+| Script                   | Description                         |
+| ------------------------ | ----------------------------------- |
+| `npm run dev`            | Start Vite dev server with HMR      |
+| `npm run build`          | Type-check and build for production |
+| `npm run preview`        | Serve the production build locally  |
+| `npm run lint`           | Run ESLint                          |
+| `npm run test`           | Run unit/component tests (Vitest)   |
+| `npm run e2e`            | Run end-to-end tests (Playwright)   |
+| `npm run test:unit`      | Run only unit tests                 |
+| `npm run test:component` | Run only component tests            |
 
 ## Running Tests
 

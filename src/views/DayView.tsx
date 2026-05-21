@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearch } from '@tanstack/react-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
   workPeriodRepo,
   timeEntryRepo,
@@ -9,19 +9,19 @@ import {
   autoCategoryOverrideRepo,
   dayConfirmationRepo,
   timeTrackingRepo,
-} from '../repositories/shared';
-import { WorkPeriodPanel } from '../components/WorkPeriodPanel';
-import { TimeEntryPanel } from '../components/TimeEntryPanel';
-import { OvertimeBar } from '../components/OvertimeBar';
-import { DayTypePicker } from '../components/DayTypePicker';
-import { calculateWorkedHours } from '../domain/worktime';
-import { calculateOvertimeToDate } from '../domain/monthStats';
-import { buildMonthSummaries } from '../domain/daySummary';
-import { resolveAutoCategory } from '../domain/autoCategoryOverride';
-import { toLocalIso } from '../domain/dateUtils';
-import { getDayStatus, type DayStatus } from '../domain/dayStatus';
-import { classifyDay } from '../domain/dayType';
-import type { DayTypeOverride, WorkLocation } from '../repositories/types';
+} from '../repositories/shared'
+import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
+import { TimeEntryPanel } from '../components/TimeEntryPanel'
+import { OvertimeBar } from '../components/OvertimeBar'
+import { DayTypePicker } from '../components/DayTypePicker'
+import { calculateWorkedHours } from '../domain/worktime'
+import { calculateOvertimeToDate } from '../domain/monthStats'
+import { buildMonthSummaries } from '../domain/daySummary'
+import { resolveAutoCategory } from '../domain/autoCategoryOverride'
+import { toLocalIso } from '../domain/dateUtils'
+import { getDayStatus, type DayStatus } from '../domain/dayStatus'
+import { classifyDay } from '../domain/dayType'
+import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -29,178 +29,156 @@ function formatDate(iso: string): string {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
-  });
+  })
 }
 
 export function DayView() {
-  const navigate = useNavigate();
-  const { date: selectedDate } = useSearch({ from: '/day' });
+  const navigate = useNavigate()
+  const { date: selectedDate } = useSearch({ from: '/day' })
 
   function setSelectedDate(date: string) {
-    void navigate({ to: '/day', search: { date } });
+    void navigate({ to: '/day', search: { date } })
   }
 
   const { data: config } = useQuery({
     queryKey: ['config'],
     queryFn: () => configRepo.get(),
-  });
+  })
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', selectedDate],
     queryFn: () => workPeriodRepo.findByDate(new Date(selectedDate)),
-  });
+  })
 
   const { data: entries = [] } = useQuery({
     queryKey: ['timeEntries', selectedDate],
     queryFn: () => {
-      const d = new Date(selectedDate);
-      return timeEntryRepo.findByDateRange(d, d);
+      const d = new Date(selectedDate)
+      return timeEntryRepo.findByDateRange(d, d)
     },
-  });
+  })
 
   const { data: workLocation = null } = useQuery({
     queryKey: ['workLocation', selectedDate],
     queryFn: () => workLocationRepo.findByDate(selectedDate),
-  });
+  })
 
   const { data: autoCategoryOverride = null } = useQuery({
     queryKey: ['autoCategoryOverride', selectedDate],
     queryFn: () => autoCategoryOverrideRepo.findByDate(selectedDate),
-  });
+  })
 
   const { data: isConfirmed = false } = useQuery({
     queryKey: ['dayConfirmation', selectedDate],
     queryFn: () => dayConfirmationRepo.isConfirmed(selectedDate),
-  });
+  })
 
   const { data: monthConfirmedDays = new Set<string>() } = useQuery({
-    queryKey: [
-      'dayConfirmations',
-      parseInt(selectedDate.slice(0, 4)),
-      parseInt(selectedDate.slice(5, 7)),
-    ],
+    queryKey: ['dayConfirmations', parseInt(selectedDate.slice(0, 4)), parseInt(selectedDate.slice(5, 7))],
     queryFn: () => {
-      const y = parseInt(selectedDate.slice(0, 4));
-      const m = parseInt(selectedDate.slice(5, 7));
-      const mFrom = toLocalIso(new Date(y, m - 1, 1));
-      const mTo = toLocalIso(new Date(y, m, 0));
-      return dayConfirmationRepo.findConfirmedInRange(mFrom, mTo);
+      const y = parseInt(selectedDate.slice(0, 4))
+      const m = parseInt(selectedDate.slice(5, 7))
+      const mFrom = toLocalIso(new Date(y, m - 1, 1))
+      const mTo = toLocalIso(new Date(y, m, 0))
+      return dayConfirmationRepo.findConfirmedInRange(mFrom, mTo)
     },
-  });
+  })
 
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   const confirmMutation = useMutation({
     mutationFn: async () => {
-      const autoHours = Math.max(
-        0,
-        calculateWorkedHours(windows) -
-          entries.reduce((s, e) => s + e.hours, 0),
-      );
+      const autoHours = Math.max(0, calculateWorkedHours(windows) - entries.reduce((s, e) => s + e.hours, 0))
       const resolvedAuto = resolveAutoCategory({
         date: selectedDate,
         globalDefault: config?.autoCategory ?? null,
         dayOverrides: autoCategoryOverride
           ? new Map<string, string>([[selectedDate, autoCategoryOverride]])
           : new Map<string, string>(),
-      });
+      })
       // Persist auto hours as a real time entry
       if (resolvedAuto && autoHours > 0) {
-        const existing = entries.find((e) => e.category === resolvedAuto);
+        const existing = entries.find((e) => e.category === resolvedAuto)
         await timeEntryRepo.save({
           id: existing?.id ?? crypto.randomUUID(),
           date: selectedDate,
           category: resolvedAuto,
           hours: (existing?.hours ?? 0) + autoHours,
-        });
+        })
       }
-      await dayConfirmationRepo.confirm(selectedDate);
+      await dayConfirmationRepo.confirm(selectedDate)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['dayConfirmation', selectedDate],
-      });
-      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] });
-      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] });
+      })
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
+      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
     },
-  });
+  })
 
   const unconfirmMutation = useMutation({
     mutationFn: () => dayConfirmationRepo.unconfirm(selectedDate),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['dayConfirmation', selectedDate],
-      });
-      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] });
+      })
+      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
     },
-  });
+  })
 
-  const sollstunden = config?.sollstunden ?? 8;
-  const workedHours = calculateWorkedHours(windows);
-  const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0);
+  const sollstunden = config?.sollstunden ?? 8
+  const workedHours = calculateWorkedHours(windows)
+  const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
 
   // Month-level overtime calculation
-  const selectedYear = parseInt(selectedDate.slice(0, 4));
-  const selectedMonth = parseInt(selectedDate.slice(5, 7));
-  const monthFrom = new Date(selectedYear, selectedMonth - 1, 1);
-  const monthTo = new Date(selectedYear, selectedMonth, 0);
-  const monthFromIso = toLocalIso(monthFrom);
-  const monthToIso = toLocalIso(monthTo);
+  const selectedYear = parseInt(selectedDate.slice(0, 4))
+  const selectedMonth = parseInt(selectedDate.slice(5, 7))
+  const monthFrom = new Date(selectedYear, selectedMonth - 1, 1)
+  const monthTo = new Date(selectedYear, selectedMonth, 0)
+  const monthFromIso = toLocalIso(monthFrom)
+  const monthToIso = toLocalIso(monthTo)
 
   const { data: monthWindows = [] } = useQuery({
     queryKey: ['workWindows', selectedYear, selectedMonth, 'dayOvertime'],
     queryFn: () => workPeriodRepo.findByDateRange(monthFrom, monthTo),
-  });
+  })
 
   const { data: monthEntries = [] } = useQuery({
     queryKey: ['timeEntries', selectedYear, selectedMonth, 'dayOvertime'],
     queryFn: () => timeEntryRepo.findByDateRange(monthFrom, monthTo),
-  });
+  })
 
   const { data: monthDayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
     queryKey: ['dayTypeOverrides', selectedYear, selectedMonth, 'dayOvertime'],
-    queryFn: () =>
-      dayTypeOverrideRepo.findByDateRange(monthFromIso, monthToIso),
-  });
+    queryFn: () => dayTypeOverrideRepo.findByDateRange(monthFromIso, monthToIso),
+  })
 
-  const todayIso = toLocalIso(new Date());
-  const { days: monthDays, workedHoursPerDay } = buildMonthSummaries(
-    selectedYear,
-    selectedMonth,
-    {
-      windows: monthWindows,
-      entries: monthEntries,
-      dayTypeOverrides: monthDayTypeOverrides,
-      today: todayIso,
-      confirmedDays: monthConfirmedDays,
-    },
-  );
-  const monthDates = monthDays.map((d) => d.date);
-  const overtimeToDate = calculateOvertimeToDate(
-    workedHoursPerDay,
-    monthDates,
-    todayIso,
-    sollstunden,
-  );
+  const todayIso = toLocalIso(new Date())
+  const { days: monthDays, workedHoursPerDay } = buildMonthSummaries(selectedYear, selectedMonth, {
+    windows: monthWindows,
+    entries: monthEntries,
+    dayTypeOverrides: monthDayTypeOverrides,
+    today: todayIso,
+    confirmedDays: monthConfirmedDays,
+  })
+  const monthDates = monthDays.map((d) => d.date)
+  const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, monthDates, todayIso, sollstunden)
 
-  const dayOverrides = new Map<string, string>();
-  if (autoCategoryOverride)
-    dayOverrides.set(selectedDate, autoCategoryOverride);
+  const dayOverrides = new Map<string, string>()
+  if (autoCategoryOverride) dayOverrides.set(selectedDate, autoCategoryOverride)
 
   const autoCategory = resolveAutoCategory({
     date: selectedDate,
     globalDefault: config?.autoCategory ?? null,
     dayOverrides,
-  });
+  })
 
-  const defaultWorkLocation: WorkLocation =
-    config?.defaultWorkLocation ?? 'Remote';
-  const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation;
+  const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
+  const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation
 
-  const selectedDayType =
-    monthDayTypeOverrides.get(selectedDate) ??
-    classifyDay(new Date(selectedDate));
-  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01;
-  const hasAutoCategory = !!autoCategory && manualTotal <= workedHours;
+  const selectedDayType = monthDayTypeOverrides.get(selectedDate) ?? classifyDay(new Date(selectedDate))
+  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01
+  const hasAutoCategory = !!autoCategory && manualTotal <= workedHours
   const dayStatus = getDayStatus({
     dayType: selectedDayType,
     hasWorkedHours: workedHours > 0,
@@ -209,7 +187,7 @@ export function DayView() {
     isConfirmed,
     isoDate: selectedDate,
     today: todayIso,
-  });
+  })
 
   const STATUS_BADGE: Record<Exclude<DayStatus, 'today'>, { bg: string; text: string; label: string }> = {
     complete: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Complete' },
@@ -218,43 +196,38 @@ export function DayView() {
     future: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Future' },
     'non-working': { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Non-working' },
     leave: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Leave' },
-  };
+  }
 
   // For today, resolve the actual work status instead of showing "Today"
   const badgeStatus: Exclude<DayStatus, 'today'> | null = (() => {
-    if (dayStatus !== 'today') return dayStatus;
-    if (!workedHours) return null;
-    if (isConfirmed || isEntriesBalanced || hasAutoCategory) return 'complete';
-    return 'needs-review';
-  })();
+    if (dayStatus !== 'today') return dayStatus
+    if (!workedHours) return null
+    if (isConfirmed || isEntriesBalanced || hasAutoCategory) return 'complete'
+    return 'needs-review'
+  })()
 
   const autoCategoryMutation = useMutation({
-    mutationFn: (cat: string | null) =>
-      configRepo.save({ ...config!, autoCategory: cat }),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ['config'] }),
-  });
+    mutationFn: (cat: string | null) => configRepo.save({ ...config!, autoCategory: cat }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+  })
 
   const categoryReorderMutation = useMutation({
-    mutationFn: (categoryOrder: string[]) =>
-      configRepo.save({ ...config!, categoryOrder }),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ['config'] }),
-  });
+    mutationFn: (categoryOrder: string[]) => configRepo.save({ ...config!, categoryOrder }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+  })
 
   const locationMutation = useMutation({
     mutationFn: async () => {
-      const next: WorkLocation =
-        effectiveLocation === 'Remote' ? 'Office' : 'Remote';
-      await workLocationRepo.save(selectedDate, next);
+      const next: WorkLocation = effectiveLocation === 'Remote' ? 'Office' : 'Remote'
+      await workLocationRepo.save(selectedDate, next)
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: ['workLocation', selectedDate],
-      });
-      void queryClient.invalidateQueries({ queryKey: ['workLocations'] });
+      })
+      void queryClient.invalidateQueries({ queryKey: ['workLocations'] })
     },
-  });
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -263,9 +236,9 @@ export function DayView() {
           aria-label="Previous day"
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
           onClick={() => {
-            const d = new Date(selectedDate);
-            d.setDate(d.getDate() - 1);
-            setSelectedDate(toLocalIso(d));
+            const d = new Date(selectedDate)
+            d.setDate(d.getDate() - 1)
+            setSelectedDate(toLocalIso(d))
           }}
         >
           ← Prev
@@ -285,9 +258,9 @@ export function DayView() {
           aria-label="Next day"
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
           onClick={() => {
-            const d = new Date(selectedDate);
-            d.setDate(d.getDate() + 1);
-            setSelectedDate(toLocalIso(d));
+            const d = new Date(selectedDate)
+            d.setDate(d.getDate() + 1)
+            setSelectedDate(toLocalIso(d))
           }}
         >
           Next →
@@ -302,8 +275,7 @@ export function DayView() {
             className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
             aria-label={`Work location: ${effectiveLocation}. Click to switch to ${effectiveLocation === 'Office' ? 'Remote' : 'Office'}`}
           >
-            <span aria-hidden="true">{effectiveLocation === 'Office' ? '🏢' : '🏠'}</span>
-            {' '}{effectiveLocation}
+            <span aria-hidden="true">{effectiveLocation === 'Office' ? '🏢' : '🏠'}</span> {effectiveLocation}
           </button>
         </div>
         {isConfirmed ? (
@@ -317,7 +289,9 @@ export function DayView() {
         ) : (
           <div className="flex items-center gap-2">
             {badgeStatus !== null && badgeStatus !== 'future' && (
-              <span className={`rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}>
+              <span
+                className={`rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
+              >
                 {STATUS_BADGE[badgeStatus].label}
               </span>
             )}
@@ -353,5 +327,5 @@ export function DayView() {
         onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
       />
     </div>
-  );
+  )
 }

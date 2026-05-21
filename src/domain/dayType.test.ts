@@ -45,18 +45,12 @@ describe('isWorkPeriodExpected', () => {
 })
 
 describe('getAutoBooking', () => {
-  it.each<DayType>(['Vacation', 'SickDay', 'Absence'])(
-    'books Sollstunden to "On Leave" for %s',
-    (dayType) => {
-      const booking = getAutoBooking(dayType, 8)
-      expect(booking).toEqual({ category: '_LEAVE', hours: 8 })
-    },
-  )
+  it.each<DayType>(['Vacation', 'SickDay', 'Absence'])('books Sollstunden to "On Leave" for %s', (dayType) => {
+    const booking = getAutoBooking(dayType, 8)
+    expect(booking).toEqual({ category: '_LEAVE', hours: 8 })
+  })
 
-  it.each<DayType>(['WorkDay', 'Weekend', 'PublicHoliday'])(
-    'returns null for %s',
-    (dayType) => {
-      expect(getAutoBooking(dayType, 8)).toBeNull()
-    },
-  )
+  it.each<DayType>(['WorkDay', 'Weekend', 'PublicHoliday'])('returns null for %s', (dayType) => {
+    expect(getAutoBooking(dayType, 8)).toBeNull()
+  })
 })

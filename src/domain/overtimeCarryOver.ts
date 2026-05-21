@@ -15,9 +15,7 @@ export function calculateOvertimeCarryOver(input: OvertimeCarryOverInput): Overt
   const { initialOvertime, monthlyOvertimes, manualOverrides, targetMonth } = input
 
   // Only include months strictly before the target
-  const relevant = monthlyOvertimes
-    .filter((m) => m.month < targetMonth)
-    .sort((a, b) => a.month.localeCompare(b.month))
+  const relevant = monthlyOvertimes.filter((m) => m.month < targetMonth).sort((a, b) => a.month.localeCompare(b.month))
 
   let carryOver = initialOvertime
   let isManualOverride = false

@@ -51,9 +51,9 @@ describe('InMemoryTimeEntryRepository', () => {
 
     await repository.save(secondEntry)
 
-    await expect(
-      repository.findByDateRange(new Date('2025-01-10'), new Date('2025-01-10')),
-    ).resolves.toEqual([firstEntry])
+    await expect(repository.findByDateRange(new Date('2025-01-10'), new Date('2025-01-10'))).resolves.toEqual([
+      firstEntry,
+    ])
   })
 })
 
@@ -63,16 +63,11 @@ describe('InMemoryWorkPeriodRepository', () => {
 
     await repository.save(afternoonWindow)
 
-    await expect(repository.findByDate(new Date('2025-01-10'))).resolves.toEqual([
-      morningWindow,
-      afternoonWindow,
-    ])
+    await expect(repository.findByDate(new Date('2025-01-10'))).resolves.toEqual([morningWindow, afternoonWindow])
 
     await repository.delete(morningWindow.id)
 
-    await expect(repository.findByDate(new Date('2025-01-10'))).resolves.toEqual([
-      afternoonWindow,
-    ])
+    await expect(repository.findByDate(new Date('2025-01-10'))).resolves.toEqual([afternoonWindow])
   })
 
   it('saves and retrieves an open WorkPeriod (end: null)', async () => {

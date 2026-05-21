@@ -38,12 +38,12 @@ describe('MonthCalendar', () => {
   it('applies correct status colors from dayStatusMap', () => {
     // May 2026: day 17=Sat, 18=Sun, 19=Tue
     const dayStatusMap: Record<string, DayStatus> = {
-      '2026-05-17': 'non-working',  // Saturday
-      '2026-05-18': 'non-working',  // Sunday
-      '2026-05-19': 'today',        // Tuesday
-      '2026-05-15': 'complete',      // Friday (work day with hours)
-      '2026-05-16': 'untracked',    // Past Friday without hours
-      '2026-05-20': 'future',       // Wednesday
+      '2026-05-17': 'non-working', // Saturday
+      '2026-05-18': 'non-working', // Sunday
+      '2026-05-19': 'today', // Tuesday
+      '2026-05-15': 'complete', // Friday (work day with hours)
+      '2026-05-16': 'untracked', // Past Friday without hours
+      '2026-05-20': 'future', // Wednesday
     }
     render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
 

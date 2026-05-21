@@ -14,9 +14,11 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
     <section aria-label="Sprint report" className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Sprint Report</h3>
-        <span className={`rounded-full px-3 py-0.5 text-xs font-medium ${
-          exportStatus === 'exported' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-        }`}>
+        <span
+          className={`rounded-full px-3 py-0.5 text-xs font-medium ${
+            exportStatus === 'exported' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+          }`}
+        >
           {exportStatus === 'exported' ? 'Exported' : 'Pending'}
         </span>
       </div>
@@ -30,17 +32,13 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
               className="flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 shadow-sm"
             >
               <span className="text-sm font-medium">{category}</span>
-              <span className={`font-mono text-sm font-bold ${hours === 0 ? 'text-gray-300' : ''}`}>
-                {hours}h
-              </span>
+              <span className={`font-mono text-sm font-bold ${hours === 0 ? 'text-gray-300' : ''}`}>{hours}h</span>
             </li>
           )
         })}
       </ul>
 
-      <div className="rounded-lg border bg-indigo-50 px-4 py-3 text-right text-sm font-semibold">
-        Total: {total}h
-      </div>
+      <div className="rounded-lg border bg-indigo-50 px-4 py-3 text-right text-sm font-semibold">Total: {total}h</div>
 
       {exportStatus === 'pending' && onMarkExported && (
         <button

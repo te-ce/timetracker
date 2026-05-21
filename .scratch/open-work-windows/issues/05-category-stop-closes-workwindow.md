@@ -9,6 +9,7 @@ When the user stops category tracking, close the latest open WorkWindow for that
 End-to-end scope: category stop action → find latest open WorkWindow → set end → WorkWindowPanel reflects closed window with duration.
 
 Logic:
+
 1. User presses Stop on a category (calls `TimeTrackingRepository.stop()`), which returns `{ category, date, hours }`.
 2. Query `WorkWindowRepository.findByDate(date)` for the tracking date.
 3. Find the open window (`end: null`) with the latest `start` time. If none exists, do nothing.

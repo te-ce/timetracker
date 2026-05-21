@@ -17,4 +17,3 @@ export class CloudSprintExportRepository implements SprintExportRepository {
     return this.store.find((e) => e.sprintIndex === sprintIndex)
   }
 }
-

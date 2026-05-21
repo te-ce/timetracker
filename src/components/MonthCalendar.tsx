@@ -11,17 +11,27 @@ interface Props {
 
 const STATUS_COLORS: Record<DayStatus, string> = {
   'non-working': 'bg-gray-100 text-gray-400',
-  'leave': 'bg-purple-100 text-purple-700',
-  'future': 'bg-white text-gray-600 hover:bg-gray-50',
-  'today': 'bg-white text-gray-900 hover:bg-gray-50',
-  'complete': 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
+  leave: 'bg-purple-100 text-purple-700',
+  future: 'bg-white text-gray-600 hover:bg-gray-50',
+  today: 'bg-white text-gray-900 hover:bg-gray-50',
+  complete: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
   'needs-review': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-  'untracked': 'bg-blue-100 text-blue-700',
+  untracked: 'bg-blue-100 text-blue-700',
 }
 
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ]
 
 function getDaysInMonth(year: number, month: number): Date[] {
@@ -101,7 +111,12 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
           const iso = toLocalIso(date)
           const status = dayStatusMap[iso] ?? 'future'
           const isToday = status === 'today'
-          const label = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+          const label = date.toLocaleDateString('en-GB', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
           return (
             <button
               key={date.getDate()}
@@ -112,7 +127,10 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
             >
               {date.getDate()}
               {isToday && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700" aria-hidden="true" />
+                <span
+                  className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700"
+                  aria-hidden="true"
+                />
               )}
             </button>
           )

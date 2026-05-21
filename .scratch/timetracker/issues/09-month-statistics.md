@@ -7,6 +7,7 @@ Status: ready-for-agent
 Implement the Monatsübersicht screen showing aggregated statistics for the selected month.
 
 Displayed metrics:
+
 - **Gesamtstunden** — Σ WorkedHours for all WorkDays in the month
 - **Überstunden** — Σ WorkedHours − Σ Sollstunden for all WorkDays in the month
 - **Erfüllungsgrad** — `(Σ WorkedHours / Σ Sollstunden) × 100 %`

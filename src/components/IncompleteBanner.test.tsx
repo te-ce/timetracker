@@ -8,12 +8,7 @@ describe('IncompleteBanner', () => {
   })
 
   it('shows a banner with count when incomplete days exist', () => {
-    render(
-      <IncompleteBanner
-        incompleteDates={['2024-01-15', '2024-01-16']}
-        onNavigate={() => {}}
-      />,
-    )
+    render(<IncompleteBanner incompleteDates={['2024-01-15', '2024-01-16']} onNavigate={() => {}} />)
     expect(screen.getByRole('alert')).toBeInTheDocument()
     expect(screen.getByText(/2 days need attention/i)).toBeInTheDocument()
   })

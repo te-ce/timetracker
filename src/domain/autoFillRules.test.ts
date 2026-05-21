@@ -21,7 +21,7 @@ describe('materializeAutoFillRules', () => {
     const entries = materializeAutoFillRules({
       rules: [rule],
       fromDate: '2026-05-18', // Monday
-      toDate: '2026-05-22',   // Friday
+      toDate: '2026-05-22', // Friday
       dayTypes: new Map(),
     })
 
@@ -42,7 +42,7 @@ describe('materializeAutoFillRules', () => {
     const entries = materializeAutoFillRules({
       rules: [rule],
       fromDate: '2026-05-16', // Saturday
-      toDate: '2026-05-17',   // Sunday
+      toDate: '2026-05-17', // Sunday
       dayTypes: new Map(),
     })
 
@@ -61,7 +61,7 @@ describe('materializeAutoFillRules', () => {
     const entries = materializeAutoFillRules({
       rules: [rule],
       fromDate: '2026-05-18', // Monday
-      toDate: '2026-05-20',   // Wednesday
+      toDate: '2026-05-20', // Wednesday
       dayTypes: dayTypes({ '2026-05-19': 'Vacation' }),
     })
 
@@ -101,7 +101,7 @@ describe('materializeAutoFillRules', () => {
     const entries = materializeAutoFillRules({
       rules: [rule],
       fromDate: '2026-05-04', // anchor Monday
-      toDate: '2026-05-25',   // 3 weeks later
+      toDate: '2026-05-25', // 3 weeks later
       dayTypes: new Map(),
     })
 

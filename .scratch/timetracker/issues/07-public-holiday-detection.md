@@ -7,6 +7,7 @@ Status: ready-for-agent
 Automatically mark public holidays as `PublicHoliday` DayType by fetching them from a public API based on the user's configured Bundesland.
 
 End-to-end slice:
+
 - Settings: Bundesland selector (16 German states)
 - On app load (or month navigation): fetch public holidays for the current year from a free API (e.g. `https://feiertage-api.de/api/`)
 - Days matching a public holiday are automatically set to `PublicHoliday`

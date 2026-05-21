@@ -25,4 +25,3 @@ export class CloudWorkLocationRepository implements WorkLocationRepository {
     await this.store.remove(date)
   }
 }
-

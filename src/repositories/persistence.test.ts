@@ -39,8 +39,8 @@ describe('LocalStorage persistence', () => {
     await repo.save({ id: 'w1', date: '2026-05-19', start: '09:00', end: '17:00' })
 
     // Simulate MonthView querying the full month range
-    const from = new Date(2026, 4, 1)  // May 1
-    const to = new Date(2026, 5, 0)     // May 31
+    const from = new Date(2026, 4, 1) // May 1
+    const to = new Date(2026, 5, 0) // May 31
     const windows = await repo.findByDateRange(from, to)
 
     expect(windows).toHaveLength(1)

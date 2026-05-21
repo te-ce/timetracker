@@ -7,6 +7,7 @@ Status: ready-for-agent
 Let the user connect the app to their SharePoint Excel file and map each app category to the correct Excel row. This mapping is used by the export flow (slice #12).
 
 End-to-end slice:
+
 - Settings: user enters the SharePoint URL of their Excel file
 - App fetches all sheet names via Microsoft Graph API → user selects target sheet from a dropdown
 - App reads investment rows from the selected sheet via Graph API → creates bookable investment categories in the app (name = Beschreibung or Task ID from Excel)

@@ -21,10 +21,7 @@ export function calculateWorkedHours(windows: WorkPeriod[], now?: string): numbe
   }, 0)
 }
 
-export function calculateRestarbeitszeit(
-  sollstunden: number,
-  workedHours: number,
-): Restarbeitszeit {
+export function calculateRestarbeitszeit(sollstunden: number, workedHours: number): Restarbeitszeit {
   const value = sollstunden - workedHours
   return { value, isOvertime: value < 0 }
 }

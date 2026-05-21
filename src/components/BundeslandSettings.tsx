@@ -16,8 +16,7 @@ export function BundeslandSettings({ repository }: Props) {
   })
 
   const mutation = useMutation({
-    mutationFn: (state: Bundesland | null) =>
-      repository.save({ ...config!, federalState: state }),
+    mutationFn: (state: Bundesland | null) => repository.save({ ...config!, federalState: state }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
 
@@ -45,9 +44,7 @@ export function BundeslandSettings({ repository }: Props) {
           </option>
         ))}
       </select>
-      <p className="text-xs text-gray-500">
-        Used to auto-detect public holidays for your state.
-      </p>
+      <p className="text-xs text-gray-500">Used to auto-detect public holidays for your state.</p>
     </div>
   )
 }

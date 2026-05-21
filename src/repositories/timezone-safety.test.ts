@@ -28,7 +28,7 @@ describe('Timezone-safe date queries', () => {
     const to = new Date(2026, 4, 31)
     const result = await repo.findByDateRange(from, to)
     expect(result).toHaveLength(2)
-    expect(result.map(w => w.id)).toEqual(['w1', 'w2'])
+    expect(result.map((w) => w.id)).toEqual(['w1', 'w2'])
   })
 
   it('time entry findByDateRange uses local dates', async () => {
@@ -56,6 +56,6 @@ describe('Timezone-safe date queries', () => {
     const windows = await repo.findByDateRange(from, to)
 
     expect(windows).toHaveLength(2)
-    expect(windows.every(w => w.date === '2026-05-19')).toBe(true)
+    expect(windows.every((w) => w.date === '2026-05-19')).toBe(true)
   })
 })

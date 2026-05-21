@@ -9,7 +9,6 @@ interface Props {
   repository: WorkPeriodRepository
 }
 
-
 export function WorkPeriodPanel({ date, repository }: Props) {
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
@@ -63,7 +62,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
 
   function handleMerge(a: WorkPeriod, b: WorkPeriod) {
     // a.start <= b.start (sorted), a.end !== null
-    const laterEnd = b.end === null ? null : (a.end! >= b.end ? a.end : b.end)
+    const laterEnd = b.end === null ? null : a.end! >= b.end ? a.end : b.end
     addMutation.mutate({ ...a, end: laterEnd })
     removeMutation.mutate(b.id)
   }
@@ -84,7 +83,9 @@ export function WorkPeriodPanel({ date, repository }: Props) {
               type="time"
               value={start}
               onChange={(e) => setStart(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAdd()
+              }}
               className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
             <button
@@ -103,7 +104,9 @@ export function WorkPeriodPanel({ date, repository }: Props) {
               type="time"
               value={end}
               onChange={(e) => setEnd(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAdd()
+              }}
               className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
             <button
@@ -132,61 +135,78 @@ export function WorkPeriodPanel({ date, repository }: Props) {
       ) : (
         <div className="flex flex-col gap-3">
           <ul className="flex flex-col gap-2">
-            {sorted.map((w, i) => {              const next = i < sorted.length - 1 ? sorted[i + 1] : null
+            {sorted.map((w, i) => {
+              const next = i < sorted.length - 1 ? sorted[i + 1] : null
               const canMergeWithNext = next !== null && w.end !== null
               return (
-                  <li key={w.id} className="relative flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm shadow-sm">
-                    {editingId === w.id ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="time"
-                            aria-label="Edit start time"
-                            value={editStart}
-                            onChange={(e) => setEditStart(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape') handleEditCancel()
-                              if (e.key === 'Enter') handleEditSave()
-                            }}
-                            className="rounded border px-2 py-1 text-sm"
-                          />
-                          <button type="button" onClick={() => setEditStart(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
-                          <span aria-hidden="true">–</span>
-                          <input
-                            type="time"
-                            aria-label="Edit end time"
-                            value={editEnd}
-                            onChange={(e) => setEditEnd(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape') handleEditCancel()
-                              if (e.key === 'Enter') handleEditSave()
-                            }}
-                            className="rounded border px-2 py-1 text-sm"
-                          />
-                          <button type="button" onClick={() => setEditEnd(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={handleEditSave} className="text-xs text-indigo-600 hover:text-indigo-800">Save</button>
-                          <button onClick={handleEditCancel} className="text-xs text-gray-400 hover:text-gray-600">Cancel</button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
+                <li
+                  key={w.id}
+                  className="relative flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm shadow-sm"
+                >
+                  {editingId === w.id ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          aria-label="Edit start time"
+                          value={editStart}
+                          onChange={(e) => setEditStart(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') handleEditCancel()
+                            if (e.key === 'Enter') handleEditSave()
+                          }}
+                          className="rounded border px-2 py-1 text-sm"
+                        />
                         <button
-                          className="font-mono font-medium hover:text-indigo-600 text-left"
-                          onClick={() => handleEditStart(w)}
-                          aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
+                          type="button"
+                          onClick={() => setEditStart(nowHHMM())}
+                          className="text-xs text-gray-400 hover:text-gray-600"
                         >
-                          {w.start} – {w.end ?? '…'}
+                          Now
                         </button>
+                        <span aria-hidden="true">–</span>
+                        <input
+                          type="time"
+                          aria-label="Edit end time"
+                          value={editEnd}
+                          onChange={(e) => setEditEnd(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') handleEditCancel()
+                            if (e.key === 'Enter') handleEditSave()
+                          }}
+                          className="rounded border px-2 py-1 text-sm"
+                        />
                         <button
-                          onClick={() => handleRemove(w.id)}
-                          className="text-xs text-gray-400 hover:text-red-500"
+                          type="button"
+                          onClick={() => setEditEnd(nowHHMM())}
+                          className="text-xs text-gray-400 hover:text-gray-600"
                         >
-                          Remove
+                          Now
                         </button>
-                      </>
-                    )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={handleEditSave} className="text-xs text-indigo-600 hover:text-indigo-800">
+                          Save
+                        </button>
+                        <button onClick={handleEditCancel} className="text-xs text-gray-400 hover:text-gray-600">
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="font-mono font-medium hover:text-indigo-600 text-left"
+                        onClick={() => handleEditStart(w)}
+                        aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
+                      >
+                        {w.start} – {w.end ?? '…'}
+                      </button>
+                      <button onClick={() => handleRemove(w.id)} className="text-xs text-gray-400 hover:text-red-500">
+                        Remove
+                      </button>
+                    </>
+                  )}
                   {canMergeWithNext && (
                     <div className="group absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 translate-y-1/2">
                       <button

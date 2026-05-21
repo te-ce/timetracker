@@ -11,8 +11,7 @@ export function AutoCategoryPicker() {
   })
 
   const mutation = useMutation({
-    mutationFn: (category: string | null) =>
-      configRepo.save({ ...config!, autoCategory: category }),
+    mutationFn: (category: string | null) => configRepo.save({ ...config!, autoCategory: category }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
   })
 
@@ -37,7 +36,9 @@ export function AutoCategoryPicker() {
       >
         <option value="">None</option>
         {allCategories.map((c) => (
-          <option key={c} value={c}>{c}</option>
+          <option key={c} value={c}>
+            {c}
+          </option>
         ))}
       </select>
     </div>

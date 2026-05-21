@@ -1,7 +1,20 @@
 export type Bundesland =
-  | 'BW' | 'BY' | 'BE' | 'BB' | 'HB' | 'HH'
-  | 'HE' | 'MV' | 'NI' | 'NW' | 'RP' | 'SL'
-  | 'SN' | 'ST' | 'SH' | 'TH'
+  | 'BW'
+  | 'BY'
+  | 'BE'
+  | 'BB'
+  | 'HB'
+  | 'HH'
+  | 'HE'
+  | 'MV'
+  | 'NI'
+  | 'NW'
+  | 'RP'
+  | 'SL'
+  | 'SN'
+  | 'ST'
+  | 'SH'
+  | 'TH'
 
 export const BUNDESLAENDER: { code: Bundesland; name: string }[] = [
   { code: 'BW', name: 'Baden-Württemberg' },
@@ -32,10 +45,7 @@ export type HolidayApiResponse = Record<string, { datum: string; hinweis: string
 /**
  * Fetch public holidays from feiertage-api.de for a given state and year.
  */
-export async function fetchHolidays(
-  state: Bundesland,
-  year: number,
-): Promise<PublicHoliday[]> {
+export async function fetchHolidays(state: Bundesland, year: number): Promise<PublicHoliday[]> {
   const res = await fetch(`https://feiertage-api.de/api/?jahr=${year}&nur_land=${state}`)
   if (!res.ok) return []
   const data = (await res.json()) as HolidayApiResponse

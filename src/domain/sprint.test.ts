@@ -5,7 +5,10 @@ import type { TimeEntry } from '../repositories/types'
 const config = { startDate: '2024-01-01', lengthDays: 14 }
 
 const makeEntry = (date: string, hours: number): TimeEntry => ({
-  id: date, date, category: 'QA', hours,
+  id: date,
+  date,
+  category: 'QA',
+  hours,
 })
 
 describe('getSprintBoundaries', () => {

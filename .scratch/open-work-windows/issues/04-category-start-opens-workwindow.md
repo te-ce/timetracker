@@ -9,6 +9,7 @@ When the user starts category tracking in DayView, automatically open a WorkWind
 End-to-end scope: category start action → WorkWindow repository check → conditional WorkWindow creation → DayView WorkWindowPanel reflects new open window.
 
 Logic:
+
 1. User presses Start on a category (calls `TimeTrackingRepository.start(date, category)`).
 2. Query `WorkWindowRepository.findByDate(date)` for the tracking date.
 3. If no window with `end: null` exists → create one: `{ id: uuid, date, start: currentLocalHHMM, end: null }`.

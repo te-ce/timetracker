@@ -120,7 +120,12 @@ describe('JsonRecordStore', () => {
     await store.set('2026-05-15', 'B')
     await store.set('2026-06-01', 'C')
     const result = await store.filterByKeyRange('2026-05-01', '2026-05-31')
-    expect(result).toEqual(new Map([['2026-05-01', 'A'], ['2026-05-15', 'B']]))
+    expect(result).toEqual(
+      new Map([
+        ['2026-05-01', 'A'],
+        ['2026-05-15', 'B'],
+      ]),
+    )
   })
 
   it('persists data to adapter', async () => {

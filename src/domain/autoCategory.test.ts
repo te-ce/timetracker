@@ -3,7 +3,10 @@ import { calculateAutoCategory } from './autoCategory'
 import type { TimeEntry } from '../repositories/types'
 
 const makeEntry = (hours: number): TimeEntry => ({
-  id: '1', date: '2024-01-15', category: 'QA', hours,
+  id: '1',
+  date: '2024-01-15',
+  category: 'QA',
+  hours,
 })
 
 describe('calculateAutoCategory', () => {

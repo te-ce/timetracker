@@ -6,6 +6,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import prettierConfig from 'eslint-config-prettier'
 
 export default defineConfig([
   globalIgnores(['dist', 'public/mockServiceWorker.js']),
@@ -56,6 +57,7 @@ export default defineConfig([
       ...jsxA11y.flatConfigs.recommended.rules,
       'no-undef': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'error',
+      ...prettierConfig.rules,
     },
   },
 ])

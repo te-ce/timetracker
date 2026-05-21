@@ -108,11 +108,15 @@ export function CustomCategorySettings({ repository }: Props) {
             onDragEnd={handleDragEnd}
             className={`flex items-center gap-2 rounded border bg-white px-3 py-1.5 text-sm cursor-grab active:cursor-grabbing ${dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50' : ''}`}
           >
-            <span className="text-gray-300 select-none" aria-hidden>⠿</span>
+            <span className="text-gray-300 select-none" aria-hidden>
+              ⠿
+            </span>
             {editingIdx === idx ? (
               <input
                 aria-label={`Rename ${cat}`}
-                ref={(el) => { el?.focus() }}
+                ref={(el) => {
+                  el?.focus()
+                }}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={() => handleRename(idx)}
@@ -125,15 +129,22 @@ export function CustomCategorySettings({ repository }: Props) {
             ) : (
               <span
                 className="flex-1 cursor-pointer"
-                onDoubleClick={() => { setEditingIdx(idx); setEditValue(cat) }}
+                onDoubleClick={() => {
+                  setEditingIdx(idx)
+                  setEditValue(cat)
+                }}
                 title="Double-click to rename"
-              >{cat}</span>
+              >
+                {cat}
+              </span>
             )}
             <button
               aria-label={`Remove ${cat}`}
               onClick={() => handleRemove(idx)}
               className="text-red-500 hover:text-red-700 text-xs font-medium"
-            >✕</button>
+            >
+              ✕
+            </button>
           </li>
         ))}
       </ul>
@@ -144,7 +155,9 @@ export function CustomCategorySettings({ repository }: Props) {
           type="text"
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleAdd()
+          }}
           placeholder="Category name"
           className="flex-1 rounded border px-3 py-1.5 text-sm"
         />
@@ -156,9 +169,7 @@ export function CustomCategorySettings({ repository }: Props) {
         </button>
       </div>
 
-      <p className="text-xs text-gray-500">
-        Drag to reorder. Double-click to rename. Changes apply across all views.
-      </p>
+      <p className="text-xs text-gray-500">Drag to reorder. Double-click to rename. Changes apply across all views.</p>
     </div>
   )
 }

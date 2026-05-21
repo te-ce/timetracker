@@ -1,7 +1,13 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryTimeEntryRepository, InMemoryWorkPeriodRepository, InMemoryDayConfirmationRepository, InMemoryDayTypeOverrideRepository, InMemoryWorkLocationRepository } from '../repositories/in-memory'
+import {
+  InMemoryTimeEntryRepository,
+  InMemoryWorkPeriodRepository,
+  InMemoryDayConfirmationRepository,
+  InMemoryDayTypeOverrideRepository,
+  InMemoryWorkLocationRepository,
+} from '../repositories/in-memory'
 import { MonthGrid } from './MonthGrid'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
 import type { TimeEntry, WorkPeriod } from '../repositories/types'
@@ -66,9 +72,7 @@ describe('MonthGrid', () => {
 
   it('saves entry when user types value and blurs cell', async () => {
     const { entryRepo } = setup({
-      windows: [
-        { id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' },
-      ],
+      windows: [{ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' }],
     })
 
     const row = await screen.findByRole('row', { name: /2026-05-01/ })
@@ -84,12 +88,8 @@ describe('MonthGrid', () => {
 
   it('shows auto-category hours in the category column', async () => {
     setup({
-      entries: [
-        { id: '1', date: '2026-05-01', category: '_SUPPORT', hours: 3 },
-      ],
-      windows: [
-        { id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' },
-      ],
+      entries: [{ id: '1', date: '2026-05-01', category: '_SUPPORT', hours: 3 }],
+      windows: [{ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' }],
     })
 
     const row = await screen.findByRole('row', { name: /2026-05-01/ })

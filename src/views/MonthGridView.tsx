@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { timeEntryRepo, workPeriodRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
+import {
+  timeEntryRepo,
+  workPeriodRepo,
+  configRepo,
+  dayTypeOverrideRepo,
+  dayConfirmationRepo,
+  workLocationRepo,
+} from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { calculateOvertimeToDate } from '../domain/monthStats'
@@ -101,13 +108,17 @@ export function MonthGridView() {
   const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
 
   function prevMonth() {
-    if (month === 1) { setYear(year - 1); setMonth(12) }
-    else setMonth(month - 1)
+    if (month === 1) {
+      setYear(year - 1)
+      setMonth(12)
+    } else setMonth(month - 1)
   }
 
   function nextMonth() {
-    if (month === 12) { setYear(year + 1); setMonth(1) }
-    else setMonth(month + 1)
+    if (month === 12) {
+      setYear(year + 1)
+      setMonth(1)
+    } else setMonth(month + 1)
   }
 
   const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', {
@@ -118,18 +129,26 @@ export function MonthGridView() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center">
-        <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">← Prev</button>
+        <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">
+          ← Prev
+        </button>
         <div className="flex flex-1 items-center justify-center gap-2">
           <h2 className="text-lg font-semibold">{monthLabel}</h2>
           <button
-            onClick={() => { const now = new Date(); setYear(now.getFullYear()); setMonth(now.getMonth() + 1) }}
+            onClick={() => {
+              const now = new Date()
+              setYear(now.getFullYear())
+              setMonth(now.getMonth() + 1)
+            }}
             className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${isCurrentMonth ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 hover:bg-orange-50'}`}
             aria-disabled={isCurrentMonth}
           >
             Today
           </button>
         </div>
-        <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">Next →</button>
+        <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">
+          Next →
+        </button>
       </div>
       <OvertimeBar
         sollstunden={sollstunden}

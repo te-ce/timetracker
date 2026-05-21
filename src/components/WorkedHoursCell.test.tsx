@@ -11,9 +11,13 @@ function setup(initialWindows: Array<{ id: string; date: string; start: string; 
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <table><tbody><tr>
-        <WorkedHoursCell date={DATE} workedHours={8} repository={repo} />
-      </tr></tbody></table>
+      <table>
+        <tbody>
+          <tr>
+            <WorkedHoursCell date={DATE} workedHours={8} repository={repo} />
+          </tr>
+        </tbody>
+      </table>
     </QueryClientProvider>,
   )
   return { repo }
@@ -53,9 +57,7 @@ describe('WorkedHoursCell', () => {
   })
 
   it('user can remove a duration entry', async () => {
-    const { repo } = setup([
-      { id: 'w1', date: DATE, start: '09:00', end: '13:00' },
-    ])
+    const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '13:00' }])
     await userEvent.click(screen.getByText('8'))
     await screen.findByText('09:00–13:00')
     await userEvent.click(screen.getByRole('button', { name: /remove/i }))

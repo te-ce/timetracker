@@ -12,9 +12,7 @@ export function IncompleteBanner({ incompleteDates, onNavigate }: Props) {
 
   return (
     <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
-      <p className="text-sm font-semibold text-amber-800">
-        {incompleteDates.length} days need attention
-      </p>
+      <p className="text-sm font-semibold text-amber-800">{incompleteDates.length} days need attention</p>
       <ul className="mt-2 flex flex-wrap gap-2">
         {incompleteDates.map((date) => (
           <li key={date}>

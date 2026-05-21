@@ -9,12 +9,14 @@ Implement the AutoCategory feature: exactly one category (chosen by the user in 
 Calculation: `AutoCategory hours = WorkedHours − Σ manual TimeEntries`
 
 Rules:
+
 - No default AutoCategory — the user must explicitly configure it in Settings
 - If no AutoCategory is configured, the feature is dormant
 - If manual entries exceed WorkedHours, AutoCategory hours floor at 0 and the day row is **visually flagged as overbooking warning**
 - AutoCategory is visually distinguished from manual categories in the day view
 
 End-to-end slice:
+
 - Settings screen: dropdown/selector to pick AutoCategory from the 10 fixed categories
 - Day view: AutoCategory row shows calculated hours (not editable directly)
 - Overbooking warning is shown when `Σ manual TimeEntries > WorkedHours`

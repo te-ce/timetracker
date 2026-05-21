@@ -7,6 +7,7 @@ Status: ready-for-agent
 Implement manual TimeEntry booking against the 10 fixed categories for a given day. A TimeEntry is a (date, category, duration in decimal hours) tuple — no start/end time.
 
 Fixed categories (in order):
+
 1. On Leave
 2. Training, Events
 3. Coremedia
@@ -19,6 +20,7 @@ Fixed categories (in order):
 10. Testwatch
 
 End-to-end slice:
+
 - Display all 10 categories in the Tagesdetailansicht with their current booked hours (0 if none)
 - User can enter/update hours for any category
 - List of all TimeEntries for the day is shown
