@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntry, TimeEntryRepository, TimeTrackingRepository, WorkPeriodRepository } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
+import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 
 interface Props {
@@ -13,6 +14,8 @@ interface Props {
   categoryOrder?: string[]
   autoCategory?: string | null
   autoCategoryHours?: number
+  onAutoCategoryChange?: (cat: string | null) => void
+  onCategoryReorder?: (order: string[]) => void
 }
 
 function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefined {
@@ -28,9 +31,11 @@ function formatElapsed(startedAt: string): string {
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
-export function TimeEntryPanel({ date, repository, timeTrackingRepository, workPeriodRepository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0 }: Props) {
+export function TimeEntryPanel({ date, repository, timeTrackingRepository, workPeriodRepository, customCategories = [], categoryOrder, autoCategory = null, autoCategoryHours = 0, onAutoCategoryChange, onCategoryReorder }: Props) {
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
   const [tick, setTick] = useState(0)
+  const dragIdx = useRef<number | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   const { data: entries = [] } = useQuery({
     queryKey: ['timeEntries', date],
@@ -45,12 +50,13 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
     queryFn: () => timeTrackingRepository.getActive(),
   })
 
-  // Tick every second to update elapsed display
   useEffect(() => {
     if (!activeTracking) return
     const interval = setInterval(() => setTick((t) => t + 1), 1000)
     return () => clearInterval(interval)
   }, [activeTracking])
+
+  void tick
 
   const queryClient = useQueryClient()
   const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(repository)
@@ -73,12 +79,16 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
     const open = windows.filter((w) => w.end === null)
     if (open.length === 0) return
     const latest = open.reduce((a, b) => (a.start > b.start ? a : b))
-    await workPeriodRepository.save({ ...latest, end: nowHHMM() })
+    const closed = { ...latest, end: nowHHMM() }
+    const { merged, absorbed } = mergeAdjacentInto(windows, closed)
+    await workPeriodRepository.save(merged)
+    for (const id of absorbed) {
+      await workPeriodRepository.delete(id)
+    }
   }
 
   const startTrackingMutation = useMutation({
     mutationFn: async (category: string) => {
-      // Stop any active tracking first
       const stopped = await timeTrackingRepository.stop()
       if (stopped && stopped.hours > 0) {
         const existing = entries.find((e) => e.category === stopped.category && e.date === stopped.date)
@@ -89,7 +99,6 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
           hours: Math.round(((existing?.hours ?? 0) + stopped.hours) * 100) / 100,
         })
       }
-      // Don't close open WorkPeriod when switching categories — it spans the whole session
       await timeTrackingRepository.start(date, category)
       await openWorkPeriod(date)
     },
@@ -159,12 +168,42 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
     setDraft((d) => ({ ...d, [category]: undefined }))
   }
 
+  function handleDragStart(idx: number) {
+    dragIdx.current = idx
+  }
+
+  function handleDragOver(e: React.DragEvent, idx: number) {
+    e.preventDefault()
+    setDragOverIdx(idx)
+  }
+
+  function handleDrop(idx: number, categories: string[]) {
+    const from = dragIdx.current
+    if (from === null || from === idx) {
+      dragIdx.current = null
+      setDragOverIdx(null)
+      return
+    }
+    const newOrder = [...categories]
+    const [moved] = newOrder.splice(from, 1)
+    newOrder.splice(idx, 0, moved)
+    onCategoryReorder?.(newOrder)
+    dragIdx.current = null
+    setDragOverIdx(null)
+  }
+
+  function handleDragEnd() {
+    dragIdx.current = null
+    setDragOverIdx(null)
+  }
+
+  const categories = getAllCategories(customCategories, categoryOrder)
   const totalHours = entries.reduce((sum, e) => sum + e.hours, 0) + autoCategoryHours
 
   return (
     <section aria-label="Time entries" className="flex flex-col gap-4">
       <ul className="flex flex-col gap-2">
-        {getAllCategories(customCategories, categoryOrder).map((category) => {
+        {categories.map((category, idx) => {
           const existing = findEntry(entries, category)
           const isAutoTarget = autoCategory === category
           const autoHrs = isAutoTarget ? autoCategoryHours : 0
@@ -176,9 +215,32 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
           return (
             <li
               key={category}
-              className={`flex items-center justify-between rounded-lg border px-4 py-2.5 shadow-sm ${isTracking ? 'border-green-400 bg-green-50' : isAutoTarget && autoHrs > 0 ? 'border-indigo-300 bg-indigo-50' : 'bg-white'}`}
+              draggable={!!onCategoryReorder}
+              onDragStart={() => handleDragStart(idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDrop={() => handleDrop(idx, categories)}
+              onDragEnd={handleDragEnd}
+              className={`flex items-center justify-between rounded-lg border px-3 py-2.5 shadow-sm transition-colors ${
+                isTracking ? 'border-green-400 bg-green-50' :
+                isAutoTarget && autoHrs > 0 ? 'border-indigo-300 bg-indigo-50' :
+                dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50/50' :
+                'bg-white'
+              } ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}
             >
               <div className="flex items-center gap-2">
+                {onCategoryReorder && (
+                  <span className="text-gray-300 select-none" aria-hidden>⠿</span>
+                )}
+                {onAutoCategoryChange && (
+                  <button
+                    title={isAutoTarget ? 'Unset auto category' : 'Set as auto category'}
+                    aria-label={isAutoTarget ? `Unset ${category} as auto category` : `Set ${category} as auto category`}
+                    onClick={() => onAutoCategoryChange(isAutoTarget ? null : category)}
+                    className={`text-base leading-none transition-colors ${isAutoTarget ? 'text-indigo-600 hover:text-gray-400' : 'text-gray-300 hover:text-indigo-400'}`}
+                  >
+                    {isAutoTarget ? '◉' : '○'}
+                  </button>
+                )}
                 <span className="text-sm font-medium">{category}</span>
                 {isAutoTarget && autoHrs > 0 && (
                   <span className="rounded bg-indigo-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700">
@@ -228,7 +290,7 @@ export function TimeEntryPanel({ date, repository, timeTrackingRepository, workP
                   }
                   onBlur={() => handleSave(category)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSave(category)
+                    if (e.key === 'Enter') handleSave(category)
                   }}
                   className="w-16 rounded border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 />

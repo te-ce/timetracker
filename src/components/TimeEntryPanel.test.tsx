@@ -177,4 +177,89 @@ describe('TimeEntryPanel', () => {
       expect(windows).toHaveLength(1) // still just the one, not a new one
     })
   })
+
+  describe('auto-category toggle', () => {
+    function setupWithAutoCategory(autoCategory: string, onAutoCategoryChange: ReturnType<typeof vi.fn>) {
+      const repo = new InMemoryTimeEntryRepository([])
+      const trackingRepo = new InMemoryTimeTrackingRepository()
+      const workPeriodRepo = new InMemoryWorkPeriodRepository([])
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      render(
+        <QueryClientProvider client={queryClient}>
+          <TimeEntryPanel
+            date={DATE}
+            repository={repo}
+            timeTrackingRepository={trackingRepo}
+            workPeriodRepository={workPeriodRepo}
+            autoCategory={autoCategory}
+            onAutoCategoryChange={onAutoCategoryChange}
+          />
+        </QueryClientProvider>,
+      )
+    }
+
+    it('renders toggle buttons for each category when onAutoCategoryChange is provided', async () => {
+      const onChange = vi.fn()
+      setupWithAutoCategory('_SUPPORT', onChange)
+      // filled circle on the active auto category
+      expect(await screen.findByLabelText('Unset _SUPPORT as auto category')).toBeInTheDocument()
+      // empty circle on the others
+      expect(screen.getByLabelText('Set _INFRA as auto category')).toBeInTheDocument()
+    })
+
+    it('calls onAutoCategoryChange(null) when clicking the active auto category toggle', async () => {
+      const onChange = vi.fn()
+      setupWithAutoCategory('_SUPPORT', onChange)
+      await userEvent.click(await screen.findByLabelText('Unset _SUPPORT as auto category'))
+      expect(onChange).toHaveBeenCalledWith(null)
+    })
+
+    it('calls onAutoCategoryChange(category) when clicking a non-active toggle', async () => {
+      const onChange = vi.fn()
+      setupWithAutoCategory('_SUPPORT', onChange)
+      await userEvent.click(await screen.findByLabelText('Set _INFRA as auto category'))
+      expect(onChange).toHaveBeenCalledWith('_INFRA')
+    })
+
+    it('does not render toggle buttons when onAutoCategoryChange is not provided', async () => {
+      setup()
+      await screen.findAllByText('_SUPPORT')
+      expect(screen.queryByLabelText(/as auto category/i)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('category reorder', () => {
+    it('renders drag handles when onCategoryReorder is provided', async () => {
+      const onReorder = vi.fn()
+      const repo = new InMemoryTimeEntryRepository([])
+      const trackingRepo = new InMemoryTimeTrackingRepository()
+      const workPeriodRepo = new InMemoryWorkPeriodRepository([])
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      render(
+        <QueryClientProvider client={queryClient}>
+          <TimeEntryPanel
+            date={DATE}
+            repository={repo}
+            timeTrackingRepository={trackingRepo}
+            workPeriodRepository={workPeriodRepo}
+            onCategoryReorder={onReorder}
+            customCategories={[]}
+          />
+        </QueryClientProvider>,
+      )
+      // All 10 default categories should be draggable
+      const items = await screen.findAllByRole('listitem')
+      for (const item of items) {
+        expect(item).toHaveAttribute('draggable', 'true')
+      }
+    })
+
+    it('list items are not draggable when onCategoryReorder is not provided', async () => {
+      setup()
+      const items = await screen.findAllByRole('listitem')
+      for (const item of items) {
+        expect(item).not.toHaveAttribute('draggable', 'true')
+      }
+    })
+  })
 })
