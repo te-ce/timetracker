@@ -29,12 +29,14 @@ if (rootElement === null) {
 
 void enableMocking()
 
-createRoot(rootElement).render(
+const app = (
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <MsalProvider instance={msalInstance}>
-        <RouterProvider router={router} />
-      </MsalProvider>
+      <RouterProvider router={router} />
     </QueryClientProvider>
-  </StrictMode>,
+  </StrictMode>
+)
+
+createRoot(rootElement).render(
+  msalInstance ? <MsalProvider instance={msalInstance}>{app}</MsalProvider> : app,
 )

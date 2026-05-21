@@ -1,5 +1,5 @@
 import { useMsal } from '@azure/msal-react'
-import { graphScopes } from '../auth/msalConfig'
+import { graphScopes } from '../auth/msalInstance'
 import { useAuthStore } from '../stores/authStore'
 
 export function CloudSyncSettings() {
