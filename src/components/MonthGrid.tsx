@@ -13,7 +13,7 @@ import type { MonthGridRow } from '../domain/monthGrid'
 
 const STATUS_DOT: Record<DayStatus, string> = {
   'complete': 'bg-emerald-400',
-  'incomplete': 'bg-yellow-400',
+  'needs-review': 'bg-yellow-400',
   'untracked': 'bg-blue-300',
   'today': 'bg-emerald-700',
   'future': 'bg-gray-300',

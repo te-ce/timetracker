@@ -57,7 +57,7 @@ describe('buildMonthSummaries', () => {
     expect(result.days[0].dayStatus).toBe('complete')
   })
 
-  it('marks incomplete when entries do not match worked hours', () => {
+  it('marks needs-review when entries do not match worked hours', () => {
     const result = buildMonthSummaries(2026, 5, {
       windows: [{ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' }],
       entries: [{ id: '1', date: '2026-05-01', category: 'QA', hours: 3 }],
@@ -66,7 +66,7 @@ describe('buildMonthSummaries', () => {
     })
 
     expect(result.days[0].isEntriesBalanced).toBe(false)
-    expect(result.days[0].dayStatus).toBe('incomplete')
+    expect(result.days[0].dayStatus).toBe('needs-review')
   })
 
   it('marks complete when auto category absorbs remaining hours', () => {
@@ -81,7 +81,7 @@ describe('buildMonthSummaries', () => {
     expect(result.days[0].dayStatus).toBe('complete')
   })
 
-  it('marks incomplete when entries exceed worked hours even with auto category', () => {
+  it('marks needs-review when entries exceed worked hours even with auto category', () => {
     const result = buildMonthSummaries(2026, 5, {
       windows: [{ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' }],
       entries: [{ id: '1', date: '2026-05-01', category: 'QA', hours: 10 }],
@@ -90,7 +90,7 @@ describe('buildMonthSummaries', () => {
       globalAutoCategory: 'Internal',
     })
 
-    expect(result.days[0].dayStatus).toBe('incomplete')
+    expect(result.days[0].dayStatus).toBe('needs-review')
   })
 
   it('respects dayTypeOverrides for non-working days', () => {

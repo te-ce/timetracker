@@ -199,7 +199,7 @@ export function DayView() {
   const selectedDayType =
     monthDayTypeOverrides.get(selectedDate) ??
     classifyDay(new Date(selectedDate));
-  const isEntriesBalanced = workedHours > 0 && manualTotal >= workedHours - 0.01;
+  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01;
   const hasAutoCategory = !!autoCategory && manualTotal <= workedHours;
   const dayStatus = getDayStatus({
     dayType: selectedDayType,
@@ -213,7 +213,7 @@ export function DayView() {
 
   const STATUS_BADGE: Record<DayStatus, { bg: string; text: string; label: string }> = {
     complete: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Complete' },
-    incomplete: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Incomplete' },
+    'needs-review': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Needs review' },
     untracked: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Untracked' },
     today: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Today' },
     future: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Future' },

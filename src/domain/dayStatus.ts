@@ -6,7 +6,7 @@ export type DayStatus =
   | 'future'
   | 'today'
   | 'complete'
-  | 'incomplete'
+  | 'needs-review'
   | 'untracked'
 
 interface DayStatusInput {
@@ -38,5 +38,5 @@ export function getDayStatus({ dayType, hasWorkedHours, isEntriesBalanced, hasAu
   if (isConfirmed) return 'complete'
   const effectivelyBalanced = isEntriesBalanced || hasAutoCategory
   if (effectivelyBalanced) return 'complete'
-  return 'incomplete'
+  return 'needs-review'
 }

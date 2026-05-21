@@ -19,8 +19,8 @@ describe('getDayStatus', () => {
     expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: true, hasAutoCategory: false, isoDate: '2026-05-15', today })).toBe('complete')
   })
 
-  it('returns "incomplete" for past work days with hours but unbalanced entries', () => {
-    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-15', today })).toBe('incomplete')
+  it('returns "needs-review" for past work days with hours but unbalanced entries', () => {
+    expect(getDayStatus({ dayType: 'WorkDay', hasWorkedHours: true, isEntriesBalanced: false, hasAutoCategory: false, isoDate: '2026-05-15', today })).toBe('needs-review')
   })
 
   it('returns "untracked" for past work days without hours', () => {
