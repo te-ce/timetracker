@@ -17,19 +17,25 @@ export function OvertimeBar({ sollstunden, priorOvertime, workedToday, officeDay
   else if (remaining === 0) remainingLabel = 'Done'
   else remainingLabel = `${Math.abs(remaining).toFixed(2)}h overtime today`
 
+  const summary = `${sollstunden}h target, ${Math.abs(priorOvertime).toFixed(2)}h ${hasOvertime ? 'overtime' : 'undertime'} carry-over, ${workedToday.toFixed(2)}h worked today — ${remainingLabel}`
+
   return (
-    <div className="flex items-center gap-1.5 rounded-lg border bg-gray-50 px-4 py-2 text-sm">
-      <span className="font-medium">{sollstunden}h</span>
-      <span className="text-gray-400">{hasOvertime ? '−' : '+'}</span>
-      <span className={`font-medium ${hasOvertime ? 'text-green-700' : 'text-amber-700'}`}>
+    <div
+      role="status"
+      aria-label={summary}
+      className="flex items-center gap-1.5 rounded-lg border bg-gray-50 px-4 py-2 text-sm"
+    >
+      <span aria-hidden="true" className="font-medium">{sollstunden}h</span>
+      <span aria-hidden="true" className="text-gray-400">{hasOvertime ? '−' : '+'}</span>
+      <span aria-hidden="true" className={`font-medium ${hasOvertime ? 'text-green-700' : 'text-amber-700'}`}>
         {Math.abs(priorOvertime).toFixed(2)}h {hasOvertime ? 'overtime' : 'undertime'}
       </span>
-      <span className="text-gray-400">−</span>
-      <span className="font-medium">{workedToday.toFixed(2)}h worked</span>
-      <span className="text-gray-400">=</span>
-      <span className={`font-semibold ${remaining <= 0 ? 'text-green-700' : ''}`}>{remainingLabel}</span>
+      <span aria-hidden="true" className="text-gray-400">−</span>
+      <span aria-hidden="true" className="font-medium">{workedToday.toFixed(2)}h worked</span>
+      <span aria-hidden="true" className="text-gray-400">=</span>
+      <span aria-hidden="true" className={`font-semibold ${remaining <= 0 ? 'text-green-700' : ''}`}>{remainingLabel}</span>
       {showOffice && (
-        <span className="ml-2 text-gray-400 font-light">(🏢 {officePercent}% · {officeDays}/{totalWorkDays} days)</span>
+        <span aria-hidden="true" className="ml-2 text-gray-400 font-light">(<span aria-hidden="true">🏢</span> {officePercent}% · {officeDays}/{totalWorkDays} days)</span>
       )}
     </div>
   )

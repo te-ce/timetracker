@@ -141,6 +141,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                         <div className="flex items-center gap-2">
                           <input
                             type="time"
+                            aria-label="Edit start time"
                             value={editStart}
                             onChange={(e) => setEditStart(e.target.value)}
                             onKeyDown={(e) => {
@@ -150,9 +151,10 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                             className="rounded border px-2 py-1 text-sm"
                           />
                           <button type="button" onClick={() => setEditStart(nowHHMM())} className="text-xs text-gray-400 hover:text-gray-600">Now</button>
-                          <span>–</span>
+                          <span aria-hidden="true">–</span>
                           <input
                             type="time"
+                            aria-label="Edit end time"
                             value={editEnd}
                             onChange={(e) => setEditEnd(e.target.value)}
                             onKeyDown={(e) => {
@@ -170,12 +172,13 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                       </>
                     ) : (
                       <>
-                        <span
-                          className="cursor-pointer font-mono font-medium hover:text-indigo-600"
+                        <button
+                          className="font-mono font-medium hover:text-indigo-600 text-left"
                           onClick={() => handleEditStart(w)}
+                          aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
                         >
                           {w.start} – {w.end ?? '…'}
-                        </span>
+                        </button>
                         <button
                           onClick={() => handleRemove(w.id)}
                           className="text-xs text-gray-400 hover:text-red-500"

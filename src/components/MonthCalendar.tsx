@@ -101,15 +101,18 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
           const iso = toLocalIso(date)
           const status = dayStatusMap[iso] ?? 'future'
           const isToday = status === 'today'
+          const label = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
           return (
             <button
               key={date.getDate()}
               onClick={() => onSelectDate(iso)}
+              aria-label={label}
+              aria-current={isToday ? 'date' : undefined}
               className={`relative rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
             >
               {date.getDate()}
               {isToday && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700" />
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700" aria-hidden="true" />
               )}
             </button>
           )

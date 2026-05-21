@@ -112,7 +112,7 @@ export function CustomCategorySettings({ repository }: Props) {
             {editingIdx === idx ? (
               <input
                 aria-label={`Rename ${cat}`}
-                autoFocus
+                ref={(el) => { el?.focus() }}
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={() => handleRename(idx)}

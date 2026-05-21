@@ -4,6 +4,7 @@ import tsParser from '@typescript-eslint/parser'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -45,12 +46,14 @@ export default defineConfig([
       '@typescript-eslint': tseslint,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      'jsx-a11y': jsxA11y,
     },
     rules: {
       ...js.configs.recommended.rules,
       ...tseslint.configs['recommended-type-checked'].rules,
       ...reactHooks.configs.flat.recommended.rules,
       ...reactRefresh.configs.vite.rules,
+      ...jsxA11y.flatConfigs.recommended.rules,
       'no-undef': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'error',
     },

@@ -3,6 +3,10 @@ interface Props {
   onNavigate: (date: string) => void
 }
 
+function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
 export function IncompleteBanner({ incompleteDates, onNavigate }: Props) {
   if (incompleteDates.length === 0) return null
 
@@ -16,9 +20,10 @@ export function IncompleteBanner({ incompleteDates, onNavigate }: Props) {
           <li key={date}>
             <button
               onClick={() => onNavigate(date)}
+              aria-label={`Go to ${new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}
               className="rounded border border-amber-200 bg-white px-2 py-0.5 text-xs hover:bg-amber-100"
             >
-              {date}
+              {formatShortDate(date)}
             </button>
           </li>
         ))}

@@ -28,7 +28,7 @@ function App() {
                 : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            <span>{item.icon}</span>
+            <span aria-hidden="true">{item.icon}</span>
             {item.label}
           </Link>
         ))}

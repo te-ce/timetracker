@@ -367,8 +367,9 @@ export function MonthGrid({ year, month, timeEntryRepository, workPeriodReposito
                 >
                   {editingCat === cat ? (
                     <input
-                      autoFocus
+                      ref={(el) => { el?.focus() }}
                       type="text"
+                      aria-label={`Rename category ${cat}`}
                       value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       onBlur={() => commitRename(cat)}

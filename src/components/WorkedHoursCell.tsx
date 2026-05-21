@@ -192,10 +192,10 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
         {/* Add form */}
         <div className="border-t px-5 py-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <label className="text-xs font-medium text-gray-600 w-10 shrink-0">Start</label>
+            <label htmlFor={`wpc-start-${date}`} className="text-xs font-medium text-gray-600 w-10 shrink-0">Start</label>
             <input
+              id={`wpc-start-${date}`}
               type="time"
-              aria-label="From"
               value={draftStart}
               onChange={(e) => setDraftStart(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
@@ -210,10 +210,10 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs font-medium text-gray-600 w-10 shrink-0">End</label>
+            <label htmlFor={`wpc-end-${date}`} className="text-xs font-medium text-gray-600 w-10 shrink-0">End</label>
             <input
+              id={`wpc-end-${date}`}
               type="time"
-              aria-label="To"
               value={draftEnd}
               onChange={(e) => setDraftEnd(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}

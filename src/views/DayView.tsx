@@ -260,6 +260,7 @@ export function DayView() {
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
         <button
+          aria-label="Previous day"
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
           onClick={() => {
             const d = new Date(selectedDate);
@@ -274,12 +275,14 @@ export function DayView() {
           <button
             className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${selectedDate === todayIso ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 hover:bg-indigo-50'}`}
             onClick={() => setSelectedDate(toLocalIso(new Date()))}
-            aria-disabled={selectedDate === todayIso}
+            disabled={selectedDate === todayIso}
+            aria-label="Go to today"
           >
             Today
           </button>
         </div>
         <button
+          aria-label="Next day"
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
           onClick={() => {
             const d = new Date(selectedDate);
@@ -297,9 +300,10 @@ export function DayView() {
           <button
             onClick={() => locationMutation.mutate()}
             className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
-            aria-label="Work location"
+            aria-label={`Work location: ${effectiveLocation}. Click to switch to ${effectiveLocation === 'Office' ? 'Remote' : 'Office'}`}
           >
-            {effectiveLocation === 'Office' ? '🏢 Office' : '🏠 Remote'}
+            <span aria-hidden="true">{effectiveLocation === 'Office' ? '🏢' : '🏠'}</span>
+            {' '}{effectiveLocation}
           </button>
         </div>
         {isConfirmed ? (
