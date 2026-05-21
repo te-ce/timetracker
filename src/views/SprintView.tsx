@@ -68,7 +68,8 @@ export function SprintView() {
           </h2>
           <button
             onClick={() => setSprintIndex(null)}
-            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${sprintIndex === null ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 hover:bg-indigo-50'}`}
+            aria-disabled={sprintIndex === null}
           >
             Current
           </button>

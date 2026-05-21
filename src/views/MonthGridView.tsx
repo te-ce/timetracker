@@ -12,6 +12,7 @@ export function MonthGridView() {
   const todayIso = toLocalIso(today)
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
+  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
   const queryClient = useQueryClient()
   const from = new Date(year, month - 1, 1)
   const to = new Date(year, month, 0)
@@ -109,7 +110,8 @@ export function MonthGridView() {
           <h2 className="text-lg font-semibold">{monthLabel}</h2>
           <button
             onClick={() => { const now = new Date(); setYear(now.getFullYear()); setMonth(now.getMonth() + 1) }}
-            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${isCurrentMonth ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 hover:bg-orange-50'}`}
+            aria-disabled={isCurrentMonth}
           >
             Today
           </button>

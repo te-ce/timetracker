@@ -197,8 +197,9 @@ export function DayView() {
         <div className="flex flex-1 items-center justify-center gap-2">
           <h2 className="text-xl font-semibold">{formatDate(selectedDate)}</h2>
           <button
-            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${selectedDate === todayIso ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 hover:bg-indigo-50'}`}
             onClick={() => setSelectedDate(toLocalIso(new Date()))}
+            aria-disabled={selectedDate === todayIso}
           >
             Today
           </button>

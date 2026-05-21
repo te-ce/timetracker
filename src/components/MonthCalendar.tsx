@@ -35,6 +35,8 @@ function getDaysInMonth(year: number, month: number): Date[] {
 
 export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {} }: Props) {
   const days = getDaysInMonth(year, month)
+  const now = new Date()
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
 
   function handlePrev() {
     if (!onMonthChange) return
@@ -68,7 +70,8 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
               const now = new Date()
               onMonthChange?.(now.getFullYear(), now.getMonth())
             }}
-            className="rounded border px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${isCurrentMonth ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 hover:bg-orange-50'}`}
+            aria-disabled={year === new Date().getFullYear() && month === new Date().getMonth()}
           >
             Today
           </button>
