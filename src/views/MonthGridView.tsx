@@ -132,8 +132,8 @@ export function MonthGridView() {
       </div>
       <OvertimeBar
         sollstunden={sollstunden}
-        overtimeToDate={toDate.value}
-        hoursNeededToday={toDate.hoursNeededToday}
+        priorOvertime={toDate.priorOvertime}
+        workedToday={toDate.workedToday}
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}

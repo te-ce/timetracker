@@ -8,8 +8,10 @@ export interface MonthStats {
 export interface OvertimeToDate {
   /** Cumulative overtime/undertime for all tracked days up to and including today */
   value: number
-  /** Hours still needed today: sollstunden - workedHoursToday (floored at 0) */
-  hoursNeededToday: number
+  /** Hours worked on the "today" date */
+  workedToday: number
+  /** Overtime/undertime from days strictly before today */
+  priorOvertime: number
 }
 
 export function calculateMonthStats(
@@ -40,22 +42,27 @@ export function calculateOvertimeToDate(
   let totalWorked = 0
   let trackedDayCount = 0
   let workedToday = 0
+  let priorWorked = 0
+  let priorTrackedDays = 0
 
   for (let i = 0; i < dates.length; i++) {
     if (dates[i] > today) break
     const hours = workedHoursPerDay[i]
+    if (dates[i] === today) {
+      workedToday = hours
+    } else if (hours > 0) {
+      priorWorked += hours
+      priorTrackedDays++
+    }
     if (hours > 0) {
       totalWorked += hours
       trackedDayCount++
     }
-    if (dates[i] === today) {
-      workedToday = hours
-    }
   }
 
   const targetToDate = trackedDayCount * sollstunden
-  const overtime = totalWorked - targetToDate
-  const hoursNeededToday = Math.max(0, sollstunden - workedToday)
+  const value = totalWorked - targetToDate
+  const priorOvertime = priorWorked - priorTrackedDays * sollstunden
 
-  return { value: overtime, hoursNeededToday }
+  return { value, workedToday, priorOvertime }
 }

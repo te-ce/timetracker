@@ -1,10 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
-import { MonthStatsPanel } from '../components/MonthStatsPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { workPeriodRepo, timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo } from '../repositories/shared'
-import { calculateOvertimeCarryOver } from '../domain/overtimeCarryOver'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
@@ -81,14 +79,6 @@ export function MonthView() {
   }
 
   // Compute overtime carry-over for this month
-  const monthKey = `${year}-${String(month).padStart(2, '0')}`
-  const overtimeCarryOver = calculateOvertimeCarryOver({
-    initialOvertime: 0,
-    monthlyOvertimes: [],
-    manualOverrides: new Map(),
-    targetMonth: monthKey,
-  }).value
-
   // Office percentage
   const trackedWorkDays = days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
@@ -114,18 +104,11 @@ export function MonthView() {
       </div>
       <OvertimeBar
         sollstunden={sollstunden}
-        overtimeToDate={overtimeToDate.value}
-        hoursNeededToday={overtimeToDate.hoursNeededToday}
+        priorOvertime={overtimeToDate.priorOvertime}
+        workedToday={overtimeToDate.workedToday}
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}
-      />
-      <MonthStatsPanel
-        workedHoursPerDay={workedHoursPerDay}
-        dates={dates}
-        sollstunden={sollstunden}
-        overtimeCarryOver={overtimeCarryOver}
-        today={todayIso}
       />
     </div>
   )

@@ -1,24 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
-import { calculateWorkedHours, calculateRestarbeitszeit } from '../domain/worktime'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
 
 interface Props {
   date: string
-  sollstunden: number
   repository: WorkPeriodRepository
 }
 
 
-export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
+export function WorkPeriodPanel({ date, repository }: Props) {
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editStart, setEditStart] = useState('')
   const [editEnd, setEditEnd] = useState('')
-  const [nowTime, setNowTime] = useState<string | undefined>(undefined)
 
   const { data: windows = [] } = useQuery({
     queryKey: ['workWindows', date],
@@ -26,23 +23,8 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
   })
 
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
-  const hasOpenWindow = windows.some((w) => w.end === null)
-
-  useEffect(() => {
-    if (!hasOpenWindow) { setNowTime(undefined); return }
-    const tick = () => {
-      const d = new Date()
-      setNowTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`)
-    }
-    tick()
-    const id = setInterval(tick, 60_000)
-    return () => clearInterval(id)
-  }, [hasOpenWindow])
 
   const { save: addMutation, remove: removeMutation } = useWorkPeriodMutations(repository)
-
-  const workedHours = calculateWorkedHours(windows, nowTime)
-  const restarbeitszeit = calculateRestarbeitszeit(sollstunden, workedHours)
 
   function handleAdd() {
     if (!start) return
@@ -150,8 +132,7 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
       ) : (
         <div className="flex flex-col gap-3">
           <ul className="flex flex-col gap-2">
-            {sorted.map((w, i) => {
-              const next = i < sorted.length - 1 ? sorted[i + 1] : null
+            {sorted.map((w, i) => {              const next = i < sorted.length - 1 ? sorted[i + 1] : null
               const canMergeWithNext = next !== null && w.end !== null
               return (
                   <li key={w.id} className="relative flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm shadow-sm">
@@ -221,37 +202,6 @@ export function WorkPeriodPanel({ date, sollstunden, repository }: Props) {
               )
             })}
           </ul>
-
-          {/* Stats row */}
-          <div className="flex gap-3">
-            <div
-              aria-label="Worked hours"
-              className="flex-1 rounded-lg border bg-white px-4 py-3 text-center shadow-sm"
-            >
-              <p className="text-xs text-gray-500">Worked</p>
-              <p className="text-lg font-bold">{workedHours.toFixed(2)}h worked</p>
-            </div>
-            <div
-              aria-label="Restarbeitszeit"
-              data-overtime={restarbeitszeit.isOvertime}
-              className={`flex-1 rounded-lg border px-4 py-3 text-center shadow-sm ${
-                restarbeitszeit.isOvertime
-                  ? 'border-amber-300 bg-amber-50'
-                  : restarbeitszeit.value === 0
-                    ? 'border-green-300 bg-green-50'
-                    : 'bg-white'
-              }`}
-            >
-              <p className="text-xs text-gray-500">Remaining</p>
-              <p className="text-lg font-bold">
-                {restarbeitszeit.value > 0
-                  ? `${restarbeitszeit.value.toFixed(2)}h remaining`
-                  : restarbeitszeit.isOvertime
-                    ? `${Math.abs(restarbeitszeit.value).toFixed(2)}h overtime`
-                    : 'On target'}
-              </p>
-            </div>
-          </div>
         </div>
       )}
     </section>

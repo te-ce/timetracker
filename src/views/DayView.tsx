@@ -244,11 +244,10 @@ export function DayView() {
         )}
       </div>
 
-      <OvertimeBar sollstunden={sollstunden} overtimeToDate={overtimeToDate.value} hoursNeededToday={overtimeToDate.hoursNeededToday} />
+      <OvertimeBar sollstunden={sollstunden} priorOvertime={overtimeToDate.priorOvertime} workedToday={overtimeToDate.workedToday} />
 
       <WorkPeriodPanel
         date={selectedDate}
-        sollstunden={sollstunden}
         repository={workPeriodRepo}
       />
 
