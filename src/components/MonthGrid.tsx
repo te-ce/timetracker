@@ -13,9 +13,9 @@ import type { MonthGridRow } from '../domain/monthGrid'
 
 const STATUS_DOT: Record<DayStatus, string> = {
   'complete': 'bg-emerald-400',
-  'incomplete': 'bg-amber-400',
-  'untracked': 'bg-blue-400',
-  'today': 'bg-orange-400',
+  'incomplete': 'bg-yellow-400',
+  'untracked': 'bg-blue-300',
+  'today': 'bg-emerald-700',
   'future': 'bg-gray-300',
   'non-working': 'bg-gray-300',
   'leave': 'bg-purple-400',
@@ -23,9 +23,9 @@ const STATUS_DOT: Record<DayStatus, string> = {
 
 const STATUS_LEGEND: Array<{ color: string; label: string }> = [
   { color: 'bg-emerald-400', label: 'Confirmed / balanced' },
-  { color: 'bg-amber-400', label: 'Logged, needs balancing' },
-  { color: 'bg-blue-400', label: 'No hours logged' },
-  { color: 'bg-orange-400', label: 'Today' },
+  { color: 'bg-yellow-400', label: 'Logged, needs balancing' },
+  { color: 'bg-blue-300', label: 'No hours logged' },
+  { color: 'bg-emerald-700', label: 'Today' },
   { color: 'bg-purple-400', label: 'Vacation / sick / absence' },
   { color: 'bg-gray-300', label: 'Future / non-working' },
 ]

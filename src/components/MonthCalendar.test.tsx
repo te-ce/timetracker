@@ -57,9 +57,9 @@ describe('MonthCalendar', () => {
     // Saturday + Sunday get non-working style (gray)
     expect(day17.className).toContain('bg-gray-100')
     expect(day18.className).toContain('bg-gray-100')
-    // Tuesday (today) gets white bg with blue ring
+    // Tuesday (today) gets white bg, no ring
     expect(day19.className).toContain('bg-white')
-    expect(day19.className).toContain('ring-2')
+    expect(day19.className).not.toContain('ring-2')
     // Complete gets emerald
     expect(day15.className).toContain('bg-emerald-100')
     // Untracked gets blue
@@ -75,10 +75,9 @@ describe('MonthCalendar', () => {
     render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
 
     const day19 = screen.getByText('19')
-    // Gets today's white bg + blue ring
+    // Gets today's white bg, no ring — dot is dark green
     expect(day19.className).toContain('bg-white')
-    expect(day19.className).toContain('ring-2')
-    expect(day19.className).toContain('ring-orange-400')
+    expect(day19.className).not.toContain('ring-2')
   })
 
   it('uses local date for onSelectDate regardless of timezone', async () => {

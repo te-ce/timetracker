@@ -13,9 +13,9 @@ const STATUS_COLORS: Record<DayStatus, string> = {
   'non-working': 'bg-gray-100 text-gray-400',
   'leave': 'bg-purple-100 text-purple-700',
   'future': 'bg-white text-gray-600 hover:bg-gray-50',
-  'today': 'bg-white text-gray-900 hover:bg-gray-50 ring-2 ring-orange-400',
+  'today': 'bg-white text-gray-900 hover:bg-gray-50',
   'complete': 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
-  'incomplete': 'bg-amber-100 text-amber-800 hover:bg-amber-200 ring-2 ring-amber-300',
+  'incomplete': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
   'untracked': 'bg-blue-100 text-blue-700',
 }
 
@@ -109,7 +109,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
             >
               {date.getDate()}
               {isToday && (
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-blue-500" />
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700" />
               )}
             </button>
           )
