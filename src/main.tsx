@@ -2,13 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
-import { PublicClientApplication } from '@azure/msal-browser'
 import { MsalProvider } from '@azure/msal-react'
-import { msalConfig } from './auth/msalConfig.ts'
+import { msalInstance } from './auth/msalInstance.ts'
 import { router } from './routes/router.ts'
 import './index.css'
-
-const msalInstance = new PublicClientApplication(msalConfig)
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { staleTime: 1000 * 60 },
