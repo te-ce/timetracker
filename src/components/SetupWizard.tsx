@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { writeBootstrapConfig, skipSetup } from '../auth/bootstrapConfig'
+import { writeBootstrapConfig, skipSetup, setLocalFolderMode } from '../auth/bootstrapConfig'
+import { saveHandle } from '../storage/folder-handle-store'
 
 interface Props {
   onSkip: () => void
@@ -9,6 +10,7 @@ export function SetupWizard({ onSkip }: Props) {
   const [clientId, setClientId] = useState('')
   const [tenantId, setTenantId] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [pickingFolder, setPickingFolder] = useState(false)
 
   function handleSave() {
     if (!clientId.trim() || !tenantId.trim()) {
@@ -21,6 +23,28 @@ export function SetupWizard({ onSkip }: Props) {
   function handleSkip() {
     skipSetup()
     onSkip()
+  }
+
+  async function handleLocalFolder() {
+    type PickerFn = (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>
+    const picker = (window as Window & { showDirectoryPicker?: PickerFn }).showDirectoryPicker
+    if (!picker) {
+      setError('File System Access API not supported. Use Chrome or Edge.')
+      return
+    }
+    setPickingFolder(true)
+    setError(null)
+    try {
+      const handle = await picker.call(window, { mode: 'readwrite' })
+      await saveHandle(handle)
+      setLocalFolderMode()
+      window.location.reload()
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return
+      setError(e instanceof Error ? e.message : 'Failed to open folder picker')
+    } finally {
+      setPickingFolder(false)
+    }
   }
 
   return (
@@ -85,6 +109,13 @@ export function SetupWizard({ onSkip }: Props) {
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors"
           >
             Save &amp; Connect
+          </button>
+          <button
+            onClick={() => void handleLocalFolder()}
+            disabled={pickingFolder}
+            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+          >
+            {pickingFolder ? 'Picking folder…' : 'Use Local Folder'}
           </button>
           <button
             onClick={handleSkip}

@@ -202,7 +202,7 @@ export function DayView() {
   })
 
   // For today, resolve the actual work status instead of showing "Today"
-  const badgeStatus: Exclude<DayStatus, 'today'> | null =
+  const badgeStatus: Exclude<DayStatus, 'today'> =
     dayStatus !== 'today'
       ? dayStatus
       : getWorkStatus({
@@ -286,7 +286,7 @@ export function DayView() {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          {badgeStatus !== null && badgeStatus !== 'future' && (
+          {badgeStatus !== 'future' && (
             <div className="group relative">
               <span
                 className={`cursor-help rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}

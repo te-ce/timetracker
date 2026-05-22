@@ -4,21 +4,31 @@ import { CloudSyncSettings } from '../components/CloudSyncSettings'
 import { CustomCategorySettings } from '../components/CustomCategorySettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
 import { ExcelMappingSettings } from '../components/ExcelMappingSettings'
+import { LocalExcelSettings } from '../components/LocalExcelSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
 import { SheetSelector } from '../components/SheetSelector'
 import { configRepo } from '../repositories/shared'
+import { isLocalFolderMode } from '../auth/bootstrapConfig'
+
+const localFolder = isLocalFolderMode()
 
 export function SettingsView() {
   return (
     <div className="flex flex-col gap-8">
       <h2 className="text-xl font-semibold">Settings</h2>
-      <CloudSyncSettings />
+      {!localFolder && <CloudSyncSettings />}
       <AutoCategorySettings repository={configRepo} />
       <BundeslandSettings repository={configRepo} />
       <DefaultLocationSettings repository={configRepo} />
       <CustomCategorySettings repository={configRepo} />
-      <SharePointSettings repository={configRepo} />
-      <SheetSelector repository={configRepo} />
+      {localFolder ? (
+        <LocalExcelSettings repository={configRepo} />
+      ) : (
+        <>
+          <SharePointSettings repository={configRepo} />
+          <SheetSelector repository={configRepo} />
+        </>
+      )}
       <ExcelMappingSettings repository={configRepo} />
     </div>
   )

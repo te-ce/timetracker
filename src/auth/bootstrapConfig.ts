@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'msal-bootstrap-config'
 const SKIPPED_KEY = 'msal-bootstrap-skipped'
+const LOCAL_FOLDER_KEY = 'timetracker-local-folder-mode'
 
 export interface BootstrapConfig {
   clientId: string
@@ -33,6 +34,16 @@ export function writeBootstrapConfig(cfg: BootstrapConfig): void {
 
 export function clearBootstrapConfig(): void {
   localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(SKIPPED_KEY)
+  localStorage.removeItem(LOCAL_FOLDER_KEY)
+}
+
+export function isLocalFolderMode(): boolean {
+  return localStorage.getItem(LOCAL_FOLDER_KEY) === 'true'
+}
+
+export function setLocalFolderMode(): void {
+  localStorage.setItem(LOCAL_FOLDER_KEY, 'true')
   localStorage.removeItem(SKIPPED_KEY)
 }
 

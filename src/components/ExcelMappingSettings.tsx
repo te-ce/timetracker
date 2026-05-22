@@ -3,10 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ConfigRepository } from '../repositories/types'
 import type { ExcelRow } from '../services/excelService'
 import { listRows } from '../services/excelService'
+import { listLocalRows } from '../services/localExcelService'
 import { getAllCategories } from '../domain/categories'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
 import { useAuthStore } from '../stores/authStore'
 import { getAccessToken } from '../auth/msalInstance'
+import { isLocalFolderMode } from '../auth/bootstrapConfig'
+
+const localFolder = isLocalFolderMode()
 
 interface Props {
   repository: ConfigRepository
@@ -25,15 +29,24 @@ export function ExcelMappingSettings({ repository }: Props) {
 
   const sharepointUrl = config?.sharepointUrl
   const targetSheet = config?.targetSheet
-  const isReady = !!sharepointUrl && !!targetSheet && isAuthenticated
+  const localExcelFile = config?.localExcelFile
+  const isReady = localFolder
+    ? !!localExcelFile && !!targetSheet
+    : !!sharepointUrl && !!targetSheet && isAuthenticated
 
   async function handleLoadRows() {
-    if (!sharepointUrl || !targetSheet || !isAuthenticated) return
     setLoadError(null)
     setLoadingRows(true)
     try {
-      const token = await getAccessToken()
-      const rows = await listRows(sharepointUrl, targetSheet, token)
+      let rows: ExcelRow[]
+      if (localFolder) {
+        if (!localExcelFile || !targetSheet) return
+        rows = await listLocalRows(localExcelFile, targetSheet)
+      } else {
+        if (!sharepointUrl || !targetSheet || !isAuthenticated) return
+        const token = await getAccessToken()
+        rows = await listRows(sharepointUrl, targetSheet, token)
+      }
       setExcelRows(rows)
       setLocalMapping(config.categoryMapping ?? {})
     } catch (err) {
@@ -121,7 +134,9 @@ export function ExcelMappingSettings({ repository }: Props) {
         </button>
         {!isReady && (
           <span className="text-xs text-gray-400">
-            {!sharepointUrl ? 'Set a SharePoint URL first' : 'Select a target sheet first'}
+            {localFolder
+              ? (!localExcelFile ? 'Select an Excel file first' : 'Select a target sheet first')
+              : (!sharepointUrl ? 'Set a SharePoint URL first' : 'Select a target sheet first')}
           </span>
         )}
       </div>

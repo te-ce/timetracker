@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { MsalProvider } from '@azure/msal-react'
 import { msalInstance } from './auth/msalInstance.ts'
-import { readBootstrapConfig, isSetupSkipped } from './auth/bootstrapConfig.ts'
+import { readBootstrapConfig, isSetupSkipped, isLocalFolderMode } from './auth/bootstrapConfig.ts'
 import { SetupWizard } from './components/SetupWizard.tsx'
 import { useMsalSync } from './hooks/useMsalSync.ts'
 import { router } from './routes/router.ts'
@@ -33,7 +33,7 @@ if (rootElement === null) {
 
 void enableMocking()
 
-const needsSetup = !readBootstrapConfig() && !isSetupSkipped()
+const needsSetup = !readBootstrapConfig() && !isSetupSkipped() && !isLocalFolderMode()
 
 // eslint-disable-next-line react-refresh/only-export-components
 function MsalSync() {

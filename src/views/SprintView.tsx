@@ -7,8 +7,12 @@ import { SprintConfigPanel } from '../components/SprintConfigPanel'
 import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/shared'
 import { getAllCategories } from '../domain/categories'
 import { writeSprintData } from '../services/excelService'
+import { writeLocalSprintData } from '../services/localExcelService'
 import { useAuthStore } from '../stores/authStore'
 import { getAccessToken } from '../auth/msalInstance'
+import { isLocalFolderMode } from '../auth/bootstrapConfig'
+
+const localFolder = isLocalFolderMode()
 
 export function SprintView() {
   const queryClient = useQueryClient()
@@ -60,17 +64,23 @@ export function SprintView() {
   const exportStatus = sprintExport?.status ?? 'pending'
 
   const sharepointUrl = config?.sharepointUrl ?? null
+  const localExcelFile = config?.localExcelFile ?? null
   const targetSheet = config?.targetSheet ?? null
   const categoryMapping = config?.categoryMapping ?? {}
-  const exportReady =
-    !!sharepointUrl && !!targetSheet && Object.keys(categoryMapping).length > 0 && isAuthenticated
+  const exportReady = localFolder
+    ? !!localExcelFile && !!targetSheet && Object.keys(categoryMapping).length > 0
+    : !!sharepointUrl && !!targetSheet && Object.keys(categoryMapping).length > 0 && isAuthenticated
 
   async function handleExport(): Promise<void> {
-    if (!sharepointUrl || !targetSheet || !isAuthenticated) {
-      throw new Error('SharePoint URL, sheet, or auth token is missing.')
+    if (!targetSheet) throw new Error('No target sheet selected.')
+    if (localFolder) {
+      if (!localExcelFile) throw new Error('No local Excel file selected.')
+      await writeLocalSprintData(localExcelFile, targetSheet, categoryMapping, hoursPerCategory)
+    } else {
+      if (!sharepointUrl || !isAuthenticated) throw new Error('SharePoint URL or auth missing.')
+      const token = await getAccessToken()
+      await writeSprintData(sharepointUrl, targetSheet, categoryMapping, hoursPerCategory, token)
     }
-    const token = await getAccessToken()
-    await writeSprintData(sharepointUrl, targetSheet, categoryMapping, hoursPerCategory, token)
     await markExportedMutation.mutateAsync()
   }
 

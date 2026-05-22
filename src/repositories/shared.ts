@@ -1,7 +1,10 @@
 import { LocalStorageAdapter } from '../storage/localstorage-adapter'
 import { OneDriveStorageAdapter } from '../storage/onedrive-adapter'
 import { FallbackStorageAdapter } from '../storage/fallback-adapter'
+import { LocalFolderStorageAdapter } from '../storage/local-folder-adapter'
 import { getAccessToken } from '../auth/msalInstance'
+import { isLocalFolderMode } from '../auth/bootstrapConfig'
+import type { StorageAdapter } from '../storage/adapter'
 import { CloudConfigRepository } from './cloud/config-repository'
 import { CloudTimeEntryRepository } from './cloud/time-entry-repository'
 import { CloudWorkPeriodRepository } from './cloud/work-period-repository'
@@ -12,15 +15,9 @@ import { CloudAutoCategoryOverrideRepository } from './cloud/auto-category-overr
 import { CloudDayConfirmationRepository } from './cloud/day-confirmation-repository'
 import { CloudTimeTrackingRepository } from './cloud/time-tracking-repository'
 
-/**
- * FallbackStorageAdapter: reads from OneDrive first (when authenticated),
- * falls back to localStorage if OneDrive is unavailable or the user is not signed in.
- * Writes go to both adapters — localStorage acts as the offline cache.
- */
-const storage = new FallbackStorageAdapter(
-  new OneDriveStorageAdapter(getAccessToken),
-  new LocalStorageAdapter(),
-)
+const storage: StorageAdapter = isLocalFolderMode()
+  ? new LocalFolderStorageAdapter()
+  : new FallbackStorageAdapter(new OneDriveStorageAdapter(getAccessToken), new LocalStorageAdapter())
 
 export const configRepo = new CloudConfigRepository(storage)
 export const timeEntryRepo = new CloudTimeEntryRepository(storage)

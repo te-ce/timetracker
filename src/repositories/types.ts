@@ -55,6 +55,8 @@ export interface AppConfig {
   targetSheet?: string | null
   /** Maps app category keys to Excel Task IDs for export */
   categoryMapping?: Record<string, string>
+  /** Filename of the Excel workbook in the local folder (local folder mode only) */
+  localExcelFile?: string | null
 }
 
 export interface TimeEntryRepository {
