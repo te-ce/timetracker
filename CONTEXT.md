@@ -155,6 +155,32 @@ Accessed via Microsoft Graph API using the `/shares/{encodedUrl}/driveItem` endp
 Holds the time-tracking template: fixed category rows + investment rows.  
 The source for investment row discovery (→ DynamicCategory) and the write target for ExcelMapping export.
 
+## DayStatus
+
+The display and action status of a single day. Derived from DayType, WorkedHours, TimeEntries, and confirmation state.
+
+| Status | Meaning |
+|---|---|
+| `non-working` | Weekend or PublicHoliday — no work expected |
+| `leave` | Vacation, SickDay, or Absence — day off |
+| `future` | Future WorkDay with no hours logged yet |
+| `today` | Today — display modifier layered on top of actual work status |
+| `complete` | Past WorkDay that needs no action: confirmed, balanced, or AutoCategory covers the gap |
+| `needs-review` | Past or current WorkDay where hours don't add up and user attention is needed |
+| `untracked` | Past WorkDay with zero WorkedHours **and** zero TimeEntries |
+
+**`needs-review`** arises from three distinct causes:
+- **Under-categorized**: WorkedHours > Σ TimeEntries and no AutoCategory set
+- **Over-categorized**: Σ TimeEntries > WorkedHours
+- **Entries without work time**: Σ TimeEntries > 0 but WorkedHours = 0
+
+**`complete`** has multiple sub-causes, all visible in the status reason:
+- Explicitly confirmed by the user (confirmation overlays the balance state — misalignment is still shown)
+- Balanced: Σ TimeEntries ≈ WorkedHours (within 0.01 h)
+- AutoCategory absorbs the remaining gap
+
+**`today`** is not a standalone status — always resolved to its underlying work status for dot colors and reason text, prefixed with "Today —".
+
 ## DaySummary
 
 The computed state of a single day within a month. Combines raw data (WorkWindows, TimeEntries, DayType overrides) into a single summary:
@@ -162,7 +188,8 @@ The computed state of a single day within a month. Combines raw data (WorkWindow
 - **dayType**: resolved DayType (override > classifyDay)
 - **workedHours**: Σ WorkWindow durations
 - **entryTotal**: Σ TimeEntry hours
-- **isEntriesBalanced**: whether entryTotal ≈ workedHours (within 0.01)
-- **dayStatus**: the display status for the MonthCalendar (non-working, future, today, tracked, incomplete, needs-attention, and compound today variants)
+- **isEntriesBalanced**: whether entryTotal ≈ workedHours (within 0.01 h)
+- **hasAutoCategory**: whether an AutoCategory is set and absorbs the remaining gap
+- **dayStatus**: the DayStatus for this day
 
 Built via `buildMonthSummaries(year, month, input)` which returns all DaySummaries for a month plus aggregate stats (workDayCount, workedHoursPerDay, hasAnyTrackedHours).

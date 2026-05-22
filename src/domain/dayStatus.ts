@@ -12,6 +12,25 @@ export interface StatusReasonInput {
   today: string
 }
 
+function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory: boolean): string {
+  if (workedHours === 0 && manualTotal > 0) {
+    return `${manualTotal.toFixed(1)} h categorized but no work time recorded`
+  }
+  if (Math.abs(workedHours - manualTotal) < 0.01) {
+    return `${workedHours.toFixed(1)} h worked and fully categorized`
+  }
+  if (hasAutoCategory && manualTotal <= workedHours) {
+    const auto = workedHours - manualTotal
+    return `${workedHours.toFixed(1)} h worked — auto-category fills ${auto.toFixed(1)} h`
+  }
+  if (manualTotal > workedHours) {
+    const over = manualTotal - workedHours
+    return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h booked (${over.toFixed(1)} h over)`
+  }
+  const unaccounted = workedHours - manualTotal
+  return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h categorized — ${unaccounted.toFixed(1)} h unaccounted`
+}
+
 export function getStatusReason({
   dayType,
   workedHours,
@@ -33,32 +52,25 @@ export function getStatusReason({
       : 'Future work day — no hours yet'
   }
 
-  if (isoDate === today) {
-    if (workedHours === 0) return 'Today — no hours logged yet'
-    if (isConfirmed) return `Today — confirmed (${workedHours.toFixed(1)} h worked)`
-    if (Math.abs(workedHours - manualTotal) < 0.01) return `Today — ${workedHours.toFixed(1)} h worked and balanced`
-    if (hasAutoCategory) {
-      const auto = workedHours - manualTotal
-      return `Today — ${workedHours.toFixed(1)} h worked, auto-category fills ${auto.toFixed(1)} h`
-    }
-    return `Today — ${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h categorized`
+  const prefix = isoDate === today ? 'Today — ' : ''
+
+  if (workedHours === 0 && manualTotal === 0) {
+    return `${prefix}No hours recorded`
   }
 
-  // Past WorkDay
-  if (workedHours === 0) return 'No work hours logged'
-  if (isConfirmed) return `Confirmed — ${workedHours.toFixed(1)} h worked`
-  if (Math.abs(workedHours - manualTotal) < 0.01) return `${workedHours.toFixed(1)} h worked and fully categorized`
-  if (hasAutoCategory) {
-    const auto = workedHours - manualTotal
-    return `${workedHours.toFixed(1)} h worked — auto-category fills ${auto.toFixed(1)} h`
+  const balance = balanceReason(workedHours, manualTotal, hasAutoCategory)
+
+  if (isConfirmed) {
+    return `${prefix}Confirmed — ${balance}`
   }
-  const unaccounted = workedHours - manualTotal
-  return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h categorized — ${Math.abs(unaccounted).toFixed(1)} h unaccounted`
+
+  return `${prefix}${balance}`
 }
 
 interface DayStatusInput {
   dayType: DayType
   hasWorkedHours: boolean
+  hasManualEntries: boolean
   isEntriesBalanced: boolean
   hasAutoCategory: boolean
   isConfirmed?: boolean
@@ -69,6 +81,7 @@ interface DayStatusInput {
 export function getDayStatus({
   dayType,
   hasWorkedHours,
+  hasManualEntries,
   isEntriesBalanced,
   hasAutoCategory,
   isConfirmed = false,
@@ -88,7 +101,7 @@ export function getDayStatus({
   if (isoDate === today) return 'today'
 
   // Past work days
-  if (!hasWorkedHours) return 'untracked'
+  if (!hasWorkedHours && !hasManualEntries) return 'untracked'
 
   if (isConfirmed) return 'complete'
   const effectivelyBalanced = isEntriesBalanced || hasAutoCategory

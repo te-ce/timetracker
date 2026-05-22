@@ -323,6 +323,7 @@ export function MonthGrid({
     return getDayStatus({
       dayType: row.dayType,
       hasWorkedHours: row.workedHours > 0,
+      hasManualEntries: manualTotal > 0,
       isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
       hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
       isConfirmed: confirmedDays.has(row.date),
@@ -339,6 +340,7 @@ export function MonthGrid({
     return getDayStatus({
       dayType: row.dayType,
       hasWorkedHours: row.workedHours > 0,
+      hasManualEntries: manualTotal > 0,
       isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
       hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
       isConfirmed: confirmedDays.has(row.date),

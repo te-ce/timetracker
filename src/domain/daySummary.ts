@@ -85,6 +85,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     const dayStatus = getDayStatus({
       dayType,
       hasWorkedHours: workedHours > 0,
+      hasManualEntries: entryTotal > 0,
       isEntriesBalanced: workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01,
       hasAutoCategory,
       isConfirmed: confirmedDays.has(iso),

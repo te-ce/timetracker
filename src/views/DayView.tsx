@@ -182,6 +182,7 @@ export function DayView() {
   const dayStatus = getDayStatus({
     dayType: selectedDayType,
     hasWorkedHours: workedHours > 0,
+    hasManualEntries: manualTotal > 0,
     isEntriesBalanced,
     hasAutoCategory,
     isConfirmed,

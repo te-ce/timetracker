@@ -9,6 +9,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'Weekend',
         hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-17',
@@ -19,6 +20,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'PublicHoliday',
         hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-01',
@@ -32,6 +34,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'Vacation',
         hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-12',
@@ -42,6 +45,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'SickDay',
         hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-12',
@@ -52,6 +56,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'Absence',
         hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-12',
@@ -60,11 +65,12 @@ describe('getDayStatus', () => {
     ).toBe('leave')
   })
 
-  it('returns "tracked" for past work days with balanced entries', () => {
+  it('returns "complete" for past work days with balanced entries', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: true,
+        hasManualEntries: true,
         isEntriesBalanced: true,
         hasAutoCategory: false,
         isoDate: '2026-05-15',
@@ -78,6 +84,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: true,
+        hasManualEntries: true,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-15',
@@ -86,11 +93,26 @@ describe('getDayStatus', () => {
     ).toBe('needs-review')
   })
 
-  it('returns "untracked" for past work days without hours', () => {
+  it('returns "needs-review" for past work days with entries but no worked hours', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: false,
+        hasManualEntries: true,
+        isEntriesBalanced: false,
+        hasAutoCategory: false,
+        isoDate: '2026-05-15',
+        today,
+      }),
+    ).toBe('needs-review')
+  })
+
+  it('returns "untracked" for past work days with no hours and no entries', () => {
+    expect(
+      getDayStatus({
+        dayType: 'WorkDay',
+        hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-15',
@@ -104,6 +126,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: today,
@@ -114,6 +137,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: true,
+        hasManualEntries: true,
         isEntriesBalanced: true,
         hasAutoCategory: false,
         isoDate: today,
@@ -124,6 +148,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: true,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: today,
@@ -137,6 +162,7 @@ describe('getDayStatus', () => {
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: false,
+        hasManualEntries: false,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isoDate: '2026-05-20',
@@ -145,11 +171,12 @@ describe('getDayStatus', () => {
     ).toBe('future')
   })
 
-  it('returns "tracked" for future days that already have hours', () => {
+  it('returns "complete" for future days that already have hours', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: true,
+        hasManualEntries: true,
         isEntriesBalanced: true,
         hasAutoCategory: false,
         isoDate: '2026-05-20',
@@ -158,11 +185,12 @@ describe('getDayStatus', () => {
     ).toBe('complete')
   })
 
-  it('returns "tracked" when auto category absorbs remaining', () => {
+  it('returns "complete" when auto category absorbs remaining', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: true,
+        hasManualEntries: true,
         isEntriesBalanced: false,
         hasAutoCategory: true,
         isoDate: '2026-05-15',
@@ -171,11 +199,12 @@ describe('getDayStatus', () => {
     ).toBe('complete')
   })
 
-  it('returns "tracked" when day is confirmed even if unbalanced', () => {
+  it('returns "complete" when day is confirmed even if unbalanced', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
         hasWorkedHours: true,
+        hasManualEntries: true,
         isEntriesBalanced: false,
         hasAutoCategory: false,
         isConfirmed: true,
