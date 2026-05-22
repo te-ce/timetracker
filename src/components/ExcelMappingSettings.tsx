@@ -12,6 +12,38 @@ import { isLocalFolderMode } from '../auth/bootstrapConfig'
 
 const localFolder = isLocalFolderMode()
 
+function matchScore(a: string, b: string): number {
+  if (a.length < 3 || b.length < 3) return 0
+  if (a.includes(b)) return b.length / a.length
+  if (b.includes(a)) return a.length / b.length
+  return 0
+}
+
+function autoMatchCategories(
+  categories: string[],
+  rows: ExcelRow[],
+  existingMapping: Record<string, string>,
+): Record<string, string> {
+  const result = { ...existingMapping }
+  for (const category of categories) {
+    if (result[category]) continue
+    const catNorm = category.toLowerCase().replace(/[^a-z0-9]/g, '')
+    let bestScore = 0
+    let bestRow: ExcelRow | null = null
+    for (const row of rows) {
+      const desc = row.description.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const taskNorm = row.taskId.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const score = Math.max(matchScore(catNorm, desc), matchScore(catNorm, taskNorm))
+      if (score > bestScore) {
+        bestScore = score
+        bestRow = row
+      }
+    }
+    if (bestRow && bestScore >= 0.5) result[category] = bestRow.taskId
+  }
+  return result
+}
+
 interface Props {
   repository: ConfigRepository
 }
@@ -26,6 +58,7 @@ export function ExcelMappingSettings({ repository }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loadingRows, setLoadingRows] = useState(false)
   const [localMapping, setLocalMapping] = useState<Record<string, string> | null>(null)
+  const [autoMatched, setAutoMatched] = useState<Set<string>>(new Set())
 
   const sharepointUrl = config?.sharepointUrl
   const targetSheet = config?.targetSheet
@@ -48,7 +81,14 @@ export function ExcelMappingSettings({ repository }: Props) {
         rows = await listRows(sharepointUrl, targetSheet, token)
       }
       setExcelRows(rows)
-      setLocalMapping(config.categoryMapping ?? {})
+      const saved = config.categoryMapping ?? {}
+      const allCats = getAllCategories(config.customCategories, config.categoryOrder)
+      const merged = autoMatchCategories(allCats, rows, saved)
+      const newAutoMatched = new Set(
+        Object.keys(merged).filter((k) => !saved[k] && merged[k]),
+      )
+      setAutoMatched(newAutoMatched)
+      setLocalMapping(merged)
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load rows')
     } finally {
@@ -73,6 +113,7 @@ export function ExcelMappingSettings({ repository }: Props) {
     },
     onSuccess: () => {
       setLocalMapping(null)
+      setAutoMatched(new Set())
       void queryClient.invalidateQueries({ queryKey: ['config'] })
     },
   })
@@ -160,10 +201,19 @@ export function ExcelMappingSettings({ repository }: Props) {
                     {category}
                     {!isFixed && <span className="ml-1 text-xs text-gray-400">(custom)</span>}
                   </span>
+                  <div className="relative flex flex-1 items-center gap-1">
+                  {autoMatched.has(category) && (
+                    <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-xs text-amber-700" title="Auto-matched by name — please verify">
+                      auto
+                    </span>
+                  )}
                   <select
                     aria-label={`Map ${category} to Task ID`}
                     value={currentTaskId}
-                    onChange={(e) => handleMappingChange(category, e.target.value)}
+                    onChange={(e) => {
+                      setAutoMatched((prev) => { const s = new Set(prev); s.delete(category); return s })
+                      handleMappingChange(category, e.target.value)
+                    }}
                     className="flex-1 rounded border px-2 py-1 text-sm"
                   >
                     <option value="">— skip —</option>
@@ -173,6 +223,7 @@ export function ExcelMappingSettings({ repository }: Props) {
                       </option>
                     ))}
                   </select>
+                  </div>
                 </li>
               )
             })}
