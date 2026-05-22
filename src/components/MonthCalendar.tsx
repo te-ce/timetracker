@@ -7,6 +7,7 @@ interface Props {
   onSelectDate: (isoDate: string) => void
   onMonthChange?: (year: number, month: number) => void
   dayStatusMap?: Record<string, DayStatus>
+  dayStatusReasonMap?: Record<string, string>
 }
 
 const STATUS_COLORS: Record<DayStatus, string> = {
@@ -43,7 +44,7 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days
 }
 
-export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {} }: Props) {
+export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {}, dayStatusReasonMap = {} }: Props) {
   const days = getDaysInMonth(year, month)
   const now = new Date()
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
@@ -122,6 +123,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
               key={date.getDate()}
               onClick={() => onSelectDate(iso)}
               aria-label={label}
+              title={dayStatusReasonMap[iso]}
               aria-current={isToday ? 'date' : undefined}
               className={`relative rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
             >

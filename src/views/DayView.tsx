@@ -19,7 +19,7 @@ import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
-import { getDayStatus, type DayStatus } from '../domain/dayStatus'
+import { getDayStatus, getStatusReason, type DayStatus } from '../domain/dayStatus'
 import { classifyDay } from '../domain/dayType'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 
@@ -198,6 +198,16 @@ export function DayView() {
     leave: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Leave' },
   }
 
+  const statusReason = getStatusReason({
+    dayType: selectedDayType,
+    workedHours,
+    manualTotal,
+    hasAutoCategory,
+    isConfirmed,
+    isoDate: selectedDate,
+    today: todayIso,
+  })
+
   // For today, resolve the actual work status instead of showing "Today"
   const badgeStatus: Exclude<DayStatus, 'today'> | null = (() => {
     if (dayStatus !== 'today') return dayStatus
@@ -289,11 +299,18 @@ export function DayView() {
         ) : (
           <div className="flex items-center gap-2">
             {badgeStatus !== null && badgeStatus !== 'future' && (
-              <span
-                className={`rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
-              >
-                {STATUS_BADGE[badgeStatus].label}
-              </span>
+              <div className="group relative">
+                <span
+                  className={`cursor-help rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
+                >
+                  {STATUS_BADGE[badgeStatus].label}
+                </span>
+                <div className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 hidden -translate-x-1/2 group-hover:block z-10">
+                  <div className="rounded bg-gray-800 px-2 py-1 text-xs text-white shadow-lg whitespace-nowrap">
+                    {statusReason}
+                  </div>
+                </div>
+              </div>
             )}
             <button
               onClick={() => confirmMutation.mutate()}

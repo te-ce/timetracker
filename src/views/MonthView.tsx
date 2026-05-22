@@ -13,6 +13,7 @@ import {
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
+import { getStatusReason } from '../domain/dayStatus'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 import { toLocalIso } from '../domain/dateUtils'
 
@@ -82,8 +83,18 @@ export function MonthView() {
   const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
 
   const dayStatusMap: Record<string, DayStatus> = {}
+  const dayStatusReasonMap: Record<string, string> = {}
   for (const day of days) {
     dayStatusMap[day.date] = day.dayStatus
+    dayStatusReasonMap[day.date] = getStatusReason({
+      dayType: day.dayType,
+      workedHours: day.workedHours,
+      manualTotal: day.entryTotal,
+      hasAutoCategory: day.hasAutoCategory,
+      isConfirmed: confirmedDays.has(day.date),
+      isoDate: day.date,
+      today: todayIso,
+    })
   }
 
   // Compute overtime carry-over for this month
@@ -100,6 +111,7 @@ export function MonthView() {
         onSelectDate={onSelectDate}
         onMonthChange={onMonthChange}
         dayStatusMap={dayStatusMap}
+        dayStatusReasonMap={dayStatusReasonMap}
       />
       <div className="flex flex-wrap gap-3 text-xs">
         <span className="flex items-center gap-1">

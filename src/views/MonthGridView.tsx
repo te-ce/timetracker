@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   timeEntryRepo,
@@ -16,6 +17,7 @@ import { toLocalIso } from '../domain/dateUtils'
 import type { DayTypeOverride } from '../repositories/types'
 
 export function MonthGridView() {
+  const navigate = useNavigate()
   const today = new Date()
   const todayIso = toLocalIso(today)
   const [year, setYear] = useState(today.getFullYear())
@@ -178,6 +180,7 @@ export function MonthGridView() {
         onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
         onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
+        onSelectDate={(date) => void navigate({ to: '/day', search: { date } })}
       />
     </div>
   )
