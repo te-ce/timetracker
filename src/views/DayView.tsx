@@ -212,8 +212,9 @@ export function DayView() {
   // For today, resolve the actual work status instead of showing "Today"
   const badgeStatus: Exclude<DayStatus, 'today'> | null = (() => {
     if (dayStatus !== 'today') return dayStatus
-    if (!workedHours) return null
-    if (isConfirmed || isEntriesBalanced || hasAutoCategory) return 'complete'
+    if (!workedHours && !manualTotal) return null
+    if (!workedHours) return 'needs-review'
+    if (isEntriesBalanced || hasAutoCategory) return 'complete'
     return 'needs-review'
   })()
 
@@ -289,30 +290,30 @@ export function DayView() {
             <span aria-hidden="true">{effectiveLocation === 'Office' ? '🏢' : '🏠'}</span> {effectiveLocation}
           </button>
         </div>
-        {isConfirmed ? (
-          <button
-            onClick={() => unconfirmMutation.mutate()}
-            className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
-            aria-label="Unconfirm day"
-          >
-            ✓ Confirmed
-          </button>
-        ) : (
-          <div className="flex items-center gap-2">
-            {badgeStatus !== null && badgeStatus !== 'future' && (
-              <div className="group relative">
-                <span
-                  className={`cursor-help rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
-                >
-                  {STATUS_BADGE[badgeStatus].label}
-                </span>
-                <div className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 hidden -translate-x-1/2 group-hover:block z-10">
-                  <div className="rounded bg-gray-800 px-2 py-1 text-xs text-white shadow-lg whitespace-nowrap">
-                    {statusReason}
-                  </div>
+        <div className="flex items-center gap-2">
+          {badgeStatus !== null && badgeStatus !== 'future' && (
+            <div className="group relative">
+              <span
+                className={`cursor-help rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
+              >
+                {STATUS_BADGE[badgeStatus].label}
+              </span>
+              <div className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 hidden -translate-x-1/2 group-hover:block z-10">
+                <div className="rounded bg-gray-800 px-2 py-1 text-xs text-white shadow-lg whitespace-nowrap">
+                  {statusReason}
                 </div>
               </div>
-            )}
+            </div>
+          )}
+          {isConfirmed ? (
+            <button
+              onClick={() => unconfirmMutation.mutate()}
+              className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+              aria-label="Unconfirm day"
+            >
+              ✓ Confirmed
+            </button>
+          ) : (
             <button
               onClick={() => confirmMutation.mutate()}
               className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
@@ -320,8 +321,8 @@ export function DayView() {
             >
               Confirm
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <OvertimeBar
