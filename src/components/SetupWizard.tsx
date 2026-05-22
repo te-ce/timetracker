@@ -32,7 +32,7 @@ export function SetupWizard({ onSkip }: Props) {
     if (!picker) {
       setError(
         isBrave
-          ? 'Brave Shields are blocking this feature. Click the lion icon → turn off Fingerprinting for this site → try again.'
+          ? 'Brave Shields are blocking this feature. Click the lion icon → turn off Fingerprinting for this site → reload the page → try again.'
           : 'File System Access API not supported. Use Chrome or Edge.',
       )
       return
