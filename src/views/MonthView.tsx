@@ -113,32 +113,6 @@ export function MonthView() {
         dayStatusMap={dayStatusMap}
         dayStatusReasonMap={dayStatusReasonMap}
       />
-      <div className="flex flex-wrap gap-3 text-xs">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded bg-emerald-100 border border-emerald-300" /> Complete
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded bg-yellow-100 border border-yellow-300" /> Needs review
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded bg-blue-100 border border-blue-300" /> Untracked
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="relative inline-block h-3 w-3 rounded bg-white border border-gray-300">
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700" />
-          </span>{' '}
-          Today
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded bg-purple-100 border border-purple-300" /> Leave
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded bg-gray-100 border border-gray-300" /> Non-working
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-3 w-3 rounded bg-white border border-gray-300" /> Future
-        </span>
-      </div>
       <OvertimeBar
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
