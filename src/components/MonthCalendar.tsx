@@ -17,9 +17,20 @@ const STATUS_COLORS: Record<DayStatus, string> = {
   future: 'bg-white text-gray-600 hover:bg-gray-50',
   today: 'bg-white text-gray-900 hover:bg-gray-50',
   tracked: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
-  confirmed: 'bg-emerald-200 text-emerald-900 hover:bg-emerald-300',
+  confirmed: 'bg-emerald-600 text-white hover:bg-emerald-700',
   'needs-review': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
   untracked: 'bg-blue-100 text-blue-700',
+}
+
+const STATUS_NAME: Record<DayStatus, string> = {
+  'non-working': 'Non-working',
+  leave: 'Leave',
+  future: 'Future',
+  today: 'Today',
+  tracked: 'Tracked',
+  confirmed: 'Confirmed',
+  'needs-review': 'Needs review',
+  untracked: 'Untracked',
 }
 
 const MONTH_NAMES = [
@@ -114,6 +125,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
           const iso = toLocalIso(date)
           const status = dayStatusMap[iso] ?? 'future'
           const isToday = status === 'today'
+          const reason = dayStatusReasonMap[iso]
           const label = date.toLocaleDateString('en-GB', {
             weekday: 'long',
             day: 'numeric',
@@ -121,22 +133,30 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
             year: 'numeric',
           })
           return (
-            <button
-              key={date.getDate()}
-              onClick={() => onSelectDate(iso)}
-              aria-label={label}
-              title={dayStatusReasonMap[iso]}
-              aria-current={isToday ? 'date' : undefined}
-              className={`relative rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
-            >
-              {date.getDate()}
-              {isToday && (
-                <span
-                  className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700"
-                  aria-hidden="true"
-                />
+            <div key={date.getDate()} className="group relative">
+              <button
+                onClick={() => onSelectDate(iso)}
+                aria-label={label}
+                aria-current={isToday ? 'date' : undefined}
+                className={`relative w-full rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
+              >
+                {date.getDate()}
+                {isToday && (
+                  <span
+                    className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+              {reason && (
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden w-max max-w-52 -translate-x-1/2 group-hover:block">
+                  <div className="rounded bg-gray-800 px-2.5 py-2 text-xs text-white shadow-lg">
+                    <p className="font-semibold">{STATUS_NAME[status]}</p>
+                    <p className="mt-0.5 text-gray-300">{reason}</p>
+                  </div>
+                </div>
               )}
-            </button>
+            </div>
           )
         })}
       </div>
