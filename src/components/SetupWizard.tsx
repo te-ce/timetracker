@@ -36,11 +36,9 @@ export function SetupWizard({ onSkip }: Props) {
           'File System Access API requires HTTPS or localhost. The app must be served over a secure connection.',
         )
       } else if (isBrave) {
-        const apiType = typeof (window as Record<string, unknown>).showDirectoryPicker
         setError(
-          `Brave is blocking the File System Access API (typeof=${apiType}). ` +
-            'Type in address bar: brave://flags/#file-system-access-api (enable it) or ' +
-            'brave://settings/content/filesystemFileWrite (allow this site).',
+          'Brave has the File System Access API disabled. ' +
+            'Type brave://flags/#file-system-access-api in the address bar and enable it, then reload.',
         )
       } else {
         setError('File System Access API not supported. Use Chrome or Edge.')
