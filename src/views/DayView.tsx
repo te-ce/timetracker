@@ -20,6 +20,7 @@ import { buildMonthSummaries } from '../domain/daySummary'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
 import { getDayStatus, getStatusReason, type DayStatus } from '../domain/dayStatus'
+import { STATUS_BADGE, STATUS_LABEL } from '../domain/statusColors'
 import { classifyDay } from '../domain/dayType'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 
@@ -190,16 +191,6 @@ export function DayView() {
     today: todayIso,
   })
 
-  const STATUS_BADGE: Record<Exclude<DayStatus, 'today'>, { bg: string; text: string; label: string }> = {
-    tracked: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Tracked' },
-    confirmed: { bg: 'bg-emerald-200', text: 'text-emerald-800', label: 'Confirmed' },
-    'needs-review': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Needs review' },
-    untracked: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Untracked' },
-    future: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Future' },
-    'non-working': { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Non-working' },
-    leave: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Leave' },
-  }
-
   const statusReason = getStatusReason({
     dayType: selectedDayType,
     workedHours,
@@ -298,7 +289,7 @@ export function DayView() {
               <span
                 className={`cursor-help rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
               >
-                {STATUS_BADGE[badgeStatus].label}
+                {STATUS_LABEL[badgeStatus]}
               </span>
               <div className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 hidden -translate-x-1/2 group-hover:block z-10">
                 <div className="rounded bg-gray-800 px-2 py-1 text-xs text-white shadow-lg whitespace-nowrap">

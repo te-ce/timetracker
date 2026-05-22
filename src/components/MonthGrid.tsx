@@ -18,30 +18,10 @@ import { WorkedHoursCell } from './WorkedHoursCell'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 import { toLocalIso } from '../domain/dateUtils'
 import type { MonthGridRow } from '../domain/monthGrid'
+import { STATUS_DOT, STATUS_ROW_BG, STATUS_LABEL } from '../domain/statusColors'
+import type { DisplayStatus } from '../domain/statusColors'
 import { StatusLegend } from './StatusLegend'
 
-type DisplayStatus = Exclude<DayStatus, 'today'>
-
-const STATUS_DOT: Record<DisplayStatus, string> = {
-  tracked: 'bg-emerald-400',
-  confirmed: 'bg-emerald-600',
-  'needs-review': 'bg-yellow-400',
-  untracked: 'bg-blue-300',
-  future: 'bg-gray-300',
-  'non-working': 'bg-gray-300',
-  leave: 'bg-purple-400',
-}
-
-// [even-row bg, odd-row bg] per display status
-const STATUS_ROW_BG: Record<DisplayStatus, [string, string]> = {
-  tracked: ['bg-emerald-50', 'bg-emerald-100/70'],
-  confirmed: ['bg-emerald-100', 'bg-emerald-200/70'],
-  'needs-review': ['bg-yellow-50', 'bg-yellow-100/70'],
-  untracked: ['bg-blue-50/60', 'bg-blue-100/50'],
-  future: ['bg-white', 'bg-gray-50/70'],
-  'non-working': ['bg-white', 'bg-gray-50/70'],
-  leave: ['bg-purple-50/60', 'bg-purple-100/50'],
-}
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
 
@@ -79,16 +59,6 @@ interface Props {
 interface SprintGroup {
   label: string
   rows: MonthGridRow[]
-}
-
-const STATUS_LABEL: Record<DisplayStatus, string> = {
-  confirmed: 'Confirmed',
-  tracked: 'Tracked',
-  'needs-review': 'Needs review',
-  untracked: 'Untracked',
-  future: 'Future',
-  'non-working': 'Non-working',
-  leave: 'Leave',
 }
 
 interface DotPopoverState {

@@ -1,5 +1,6 @@
 import { toLocalIso } from '../domain/dateUtils'
 import type { DayStatus } from '../domain/dayStatus'
+import { STATUS_CELL, STATUS_LABEL } from '../domain/statusColors'
 import { StatusLegend } from './StatusLegend'
 
 interface Props {
@@ -11,26 +12,9 @@ interface Props {
   dayStatusReasonMap?: Record<string, string>
 }
 
-const STATUS_COLORS: Record<DayStatus, string> = {
-  'non-working': 'bg-gray-100 text-gray-400',
-  leave: 'bg-purple-100 text-purple-700',
-  future: 'bg-white text-gray-600 hover:bg-gray-50',
-  today: 'bg-white text-gray-900 hover:bg-gray-50',
-  tracked: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
-  confirmed: 'bg-emerald-600 text-white hover:bg-emerald-700',
-  'needs-review': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-  untracked: 'bg-blue-100 text-blue-700',
-}
-
 const STATUS_NAME: Record<DayStatus, string> = {
-  'non-working': 'Non-working',
-  leave: 'Leave',
-  future: 'Future',
+  ...STATUS_LABEL,
   today: 'Today',
-  tracked: 'Tracked',
-  confirmed: 'Confirmed',
-  'needs-review': 'Needs review',
-  untracked: 'Untracked',
 }
 
 const MONTH_NAMES = [
@@ -139,7 +123,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
                 onClick={() => onSelectDate(iso)}
                 aria-label={label}
                 aria-current={isToday ? 'date' : undefined}
-                className={`relative w-full rounded-lg px-2 py-2 text-center text-sm ${STATUS_COLORS[status]} border transition-colors`}
+                className={`relative w-full rounded-lg px-2 py-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors`}
               >
                 {date.getDate()}
                 {isToday && (
