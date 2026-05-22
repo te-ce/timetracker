@@ -212,7 +212,7 @@ export function DayView() {
   // For today, resolve the actual work status instead of showing "Today"
   const badgeStatus: Exclude<DayStatus, 'today'> | null = (() => {
     if (dayStatus !== 'today') return dayStatus
-    if (!workedHours && !manualTotal) return null
+    if (!workedHours && !manualTotal) return 'untracked'
     if (!workedHours) return 'needs-review'
     if (isEntriesBalanced || hasAutoCategory) return 'complete'
     return 'needs-review'
