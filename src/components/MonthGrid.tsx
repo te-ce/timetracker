@@ -18,6 +18,7 @@ import { WorkedHoursCell } from './WorkedHoursCell'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 import { toLocalIso } from '../domain/dateUtils'
 import type { MonthGridRow } from '../domain/monthGrid'
+import { StatusLegend } from './StatusLegend'
 
 type DisplayStatus = Exclude<DayStatus, 'today'>
 
@@ -43,15 +44,6 @@ const STATUS_ROW_BG: Record<DisplayStatus, [string, string]> = {
 }
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
-
-const STATUS_LEGEND: Array<{ color: string; label: string }> = [
-  { color: 'bg-emerald-600', label: 'Confirmed' },
-  { color: 'bg-emerald-400', label: 'Tracked (balanced)' },
-  { color: 'bg-yellow-400', label: 'Needs review' },
-  { color: 'bg-blue-300', label: 'Untracked' },
-  { color: 'bg-purple-400', label: 'Vacation / sick / absence' },
-  { color: 'bg-gray-300', label: 'Future / non-working' },
-]
 
 const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'WorkDay', label: 'Work Day' },
@@ -89,11 +81,22 @@ interface SprintGroup {
   rows: MonthGridRow[]
 }
 
+const STATUS_LABEL: Record<DisplayStatus, string> = {
+  confirmed: 'Confirmed',
+  tracked: 'Tracked',
+  'needs-review': 'Needs review',
+  untracked: 'Untracked',
+  future: 'Future',
+  'non-working': 'Non-working',
+  leave: 'Leave',
+}
+
 interface DotPopoverState {
   date: string
   currentDayType: string
   top: number
   left: number
+  displayStatus: DisplayStatus
   reason: string
 }
 
@@ -376,6 +379,7 @@ export function MonthGrid({
       currentDayType,
       top: rect.bottom + 6,
       left: rect.left,
+      displayStatus: getDisplayStatus(row),
       reason,
     })
   }
@@ -732,14 +736,7 @@ export function MonthGrid({
       </div>
 
       {/* Status legend */}
-      <div className="flex flex-wrap gap-3 px-1 text-xs text-gray-500">
-        {STATUS_LEGEND.map((item) => (
-          <span key={item.label} className="flex items-center gap-1.5">
-            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${item.color}`} />
-            {item.label}
-          </span>
-        ))}
-      </div>
+      <StatusLegend className="px-1" />
 
       {/* Status dot popover — fixed, outside overflow container */}
       {dotPopover && (
@@ -748,9 +745,12 @@ export function MonthGrid({
           style={{ top: dotPopover.top, left: dotPopover.left }}
           className="fixed z-[300] w-52 rounded-lg border bg-white p-3 shadow-lg"
         >
-          {/* Status reason */}
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Why this status</p>
-          <p className="mb-3 text-xs text-gray-700">{dotPopover.reason}</p>
+          {/* Status name + reason */}
+          <div className="mb-3 flex items-center gap-2">
+            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[dotPopover.displayStatus]}`} aria-hidden="true" />
+            <span className="text-sm font-semibold text-gray-800">{STATUS_LABEL[dotPopover.displayStatus]}</span>
+          </div>
+          <p className="mb-3 text-xs text-gray-600">{dotPopover.reason}</p>
 
           {/* Day type selector */}
           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Day type</p>

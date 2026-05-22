@@ -1,5 +1,6 @@
 import { toLocalIso } from '../domain/dateUtils'
 import type { DayStatus } from '../domain/dayStatus'
+import { StatusLegend } from './StatusLegend'
 
 interface Props {
   year: number
@@ -20,15 +21,6 @@ const STATUS_COLORS: Record<DayStatus, string> = {
   'needs-review': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
   untracked: 'bg-blue-100 text-blue-700',
 }
-
-const LEGEND: Array<{ bg: string; label: string }> = [
-  { bg: 'bg-emerald-200', label: 'Confirmed' },
-  { bg: 'bg-emerald-100', label: 'Tracked' },
-  { bg: 'bg-yellow-100', label: 'Needs review' },
-  { bg: 'bg-blue-100', label: 'Untracked' },
-  { bg: 'bg-purple-100', label: 'Leave' },
-  { bg: 'bg-gray-100', label: 'Non-working / future' },
-]
 
 const MONTH_NAMES = [
   'January',
@@ -149,14 +141,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
         })}
       </div>
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1 pt-1 text-xs text-gray-500">
-        {LEGEND.map((item) => (
-          <div key={item.label} className="flex items-center gap-1.5">
-            <span className={`inline-block h-2.5 w-2.5 rounded-sm border border-gray-200 ${item.bg}`} aria-hidden="true" />
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </div>
+      <StatusLegend />
     </div>
   )
 }
