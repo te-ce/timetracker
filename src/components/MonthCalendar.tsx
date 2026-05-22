@@ -15,7 +15,8 @@ const STATUS_COLORS: Record<DayStatus, string> = {
   leave: 'bg-purple-100 text-purple-700',
   future: 'bg-white text-gray-600 hover:bg-gray-50',
   today: 'bg-white text-gray-900 hover:bg-gray-50',
-  complete: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
+  tracked: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200',
+  confirmed: 'bg-emerald-200 text-emerald-900 hover:bg-emerald-300',
   'needs-review': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
   untracked: 'bg-blue-100 text-blue-700',
 }

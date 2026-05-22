@@ -41,7 +41,7 @@ describe('MonthCalendar', () => {
       '2026-05-17': 'non-working', // Saturday
       '2026-05-18': 'non-working', // Sunday
       '2026-05-19': 'today', // Tuesday
-      '2026-05-15': 'complete', // Friday (work day with hours)
+      '2026-05-15': 'tracked', // Friday (work day with hours)
       '2026-05-16': 'untracked', // Past Friday without hours
       '2026-05-20': 'future', // Wednesday
     }
@@ -60,7 +60,7 @@ describe('MonthCalendar', () => {
     // Tuesday (today) gets white bg, no ring
     expect(day19.className).toContain('bg-white')
     expect(day19.className).not.toContain('ring-2')
-    // Complete gets emerald
+    // Tracked gets emerald
     expect(day15.className).toContain('bg-emerald-100')
     // Untracked gets blue
     expect(day16.className).toContain('bg-blue-100')

@@ -22,7 +22,8 @@ import type { MonthGridRow } from '../domain/monthGrid'
 type DisplayStatus = Exclude<DayStatus, 'today'>
 
 const STATUS_DOT: Record<DisplayStatus, string> = {
-  complete: 'bg-emerald-400',
+  tracked: 'bg-emerald-400',
+  confirmed: 'bg-emerald-600',
   'needs-review': 'bg-yellow-400',
   untracked: 'bg-blue-300',
   future: 'bg-gray-300',
@@ -32,7 +33,8 @@ const STATUS_DOT: Record<DisplayStatus, string> = {
 
 // [even-row bg, odd-row bg] per display status
 const STATUS_ROW_BG: Record<DisplayStatus, [string, string]> = {
-  complete: ['bg-emerald-50', 'bg-emerald-100/70'],
+  tracked: ['bg-emerald-50', 'bg-emerald-100/70'],
+  confirmed: ['bg-emerald-100', 'bg-emerald-200/70'],
   'needs-review': ['bg-yellow-50', 'bg-yellow-100/70'],
   untracked: ['bg-blue-50/60', 'bg-blue-100/50'],
   future: ['bg-white', 'bg-gray-50/70'],
@@ -43,9 +45,10 @@ const STATUS_ROW_BG: Record<DisplayStatus, [string, string]> = {
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
 
 const STATUS_LEGEND: Array<{ color: string; label: string }> = [
-  { color: 'bg-emerald-400', label: 'Confirmed / balanced' },
-  { color: 'bg-yellow-400', label: 'Logged, needs review' },
-  { color: 'bg-blue-300', label: 'No hours logged' },
+  { color: 'bg-emerald-600', label: 'Confirmed' },
+  { color: 'bg-emerald-400', label: 'Tracked (balanced)' },
+  { color: 'bg-yellow-400', label: 'Needs review' },
+  { color: 'bg-blue-300', label: 'Untracked' },
   { color: 'bg-purple-400', label: 'Vacation / sick / absence' },
   { color: 'bg-gray-300', label: 'Future / non-working' },
 ]

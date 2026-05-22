@@ -65,7 +65,7 @@ describe('getDayStatus', () => {
     ).toBe('leave')
   })
 
-  it('returns "complete" for past work days with balanced entries', () => {
+  it('returns "tracked" for past work days with balanced entries', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
@@ -76,7 +76,7 @@ describe('getDayStatus', () => {
         isoDate: '2026-05-15',
         today,
       }),
-    ).toBe('complete')
+    ).toBe('tracked')
   })
 
   it('returns "needs-review" for past work days with hours but unbalanced entries', () => {
@@ -171,7 +171,7 @@ describe('getDayStatus', () => {
     ).toBe('future')
   })
 
-  it('returns "complete" for future days that already have hours', () => {
+  it('returns "tracked" for future days that already have hours', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
@@ -182,10 +182,10 @@ describe('getDayStatus', () => {
         isoDate: '2026-05-20',
         today,
       }),
-    ).toBe('complete')
+    ).toBe('tracked')
   })
 
-  it('returns "complete" when auto category absorbs remaining', () => {
+  it('returns "needs-review" when auto category covers remaining but day is not confirmed', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
@@ -196,10 +196,10 @@ describe('getDayStatus', () => {
         isoDate: '2026-05-15',
         today,
       }),
-    ).toBe('complete')
+    ).toBe('needs-review')
   })
 
-  it('returns "complete" when day is confirmed even if unbalanced', () => {
+  it('returns "confirmed" when day is explicitly confirmed', () => {
     expect(
       getDayStatus({
         dayType: 'WorkDay',
@@ -211,6 +211,21 @@ describe('getDayStatus', () => {
         isoDate: '2026-05-15',
         today,
       }),
-    ).toBe('complete')
+    ).toBe('confirmed')
+  })
+
+  it('returns "confirmed" even when entries are balanced, if day is confirmed', () => {
+    expect(
+      getDayStatus({
+        dayType: 'WorkDay',
+        hasWorkedHours: true,
+        hasManualEntries: true,
+        isEntriesBalanced: true,
+        hasAutoCategory: false,
+        isConfirmed: true,
+        isoDate: '2026-05-15',
+        today,
+      }),
+    ).toBe('confirmed')
   })
 })

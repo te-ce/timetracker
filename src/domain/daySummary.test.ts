@@ -54,7 +54,7 @@ describe('buildMonthSummaries', () => {
     })
 
     expect(result.days[0].isEntriesBalanced).toBe(true)
-    expect(result.days[0].dayStatus).toBe('complete')
+    expect(result.days[0].dayStatus).toBe('tracked')
   })
 
   it('marks needs-review when entries do not match worked hours', () => {
@@ -69,7 +69,7 @@ describe('buildMonthSummaries', () => {
     expect(result.days[0].dayStatus).toBe('needs-review')
   })
 
-  it('marks complete when auto category absorbs remaining hours', () => {
+  it('marks needs-review when auto category covers remaining but day is not confirmed', () => {
     const result = buildMonthSummaries(2026, 5, {
       windows: [{ id: 'w1', date: '2026-05-01', start: '09:00', end: '17:00' }],
       entries: [{ id: '1', date: '2026-05-01', category: 'QA', hours: 3 }],
@@ -78,7 +78,7 @@ describe('buildMonthSummaries', () => {
       globalAutoCategory: 'Internal',
     })
 
-    expect(result.days[0].dayStatus).toBe('complete')
+    expect(result.days[0].dayStatus).toBe('needs-review')
   })
 
   it('marks needs-review when entries exceed worked hours even with auto category', () => {

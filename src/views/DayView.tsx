@@ -191,7 +191,8 @@ export function DayView() {
   })
 
   const STATUS_BADGE: Record<Exclude<DayStatus, 'today'>, { bg: string; text: string; label: string }> = {
-    complete: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Complete' },
+    tracked: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Tracked' },
+    confirmed: { bg: 'bg-emerald-200', text: 'text-emerald-800', label: 'Confirmed' },
     'needs-review': { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Needs review' },
     untracked: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Untracked' },
     future: { bg: 'bg-gray-100', text: 'text-gray-500', label: 'Future' },
@@ -213,8 +214,9 @@ export function DayView() {
   const badgeStatus: Exclude<DayStatus, 'today'> | null = (() => {
     if (dayStatus !== 'today') return dayStatus
     if (!workedHours && !manualTotal) return 'untracked'
+    if (isConfirmed) return 'confirmed'
     if (!workedHours) return 'needs-review'
-    if (isEntriesBalanced || hasAutoCategory) return 'complete'
+    if (isEntriesBalanced) return 'tracked'
     return 'needs-review'
   })()
 

@@ -1,6 +1,6 @@
 import type { DayType } from './dayType'
 
-export type DayStatus = 'non-working' | 'leave' | 'future' | 'today' | 'complete' | 'needs-review' | 'untracked'
+export type DayStatus = 'non-working' | 'leave' | 'future' | 'today' | 'tracked' | 'confirmed' | 'needs-review' | 'untracked'
 
 export interface StatusReasonInput {
   dayType: DayType
@@ -83,7 +83,6 @@ export function getDayStatus({
   hasWorkedHours,
   hasManualEntries,
   isEntriesBalanced,
-  hasAutoCategory,
   isConfirmed = false,
   isoDate,
   today,
@@ -95,7 +94,7 @@ export function getDayStatus({
   if (dayType !== 'WorkDay') return 'non-working'
 
   // Future days
-  if (isoDate > today) return hasWorkedHours ? 'complete' : 'future'
+  if (isoDate > today) return hasWorkedHours ? 'tracked' : 'future'
 
   // Today
   if (isoDate === today) return 'today'
@@ -103,8 +102,7 @@ export function getDayStatus({
   // Past work days
   if (!hasWorkedHours && !hasManualEntries) return 'untracked'
 
-  if (isConfirmed) return 'complete'
-  const effectivelyBalanced = isEntriesBalanced || hasAutoCategory
-  if (effectivelyBalanced) return 'complete'
+  if (isConfirmed) return 'confirmed'
+  if (isEntriesBalanced) return 'tracked'
   return 'needs-review'
 }
