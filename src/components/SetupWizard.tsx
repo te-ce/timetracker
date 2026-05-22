@@ -32,7 +32,7 @@ export function SetupWizard({ onSkip }: Props) {
     if (!picker) {
       setError(
         isBrave
-          ? 'Brave Shields are blocking this feature. Click the lion icon → set Fingerprinting to Standard → try again.'
+          ? 'Brave Shields are blocking this feature. Click the lion icon → turn off Fingerprinting for this site → try again.'
           : 'File System Access API not supported. Use Chrome or Edge.',
       )
       return
@@ -49,7 +49,7 @@ export function SetupWizard({ onSkip }: Props) {
       const msg = e instanceof Error ? e.message : 'Failed to open folder picker'
       setError(
         isBrave
-          ? `${msg} — if Brave Shields are active, set Fingerprinting to Standard and try again.`
+          ? `${msg} — if Brave Shields are active, click the lion icon and turn off Fingerprinting for this site.`
           : msg,
       )
     } finally {
