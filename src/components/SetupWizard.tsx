@@ -28,8 +28,13 @@ export function SetupWizard({ onSkip }: Props) {
   async function handleLocalFolder() {
     type PickerFn = (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>
     const picker = (window as Window & { showDirectoryPicker?: PickerFn }).showDirectoryPicker
+    const isBrave = 'brave' in navigator
     if (!picker) {
-      setError('File System Access API not supported. Use Chrome or Edge.')
+      setError(
+        isBrave
+          ? 'Brave Shields are blocking this feature. Click the lion icon → set Fingerprinting to Standard → try again.'
+          : 'File System Access API not supported. Use Chrome or Edge.',
+      )
       return
     }
     setPickingFolder(true)
@@ -41,7 +46,12 @@ export function SetupWizard({ onSkip }: Props) {
       window.location.reload()
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return
-      setError(e instanceof Error ? e.message : 'Failed to open folder picker')
+      const msg = e instanceof Error ? e.message : 'Failed to open folder picker'
+      setError(
+        isBrave
+          ? `${msg} — if Brave Shields are active, set Fingerprinting to Standard and try again.`
+          : msg,
+      )
     } finally {
       setPickingFolder(false)
     }
