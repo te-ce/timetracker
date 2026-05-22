@@ -28,7 +28,11 @@ export function SetupWizard({ onSkip }: Props) {
   async function handleLocalFolder() {
     type PickerFn = (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>
     const picker = (window as Window & { showDirectoryPicker?: PickerFn }).showDirectoryPicker
+    const ua = navigator.userAgent
     const isBrave = 'brave' in navigator
+    const isOpera = ua.includes('OPR/') || ua.includes('Opera/')
+    const isFirefox = ua.includes('Firefox/')
+    const isSafari = ua.includes('Safari/') && !ua.includes('Chrome/') && !ua.includes('Chromium/')
     const isSecure = window.isSecureContext
     if (!picker) {
       if (!isSecure) {
@@ -40,8 +44,23 @@ export function SetupWizard({ onSkip }: Props) {
           'Brave has the File System Access API disabled. ' +
             'Type brave://flags/#file-system-access-api in the address bar and enable it, then reload.',
         )
+      } else if (isFirefox) {
+        setError(
+          'Firefox does not support the File System Access API. ' +
+            'Use Chrome, Edge, or Opera to use local folder sync.',
+        )
+      } else if (isSafari) {
+        setError(
+          'This version of Safari does not support folder picking. ' +
+            'Update to Safari 17+ or use Chrome, Edge, or Opera for full compatibility.',
+        )
+      } else if (isOpera) {
+        setError(
+          'Opera may have the File System Access API disabled. ' +
+            'Try opera://flags/#file-system-access-api or use Chrome/Edge instead.',
+        )
       } else {
-        setError('File System Access API not supported. Use Chrome or Edge.')
+        setError('File System Access API not supported. Use Chrome, Edge, or Opera.')
       }
       return
     }
@@ -57,11 +76,10 @@ export function SetupWizard({ onSkip }: Props) {
       const name = e instanceof DOMException ? e.name : ''
       const msg = e instanceof Error ? e.message : 'Failed to open folder picker'
       const detail = name ? `[${name}] ${msg}` : msg
-      setError(
-        isBrave
-          ? `${detail} — try disabling Brave Shields entirely for this site (lion icon → Shields down).`
-          : detail,
-      )
+      let hint = ''
+      if (isBrave) hint = ' — try disabling Brave Shields entirely for this site (lion icon → Shields down).'
+      else if (isSafari) hint = ' — Safari has limited folder access support; try Chrome or Edge if this persists.'
+      setError(`${detail}${hint}`)
     } finally {
       setPickingFolder(false)
     }
@@ -137,6 +155,12 @@ export function SetupWizard({ onSkip }: Props) {
           >
             {pickingFolder ? 'Picking folder…' : 'Use Local Folder'}
           </button>
+          <p className="text-xs text-gray-400 text-center">
+            Supported in Chrome, Edge &amp; Opera.{' '}
+            Brave needs{' '}
+            <code className="font-mono">brave://flags/#file-system-access-api</code> enabled.{' '}
+            Safari 17+ has partial support. Firefox is not supported.
+          </p>
           <button
             onClick={handleSkip}
             className="w-full text-gray-500 hover:text-gray-700 text-sm py-2 rounded-lg transition-colors"
