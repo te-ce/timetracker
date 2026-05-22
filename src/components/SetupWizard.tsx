@@ -29,12 +29,19 @@ export function SetupWizard({ onSkip }: Props) {
     type PickerFn = (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>
     const picker = (window as Window & { showDirectoryPicker?: PickerFn }).showDirectoryPicker
     const isBrave = 'brave' in navigator
+    const isSecure = window.isSecureContext
     if (!picker) {
-      setError(
-        isBrave
-          ? 'Brave Shields are blocking this feature. Click the lion icon → turn off Fingerprinting for this site → reload the page → try again.'
-          : 'File System Access API not supported. Use Chrome or Edge.',
-      )
+      if (!isSecure) {
+        setError(
+          'File System Access API requires HTTPS or localhost. The app must be served over a secure connection.',
+        )
+      } else if (isBrave) {
+        setError(
+          'Brave is blocking the File System Access API. Try: brave://settings/content/filesystemFileWrite → allow this site. Or click the lion icon → Shields Down → reload.',
+        )
+      } else {
+        setError('File System Access API not supported. Use Chrome or Edge.')
+      }
       return
     }
     setPickingFolder(true)
