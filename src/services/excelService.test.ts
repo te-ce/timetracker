@@ -37,7 +37,7 @@ describe('listSheets', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ value: [{ name: 'Sprint 1' }, { name: 'Sprint 2' }] }),
+        json: () => Promise.resolve({ value: [{ name: 'Sprint 1' }, { name: 'Sprint 2' }] }),
       }),
     )
 
@@ -67,7 +67,7 @@ describe('listRows', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({
+        json: () => Promise.resolve({
           values: [
             ['TASK-001', 0, 'On Leave'],
             ['TASK-002', 0, 'Training'],
@@ -111,7 +111,7 @@ describe('writeSprintData', () => {
         // Both GET calls return the same used-range response
         return Promise.resolve({
           ok: true,
-          json: async () => ({
+          json: () => Promise.resolve({
             values: [
               ['TASK-001', 0, 'On Leave'],
               ['TASK-002', 0, 'Training'],
@@ -142,7 +142,7 @@ describe('writeSprintData', () => {
         }
         return Promise.resolve({
           ok: true,
-          json: async () => ({
+          json: () => Promise.resolve({
             values: [['TASK-001', 0, 'On Leave']],
             address: 'Sprint 1!A1:C1',
           }),

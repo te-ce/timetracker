@@ -35,12 +35,13 @@ void enableMocking()
 
 const needsSetup = !readBootstrapConfig() && !isSetupSkipped()
 
-/** Mounts useMsalSync — only rendered inside <MsalProvider> */
+// eslint-disable-next-line react-refresh/only-export-components
 function MsalSync() {
   useMsalSync()
   return null
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 function Root() {
   const [showSetup, setShowSetup] = useState(needsSetup)
 

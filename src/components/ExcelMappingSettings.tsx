@@ -35,7 +35,7 @@ export function ExcelMappingSettings({ repository }: Props) {
       const token = await getAccessToken()
       const rows = await listRows(sharepointUrl, targetSheet, token)
       setExcelRows(rows)
-      setLocalMapping(config?.categoryMapping ?? {})
+      setLocalMapping(config.categoryMapping ?? {})
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load rows')
     } finally {
@@ -89,7 +89,7 @@ export function ExcelMappingSettings({ repository }: Props) {
       return m
     })
     // Immediately save with the new custom category
-    const current = config.categoryMapping ?? {}
+    const current = config?.categoryMapping ?? {}
     const newMapping = { ...current, [name]: row.taskId }
     saveMutation.mutate({ mapping: newMapping, newCustomCategories: [name] })
   }

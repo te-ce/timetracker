@@ -152,7 +152,7 @@ describe('MonthGrid', () => {
       const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(header.querySelector('span')!)
+      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
       expect(screen.getByDisplayValue('_SUPPORT')).toBeInTheDocument()
     })
 
@@ -160,7 +160,7 @@ describe('MonthGrid', () => {
       const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(header.querySelector('span')!)
+      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
       const input = screen.getByDisplayValue('_SUPPORT')
       await userEvent.clear(input)
       await userEvent.type(input, 'Support{Enter}')
@@ -171,7 +171,7 @@ describe('MonthGrid', () => {
       const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(header.querySelector('span')!)
+      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
       await userEvent.keyboard('{Escape}')
       expect(onRename).not.toHaveBeenCalled()
       expect(screen.queryByDisplayValue('_SUPPORT')).not.toBeInTheDocument()
@@ -181,7 +181,7 @@ describe('MonthGrid', () => {
       const onRename = vi.fn() as (oldName: string, newName: string) => void
       setupWithRename(onRename)
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(header.querySelector('span')!)
+      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
       const input = screen.getByDisplayValue('_SUPPORT')
       await userEvent.click(input)
       await userEvent.tab() // blur without changing

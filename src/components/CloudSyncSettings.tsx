@@ -26,7 +26,7 @@ function MsalSyncPanel() {
 
   return (
     <>
-      {isAuthenticated && account ? (
+      {isAuthenticated ? (
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2">
             <span className="text-sm">☁️</span>

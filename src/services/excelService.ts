@@ -58,7 +58,7 @@ export async function listRows(
     .filter((row) => typeof row[0] === 'string' && row[0].trim() !== '')
     .map((row) => ({
       taskId: String(row[0]).trim(),
-      description: typeof row[2] === 'string' ? row[2].trim() : String(row[2] ?? '').trim(),
+      description: typeof row[2] === 'string' ? row[2].trim() : '',
     }))
 }
 
