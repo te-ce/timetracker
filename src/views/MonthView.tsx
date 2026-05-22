@@ -82,6 +82,12 @@ export function MonthView() {
   const dates = days.map((d) => d.date)
   const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
 
+  const tomorrowIso = (() => {
+    const d = new Date(todayIso)
+    d.setDate(d.getDate() + 1)
+    return toLocalIso(d)
+  })()
+
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayStatusReasonMap: Record<string, string> = {}
   for (const day of days) {
@@ -94,7 +100,7 @@ export function MonthView() {
           hasAutoCategory: day.hasAutoCategory,
           isConfirmed: confirmedDays.has(day.date),
           isoDate: day.date,
-          today: '1970-01-01', // treat as past to resolve real work status
+          today: tomorrowIso, // makes today appear as yesterday → hits past-day logic
         })
       : day.dayStatus
     dayStatusReasonMap[day.date] = getStatusReason({
