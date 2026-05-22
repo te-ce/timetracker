@@ -60,6 +60,7 @@ function getDaysInMonth(year: number, month: number): Date[] {
 export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {}, dayStatusReasonMap = {} }: Props) {
   const days = getDaysInMonth(year, month)
   const now = new Date()
+  const todayIso = toLocalIso(now)
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
 
   function handlePrev() {
@@ -124,7 +125,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
         {days.map((date) => {
           const iso = toLocalIso(date)
           const status = dayStatusMap[iso] ?? 'future'
-          const isToday = status === 'today'
+          const isToday = iso === todayIso
           const reason = dayStatusReasonMap[iso]
           const label = date.toLocaleDateString('en-GB', {
             weekday: 'long',
@@ -143,7 +144,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
                 {date.getDate()}
                 {isToday && (
                   <span
-                    className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700"
+                    className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full ${status === 'confirmed' ? 'bg-white' : 'bg-emerald-700'}`}
                     aria-hidden="true"
                   />
                 )}
