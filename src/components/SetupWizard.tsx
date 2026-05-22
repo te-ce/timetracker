@@ -46,11 +46,13 @@ export function SetupWizard({ onSkip }: Props) {
       window.location.reload()
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return
+      const name = e instanceof DOMException ? e.name : ''
       const msg = e instanceof Error ? e.message : 'Failed to open folder picker'
+      const detail = name ? `[${name}] ${msg}` : msg
       setError(
         isBrave
-          ? `${msg} — if Brave Shields are active, click the lion icon and turn off Fingerprinting for this site.`
-          : msg,
+          ? `${detail} — try disabling Brave Shields entirely for this site (lion icon → Shields down).`
+          : detail,
       )
     } finally {
       setPickingFolder(false)
