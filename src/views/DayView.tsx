@@ -19,7 +19,7 @@ import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
-import { getDayStatus, getStatusReason, type DayStatus } from '../domain/dayStatus'
+import { getDayStatus, getStatusReason, getWorkStatus, type DayStatus } from '../domain/dayStatus'
 import { STATUS_BADGE, STATUS_LABEL } from '../domain/statusColors'
 import { classifyDay } from '../domain/dayType'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
@@ -202,14 +202,16 @@ export function DayView() {
   })
 
   // For today, resolve the actual work status instead of showing "Today"
-  const badgeStatus: Exclude<DayStatus, 'today'> | null = (() => {
-    if (dayStatus !== 'today') return dayStatus
-    if (!workedHours && !manualTotal) return 'untracked'
-    if (isConfirmed) return 'confirmed'
-    if (!workedHours) return 'needs-review'
-    if (isEntriesBalanced) return 'tracked'
-    return 'needs-review'
-  })()
+  const badgeStatus: Exclude<DayStatus, 'today'> | null =
+    dayStatus !== 'today'
+      ? dayStatus
+      : getWorkStatus({
+          dayType: selectedDayType,
+          hasWorkedHours: workedHours > 0,
+          hasManualEntries: manualTotal > 0,
+          isEntriesBalanced,
+          isConfirmed,
+        })
 
   const autoCategoryMutation = useMutation({
     mutationFn: (cat: string | null) => configRepo.save({ ...config!, autoCategory: cat }),

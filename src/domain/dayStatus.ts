@@ -67,6 +67,31 @@ export function getStatusReason({
   return `${prefix}${balance}`
 }
 
+export type WorkStatus = Exclude<DayStatus, 'today' | 'future'>
+
+interface WorkStatusInput {
+  dayType: DayType
+  hasWorkedHours: boolean
+  hasManualEntries: boolean
+  isEntriesBalanced: boolean
+  isConfirmed?: boolean
+}
+
+export function getWorkStatus({
+  dayType,
+  hasWorkedHours,
+  hasManualEntries,
+  isEntriesBalanced,
+  isConfirmed = false,
+}: WorkStatusInput): WorkStatus {
+  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') return 'leave'
+  if (dayType !== 'WorkDay') return 'non-working'
+  if (!hasWorkedHours && !hasManualEntries) return 'untracked'
+  if (isConfirmed) return 'confirmed'
+  if (isEntriesBalanced) return 'tracked'
+  return 'needs-review'
+}
+
 interface DayStatusInput {
   dayType: DayType
   hasWorkedHours: boolean

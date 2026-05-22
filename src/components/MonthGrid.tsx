@@ -11,7 +11,7 @@ import type {
 } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
 import type { DayStatus } from '../domain/dayStatus'
-import { getDayStatus, getStatusReason } from '../domain/dayStatus'
+import { getDayStatus, getStatusReason, getWorkStatus } from '../domain/dayStatus'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
 import { WorkedHoursCell } from './WorkedHoursCell'
@@ -313,16 +313,13 @@ export function MonthGrid({
     const status = getRowStatus(row)
     if (status !== 'today') return status
     const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
-    return getDayStatus({
+    return getWorkStatus({
       dayType: row.dayType,
       hasWorkedHours: row.workedHours > 0,
       hasManualEntries: manualTotal > 0,
       isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
-      hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
       isConfirmed: confirmedDays.has(row.date),
-      isoDate: row.date,
-      today: '1970-01-01', // treat as past day to get real work status
-    }) as DisplayStatus
+    })
   }
 
   function cycleLocation(date: string) {

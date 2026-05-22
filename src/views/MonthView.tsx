@@ -13,7 +13,7 @@ import {
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import type { DayStatus } from '../domain/dayStatus'
-import { getDayStatus, getStatusReason } from '../domain/dayStatus'
+import { getStatusReason, getWorkStatus } from '../domain/dayStatus'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 import { toLocalIso } from '../domain/dateUtils'
 
@@ -82,25 +82,16 @@ export function MonthView() {
   const dates = days.map((d) => d.date)
   const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
 
-  const tomorrowIso = (() => {
-    const d = new Date(todayIso)
-    d.setDate(d.getDate() + 1)
-    return toLocalIso(d)
-  })()
-
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayStatusReasonMap: Record<string, string> = {}
   for (const day of days) {
     dayStatusMap[day.date] = day.date === todayIso
-      ? getDayStatus({
+      ? getWorkStatus({
           dayType: day.dayType,
           hasWorkedHours: day.workedHours > 0,
           hasManualEntries: day.entryTotal > 0,
           isEntriesBalanced: day.isEntriesBalanced,
-          hasAutoCategory: day.hasAutoCategory,
           isConfirmed: confirmedDays.has(day.date),
-          isoDate: day.date,
-          today: tomorrowIso, // makes today appear as yesterday → hits past-day logic
         })
       : day.dayStatus
     dayStatusReasonMap[day.date] = getStatusReason({
