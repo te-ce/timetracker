@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
@@ -34,7 +35,7 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
   const modalRef = useRef<HTMLDivElement>(null)
 
   const { data: windows = [] } = useQuery({
-    queryKey: ['workWindows', date, 'cell'],
+    queryKey: QUERY_KEYS.workWindowsByDateCell(date),
     queryFn: () => repository.findByDate(new Date(date)),
     enabled: open,
   })

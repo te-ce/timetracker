@@ -16,6 +16,7 @@ import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
 import { WorkedHoursCell } from './WorkedHoursCell'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import { toLocalIso } from '../domain/dateUtils'
 import type { MonthGridRow } from '../domain/monthGrid'
 import { STATUS_DOT, STATUS_ROW_BG, STATUS_LABEL } from '../domain/statusColors'
@@ -166,12 +167,12 @@ export function MonthGrid({
   }, [dotPopover])
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['timeEntries', year, month],
+    queryKey: QUERY_KEYS.timeEntriesByMonth(year, month),
     queryFn: () => timeEntryRepository.findByDateRange(from, to),
   })
 
   const { data: windows = [] } = useQuery({
-    queryKey: ['workWindows', year, month],
+    queryKey: QUERY_KEYS.workWindowsByMonth(year, month),
     queryFn: () => workPeriodRepository.findByDateRange(from, to),
   })
 
@@ -193,17 +194,17 @@ export function MonthGrid({
       await dayConfirmationRepository.confirm(row.date)
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
-      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
-      void queryClient.invalidateQueries({ queryKey: ['dayConfirmation'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationsAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationAll })
     },
   })
 
   const gridUnconfirmMutation = useMutation({
     mutationFn: (date: string) => dayConfirmationRepository.unconfirm(date),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['dayConfirmations'] })
-      void queryClient.invalidateQueries({ queryKey: ['dayConfirmation'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationsAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationAll })
     },
   })
 
@@ -216,8 +217,8 @@ export function MonthGrid({
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['dayTypeOverrides'] })
-      void queryClient.invalidateQueries({ queryKey: ['dayTypeOverride'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayTypeOverridesAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayTypeOverrideAll })
     },
   })
 
@@ -230,8 +231,8 @@ export function MonthGrid({
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['workLocations'] })
-      void queryClient.invalidateQueries({ queryKey: ['workLocation'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationsAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationAll })
     },
   })
 

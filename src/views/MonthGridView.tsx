@@ -14,6 +14,7 @@ import { OvertimeBar } from '../components/OvertimeBar'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { DayTypeOverride } from '../repositories/types'
 
 export function MonthGridView() {
@@ -32,7 +33,7 @@ export function MonthGridView() {
       const cfg = await configRepo.get()
       return configRepo.save({ ...cfg, categoryOrder })
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   const autoCategoryMutation = useMutation({
@@ -40,7 +41,7 @@ export function MonthGridView() {
       const cfg = await configRepo.get()
       return configRepo.save({ ...cfg, autoCategory: category })
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   const categoryRenameMutation = useMutation({
@@ -55,13 +56,13 @@ export function MonthGridView() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['config'] })
-      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
     },
   })
 
   const { data: config } = useQuery({
-    queryKey: ['config'],
+    queryKey: QUERY_KEYS.config,
     queryFn: () => configRepo.get(),
   })
 
@@ -69,27 +70,27 @@ export function MonthGridView() {
   const toIso = toLocalIso(to)
 
   const { data: dayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
-    queryKey: ['dayTypeOverrides', year, month],
+    queryKey: QUERY_KEYS.dayTypeOverridesByMonth(year, month),
     queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
   })
 
   const { data: windows = [] } = useQuery({
-    queryKey: ['workWindows', year, month, 'grid'],
+    queryKey: QUERY_KEYS.workWindowsByMonthTagged(year, month, 'grid'),
     queryFn: () => workPeriodRepo.findByDateRange(from, to),
   })
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['timeEntries', year, month, 'grid'],
+    queryKey: QUERY_KEYS.timeEntriesByMonthTagged(year, month, 'grid'),
     queryFn: () => timeEntryRepo.findByDateRange(from, to),
   })
 
   const { data: confirmedDays = new Set<string>() } = useQuery({
-    queryKey: ['dayConfirmations', year, month],
+    queryKey: QUERY_KEYS.dayConfirmationsByMonth(year, month),
     queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
   })
 
   const { data: workLocations = new Map() } = useQuery({
-    queryKey: ['workLocations', year, month],
+    queryKey: QUERY_KEYS.workLocationsByMonth(year, month),
     queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
   })
 

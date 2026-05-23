@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository, WorkLocation } from '../repositories/types'
 
 interface Props {
@@ -9,13 +10,13 @@ export function DefaultLocationSettings({ repository }: Props) {
   const queryClient = useQueryClient()
 
   const { data: config } = useQuery({
-    queryKey: ['config'],
+    queryKey: QUERY_KEYS.config,
     queryFn: () => repository.get(),
   })
 
   const mutation = useMutation({
     mutationFn: (loc: WorkLocation) => repository.save({ ...config!, defaultWorkLocation: loc }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   if (!config) return null

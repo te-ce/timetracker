@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
 
@@ -15,13 +16,13 @@ export function CategoryReorderPopover({ repository }: Props) {
   const queryClient = useQueryClient()
 
   const { data: config } = useQuery({
-    queryKey: ['config'],
+    queryKey: QUERY_KEYS.config,
     queryFn: () => repository.get(),
   })
 
   const saveMutation = useMutation({
     mutationFn: (categoryOrder: string[]) => repository.save({ ...config!, categoryOrder }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   useEffect(() => {

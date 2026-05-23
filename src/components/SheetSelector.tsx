@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository } from '../repositories/types'
 import { listSheets } from '../services/excelService'
 import { useAuthStore } from '../stores/authStore'
@@ -13,7 +14,7 @@ export function SheetSelector({ repository }: Props) {
   const queryClient = useQueryClient()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  const { data: config } = useQuery({ queryKey: ['config'], queryFn: () => repository.get() })
+  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => repository.get() })
 
   const [sheets, setSheets] = useState<string[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -41,7 +42,7 @@ export function SheetSelector({ repository }: Props) {
       const current = await repository.get()
       await repository.save({ ...current, targetSheet: sheet || null })
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   if (!config) return null

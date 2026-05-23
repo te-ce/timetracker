@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository } from '../repositories/types'
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
 
 export function SharePointSettings({ repository }: Props) {
   const queryClient = useQueryClient()
-  const { data: config } = useQuery({ queryKey: ['config'], queryFn: () => repository.get() })
+  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => repository.get() })
   const [draft, setDraft] = useState<string | null>(null)
 
   const currentUrl = config?.sharepointUrl ?? ''
@@ -21,7 +22,7 @@ export function SharePointSettings({ repository }: Props) {
     },
     onSuccess: () => {
       setDraft(null)
-      void queryClient.invalidateQueries({ queryKey: ['config'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
     },
   })
 

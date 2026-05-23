@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository } from '../repositories/types'
 import { listLocalXlsxFiles, listLocalSheets } from '../services/localExcelService'
 
@@ -9,7 +10,7 @@ interface Props {
 
 export function LocalExcelSettings({ repository }: Props) {
   const queryClient = useQueryClient()
-  const { data: config } = useQuery({ queryKey: ['config'], queryFn: () => repository.get() })
+  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => repository.get() })
 
   const [xlsxFiles, setXlsxFiles] = useState<string[]>([])
   const [sheets, setSheets] = useState<string[]>([])
@@ -24,7 +25,7 @@ export function LocalExcelSettings({ repository }: Props) {
       const current = await repository.get()
       await repository.save({ ...current, localExcelFile: filename || null, targetSheet: null })
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   const sheetMutation = useMutation({
@@ -32,7 +33,7 @@ export function LocalExcelSettings({ repository }: Props) {
       const current = await repository.get()
       await repository.save({ ...current, targetSheet: sheet || null })
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   async function handleScanFiles() {

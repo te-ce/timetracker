@@ -1,3 +1,4 @@
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useQuery } from '@tanstack/react-query'
 import type { DayTypeOverride, DayTypeOverrideRepository } from '../repositories/types'
 import { useDayTypeOverrideMutations } from '../hooks/useDayTypeOverrideMutations'
@@ -17,7 +18,7 @@ const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
 
 export function DayTypePicker({ date, repository }: Props) {
   const { data: override } = useQuery({
-    queryKey: ['dayTypeOverride', date],
+    queryKey: QUERY_KEYS.dayTypeOverrideByDate(date),
     queryFn: () => repository.findByDate(date),
   })
 

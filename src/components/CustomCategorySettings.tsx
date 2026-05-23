@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
 
@@ -16,14 +17,14 @@ export function CustomCategorySettings({ repository }: Props) {
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   const { data: config } = useQuery({
-    queryKey: ['config'],
+    queryKey: QUERY_KEYS.config,
     queryFn: () => repository.get(),
   })
 
   const saveMutation = useMutation({
     mutationFn: (updates: { customCategories?: string[]; categoryOrder?: string[] }) =>
       repository.save({ ...config!, ...updates }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   if (!config) return null

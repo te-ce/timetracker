@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
@@ -17,7 +18,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
   const [editEnd, setEditEnd] = useState('')
 
   const { data: windows = [] } = useQuery({
-    queryKey: ['workWindows', date],
+    queryKey: QUERY_KEYS.workWindowsByDate(date),
     queryFn: () => repository.findByDate(new Date(date)),
   })
 

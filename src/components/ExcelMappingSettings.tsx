@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository } from '../repositories/types'
 import type { ExcelRow } from '../services/excelService'
 import { listRows } from '../services/excelService'
@@ -52,7 +53,7 @@ export function ExcelMappingSettings({ repository }: Props) {
   const queryClient = useQueryClient()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  const { data: config } = useQuery({ queryKey: ['config'], queryFn: () => repository.get() })
+  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => repository.get() })
 
   const [excelRows, setExcelRows] = useState<ExcelRow[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -114,7 +115,7 @@ export function ExcelMappingSettings({ repository }: Props) {
     onSuccess: () => {
       setLocalMapping(null)
       setAutoMatched(new Set())
-      void queryClient.invalidateQueries({ queryKey: ['config'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
     },
   })
 

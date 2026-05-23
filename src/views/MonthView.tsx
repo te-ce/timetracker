@@ -16,6 +16,7 @@ import type { DayStatus } from '../domain/dayStatus'
 import { getStatusReason, getWorkStatus } from '../domain/dayStatus'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 import { toLocalIso } from '../domain/dateUtils'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 
 export function MonthView() {
   const navigate = useNavigate()
@@ -36,12 +37,12 @@ export function MonthView() {
   const to = new Date(year, monthIdx + 1, 0)
 
   const { data: config } = useQuery({
-    queryKey: ['config'],
+    queryKey: QUERY_KEYS.config,
     queryFn: () => configRepo.get(),
   })
 
   const { data: windows = [] } = useQuery({
-    queryKey: ['workWindows', year, month, 'month'],
+    queryKey: QUERY_KEYS.workWindowsByMonthTagged(year, month, 'month'),
     queryFn: () => workPeriodRepo.findByDateRange(from, to),
   })
 
@@ -49,22 +50,22 @@ export function MonthView() {
   const toIso = toLocalIso(to)
 
   const { data: dayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
-    queryKey: ['dayTypeOverrides', year, month],
+    queryKey: QUERY_KEYS.dayTypeOverridesByMonth(year, month),
     queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
   })
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['timeEntries', year, month, 'month'],
+    queryKey: QUERY_KEYS.timeEntriesByMonthTagged(year, month, 'month'),
     queryFn: () => timeEntryRepo.findByDateRange(from, to),
   })
 
   const { data: confirmedDays = new Set<string>() } = useQuery({
-    queryKey: ['dayConfirmations', year, month],
+    queryKey: QUERY_KEYS.dayConfirmationsByMonth(year, month),
     queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
   })
 
   const { data: workLocations = new Map<string, WorkLocation>() } = useQuery({
-    queryKey: ['workLocations', year, month],
+    queryKey: QUERY_KEYS.workLocationsByMonth(year, month),
     queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
   })
 

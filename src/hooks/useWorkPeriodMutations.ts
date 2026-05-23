@@ -1,9 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
+import { QUERY_KEYS } from './queryKeys'
 
 export function useWorkPeriodMutations(repository: WorkPeriodRepository) {
   const queryClient = useQueryClient()
-  const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['workWindows'] })
+  const invalidate = () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workWindowsAll })
 
   const save = useMutation({
     mutationFn: (window: WorkPeriod) => repository.save(window),

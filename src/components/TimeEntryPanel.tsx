@@ -9,6 +9,7 @@ import type {
 import { getAllCategories } from '../domain/categories'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 
 interface Props {
   date: string
@@ -54,7 +55,7 @@ export function TimeEntryPanel({
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['timeEntries', date],
+    queryKey: QUERY_KEYS.timeEntriesByDate(date),
     queryFn: () => {
       const d = new Date(date)
       return repository.findByDateRange(d, d)
@@ -62,7 +63,7 @@ export function TimeEntryPanel({
   })
 
   const { data: activeTracking = null } = useQuery({
-    queryKey: ['activeTracking'],
+    queryKey: QUERY_KEYS.activeTracking,
     queryFn: () => timeTrackingRepository.getActive(),
   })
 
@@ -119,9 +120,9 @@ export function TimeEntryPanel({
       await openWorkPeriod(date)
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['activeTracking'] })
-      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
-      void queryClient.invalidateQueries({ queryKey: ['workWindows'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workWindowsAll })
     },
   })
 
@@ -141,9 +142,9 @@ export function TimeEntryPanel({
       if (active) await closeLatestOpenWorkPeriod(active.date)
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['activeTracking'] })
-      void queryClient.invalidateQueries({ queryKey: ['timeEntries'] })
-      void queryClient.invalidateQueries({ queryKey: ['workWindows'] })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workWindowsAll })
     },
   })
 

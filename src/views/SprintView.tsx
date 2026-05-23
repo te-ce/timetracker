@@ -11,6 +11,7 @@ import { writeLocalSprintData } from '../services/localExcelService'
 import { useAuthStore } from '../stores/authStore'
 import { getAccessToken } from '../auth/msalInstance'
 import { isLocalFolderMode } from '../auth/bootstrapConfig'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 
 const localFolder = isLocalFolderMode()
 
@@ -20,7 +21,7 @@ export function SprintView() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const { data: config } = useQuery({
-    queryKey: ['config'],
+    queryKey: QUERY_KEYS.config,
     queryFn: () => configRepo.get(),
   })
 
@@ -36,7 +37,7 @@ export function SprintView() {
   const sprint = getSprintBoundaries(activeIndex, sprintConfig)
 
   const { data: entries = [] } = useQuery({
-    queryKey: ['timeEntries', 'sprint', activeIndex, sprintConfig.startDate, sprintConfig.lengthDays],
+    queryKey: QUERY_KEYS.timeEntriesSprint(activeIndex, sprintConfig.startDate, sprintConfig.lengthDays),
     queryFn: () => timeEntryRepo.findByDateRange(new Date(sprint.start), new Date(sprint.end)),
   })
 
@@ -44,7 +45,7 @@ export function SprintView() {
   const allCategories = getAllCategories(config?.customCategories ?? [], config?.categoryOrder)
 
   const { data: sprintExport } = useQuery({
-    queryKey: ['sprintExport', activeIndex],
+    queryKey: QUERY_KEYS.sprintExportByIndex(activeIndex),
     queryFn: () => sprintExportRepo.findBySprintIndex(activeIndex),
   })
 
@@ -57,7 +58,7 @@ export function SprintView() {
       }),
     onSuccess: () =>
       void queryClient.invalidateQueries({
-        queryKey: ['sprintExport', activeIndex],
+        queryKey: QUERY_KEYS.sprintExportByIndex(activeIndex),
       }),
   })
 
@@ -118,7 +119,7 @@ export function SprintView() {
       <SprintConfigPanel
         repository={configRepo}
         onConfigChanged={() => {
-          void queryClient.invalidateQueries({ queryKey: ['config'] })
+          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
           setSprintIndex(null)
         }}
       />
