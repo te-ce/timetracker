@@ -1,15 +1,35 @@
 import type { DayType } from './dayType'
 
-export type DayStatus = 'non-working' | 'leave' | 'future' | 'today' | 'tracked' | 'confirmed' | 'needs-review' | 'untracked'
+export type DayStatus =
+  | 'non-working'
+  | 'leave'
+  | 'future'
+  | 'today'
+  | 'tracked'
+  | 'confirmed'
+  | 'needs-review'
+  | 'untracked'
 
-export interface StatusReasonInput {
+export type WorkStatus = Exclude<DayStatus, 'today' | 'future'>
+
+export interface ClassifyDayInput {
   dayType: DayType
   workedHours: number
   manualTotal: number
+  isEntriesBalanced: boolean
   hasAutoCategory: boolean
   isConfirmed: boolean
   isoDate: string
   today: string
+}
+
+export interface DayClassification {
+  /** Full status including 'today' and 'future' — for calendar dot logic. */
+  status: DayStatus
+  /** Status with 'today' resolved to the underlying work quality — for badges and grid dots. */
+  displayStatus: Exclude<DayStatus, 'today'>
+  /** Human-readable explanation of the status. */
+  reason: string
 }
 
 function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory: boolean): string {
@@ -31,103 +51,68 @@ function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory
   return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h categorized — ${unaccounted.toFixed(1)} h unaccounted`
 }
 
-export function getStatusReason({
+export function classifyDay({
   dayType,
   workedHours,
   manualTotal,
+  isEntriesBalanced,
   hasAutoCategory,
   isConfirmed,
   isoDate,
   today,
-}: StatusReasonInput): string {
-  if (dayType === 'Vacation') return 'Marked as vacation'
-  if (dayType === 'SickDay') return 'Marked as sick day'
-  if (dayType === 'Absence') return 'Marked as absence'
-  if (dayType === 'PublicHoliday') return 'Public holiday'
-  if (dayType === 'Weekend') return 'Weekend'
+}: ClassifyDayInput): DayClassification {
+  const hasWorkedHours = workedHours > 0
+  const hasManualEntries = manualTotal > 0
 
-  if (isoDate > today) {
-    return workedHours > 0
-      ? `${workedHours.toFixed(1)} h logged ahead of schedule`
-      : 'Future work day — no hours yet'
+  // Leave days
+  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') {
+    const leaveLabel =
+      dayType === 'Vacation'
+        ? 'Marked as vacation'
+        : dayType === 'SickDay'
+          ? 'Marked as sick day'
+          : 'Marked as absence'
+    return { status: 'leave', displayStatus: 'leave', reason: leaveLabel }
   }
 
-  const prefix = isoDate === today ? 'Today — ' : ''
+  // Non-working (Weekend, PublicHoliday)
+  if (dayType !== 'WorkDay') {
+    const label = dayType === 'PublicHoliday' ? 'Public holiday' : 'Weekend'
+    return { status: 'non-working', displayStatus: 'non-working', reason: label }
+  }
 
-  if (workedHours === 0 && manualTotal === 0) {
-    return `${prefix}No hours recorded`
+  // Future days
+  if (isoDate > today) {
+    if (hasWorkedHours) {
+      return {
+        status: 'tracked',
+        displayStatus: 'tracked',
+        reason: `${workedHours.toFixed(1)} h logged ahead of schedule`,
+      }
+    }
+    return { status: 'future', displayStatus: 'untracked', reason: 'Future work day — no hours yet' }
+  }
+
+  const isToday = isoDate === today
+  const prefix = isToday ? 'Today — ' : ''
+
+  if (!hasWorkedHours && !hasManualEntries) {
+    const status: DayStatus = isToday ? 'today' : 'untracked'
+    return { status, displayStatus: 'untracked', reason: `${prefix}No hours recorded` }
   }
 
   const balance = balanceReason(workedHours, manualTotal, hasAutoCategory)
 
   if (isConfirmed) {
-    return `${prefix}Confirmed — ${balance}`
+    const status: DayStatus = isToday ? 'today' : 'confirmed'
+    return { status, displayStatus: 'confirmed', reason: `${prefix}Confirmed — ${balance}` }
   }
 
-  return `${prefix}${balance}`
-}
+  if (isEntriesBalanced) {
+    const status: DayStatus = isToday ? 'today' : 'tracked'
+    return { status, displayStatus: 'tracked', reason: `${prefix}${balance}` }
+  }
 
-export type WorkStatus = Exclude<DayStatus, 'today' | 'future'>
-
-interface WorkStatusInput {
-  dayType: DayType
-  hasWorkedHours: boolean
-  hasManualEntries: boolean
-  isEntriesBalanced: boolean
-  isConfirmed?: boolean
-}
-
-export function getWorkStatus({
-  dayType,
-  hasWorkedHours,
-  hasManualEntries,
-  isEntriesBalanced,
-  isConfirmed = false,
-}: WorkStatusInput): WorkStatus {
-  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') return 'leave'
-  if (dayType !== 'WorkDay') return 'non-working'
-  if (!hasWorkedHours && !hasManualEntries) return 'untracked'
-  if (isConfirmed) return 'confirmed'
-  if (isEntriesBalanced) return 'tracked'
-  return 'needs-review'
-}
-
-interface DayStatusInput {
-  dayType: DayType
-  hasWorkedHours: boolean
-  hasManualEntries: boolean
-  isEntriesBalanced: boolean
-  hasAutoCategory: boolean
-  isConfirmed?: boolean
-  isoDate: string
-  today: string
-}
-
-export function getDayStatus({
-  dayType,
-  hasWorkedHours,
-  hasManualEntries,
-  isEntriesBalanced,
-  isConfirmed = false,
-  isoDate,
-  today,
-}: DayStatusInput): DayStatus {
-  // Leave days (Vacation, SickDay, Absence)
-  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') return 'leave'
-
-  // Non-working (Weekend, PublicHoliday)
-  if (dayType !== 'WorkDay') return 'non-working'
-
-  // Future days
-  if (isoDate > today) return hasWorkedHours ? 'tracked' : 'future'
-
-  // Today
-  if (isoDate === today) return 'today'
-
-  // Past work days
-  if (!hasWorkedHours && !hasManualEntries) return 'untracked'
-
-  if (isConfirmed) return 'confirmed'
-  if (isEntriesBalanced) return 'tracked'
-  return 'needs-review'
+  const status: DayStatus = isToday ? 'today' : 'needs-review'
+  return { status, displayStatus: 'needs-review', reason: `${prefix}${balance}` }
 }

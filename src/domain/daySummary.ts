@@ -2,9 +2,9 @@ import type { DayType } from './dayType'
 import type { DayStatus } from './dayStatus'
 import type { TimeEntry, WorkPeriod } from '../repositories/types'
 import type { DayTypeOverride } from '../repositories/types'
-import { classifyDay } from './dayType'
+import { classifyDay } from './dayStatus'
+import { classifyDay as classifyDayType } from './dayType'
 import { calculateWorkedHours } from './worktime'
-import { getDayStatus } from './dayStatus'
 import { toLocalIso } from './dateUtils'
 
 export interface DaySummary {
@@ -15,6 +15,8 @@ export interface DaySummary {
   isEntriesBalanced: boolean
   hasAutoCategory: boolean
   dayStatus: DayStatus
+  displayStatus: Exclude<DayStatus, 'today'>
+  statusReason: string
 }
 
 export interface MonthSummaryInput {
@@ -46,7 +48,6 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
   } = input
   const daysInMonth = new Date(year, month, 0).getDate()
 
-  // Group by date for efficient lookup
   const windowsByDate = new Map<string, WorkPeriod[]>()
   for (const w of windows) {
     const list = windowsByDate.get(w.date) ?? []
@@ -74,19 +75,20 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     const workedHours = calculateWorkedHours(dayWindows)
     const entryTotal = dayEntries.reduce((sum, e) => sum + e.hours, 0)
     const override = dayTypeOverrides.get(iso)
-    const dayType: DayType = override ?? classifyDay(date)
+    const dayType: DayType = override ?? classifyDayType(date)
 
     if (dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(workedHours)
 
     const autoCategory = autoCategoryOverrides.get(iso) ?? globalAutoCategory
     const hasAutoCategory = !!autoCategory && entryTotal <= workedHours
+    const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01
 
-    const dayStatus = getDayStatus({
+    const { status: dayStatus, displayStatus, reason: statusReason } = classifyDay({
       dayType,
-      hasWorkedHours: workedHours > 0,
-      hasManualEntries: entryTotal > 0,
-      isEntriesBalanced: workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01,
+      workedHours,
+      manualTotal: entryTotal,
+      isEntriesBalanced,
       hasAutoCategory,
       isConfirmed: confirmedDays.has(iso),
       isoDate: iso,
@@ -98,9 +100,11 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
       dayType,
       workedHours,
       entryTotal,
-      isEntriesBalanced: workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01,
+      isEntriesBalanced,
       hasAutoCategory,
       dayStatus,
+      displayStatus,
+      statusReason,
     })
   }
 

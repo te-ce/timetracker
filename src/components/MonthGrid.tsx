@@ -10,8 +10,7 @@ import type {
   WorkLocation,
 } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
-import type { DayStatus } from '../domain/dayStatus'
-import { getDayStatus, getStatusReason, getWorkStatus } from '../domain/dayStatus'
+import { classifyDay } from '../domain/dayStatus'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
 import { WorkedHoursCell } from './WorkedHoursCell'
@@ -295,12 +294,12 @@ export function MonthGrid({
     return val ? String(parseFloat(val.toFixed(2))) : ''
   }
 
-  function getRowStatus(row: MonthGridRow): DayStatus {
+  function classifyRow(row: MonthGridRow) {
     const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
-    return getDayStatus({
+    return classifyDay({
       dayType: row.dayType,
-      hasWorkedHours: row.workedHours > 0,
-      hasManualEntries: manualTotal > 0,
+      workedHours: row.workedHours,
+      manualTotal,
       isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
       hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
       isConfirmed: confirmedDays.has(row.date),
@@ -309,18 +308,8 @@ export function MonthGrid({
     })
   }
 
-  // Returns the work-quality status for the dot, ignoring the 'today' special case
   function getDisplayStatus(row: MonthGridRow): DisplayStatus {
-    const status = getRowStatus(row)
-    if (status !== 'today') return status
-    const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
-    return getWorkStatus({
-      dayType: row.dayType,
-      hasWorkedHours: row.workedHours > 0,
-      hasManualEntries: manualTotal > 0,
-      isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
-      isConfirmed: confirmedDays.has(row.date),
-    })
+    return classifyRow(row).displayStatus
   }
 
   function cycleLocation(date: string) {
@@ -332,22 +321,13 @@ export function MonthGrid({
   function handleDotClick(e: React.MouseEvent<HTMLButtonElement>, row: MonthGridRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')
-    const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
-    const reason = getStatusReason({
-      dayType: row.dayType,
-      workedHours: row.workedHours,
-      manualTotal,
-      hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
-      isConfirmed: confirmedDays.has(row.date),
-      isoDate: row.date,
-      today: todayIso,
-    })
+    const { displayStatus, reason } = classifyRow(row)
     setDotPopover({
       date: row.date,
       currentDayType,
       top: rect.bottom + 6,
       left: rect.left,
-      displayStatus: getDisplayStatus(row),
+      displayStatus,
       reason,
     })
   }

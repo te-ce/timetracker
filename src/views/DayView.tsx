@@ -19,9 +19,9 @@ import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
-import { getDayStatus, getStatusReason, getWorkStatus, type DayStatus } from '../domain/dayStatus'
+import { classifyDay } from '../domain/dayStatus'
 import { STATUS_BADGE, STATUS_LABEL } from '../domain/statusColors'
-import { classifyDay } from '../domain/dayType'
+import { classifyDay as classifyDayType } from '../domain/dayType'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 
@@ -178,41 +178,19 @@ export function DayView() {
   const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
   const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation
 
-  const selectedDayType = monthDayTypeOverrides.get(selectedDate) ?? classifyDay(new Date(selectedDate))
+  const selectedDayType = monthDayTypeOverrides.get(selectedDate) ?? classifyDayType(new Date(selectedDate))
   const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01
   const hasAutoCategory = !!autoCategory && manualTotal <= workedHours
-  const dayStatus = getDayStatus({
+  const { displayStatus: badgeStatus, reason: statusReason } = classifyDay({
     dayType: selectedDayType,
-    hasWorkedHours: workedHours > 0,
-    hasManualEntries: manualTotal > 0,
+    workedHours,
+    manualTotal,
     isEntriesBalanced,
     hasAutoCategory,
     isConfirmed,
     isoDate: selectedDate,
     today: todayIso,
   })
-
-  const statusReason = getStatusReason({
-    dayType: selectedDayType,
-    workedHours,
-    manualTotal,
-    hasAutoCategory,
-    isConfirmed,
-    isoDate: selectedDate,
-    today: todayIso,
-  })
-
-  // For today, resolve the actual work status instead of showing "Today"
-  const badgeStatus: Exclude<DayStatus, 'today'> =
-    dayStatus !== 'today'
-      ? dayStatus
-      : getWorkStatus({
-          dayType: selectedDayType,
-          hasWorkedHours: workedHours > 0,
-          hasManualEntries: manualTotal > 0,
-          isEntriesBalanced,
-          isConfirmed,
-        })
 
   const autoCategoryMutation = useMutation({
     mutationFn: (cat: string | null) => configRepo.save({ ...config!, autoCategory: cat }),
