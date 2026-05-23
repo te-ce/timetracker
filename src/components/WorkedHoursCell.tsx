@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
@@ -106,6 +107,8 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
 
   return (
     <td className="px-2 py-1 text-right" data-testid="worked-hours">
+      {createPortal(
+        <>
       {/* Backdrop */}
       <div className="fixed inset-0 z-[100] bg-black/20" />
       {/* Modal */}
@@ -275,6 +278,9 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
           </button>
         </div>
       </div>
+        </>,
+        document.body
+      )}
     </td>
   )
 }
