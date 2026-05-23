@@ -6,10 +6,10 @@ import type {
   DayConfirmationRepository,
   DayTypeOverrideRepository,
   WorkLocationRepository,
-  DayTypeOverride,
   WorkLocation,
 } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
+import { isDayTypeOverride } from '../domain/dayType'
 import { classifyDay } from '../domain/dayStatus'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
@@ -150,7 +150,7 @@ export function MonthGrid({
   useEffect(() => {
     if (!dotPopover) return
     function handleClick(e: MouseEvent) {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+      if (popoverRef.current && e.target instanceof Node && !popoverRef.current.contains(e.target)) {
         setDotPopover(null)
       }
     }
@@ -212,7 +212,7 @@ export function MonthGrid({
       if (value === 'WorkDay') {
         await dayTypeOverrideRepository.delete(date)
       } else {
-        await dayTypeOverrideRepository.save(date, value as DayTypeOverride)
+        if (isDayTypeOverride(value)) await dayTypeOverrideRepository.save(date, value)
       }
     },
     onSuccess: () => {
@@ -570,7 +570,7 @@ export function MonthGrid({
                                 }
                                 onBlur={() => handleBlur(row, cat)}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+                                  if (e.key === 'Enter' && e.target instanceof HTMLInputElement) e.target.blur()
                                 }}
                                 className={`w-full rounded border px-1 py-0.5 text-right text-xs ${hasAutoHours ? 'bg-indigo-50' : ''}`}
                               />

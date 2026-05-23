@@ -2,6 +2,15 @@ import { http, HttpResponse } from 'msw'
 import type { HttpHandler } from 'msw'
 import { encodeSharesUrl } from '../services/excelService'
 
+function isWriteBody(val: unknown): val is { values: number[][] } {
+  return (
+    typeof val === 'object' &&
+    val !== null &&
+    'values' in val &&
+    Array.isArray(val.values)
+  )
+}
+
 const GRAPH = 'https://graph.microsoft.com/v1.0'
 
 function sharesBase(sharePointUrl: string) {
@@ -34,7 +43,7 @@ export function buildGraphHandlers(sharePointUrl: string): HttpHandler[] {
       HttpResponse.json({ value: mockWorkbook.sheets.map((name) => ({ name })) }),
     ),
     http.get(`${base}/worksheets/:sheet/usedRange(valuesOnly=true)`, ({ params }) => {
-      const sheet = decodeURIComponent(params.sheet as string)
+      const sheet = decodeURIComponent(String(params.sheet))
       const values = mockWorkbook.rows.map((r) => [r.taskId, r.effort, r.description])
       return HttpResponse.json({
         values,
@@ -42,13 +51,15 @@ export function buildGraphHandlers(sharePointUrl: string): HttpHandler[] {
       })
     }),
     http.patch(`${base}/worksheets/:sheet/range(address=:cell)`, async ({ request, params }) => {
-      const body = (await request.json()) as { values: number[][] }
-      const cellParam = decodeURIComponent(params.cell as string).replace(/'/g, '')
+      const rawBody = await request.json()
+      if (!isWriteBody(rawBody)) return HttpResponse.json({}, { status: 400 })
+      const { values } = rawBody
+      const cellParam = decodeURIComponent(String(params.cell)).replace(/'/g, '')
       const rowMatch = /B(\d+)/.exec(cellParam)
       if (rowMatch) {
         const rowIdx = parseInt(rowMatch[1], 10) - 1
         if (mockWorkbook.rows[rowIdx]) {
-          mockWorkbook.rows[rowIdx].effort = body.values[0][0]
+          mockWorkbook.rows[rowIdx].effort = values[0][0]
         }
       }
       return HttpResponse.json({})

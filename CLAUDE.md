@@ -19,7 +19,10 @@ React + TypeScript + Vite + Tailwind CSS + TanStack Query + TanStack Router + Vi
 - `src/repositories/` — data access behind interfaces; in-memory implementations for tests
 - `src/components/` — presentational + container components
 - `src/views/` — top-level route views that wire repos and queries together
-- `src/hooks/` — shared React hooks
+- `src/hooks/` — shared React hooks (`useMonthQuery`, `useDayQuery` own all fetch + domain logic for their scope)
+- `src/services/` — external integrations (Excel/Graph API) behind interfaces (`WorkbookService`)
+- `src/storage/` — storage adapters behind `StorageAdapter` interface (OneDrive, localStorage, local folder, in-memory)
+- `src/types/` — ambient type declarations that extend DOM or third-party types (e.g. File System Access API)
 
 ## Testing
 
@@ -28,3 +31,44 @@ React + TypeScript + Vite + Tailwind CSS + TanStack Query + TanStack Router + Vi
 - Every new domain function needs a test file
 - Every new component prop/behaviour needs at least one test
 - Keep tests close to the code they cover (co-located)
+
+## TypeScript standards
+
+**No `as` type assertions at call sites.** This is a hard rule with two narrow exceptions:
+
+1. **Type guards** — `as Record<string, unknown>` inside a `val is T` predicate function is the correct pattern to access properties on `unknown`. Acceptable there only.
+2. **Unavoidable generic test mocks** — when implementing a generic interface (e.g. `StorageAdapter.get<T>`) in a test, `(stored ?? null) as T | null` is acceptable because there is no type information to narrow from. This should remain inside the test helper, never leak to production code.
+
+All other patterns must use proper typing:
+
+| Instead of | Use |
+|---|---|
+| `e.target as Node` | `e.target instanceof Node &&` guard |
+| `e.target as HTMLInputElement` | `e.target instanceof HTMLInputElement &&` guard |
+| `value as SomeUnion` from a `<select>` | `isSomeUnion(v: string): v is SomeUnion` guard function |
+| `JSON.parse(raw) as T` | `const x: T = JSON.parse(raw)` (JSON.parse returns `any`, assignable to T) |
+| `res.json() as T` | `const x: T = await res.json()` same reason |
+| `window as Window & { foo?: Fn }` | Extend `Window` in `src/types/*.d.ts` |
+| `req.result as X` from IDBRequest | `req.result` is `any`, annotate the variable instead |
+| `arr as SomeType[]` | `const arr: SomeType[] = [...]` |
+| `as never` | Use `as unknown as T` (two-step through `unknown`) if you truly need a bypass, and document why |
+
+**Type guard convention** — shared guards live in the domain module closest to the type. Example: `isDayTypeOverride` lives in `src/domain/dayType.ts`.
+
+**Typed arrays** — never `[x, y] as T[]`. Declare `const items: T[] = [x, y]` instead.
+
+## Code style
+
+- No comments unless the **why** is non-obvious (hidden constraint, workaround for a known bug, surprising invariant)
+- No docstrings that restate what the function name already says
+- No trailing "what I just did" summaries in commits or code
+- `as const` is fine — it is a const assertion, not a type cast
+
+## React Query
+
+- All cache keys go through `QUERY_KEYS` in `src/hooks/queryKeys.ts` — never inline `['someKey', ...]` arrays
+- Invalidations must use the same key factory functions, not hand-rolled arrays
+
+## Adding browser APIs not in TypeScript's DOM lib
+
+Put ambient declarations in `src/types/`. The File System Access API permission methods and `showDirectoryPicker` are already there. Do not cast `window` to extend it — extend `Window` in the `.d.ts` file instead.

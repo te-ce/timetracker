@@ -14,7 +14,8 @@ export class LocalStorageAdapter implements StorageAdapter {
   get<T>(key: string): Promise<T | null> {
     const raw = localStorage.getItem(this.prefix + key)
     if (raw === null) return Promise.resolve(null)
-    return Promise.resolve(JSON.parse(raw) as T)
+    const data: unknown = JSON.parse(raw)
+    return Promise.resolve(data as T)
   }
 
   put<T>(key: string, data: T): Promise<void> {

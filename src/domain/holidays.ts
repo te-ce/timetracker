@@ -48,7 +48,7 @@ export type HolidayApiResponse = Record<string, { datum: string; hinweis: string
 export async function fetchHolidays(state: Bundesland, year: number): Promise<PublicHoliday[]> {
   const res = await fetch(`https://feiertage-api.de/api/?jahr=${year}&nur_land=${state}`)
   if (!res.ok) return []
-  const data = (await res.json()) as HolidayApiResponse
+  const data = (await res.json()) as unknown as HolidayApiResponse
   return Object.entries(data).map(([name, info]) => ({
     date: info.datum,
     name,

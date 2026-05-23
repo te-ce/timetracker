@@ -27,8 +27,10 @@ export async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
   const result = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly')
     const req = tx.objectStore(STORE_NAME).get(HANDLE_KEY)
-    req.onsuccess = () =>
-      resolve((req.result as FileSystemDirectoryHandle | undefined) ?? null)
+    req.onsuccess = () => {
+      const handle: unknown = req.result
+      resolve((handle as FileSystemDirectoryHandle | undefined) ?? null)
+    }
     req.onerror = () => reject(new Error('Failed to load folder handle'))
   })
   db.close()
@@ -47,12 +49,7 @@ export async function clearHandle(): Promise<void> {
 }
 
 export async function verifyPermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
-  // Cast to avoid ESLint not resolving File System Access API permission types
-  const fsHandle = handle as {
-    queryPermission(opts: { mode: string }): Promise<string>
-    requestPermission(opts: { mode: string }): Promise<string>
-  }
-  if ((await fsHandle.queryPermission({ mode: 'readwrite' })) === 'granted') return true
-  if ((await fsHandle.requestPermission({ mode: 'readwrite' })) === 'granted') return true
+  if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') return true
+  if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') return true
   return false
 }

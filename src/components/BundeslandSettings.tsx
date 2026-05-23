@@ -34,7 +34,8 @@ export function BundeslandSettings({ repository }: Props) {
         value={config.federalState ?? ''}
         onChange={(e) => {
           const val = e.target.value
-          mutation.mutate(val === '' ? null : (val as Bundesland))
+          const bundesland = BUNDESLAENDER.find((b) => b.code === val)
+          mutation.mutate(bundesland?.code ?? null)
         }}
         className="w-64 rounded border px-3 py-2 text-sm"
       >

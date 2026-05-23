@@ -6,7 +6,8 @@ export class InMemoryStorageAdapter implements StorageAdapter {
   get<T>(key: string): Promise<T | null> {
     const raw = this.store.get(key)
     if (raw === undefined) return Promise.resolve(null)
-    return Promise.resolve(JSON.parse(raw) as T)
+    const data: unknown = JSON.parse(raw)
+    return Promise.resolve(data as T)
   }
 
   put<T>(key: string, data: T): Promise<void> {

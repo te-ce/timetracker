@@ -32,7 +32,7 @@ export async function listLocalRows(filename: string, sheet: string): Promise<Ex
   const fileHandle = await dir.getFileHandle(filename)
   const file = await fileHandle.getFile()
   const wb = XLSX.read(await file.arrayBuffer())
-  const ws = wb.Sheets[sheet] as XLSX.WorkSheet | undefined
+  const ws: XLSX.WorkSheet | undefined = wb.SheetNames.includes(sheet) ? wb.Sheets[sheet] : undefined
   if (!ws) return []
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 })
   return rows
@@ -53,7 +53,7 @@ export async function writeLocalSprintData(
   const fileHandle = await dir.getFileHandle(filename)
   const file = await fileHandle.getFile()
   const wb = XLSX.read(await file.arrayBuffer())
-  const ws = wb.Sheets[sheet] as XLSX.WorkSheet | undefined
+  const ws: XLSX.WorkSheet | undefined = wb.SheetNames.includes(sheet) ? wb.Sheets[sheet] : undefined
   if (!ws) throw new Error(`Sheet "${sheet}" not found in ${filename}`)
 
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 })
@@ -71,7 +71,9 @@ export async function writeLocalSprintData(
     ws[cellRef] = { t: 'n', v: hoursPerCategory[category] ?? 0 }
   }
 
-  const output = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as Uint8Array
+  const rawOutput: unknown = XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
+  if (!(rawOutput instanceof Uint8Array)) throw new Error('XLSX.write returned unexpected type')
+  const output: Uint8Array = rawOutput
   const writable = await fileHandle.createWritable()
   await writable.write(output)
   await writable.close()

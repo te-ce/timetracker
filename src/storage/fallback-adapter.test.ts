@@ -15,11 +15,11 @@ describe('FallbackStorageAdapter', () => {
   })
 
   it('falls back to secondary when primary throws', async () => {
-    const primary = {
+    const primary: StorageAdapter = {
       get: vi.fn().mockRejectedValue(new Error('network')),
       put: vi.fn().mockRejectedValue(new Error('network')),
       delete: vi.fn().mockRejectedValue(new Error('network')),
-    } as StorageAdapter
+    }
     const fallback = new InMemoryStorageAdapter()
     await fallback.put('key', { source: 'fallback' })
 
@@ -39,11 +39,11 @@ describe('FallbackStorageAdapter', () => {
   })
 
   it('still writes to fallback when primary write fails', async () => {
-    const primary = {
+    const primary: StorageAdapter = {
       get: vi.fn().mockResolvedValue(null),
       put: vi.fn().mockRejectedValue(new Error('network')),
       delete: vi.fn().mockRejectedValue(new Error('network')),
-    } as StorageAdapter
+    }
     const fallback = new InMemoryStorageAdapter()
 
     const adapter = new FallbackStorageAdapter(primary, fallback)
@@ -66,11 +66,11 @@ describe('FallbackStorageAdapter', () => {
   })
 
   it('still deletes from fallback when primary delete fails', async () => {
-    const primary = {
+    const primary: StorageAdapter = {
       get: vi.fn().mockResolvedValue(null),
       put: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockRejectedValue(new Error('network')),
-    } as StorageAdapter
+    }
     const fallback = new InMemoryStorageAdapter()
     await fallback.put('key', 'data')
 

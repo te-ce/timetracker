@@ -21,13 +21,15 @@ export function DefaultLocationSettings({ repository }: Props) {
 
   if (!config) return null
 
+  const WORK_LOCATIONS: WorkLocation[] = ['Remote', 'Office']
+
   return (
     <div className="flex flex-col gap-2">
       <label htmlFor="default-location-select" className="text-sm font-medium">
         Default Work Location
       </label>
       <div className="flex gap-2">
-        {(['Remote', 'Office'] as WorkLocation[]).map((loc) => (
+        {WORK_LOCATIONS.map((loc) => (
           <button
             key={loc}
             onClick={() => mutation.mutate(loc)}

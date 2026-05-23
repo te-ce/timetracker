@@ -7,20 +7,22 @@ export interface BootstrapConfig {
   tenantId: string
 }
 
+function isBootstrapConfig(val: unknown): val is BootstrapConfig {
+  if (typeof val !== 'object' || val === null) return false
+  return (
+    'clientId' in val &&
+    'tenantId' in val &&
+    typeof (val as { clientId: unknown }).clientId === 'string' &&
+    typeof (val as { tenantId: unknown }).tenantId === 'string'
+  )
+}
+
 export function readBootstrapConfig(): BootstrapConfig | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as unknown
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      typeof (parsed as Record<string, unknown>).clientId === 'string' &&
-      typeof (parsed as Record<string, unknown>).tenantId === 'string'
-    ) {
-      return parsed as BootstrapConfig
-    }
-    return null
+    const parsed: unknown = JSON.parse(raw)
+    return isBootstrapConfig(parsed) ? parsed : null
   } catch {
     return null
   }

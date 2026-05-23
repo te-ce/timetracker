@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { AuthenticationResult } from '@azure/msal-browser'
 
 vi.mock('./bootstrapConfig', () => ({
   readBootstrapConfig: () => ({ clientId: 'test-client-id', tenantId: 'test-tenant-id' }),
@@ -21,7 +22,7 @@ describe('getAccessToken', () => {
     vi.spyOn(msalModule.msalInstance!, 'getAllAccounts').mockReturnValue([fakeAccount])
     vi.spyOn(msalModule.msalInstance!, 'acquireTokenSilent').mockResolvedValue({
       accessToken: 'mock-token-123',
-    } as never)
+    } as unknown as AuthenticationResult)
 
     const token = await msalModule.getAccessToken()
     expect(token).toBe('mock-token-123')
@@ -32,7 +33,7 @@ describe('getAccessToken', () => {
     vi.spyOn(msalModule.msalInstance!, 'getAllAccounts').mockReturnValue([fakeAccount])
     const silentSpy = vi.spyOn(msalModule.msalInstance!, 'acquireTokenSilent').mockResolvedValue({
       accessToken: 'tok',
-    } as never)
+    } as unknown as AuthenticationResult)
 
     await msalModule.getAccessToken()
 

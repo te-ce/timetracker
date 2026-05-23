@@ -46,7 +46,7 @@ export function WorkedHoursCell({ date, workedHours, repository, className = '' 
   useEffect(() => {
     if (!open) return
     function handleMouseDown(e: MouseEvent) {
-      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+      if (modalRef.current && e.target instanceof Node && !modalRef.current.contains(e.target)) {
         setOpen(false)
       }
     }

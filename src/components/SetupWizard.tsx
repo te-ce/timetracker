@@ -26,15 +26,13 @@ export function SetupWizard({ onSkip }: Props) {
   }
 
   async function handleLocalFolder() {
-    type PickerFn = (opts?: { mode?: string }) => Promise<FileSystemDirectoryHandle>
-    const picker = (window as Window & { showDirectoryPicker?: PickerFn }).showDirectoryPicker
     const ua = navigator.userAgent
     const isBrave = 'brave' in navigator
     const isOpera = ua.includes('OPR/') || ua.includes('Opera/')
     const isFirefox = ua.includes('Firefox/')
     const isSafari = ua.includes('Safari/') && !ua.includes('Chrome/') && !ua.includes('Chromium/')
     const isSecure = window.isSecureContext
-    if (!picker) {
+    if (!window.showDirectoryPicker) {
       if (!isSecure) {
         setError(
           'File System Access API requires HTTPS or localhost. The app must be served over a secure connection.',
@@ -67,7 +65,7 @@ export function SetupWizard({ onSkip }: Props) {
     setPickingFolder(true)
     setError(null)
     try {
-      const handle = await picker.call(window, { mode: 'readwrite' })
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
       await saveHandle(handle)
       setLocalFolderMode()
       window.location.reload()

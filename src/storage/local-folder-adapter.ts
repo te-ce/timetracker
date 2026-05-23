@@ -19,7 +19,8 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
       const dir = await this.getDir()
       const fileHandle = await dir.getFileHandle(`${key}.json`)
       const file = await fileHandle.getFile()
-      return JSON.parse(await file.text()) as T
+      const data: unknown = JSON.parse(await file.text())
+      return data as T
     } catch (e) {
       if (e instanceof DOMException && e.name === 'NotFoundError') return null
       throw e

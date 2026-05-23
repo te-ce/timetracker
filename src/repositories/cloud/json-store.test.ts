@@ -7,7 +7,7 @@ function createMockAdapter(): StorageAdapter & { data: Record<string, unknown> }
   return {
     data,
     get<T>(key: string): Promise<T | null> {
-      return Promise.resolve((data[key] as T) ?? null)
+      return Promise.resolve((data[key] ?? null) as T | null)
     },
     put<T>(key: string, value: T): Promise<void> {
       data[key] = value

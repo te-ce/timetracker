@@ -209,7 +209,7 @@ describe('TimeEntryPanel', () => {
     }
 
     it('renders toggle buttons for each category when onAutoCategoryChange is provided', async () => {
-      const onChange = vi.fn() as (cat: string | null) => void
+      const onChange = vi.fn<(cat: string | null) => void>()
       setupWithAutoCategory('_SUPPORT', onChange)
       // filled circle on the active auto category
       expect(await screen.findByLabelText('Unset _SUPPORT as auto category')).toBeInTheDocument()
@@ -218,14 +218,14 @@ describe('TimeEntryPanel', () => {
     })
 
     it('calls onAutoCategoryChange(null) when clicking the active auto category toggle', async () => {
-      const onChange = vi.fn() as (cat: string | null) => void
+      const onChange = vi.fn<(cat: string | null) => void>()
       setupWithAutoCategory('_SUPPORT', onChange)
       await userEvent.click(await screen.findByLabelText('Unset _SUPPORT as auto category'))
       expect(onChange).toHaveBeenCalledWith(null)
     })
 
     it('calls onAutoCategoryChange(category) when clicking a non-active toggle', async () => {
-      const onChange = vi.fn() as (cat: string | null) => void
+      const onChange = vi.fn<(cat: string | null) => void>()
       setupWithAutoCategory('_SUPPORT', onChange)
       await userEvent.click(await screen.findByLabelText('Set _INFRA as auto category'))
       expect(onChange).toHaveBeenCalledWith('_INFRA')

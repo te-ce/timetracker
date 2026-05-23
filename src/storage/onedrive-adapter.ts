@@ -20,7 +20,8 @@ export class OneDriveStorageAdapter implements StorageAdapter {
     })
     if (res.status === 404) return null
     if (!res.ok) throw new Error(`OneDrive GET failed: ${res.status} ${res.statusText}`)
-    return (await res.json()) as T
+    const data: unknown = await res.json()
+    return data as T
   }
 
   async put<T>(key: string, data: T): Promise<void> {

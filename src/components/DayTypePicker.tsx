@@ -1,7 +1,8 @@
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useQuery } from '@tanstack/react-query'
-import type { DayTypeOverride, DayTypeOverrideRepository } from '../repositories/types'
+import type { DayTypeOverrideRepository } from '../repositories/types'
 import { useDayTypeOverrideMutations } from '../hooks/useDayTypeOverrideMutations'
+import { isDayTypeOverride } from '../domain/dayType'
 
 interface Props {
   date: string
@@ -27,8 +28,8 @@ export function DayTypePicker({ date, repository }: Props) {
   function handleChange(value: string) {
     if (value === 'WorkDay') {
       removeMutation.mutate(date)
-    } else {
-      saveMutation.mutate({ date, dayType: value as DayTypeOverride })
+    } else if (isDayTypeOverride(value)) {
+      saveMutation.mutate({ date, dayType: value })
     }
   }
 
