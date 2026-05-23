@@ -6,8 +6,7 @@ import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
 import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/shared'
 import { getAllCategories } from '../domain/categories'
-import { writeSprintData } from '../services/excelService'
-import { writeLocalSprintData } from '../services/localExcelService'
+import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../services/workbookService'
 import { useAuthStore } from '../stores/authStore'
 import { getAccessToken } from '../auth/msalInstance'
 import { isLocalFolderMode } from '../auth/bootstrapConfig'
@@ -74,14 +73,15 @@ export function SprintView() {
 
   async function handleExport(): Promise<void> {
     if (!targetSheet) throw new Error('No target sheet selected.')
+    let service
     if (localFolder) {
       if (!localExcelFile) throw new Error('No local Excel file selected.')
-      await writeLocalSprintData(localExcelFile, targetSheet, categoryMapping, hoursPerCategory)
+      service = new LocalFolderWorkbookService(localExcelFile)
     } else {
       if (!sharepointUrl || !isAuthenticated) throw new Error('SharePoint URL or auth missing.')
-      const token = await getAccessToken()
-      await writeSprintData(sharepointUrl, targetSheet, categoryMapping, hoursPerCategory, token)
+      service = new GraphApiWorkbookService(sharepointUrl, getAccessToken)
     }
+    await service.writeSprintData(targetSheet, categoryMapping, hoursPerCategory)
     await markExportedMutation.mutateAsync()
   }
 
