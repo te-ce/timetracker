@@ -4,83 +4,57 @@ A time-tracking Progressive Web App that logs working hours against predefined c
 
 ## Tech Stack
 
-- **React 19** + **TypeScript** — Single-page application
-- **Vite** — Build tool and dev server
-- **TanStack Router** — Type-safe file-based routing
-- **TanStack Query** — Async state management
-- **Tailwind CSS** — Utility-first styling
-- **Zustand** — Client state management
-- **OneDrive App Folder** — Persistence (user's own cloud via Graph API)
-- **MSAL.js** — Microsoft Work/School login + Graph API access
-- **vite-plugin-pwa** — Offline support via service worker
-- **Vitest** + **React Testing Library** — Unit and component tests
-- **Playwright** — End-to-end tests
+| Layer | Technology |
+|---|---|
+| Frontend | React 19 + TypeScript (strict) |
+| Build | Vite + vite-plugin-pwa (PWA / offline) |
+| Routing | TanStack Router (type-safe, file-based) |
+| Async state | TanStack Query |
+| Client state | Zustand (auth state + selected date) |
+| Styling | Tailwind CSS 4 |
+| Auth | MSAL.js (`@azure/msal-browser`) |
+| Cloud persistence | OneDrive App Folder via Microsoft Graph API |
+| Local persistence | localStorage (offline fallback) + File System Access API (local folder mode) |
+| Excel export | Microsoft Graph API (SharePoint) + xlsx (local folder mode) |
+| Unit/component tests | Vitest + React Testing Library |
+| API mocking | Mock Service Worker (MSW) |
+| E2E tests | Playwright |
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) (v20 or later recommended)
+- Node.js v20 or later
 - npm (comes with Node.js)
 
 ## Getting Started
 
-### 1. Install dependencies
-
 ```bash
 npm install
+npm run dev        # dev server at http://localhost:5173
+npm run build      # type-check + production build → dist/
+npm run preview    # serve dist/ locally
 ```
 
-### 2. Start the development server
+## Scripts
 
-```bash
-npm run dev
-```
-
-The app will be available at [http://localhost:5173](http://localhost:5173).
-
-### 3. Build for production
-
-```bash
-npm run build
-```
-
-The output is written to `dist/`. Preview the production build with:
-
-```bash
-npm run preview
-```
-
-## Available Scripts
-
-| Script                   | Description                         |
-| ------------------------ | ----------------------------------- |
-| `npm run dev`            | Start Vite dev server with HMR      |
-| `npm run build`          | Type-check and build for production |
-| `npm run preview`        | Serve the production build locally  |
-| `npm run lint`           | Run ESLint                          |
-| `npm run test`           | Run unit/component tests (Vitest)   |
-| `npm run e2e`            | Run end-to-end tests (Playwright)   |
-| `npm run test:unit`      | Run only unit tests                 |
-| `npm run test:component` | Run only component tests            |
+| Script | Description |
+|---|---|
+| `npm run dev` | Start Vite dev server with HMR |
+| `npm run build` | Type-check and build for production |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run unit/component tests (Vitest) |
+| `npm run e2e` | Run end-to-end tests (Playwright) |
 
 ## Running Tests
-
-### Unit & Component Tests
 
 ```bash
 npm run test
 ```
 
-### E2E Tests
-
-Playwright requires browser binaries. Install them once:
+E2E tests require Playwright browser binaries (one-time install):
 
 ```bash
 npx playwright install --with-deps chromium
-```
-
-Then run:
-
-```bash
 npm run e2e
 ```
 
@@ -88,91 +62,94 @@ npm run e2e
 
 ```
 src/
+├── domain/        # Pure functions, no side effects — fully unit-tested
+├── repositories/  # Data access interfaces + in-memory (test) + cloud implementations
+│   ├── in-memory/ # In-memory adapters for tests and offline use
+│   └── cloud/     # OneDrive-backed JSON store repositories
+├── storage/       # StorageAdapter abstraction (OneDrive, localStorage, local folder, in-memory)
+├── services/      # External integrations behind interfaces (WorkbookService for Excel/Graph API)
+├── hooks/         # Shared React hooks (useMonthQuery, useDayQuery, QUERY_KEYS, mutations)
 ├── components/    # Reusable UI components
-├── domain/        # Domain models and business logic
-├── repositories/  # Data access layer (repository interfaces)
-│   ├── in-memory/ # In-memory implementations (tests, offline)
-│   └── cloud/     # OneDrive-backed implementations (production)
-├── storage/       # StorageAdapter abstraction (OneDrive Graph API)
-├── stores/        # Zustand state stores
+├── views/         # Page-level route views — wire repos, queries, and mutations together
+├── stores/        # Zustand stores (auth state, selected date)
+├── auth/          # MSAL initialization and bootstrap config
 ├── routes/        # TanStack Router route definitions
-├── test/          # Test setup and utilities
-└── views/         # Page-level view components
-e2e/               # Playwright end-to-end tests
+├── types/         # Ambient type declarations extending DOM/third-party types
+└── mocks/         # MSW handlers for Graph API (used in tests)
 docs/
 ├── adr/           # Architecture Decision Records
 └── agents/        # Agent workflow documentation
+e2e/               # Playwright end-to-end tests
 ```
 
 ## Persistence Architecture
 
-Data is stored as JSON files in the user's **OneDrive App Folder** via Microsoft Graph API. No database or backend required — the user owns their data in their own cloud.
+Data is stored as JSON files in the user's **OneDrive App Folder** via Microsoft Graph API. No database or backend — the user owns their data in their own cloud.
 
 ```
 /Apps/Timetracker/
-  config.json          # App settings
-  time-entries.json    # All time bookings
-  work-windows.json    # Work duration blocks
-  sprint-exports.json  # Export status per sprint
-  work-locations.json  # Office/Remote per day
-  day-type-overrides.json  # Vacation/Sick/etc overrides
+  config.json
+  time-entries.json
+  work-windows.json
+  sprint-exports.json
+  work-locations.json
+  day-type-overrides.json
+  auto-category-overrides.json
+  day-confirmations.json
 ```
 
-See [ADR 0005](docs/adr/0005-onedrive-app-folder-persistence.md) for details.
+The `StorageAdapter` interface has four implementations:
 
-## Configuration
+| Implementation | Used for |
+|---|---|
+| `OneDriveStorageAdapter` | Production cloud sync |
+| `LocalStorageAdapter` | Offline fallback cache |
+| `LocalFolderStorageAdapter` | Local folder mode (File System Access API) |
+| `InMemoryStorageAdapter` | Tests |
 
-No environment variables or build-time configuration is required.
+See [ADR 0005](docs/adr/0005-onedrive-app-folder-persistence.md) for design details.
 
-### First launch — Setup Wizard
+## First Launch — Setup Wizard
 
-On first launch the app shows a **Setup Wizard**. You can either:
+On first launch the app shows a **Setup Wizard**. Choose one of:
 
-- **Configure Microsoft Azure AD** — enter your `Client ID` and `Tenant ID` to enable cloud sync (OneDrive) and SharePoint export. The app reloads with MSAL initialized.
-- **Skip** — the app runs in local-only mode. All data stays in this browser. You can configure Microsoft later from **Settings → Cloud Sync**.
+- **Microsoft Azure AD** — enter your `Client ID` and `Tenant ID` to enable cloud sync (OneDrive) and SharePoint export
+- **Local Folder** — pick a local folder via the browser's File System Access API; all data stays on-device as JSON files in that folder
+- **Skip** — runs in localStorage-only mode; no cross-device sync, no export
 
 ### Azure AD App Registration
 
-Before entering credentials in the Setup Wizard, register an app in Azure AD:
-
 1. Go to [Azure Portal → App registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps)
-2. Create a new registration (single-tenant or multi-tenant)
-3. Add a **Redirect URI** equal to the URL you deployed the app to (type: Single-page application)
-   - e.g. `https://timetracker.example.com` or `http://localhost:5173` for local dev
+2. Create a new registration
+3. Add a **Redirect URI** (type: Single-page application) equal to your deployment URL
+   - e.g. `https://timetracker.example.com` or `http://localhost:5173`
 4. Under **API permissions**, add:
    - `User.Read` (Microsoft Graph, delegated)
-   - `Files.ReadWrite.All` (Microsoft Graph, delegated) — covers OneDrive App Folder storage and SharePoint Excel access
-5. Copy the **Application (client) ID** and **Directory (tenant) ID** — paste these into the Setup Wizard
+   - `Files.ReadWrite.All` (Microsoft Graph, delegated)
+5. Copy the **Application (client) ID** and **Directory (tenant) ID** and paste them into the Setup Wizard
 
-> **Note:** `Files.ReadWrite.All` is required (not `Files.ReadWrite`) because SharePoint-hosted files are outside the user's personal drive.
+> `clientId` and `tenantId` are not secrets — they are public OAuth identifiers. The real security boundary is the Azure AD redirect URI allowlist. See [ADR 0007](docs/adr/0007-runtime-msal-bootstrap-config.md).
 
-> **Security:** `clientId` and `tenantId` are not secrets — they are public identifiers visible in every OAuth request. The real security boundary is the Azure AD redirect URI allowlist. See [ADR 0007](docs/adr/0007-runtime-msal-bootstrap-config.md) for details.
+## SharePoint Excel Export
 
-See `docs/adr/` for the full architectural decisions.
+Before exporting sprint hours, configure in **Settings**:
 
-## Cloud Sync & OneDrive Persistence
+1. **SharePoint URL** — full URL of the `.xlsx` workbook in SharePoint
+2. **Target Sheet** — select the worksheet tab to write into
+3. **Category Mapping** — map each app category to an Excel row (by Task ID)
 
-The app works fully offline using browser `localStorage`. To sync data across devices and enable SharePoint export, sign in with a Microsoft account.
+Then open the **Sprint Report** for any sprint and click **Export to SharePoint**.
 
-### Sign in
+Microsoft sign-in is required for both OneDrive sync and SharePoint export.
 
-1. Open **Settings → Cloud Sync**
-2. Click **Sign in with Microsoft** and complete the OAuth flow
-3. The nav bar shows ☁️ when synced, 💾 when offline
+## Architecture Decision Records
 
-On first sign-in, any locally-held data is automatically uploaded to your OneDrive App Folder. From then on all reads/writes go to OneDrive (with localStorage as an offline cache).
+See [`docs/adr/`](docs/adr/) for recorded design decisions. Key ADRs:
 
-### SharePoint Excel Export
-
-Before exporting sprint hours to SharePoint, configure the export in **Settings**:
-
-1. **SharePoint URL** — paste the full URL of the Excel workbook (`.xlsx`) from SharePoint
-2. **Target Sheet** — select the worksheet tab to write hours into
-3. **Category Mapping** — map each app category to the corresponding row in the Excel template (by Task ID); investment rows can be imported as DynamicCategories
-
-Once configured, open the **Sprint Report** for any sprint and click **Export to SharePoint**.
-
-> Sign-in is required for both OneDrive persistence and SharePoint export.
+- [ADR 0003](docs/adr/0003-revised-tech-stack.md) — Tech stack (MSAL replaces Firebase Auth)
+- [ADR 0005](docs/adr/0005-onedrive-app-folder-persistence.md) — OneDrive App Folder persistence (Firebase Firestore dropped)
+- [ADR 0007](docs/adr/0007-runtime-msal-bootstrap-config.md) — Runtime MSAL bootstrap config
+- [ADR 0008](docs/adr/0008-actual-tech-stack.md) — Actual current stack (Firebase fully removed, shadcn not adopted)
 
 ## License
 

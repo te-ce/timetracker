@@ -190,6 +190,30 @@ The computed state of a single day within a month. Combines raw data (WorkWindow
 - **entryTotal**: Σ TimeEntry hours
 - **isEntriesBalanced**: whether entryTotal ≈ workedHours (within 0.01 h)
 - **hasAutoCategory**: whether an AutoCategory is set and absorbs the remaining gap
-- **dayStatus**: the DayStatus for this day
+- **displayStatus**: the DayStatus resolved for display — `today` is collapsed to its underlying work status
+- **statusReason**: human-readable explanation of the status (e.g. "Balanced", "Under-categorized: 1.5 h unaccounted")
 
 Built via `buildMonthSummaries(year, month, input)` which returns all DaySummaries for a month plus aggregate stats (workDayCount, workedHoursPerDay, hasAnyTrackedHours).
+
+## WorkbookService
+
+Interface abstracting read/write access to the Excel sprint template. Two adapters:
+
+- **GraphApiWorkbookService** — reads/writes via Microsoft Graph API (SharePoint-hosted workbook)
+- **LocalFolderWorkbookService** — reads/writes a local `.xlsx` file via the File System Access API and the `xlsx` library
+
+Both implement:
+- `listSheets()` — worksheet names
+- `listRows(sheet)` — task rows (Task ID + description) for mapping configuration
+- `writeSprintData(sheet, mapping, hoursPerCategory)` — write sprint totals to the template
+
+Components and views use the interface; which adapter is active depends on whether the user is in cloud mode or local folder mode.
+
+## QUERY_KEYS
+
+Centralized registry of all TanStack Query cache keys. Lives in `src/hooks/queryKeys.ts`. All `useQuery` and invalidation calls must use these factory functions — never inline arrays.
+
+Examples:
+- `QUERY_KEYS.config` — app config
+- `QUERY_KEYS.timeEntriesByDate(date)` — entries for a single day
+- `QUERY_KEYS.workWindowsByMonthTagged(year, month, tag)` — work windows for a month with a tag to distinguish between views that query the same month scope (e.g. `'month'` in MonthGrid vs `'dayOvertime'` in DayView)
