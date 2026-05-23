@@ -1,26 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-  timeEntryRepo,
-  workPeriodRepo,
-  configRepo,
-  dayTypeOverrideRepo,
-  dayConfirmationRepo,
-  workLocationRepo,
-} from '../repositories/shared'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
-import { calculateOvertimeToDate } from '../domain/monthStats'
-import { buildMonthSummaries } from '../domain/daySummary'
-import { toLocalIso } from '../domain/dateUtils'
 import { QUERY_KEYS } from '../hooks/queryKeys'
-import type { DayTypeOverride } from '../repositories/types'
+import { useMonthQuery } from '../hooks/useMonthQuery'
 
 export function MonthGridView() {
   const navigate = useNavigate()
   const today = new Date()
-  const todayIso = toLocalIso(today)
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
@@ -61,54 +50,8 @@ export function MonthGridView() {
     },
   })
 
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => configRepo.get(),
-  })
-
-  const fromIso = toLocalIso(from)
-  const toIso = toLocalIso(to)
-
-  const { data: dayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
-    queryKey: QUERY_KEYS.dayTypeOverridesByMonth(year, month),
-    queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
-  })
-
-  const { data: windows = [] } = useQuery({
-    queryKey: QUERY_KEYS.workWindowsByMonthTagged(year, month, 'grid'),
-    queryFn: () => workPeriodRepo.findByDateRange(from, to),
-  })
-
-  const { data: entries = [] } = useQuery({
-    queryKey: QUERY_KEYS.timeEntriesByMonthTagged(year, month, 'grid'),
-    queryFn: () => timeEntryRepo.findByDateRange(from, to),
-  })
-
-  const { data: confirmedDays = new Set<string>() } = useQuery({
-    queryKey: QUERY_KEYS.dayConfirmationsByMonth(year, month),
-    queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
-  })
-
-  const { data: workLocations = new Map() } = useQuery({
-    queryKey: QUERY_KEYS.workLocationsByMonth(year, month),
-    queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
-  })
-
-  const sollstunden = config?.sollstunden ?? 8
-
-  const { days, workedHoursPerDay } = buildMonthSummaries(year, month, {
-    windows,
-    entries,
-    dayTypeOverrides,
-    today: todayIso,
-    confirmedDays,
-  })
-  const dates = days.map((d) => d.date)
-  const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
-
-  const trackedWorkDays = days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
-  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
-  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
+  const { config, dayTypeOverrides, workLocations, confirmedDays, overtimeToDate, trackedWorkDays, officeDays, officePercent, sollstunden } =
+    useMonthQuery(year, month)
 
   function prevMonth() {
     if (month === 1) {
@@ -155,8 +98,8 @@ export function MonthGridView() {
       </div>
       <OvertimeBar
         sollstunden={sollstunden}
-        priorOvertime={toDate.priorOvertime}
-        workedToday={toDate.workedToday}
+        priorOvertime={overtimeToDate.priorOvertime}
+        workedToday={overtimeToDate.workedToday}
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}

@@ -1,28 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { OvertimeBar } from '../components/OvertimeBar'
-import {
-  workPeriodRepo,
-  timeEntryRepo,
-  configRepo,
-  dayTypeOverrideRepo,
-  dayConfirmationRepo,
-  workLocationRepo,
-} from '../repositories/shared'
-import { calculateOvertimeToDate } from '../domain/monthStats'
-import { buildMonthSummaries } from '../domain/daySummary'
+import { useMonthQuery } from '../hooks/useMonthQuery'
 import type { DayStatus } from '../domain/dayStatus'
-import type { DayTypeOverride, WorkLocation } from '../repositories/types'
-import { toLocalIso } from '../domain/dateUtils'
-import { QUERY_KEYS } from '../hooks/queryKeys'
 
 export function MonthView() {
   const navigate = useNavigate()
   const { year, month } = useSearch({ from: '/' })
-  const today = new Date()
-  // month in search params is 1-indexed, internally we use 0-indexed for Date constructor
-  const monthIdx = month - 1
 
   function onSelectDate(date: string) {
     void navigate({ to: '/day', search: { date } })
@@ -32,74 +16,21 @@ export function MonthView() {
     void navigate({ to: '/', search: { year: y, month: m + 1 } })
   }
 
-  const from = new Date(year, monthIdx, 1)
-  const to = new Date(year, monthIdx + 1, 0)
-
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => configRepo.get(),
-  })
-
-  const { data: windows = [] } = useQuery({
-    queryKey: QUERY_KEYS.workWindowsByMonthTagged(year, month, 'month'),
-    queryFn: () => workPeriodRepo.findByDateRange(from, to),
-  })
-
-  const fromIso = toLocalIso(from)
-  const toIso = toLocalIso(to)
-
-  const { data: dayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
-    queryKey: QUERY_KEYS.dayTypeOverridesByMonth(year, month),
-    queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
-  })
-
-  const { data: entries = [] } = useQuery({
-    queryKey: QUERY_KEYS.timeEntriesByMonthTagged(year, month, 'month'),
-    queryFn: () => timeEntryRepo.findByDateRange(from, to),
-  })
-
-  const { data: confirmedDays = new Set<string>() } = useQuery({
-    queryKey: QUERY_KEYS.dayConfirmationsByMonth(year, month),
-    queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
-  })
-
-  const { data: workLocations = new Map<string, WorkLocation>() } = useQuery({
-    queryKey: QUERY_KEYS.workLocationsByMonth(year, month),
-    queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
-  })
-
-  const sollstunden = config?.sollstunden ?? 8
-  const todayIso = toLocalIso(today)
-
-  const { days, workedHoursPerDay } = buildMonthSummaries(year, month, {
-    windows,
-    entries,
-    dayTypeOverrides,
-    today: todayIso,
-    confirmedDays,
-  })
-
-  const dates = days.map((d) => d.date)
-  const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, dates, todayIso, sollstunden)
+  const { summaries, overtimeToDate, officeDays, officePercent, trackedWorkDays, sollstunden } =
+    useMonthQuery(year, month)
 
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayStatusReasonMap: Record<string, string> = {}
-  for (const day of days) {
+  for (const day of summaries.days) {
     dayStatusMap[day.date] = day.displayStatus
     dayStatusReasonMap[day.date] = day.statusReason
   }
-
-  // Compute overtime carry-over for this month
-  // Office percentage
-  const trackedWorkDays = days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
-  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
-  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
 
   return (
     <div className="flex flex-col gap-6">
       <MonthCalendar
         year={year}
-        month={monthIdx}
+        month={month - 1}
         onSelectDate={onSelectDate}
         onMonthChange={onMonthChange}
         dayStatusMap={dayStatusMap}
