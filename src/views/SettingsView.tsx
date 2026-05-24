@@ -1,9 +1,8 @@
 import { AutoCategorySettings } from '../components/AutoCategorySettings'
 import { BundeslandSettings } from '../components/BundeslandSettings'
+import { CategorySettings } from '../components/CategorySettings'
 import { CloudSyncSettings } from '../components/CloudSyncSettings'
-import { CustomCategorySettings } from '../components/CustomCategorySettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
-import { ExcelMappingSettings } from '../components/ExcelMappingSettings'
 import { LocalExcelFolderSettings } from '../components/LocalExcelFolderSettings'
 import { LocalExcelSettings } from '../components/LocalExcelSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
@@ -21,7 +20,6 @@ export function SettingsView() {
       <AutoCategorySettings repository={configRepo} />
       <BundeslandSettings repository={configRepo} />
       <DefaultLocationSettings repository={configRepo} />
-      <CustomCategorySettings repository={configRepo} />
       {localFolder ? (
         <>
           <LocalExcelFolderSettings />
@@ -33,7 +31,7 @@ export function SettingsView() {
           <SheetSelector repository={configRepo} />
         </>
       )}
-      <ExcelMappingSettings repository={configRepo} />
+      <CategorySettings repository={configRepo} />
     </div>
   )
 }
