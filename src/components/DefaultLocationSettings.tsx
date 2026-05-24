@@ -35,15 +35,15 @@ export function DefaultLocationSettings({ repository }: Props) {
             onClick={() => mutation.mutate(loc)}
             className={`rounded border px-4 py-1.5 text-sm transition-colors ${
               (config.defaultWorkLocation ?? 'Remote') === loc
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'text-gray-600 hover:bg-gray-50'
+                ? 'bg-indigo-600 dark:bg-indigo-500 text-white border-indigo-600 dark:border-indigo-500'
+                : 'text-gray-600 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'
             }`}
           >
             {loc === 'Office' ? '🏢 Office' : '🏠 Remote'}
           </button>
         ))}
       </div>
-      <p className="text-xs text-gray-500">Used as the default location for days with no explicit override.</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Used as the default location for days with no explicit override.</p>
     </div>
   )
 }

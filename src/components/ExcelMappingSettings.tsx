@@ -159,8 +159,8 @@ export function ExcelMappingSettings({ repository }: Props) {
   return (
     <section aria-label="Excel category mapping" className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h3 className="text-sm font-semibold text-gray-700">Category → Excel Mapping</h3>
-        <p className="text-xs text-gray-500">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Category → Excel Mapping</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           Map each app category to the corresponding Task ID row in your Excel sheet.
         </p>
       </div>
@@ -169,13 +169,13 @@ export function ExcelMappingSettings({ repository }: Props) {
         <button
           onClick={() => void handleLoadRows()}
           disabled={!isReady || loadingRows}
-          className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
+          className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
           aria-label="Load rows from Excel sheet"
         >
           {loadingRows ? 'Loading…' : 'Load from Excel'}
         </button>
         {!isReady && (
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 dark:text-gray-500">
             {localFolder
               ? (!localExcelFile ? 'Select an Excel file first' : 'Select a target sheet first')
               : (!sharepointUrl ? 'Set a SharePoint URL first' : 'Select a target sheet first')}
@@ -196,15 +196,15 @@ export function ExcelMappingSettings({ repository }: Props) {
               return (
                 <li key={category} className="flex items-center gap-3">
                   <span
-                    className={`w-40 truncate text-sm font-medium ${isFixed ? '' : 'text-indigo-700'}`}
+                    className={`w-40 truncate text-sm font-medium ${isFixed ? '' : 'text-indigo-700 dark:text-indigo-300'}`}
                     title={category}
                   >
                     {category}
-                    {!isFixed && <span className="ml-1 text-xs text-gray-400">(custom)</span>}
+                    {!isFixed && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">(custom)</span>}
                   </span>
                   <div className="relative flex flex-1 items-center gap-1">
                   {autoMatched.has(category) && (
-                    <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-xs text-amber-700" title="Auto-matched by name — please verify">
+                    <span className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400" title="Auto-matched by name — please verify">
                       auto
                     </span>
                   )}
@@ -215,7 +215,7 @@ export function ExcelMappingSettings({ repository }: Props) {
                       setAutoMatched((prev) => { const s = new Set(prev); s.delete(category); return s })
                       handleMappingChange(category, e.target.value)
                     }}
-                    className="flex-1 rounded border px-2 py-1 text-sm"
+                    className="flex-1 rounded border px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                   >
                     <option value="">— skip —</option>
                     {excelRows.map((row) => (
@@ -231,20 +231,20 @@ export function ExcelMappingSettings({ repository }: Props) {
           </ul>
 
           {unmappedRows.length > 0 && (
-            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-indigo-200 bg-indigo-50 p-3">
-              <p className="text-xs font-medium text-indigo-700">
+            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/40 p-3">
+              <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
                 Investment rows — not yet mapped to any category:
               </p>
               <ul className="flex flex-col gap-1">
                 {unmappedRows.map((row) => (
                   <li key={row.taskId} className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-gray-700">
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
                       <span className="font-mono">{row.taskId}</span>
                       {row.description ? ` — ${row.description}` : ''}
                     </span>
                     <button
                       onClick={() => handleAddAsCategory(row)}
-                      className="rounded border border-indigo-300 px-2 py-0.5 text-xs text-indigo-700 hover:bg-indigo-100"
+                      className="rounded border border-indigo-300 dark:border-indigo-700 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
                     >
                       + Add as category
                     </button>
@@ -259,13 +259,13 @@ export function ExcelMappingSettings({ repository }: Props) {
               <button
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
-                className="rounded bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="rounded bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
               >
                 Save mapping
               </button>
             )}
             {saveMutation.isSuccess && !isDirty && (
-              <span className="text-xs text-green-700">✓ Mapping saved</span>
+              <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>
             )}
             {saveMutation.isError && (
               <p role="alert" className="text-xs text-red-600">Failed to save mapping.</p>
@@ -275,7 +275,7 @@ export function ExcelMappingSettings({ repository }: Props) {
       )}
 
       {excelRows.length === 0 && Object.keys(config.categoryMapping ?? {}).length > 0 && (
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 dark:text-gray-400">
           {Object.keys(config.categoryMapping!).length} categories mapped.{' '}
           Load from Excel to edit.
         </p>

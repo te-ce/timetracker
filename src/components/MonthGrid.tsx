@@ -388,18 +388,18 @@ export function MonthGrid({
     <div className="flex flex-col gap-2">
       <div className="overflow-x-auto max-h-[75vh] overflow-y-auto relative">
         <table className="w-full text-sm border-collapse" role="table">
-          <thead className="sticky top-0 z-20 bg-white shadow-sm">
+          <thead className="sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm">
             <tr>
-              <th className="sticky left-0 z-30 bg-white px-2 py-1.5 text-left w-12 border-b">Day</th>
-              <th className="sticky left-12 z-30 bg-white px-1 py-1.5 w-5 border-b" title="Status"></th>
+              <th className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-left w-12 border-b dark:border-gray-700">Day</th>
+              <th className="sticky left-12 z-30 bg-white dark:bg-gray-800 px-1 py-1.5 w-5 border-b dark:border-gray-700" title="Status"></th>
               <th
-                className="sticky left-[4.25rem] z-30 bg-white px-2 py-1.5 text-right w-16 border-b"
+                className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-right w-16 border-b dark:border-gray-700"
                 role="columnheader"
               >
                 Worked
               </th>
-              <th className="px-1 py-1.5 text-center w-10 border-b text-xs border-l border-gray-200">📍</th>
-              <th className="w-px border-l border-b border-gray-300"></th>
+              <th className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700">📍</th>
+              <th className="w-px border-l border-b border-gray-300 dark:border-gray-600"></th>
               {allCategories.map((cat, catIdx) => (
                 <th
                   key={cat}
@@ -408,7 +408,7 @@ export function MonthGrid({
                   onDragOver={(e) => handleColDragOver(e, catIdx)}
                   onDrop={() => handleColDrop(catIdx, allCategories)}
                   onDragEnd={handleColDragEnd}
-                  className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b select-none ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''} ${colDragOverIdx === catIdx ? 'bg-indigo-50' : ''}`}
+                  className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''} ${colDragOverIdx === catIdx ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
                   role="columnheader"
                   title={
                     cat === autoCategory
@@ -432,7 +432,7 @@ export function MonthGrid({
                         if (e.key === 'Enter') commitRename(cat)
                         if (e.key === 'Escape') setEditingCat(null)
                       }}
-                      className="w-full bg-transparent text-xs border-b border-indigo-400 focus:outline-none text-left"
+                      className="w-full bg-transparent text-xs border-b border-indigo-400 dark:border-indigo-500 focus:outline-none text-left"
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
@@ -451,14 +451,14 @@ export function MonthGrid({
                   {/* Fixed-height badge row keeps all headers the same height */}
                   <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
                     {cat === autoCategory ? (
-                      <span className="text-[9px] text-indigo-400 font-medium tracking-wide leading-none">auto</span>
+                      <span className="text-[9px] text-indigo-400 dark:text-indigo-300 font-medium tracking-wide leading-none">auto</span>
                     ) : onAutoCategoryChange ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           onAutoCategoryChange(cat)
                         }}
-                        className="text-[9px] text-gray-300 hover:text-indigo-400 leading-none transition-colors"
+                        className="text-[9px] text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300 leading-none transition-colors"
                         title={`Set "${cat}" as auto category`}
                       >
                         ○
@@ -469,7 +469,7 @@ export function MonthGrid({
                   </span>
                 </th>
               ))}
-              <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200">
+              <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200 dark:border-gray-700">
                 <span className="text-xs">✓</span>
               </th>
             </tr>
@@ -497,16 +497,16 @@ export function MonthGrid({
                       {onSelectDate ? (
                         <button
                           onClick={() => onSelectDate(row.date)}
-                          className="font-mono text-xs text-indigo-600 hover:underline focus:outline-none"
+                          className="font-mono text-xs text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none"
                           title={`Open ${row.date}`}
                         >
                           {row.date.slice(8)}
-                          <span className="text-gray-400 ml-0.5">{dayLabel}</span>
+                          <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
                         </button>
                       ) : (
                         <span title={row.date}>
                           {row.date.slice(8)}
-                          <span className="text-gray-400 ml-0.5">{dayLabel}</span>
+                          <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
                         </span>
                       )}
                     </td>
@@ -525,17 +525,17 @@ export function MonthGrid({
                       repository={workPeriodRepository}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}`}
                     />
-                    <td className="px-0 py-0 w-10 text-center border-l border-gray-200">
+                    <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">
                       <button
                         onClick={() => cycleLocation(row.date)}
-                        className="w-full h-full text-xs hover:bg-gray-100 py-1"
+                        className="w-full h-full text-xs hover:bg-gray-100 dark:hover:bg-gray-700 py-1"
                         aria-label={`Location ${row.date}`}
                         title={loc}
                       >
                         {loc === 'Office' ? '🏢' : '🏠'}
                       </button>
                     </td>
-                    <td className="w-px border-l border-gray-200"></td>
+                    <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
                     {allCategories.map((cat) => {
                       const isAutoTarget = cat === autoCategory
                       const hasAutoHours = isAutoTarget && row.autoCategoryHours > 0
@@ -544,7 +544,7 @@ export function MonthGrid({
                         <td key={cat} className="px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem]">
                           {isDayConfirmed || (isAutoTarget && !row.entries[cat] && hasAutoHours) ? (
                             <span
-                              className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-400"
+                              className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-400 dark:text-gray-500"
                               data-testid={isAutoTarget && !isDayConfirmed ? 'auto-category' : undefined}
                             >
                               {(() => {
@@ -572,13 +572,13 @@ export function MonthGrid({
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' && e.target instanceof HTMLInputElement) e.target.blur()
                                 }}
-                                className={`w-full rounded border px-1 py-0.5 text-right text-xs ${hasAutoHours ? 'bg-indigo-50' : ''}`}
+                                className={`w-full rounded border px-1 py-0.5 text-right text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 ${hasAutoHours ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
                               />
                               {getCellValue(row, cat) !== '' && (
                                 <button
                                   onClick={() => clearCell(row.date, cat)}
                                   aria-label={`Clear ${cat} on ${row.date}`}
-                                  className="absolute -top-1.5 -right-1.5 z-10 hidden group-hover/cell:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-100 text-[9px] font-bold text-red-500 hover:bg-red-200 leading-none"
+                                  className="absolute -top-1.5 -right-1.5 z-10 hidden group-hover/cell:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 text-[9px] font-bold text-red-500 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 leading-none"
                                 >
                                   ×
                                 </button>
@@ -589,7 +589,7 @@ export function MonthGrid({
                       )
                     })}
                     <td
-                      className={`w-10 text-center border-l border-gray-200 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
+                      className={`w-10 text-center border-l border-gray-200 dark:border-gray-700 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
                       onClick={() => {
                         if (isNonWorkDay) return
                         if (confirmedDays.has(row.date)) {
@@ -603,7 +603,7 @@ export function MonthGrid({
                     >
                       {!isNonWorkDay && (
                         <span
-                          className={`text-xs font-bold ${confirmedDays.has(row.date) ? 'text-emerald-600' : 'text-gray-300'}`}
+                          className={`text-xs font-bold ${confirmedDays.has(row.date) ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-300 dark:text-gray-600'}`}
                         >
                           {confirmedDays.has(row.date) ? '✓' : '○'}
                         </span>
@@ -616,24 +616,24 @@ export function MonthGrid({
               return (
                 <Fragment key={group.label}>
                   {group.label && (
-                    <tr className="bg-indigo-50/60">
-                      <td colSpan={colCount} className="px-2 py-1 text-xs font-semibold text-indigo-700 border-b">
+                    <tr className="bg-indigo-50/60 dark:bg-indigo-900/20">
+                      <td colSpan={colCount} className="px-2 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 border-b dark:border-gray-700">
                         {group.label}
                       </td>
                     </tr>
                   )}
                   {groupRows}
                   {group.label && (
-                    <tr className="bg-indigo-50/40 border-t">
-                      <td className="sticky left-0 z-10 bg-indigo-50/40 px-2 py-0.5 text-xs font-medium">
+                    <tr className="bg-indigo-50/40 dark:bg-indigo-900/20 border-t dark:border-gray-700">
+                      <td className="sticky left-0 z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-xs font-medium">
                         {group.label} Total
                       </td>
-                      <td className="sticky left-12 z-10 bg-indigo-50/40"></td>
-                      <td className="sticky left-[4.25rem] z-10 bg-indigo-50/40 px-2 py-0.5 text-right text-xs font-medium">
+                      <td className="sticky left-12 z-10 bg-indigo-50/40 dark:bg-indigo-900/20"></td>
+                      <td className="sticky left-[4.25rem] z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-right text-xs font-medium">
                         {sprintWorked.toFixed(2)}
                       </td>
                       <td></td>
-                      <td className="w-px border-l border-gray-200"></td>
+                      <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
                       {allCategories.map((cat) => {
                         const catTotal = group.rows.reduce((sum, row) => {
                           const manual = row.entries[cat] ?? 0
@@ -656,15 +656,15 @@ export function MonthGrid({
               )
             })}
           </tbody>
-          <tfoot className="sticky bottom-0 z-20 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
-            <tr className="border-t font-semibold">
-              <td className="sticky left-0 z-30 bg-white px-2 py-1">Total</td>
-              <td className="sticky left-12 z-30 bg-white"></td>
-              <td className="sticky left-[4.25rem] z-30 bg-white px-2 py-1 text-right" data-testid="total-worked">
+          <tfoot className="sticky bottom-0 z-20 bg-white dark:bg-gray-800 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
+            <tr className="border-t dark:border-gray-700 font-semibold">
+              <td className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-2 py-1">Total</td>
+              <td className="sticky left-12 z-30 bg-white dark:bg-gray-800"></td>
+              <td className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1 text-right" data-testid="total-worked">
                 {totalWorked.toFixed(2)}
               </td>
               <td></td>
-              <td className="w-px border-l border-gray-300"></td>
+              <td className="w-px border-l border-gray-300 dark:border-gray-600"></td>
               {allCategories.map((cat) => {
                 const catTotal = rows.reduce((sum, row) => {
                   const manual = row.entries[cat] ?? 0
@@ -677,7 +677,7 @@ export function MonthGrid({
                   </td>
                 )
               })}
-              <td className="w-10 border-l border-gray-200"></td>
+              <td className="w-10 border-l border-gray-200 dark:border-gray-700"></td>
             </tr>
           </tfoot>
         </table>
@@ -691,17 +691,17 @@ export function MonthGrid({
         <div
           ref={popoverRef}
           style={{ top: dotPopover.top, left: dotPopover.left }}
-          className="fixed z-[300] w-52 rounded-lg border bg-white p-3 shadow-lg"
+          className="fixed z-[300] w-52 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg"
         >
           {/* Status name + reason */}
           <div className="mb-3 flex items-center gap-2">
             <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[dotPopover.displayStatus]}`} aria-hidden="true" />
-            <span className="text-sm font-semibold text-gray-800">{STATUS_LABEL[dotPopover.displayStatus]}</span>
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{STATUS_LABEL[dotPopover.displayStatus]}</span>
           </div>
-          <p className="mb-3 text-xs text-gray-600">{dotPopover.reason}</p>
+          <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">{dotPopover.reason}</p>
 
           {/* Day type selector */}
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">Day type</p>
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Day type</p>
           <div className="flex flex-wrap gap-1">
             {DAY_TYPE_OPTIONS.map((opt) => (
               <button
@@ -709,8 +709,8 @@ export function MonthGrid({
                 onClick={() => handleDayTypeSelect(opt.value)}
                 className={`rounded px-2 py-0.5 text-xs transition-colors ${
                   dotPopover.currentDayType === opt.value
-                    ? 'bg-indigo-600 text-white'
-                    : 'border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
+                    : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
               >
                 {opt.label}

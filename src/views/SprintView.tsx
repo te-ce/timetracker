@@ -90,20 +90,20 @@ export function SprintView() {
       <div className="flex items-center">
         <button
           onClick={() => setSprintIndex(activeIndex - 1)}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
           ← Prev
         </button>
         <div className="flex flex-1 items-center justify-center gap-2">
           <h2 className="text-lg font-semibold">
             Sprint {sprint.index + 1}
-            <span className="ml-2 text-sm font-normal text-gray-500">
+            <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
               {sprint.start} → {sprint.end}
             </span>
           </h2>
           <button
             onClick={() => setSprintIndex(null)}
-            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${sprintIndex === null ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 hover:bg-indigo-50'}`}
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${sprintIndex === null ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}
             aria-disabled={sprintIndex === null}
           >
             Current
@@ -111,7 +111,7 @@ export function SprintView() {
         </div>
         <button
           onClick={() => setSprintIndex(activeIndex + 1)}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
           Next →
         </button>

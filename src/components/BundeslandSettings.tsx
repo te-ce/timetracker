@@ -37,7 +37,7 @@ export function BundeslandSettings({ repository }: Props) {
           const bundesland = BUNDESLAENDER.find((b) => b.code === val)
           mutation.mutate(bundesland?.code ?? null)
         }}
-        className="w-64 rounded border px-3 py-2 text-sm"
+        className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
       >
         <option value="">None</option>
         {BUNDESLAENDER.map((b) => (
@@ -46,7 +46,7 @@ export function BundeslandSettings({ repository }: Props) {
           </option>
         ))}
       </select>
-      <p className="text-xs text-gray-500">Used to auto-detect public holidays for your state.</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Used to auto-detect public holidays for your state.</p>
     </div>
   )
 }

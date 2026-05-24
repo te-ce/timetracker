@@ -76,7 +76,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
   return (
     <section aria-label="Work windows" className="flex flex-col gap-6">
       {/* Add period form */}
-      <div className="flex items-end gap-3 rounded-xl border bg-white p-4 shadow-sm">
+      <div className="flex items-end gap-3 rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 p-4 shadow-sm">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Start
           <div className="flex gap-1">
@@ -87,12 +87,12 @@ export function WorkPeriodPanel({ date, repository }: Props) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAdd()
               }}
-              className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
             />
             <button
               type="button"
               onClick={() => setStart(nowHHMM())}
-              className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+              className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Now
             </button>
@@ -108,12 +108,12 @@ export function WorkPeriodPanel({ date, repository }: Props) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleAdd()
               }}
-              className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
             />
             <button
               type="button"
               onClick={() => setEnd(nowHHMM())}
-              className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+              className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Now
             </button>
@@ -121,7 +121,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
         </label>
         <button
           onClick={handleAdd}
-          className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40"
+          className="rounded-lg bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-40"
           disabled={!start}
         >
           Add
@@ -130,7 +130,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
 
       {/* Periods list + summary */}
       {sorted.length === 0 ? (
-        <p className="rounded-xl border border-dashed bg-white p-6 text-center text-sm text-gray-400">
+        <p className="rounded-xl border border-dashed bg-white dark:bg-gray-800 dark:border-gray-700 p-6 text-center text-sm text-gray-400 dark:text-gray-500">
           No work periods recorded — add your first time block above.
         </p>
       ) : (
@@ -142,7 +142,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
               return (
                 <li
                   key={w.id}
-                  className="relative flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 text-sm shadow-sm"
+                  className="relative flex items-center justify-between rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 px-4 py-2.5 text-sm shadow-sm"
                 >
                   {editingId === w.id ? (
                     <>
@@ -156,12 +156,12 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                             if (e.key === 'Escape') handleEditCancel()
                             if (e.key === 'Enter') handleEditSave()
                           }}
-                          className="rounded border px-2 py-1 text-sm"
+                          className="rounded border px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                         />
                         <button
                           type="button"
                           onClick={() => setEditStart(nowHHMM())}
-                          className="text-xs text-gray-400 hover:text-gray-600"
+                          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                         >
                           Now
                         </button>
@@ -175,21 +175,21 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                             if (e.key === 'Escape') handleEditCancel()
                             if (e.key === 'Enter') handleEditSave()
                           }}
-                          className="rounded border px-2 py-1 text-sm"
+                          className="rounded border px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                         />
                         <button
                           type="button"
                           onClick={() => setEditEnd(nowHHMM())}
-                          className="text-xs text-gray-400 hover:text-gray-600"
+                          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                         >
                           Now
                         </button>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={handleEditSave} className="text-xs text-indigo-600 hover:text-indigo-800">
+                        <button onClick={handleEditSave} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">
                           Save
                         </button>
-                        <button onClick={handleEditCancel} className="text-xs text-gray-400 hover:text-gray-600">
+                        <button onClick={handleEditCancel} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
                           Cancel
                         </button>
                       </div>
@@ -197,13 +197,13 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                   ) : (
                     <>
                       <button
-                        className="font-mono font-medium hover:text-indigo-600 text-left"
+                        className="font-mono font-medium hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
                         onClick={() => handleEditStart(w)}
                         aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
                       >
                         {w.start} – {w.end ?? '…'}
                       </button>
-                      <button onClick={() => handleRemove(w.id)} className="text-xs text-gray-400 hover:text-red-500">
+                      <button onClick={() => handleRemove(w.id)} className="text-xs text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400">
                         Remove
                       </button>
                     </>
@@ -212,12 +212,12 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                     <div className="group absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 translate-y-1/2">
                       <button
                         onClick={() => handleMerge(w, next)}
-                        className="cursor-pointer select-none text-base leading-none text-gray-400 opacity-30 transition-all hover:scale-125 hover:text-indigo-500 hover:opacity-100"
+                        className="cursor-pointer select-none text-base leading-none text-gray-400 dark:text-gray-500 opacity-30 transition-all hover:scale-125 hover:text-indigo-500 dark:hover:text-indigo-400 hover:opacity-100"
                         aria-label={`Merge ${w.start}–${w.end} with ${next.start}–${next.end ?? '…'}`}
                       >
                         🔗
                       </button>
-                      <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
+                      <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 dark:bg-gray-700 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100">
                         Merge periods
                       </span>
                     </div>

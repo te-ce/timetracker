@@ -37,7 +37,7 @@ export function AutoCategorySettings({ repository }: Props) {
           const val = e.target.value
           mutation.mutate(val === '' ? null : val)
         }}
-        className="w-64 rounded border px-3 py-2 text-sm"
+        className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
       >
         <option value="">None (disabled)</option>
         {allCategories.map((c) => (
@@ -46,7 +46,7 @@ export function AutoCategorySettings({ repository }: Props) {
           </option>
         ))}
       </select>
-      <p className="text-xs text-gray-500">Remaining hours after manual entries auto-fill this category.</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Remaining hours after manual entries auto-fill this category.</p>
     </div>
   )
 }

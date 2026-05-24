@@ -73,15 +73,15 @@ export function CategoryReorderPopover({ repository }: Props) {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
+        className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         title="Reorder categories"
         aria-label="Reorder categories"
       >
         ⠿ Categories
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border bg-white p-3 shadow-lg">
-          <p className="mb-2 text-xs font-medium text-gray-500">Drag to reorder</p>
+        <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg">
+          <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Drag to reorder</p>
           <ul className="flex flex-col gap-1">
             {categories.map((cat, idx) => (
               <li
@@ -91,9 +91,9 @@ export function CategoryReorderPopover({ repository }: Props) {
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={handleDragEnd}
-                className={`flex items-center gap-2 rounded border px-2 py-1 text-xs cursor-grab active:cursor-grabbing select-none ${dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50' : 'bg-white'}`}
+                className={`flex items-center gap-2 rounded border px-2 py-1 text-xs cursor-grab active:cursor-grabbing select-none ${dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : 'bg-white dark:bg-gray-800 dark:border-gray-700'}`}
               >
-                <span className="text-gray-300" aria-hidden>
+                <span className="text-gray-300 dark:text-gray-600" aria-hidden>
                   ⠿
                 </span>
                 <span className="flex-1 truncate">{cat}</span>

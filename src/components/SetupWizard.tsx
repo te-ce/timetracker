@@ -84,11 +84,11 @@ export function SetupWizard({ onSkip }: Props) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="bg-white rounded-2xl shadow-lg max-w-md w-full p-8 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg max-w-md w-full p-8 space-y-6">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome to Timetracker</h1>
-          <p className="text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome to Timetracker</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             To enable cloud sync and SharePoint export, connect your Microsoft Azure AD app.
             You can skip this and use the app in local-only mode.
           </p>
@@ -96,7 +96,7 @@ export function SetupWizard({ onSkip }: Props) {
 
         <div className="space-y-4">
           <div className="space-y-1">
-            <label htmlFor="clientId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="clientId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Application (Client) ID
             </label>
             <input
@@ -105,12 +105,12 @@ export function SetupWizard({ onSkip }: Props) {
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400"
             />
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="tenantId" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="tenantId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Directory (Tenant) ID
             </label>
             <input
@@ -119,13 +119,13 @@ export function SetupWizard({ onSkip }: Props) {
               value={tenantId}
               onChange={(e) => setTenantId(e.target.value)}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-400 dark:text-gray-500">
             Find these in{' '}
             <a
               href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps"
@@ -142,18 +142,18 @@ export function SetupWizard({ onSkip }: Props) {
         <div className="flex flex-col gap-2">
           <button
             onClick={handleSave}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white font-medium py-2 rounded-lg text-sm transition-colors"
           >
             Save &amp; Connect
           </button>
           <button
             onClick={() => void handleLocalFolder()}
             disabled={pickingFolder}
-            className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
+            className="w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
           >
             {pickingFolder ? 'Picking folder…' : 'Use Local Folder'}
           </button>
-          <p className="text-xs text-gray-400 text-center">
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
             Supported in Chrome, Edge &amp; Opera.{' '}
             Brave needs{' '}
             <code className="font-mono">brave://flags/#file-system-access-api</code> enabled.{' '}
@@ -161,7 +161,7 @@ export function SetupWizard({ onSkip }: Props) {
           </p>
           <button
             onClick={handleSkip}
-            className="w-full text-gray-500 hover:text-gray-700 text-sm py-2 rounded-lg transition-colors"
+            className="w-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm py-2 rounded-lg transition-colors"
           >
             Skip — use locally only
           </button>

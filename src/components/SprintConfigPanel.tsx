@@ -43,7 +43,7 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
   })
 
   return (
-    <div className="flex items-end gap-3 rounded-xl border bg-white p-4 shadow-sm">
+    <div className="flex items-end gap-3 rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 p-4 shadow-sm">
       <label className="flex flex-col gap-1 text-sm font-medium">
         Start date
         <input
@@ -54,7 +54,7 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') saveMutation.mutate()
           }}
-          className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium">
@@ -73,7 +73,7 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
       </label>
       <button
         onClick={() => saveMutation.mutate()}
-        className="rounded-lg bg-indigo-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700"
+        className="rounded-lg bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
       >
         Save
       </button>

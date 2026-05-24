@@ -65,7 +65,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
         <button
           aria-label="Previous month"
           onClick={handlePrev}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
           ← Prev
         </button>
@@ -79,7 +79,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
               const now = new Date()
               onMonthChange?.(now.getFullYear(), now.getMonth())
             }}
-            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${isCurrentMonth ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 hover:bg-orange-50'}`}
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isCurrentMonth ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30'}`}
             aria-disabled={year === new Date().getFullYear() && month === new Date().getMonth()}
           >
             Today
@@ -88,7 +88,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
         <button
           aria-label="Next month"
           onClick={handleNext}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
           Next →
         </button>
@@ -96,7 +96,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
 
       <div className="grid grid-cols-7 gap-1">
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
-          <div key={d} className="py-1 text-center text-xs font-medium text-gray-500">
+          <div key={d} className="py-1 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
             {d}
           </div>
         ))}
@@ -135,7 +135,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
               </button>
               {reason && (
                 <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden w-max max-w-52 -translate-x-1/2 group-hover:block">
-                  <div className="rounded bg-gray-800 px-2.5 py-2 text-xs text-white shadow-lg">
+                  <div className="rounded bg-gray-800 dark:bg-gray-700 px-2.5 py-2 text-xs text-white shadow-lg">
                     <p className="font-semibold">{STATUS_NAME[status]}</p>
                     <p className="mt-0.5 text-gray-300">{reason}</p>
                   </div>

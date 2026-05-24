@@ -15,7 +15,7 @@ const localFolder = isLocalFolderMode()
 export function SettingsView() {
   return (
     <div className="flex flex-col gap-8">
-      <h2 className="text-xl font-semibold">Settings</h2>
+      <h2 className="text-xl font-semibold dark:text-gray-100">Settings</h2>
       {!localFolder && <CloudSyncSettings />}
       <AutoCategorySettings repository={configRepo} />
       <BundeslandSettings repository={configRepo} />

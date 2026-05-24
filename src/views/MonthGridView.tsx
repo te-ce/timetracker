@@ -75,7 +75,7 @@ export function MonthGridView() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center">
-        <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">
+        <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
           ← Prev
         </button>
         <div className="flex flex-1 items-center justify-center gap-2">
@@ -86,13 +86,13 @@ export function MonthGridView() {
               setYear(now.getFullYear())
               setMonth(now.getMonth() + 1)
             }}
-            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${isCurrentMonth ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 hover:bg-orange-50'}`}
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isCurrentMonth ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30'}`}
             aria-disabled={isCurrentMonth}
           >
             Today
           </button>
         </div>
-        <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100">
+        <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
           Next →
         </button>
       </div>

@@ -120,7 +120,7 @@ export function DayView() {
       <div className="flex items-center gap-4">
         <button
           aria-label="Previous day"
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
           onClick={() => {
             const d = new Date(selectedDate)
             d.setDate(d.getDate() - 1)
@@ -132,7 +132,7 @@ export function DayView() {
         <div className="flex flex-1 items-center justify-center gap-2">
           <h2 className="text-xl font-semibold">{formatDate(selectedDate)}</h2>
           <button
-            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity ${selectedDate === todayIso ? 'text-gray-400 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 hover:bg-indigo-50'}`}
+            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${selectedDate === todayIso ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}
             onClick={() => setSelectedDate(toLocalIso(new Date()))}
             disabled={selectedDate === todayIso}
             aria-label="Go to today"
@@ -142,7 +142,7 @@ export function DayView() {
         </div>
         <button
           aria-label="Next day"
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100"
+          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
           onClick={() => {
             const d = new Date(selectedDate)
             d.setDate(d.getDate() + 1)
@@ -158,7 +158,7 @@ export function DayView() {
           <DayTypePicker date={selectedDate} repository={dayTypeOverrideRepo} />
           <button
             onClick={() => locationMutation.mutate()}
-            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100"
+            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
             aria-label={`Work location: ${effectiveLocation}. Click to switch to ${effectiveLocation === 'Office' ? 'Remote' : 'Office'}`}
           >
             <span aria-hidden="true">{effectiveLocation === 'Office' ? '🏢' : '🏠'}</span> {effectiveLocation}
@@ -173,7 +173,7 @@ export function DayView() {
                 {STATUS_LABEL[badgeStatus]}
               </span>
               <div className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 hidden -translate-x-1/2 group-hover:block z-10">
-                <div className="rounded bg-gray-800 px-2 py-1 text-xs text-white shadow-lg whitespace-nowrap">
+                <div className="rounded bg-gray-800 dark:bg-gray-700 px-2 py-1 text-xs text-white shadow-lg whitespace-nowrap">
                   {statusReason}
                 </div>
               </div>
@@ -182,7 +182,7 @@ export function DayView() {
           {isConfirmed ? (
             <button
               onClick={() => unconfirmMutation.mutate()}
-              className="rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100"
+              className="rounded border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
               aria-label="Unconfirm day"
             >
               ✓ Confirmed
@@ -190,7 +190,7 @@ export function DayView() {
           ) : (
             <button
               onClick={() => confirmMutation.mutate()}
-              className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100"
+              className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
               aria-label="Confirm day"
             >
               Confirm

@@ -83,8 +83,8 @@ export function LocalExcelSettings({ repository }: Props) {
   return (
     <section aria-label="Local Excel workbook settings" className="flex flex-col gap-4">
       <div>
-        <h3 className="text-sm font-semibold text-gray-700">Local Excel Workbook</h3>
-        <p className="text-xs text-gray-500 mt-1">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Local Excel Workbook</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
           Select the Excel file and worksheet tab to use for sprint export.
         </p>
       </div>
@@ -94,7 +94,7 @@ export function LocalExcelSettings({ repository }: Props) {
           <button
             onClick={() => void handleScanFiles()}
             disabled={loading}
-            className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
+            className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
           >
             {loading ? 'Scanning…' : 'Scan folder for .xlsx files'}
           </button>
@@ -105,7 +105,7 @@ export function LocalExcelSettings({ repository }: Props) {
             aria-label="Excel workbook file"
             value={currentFile}
             onChange={(e) => void handleFileChange(e.target.value)}
-            className="w-64 rounded border px-3 py-2 text-sm"
+            className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           >
             <option value="">— select a file —</option>
             {xlsxFiles.map((f) => (
@@ -115,7 +115,7 @@ export function LocalExcelSettings({ repository }: Props) {
         )}
 
         {currentFile && xlsxFiles.length === 0 && (
-          <p className="text-xs text-green-700">✓ {currentFile}</p>
+          <p className="text-xs text-green-700 dark:text-emerald-400">✓ {currentFile}</p>
         )}
       </div>
 
@@ -125,7 +125,7 @@ export function LocalExcelSettings({ repository }: Props) {
             <button
               onClick={() => void handleLoadSheets()}
               disabled={loading}
-              className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
+              className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
             >
               {loading ? 'Loading…' : 'Load sheets'}
             </button>
@@ -136,7 +136,7 @@ export function LocalExcelSettings({ repository }: Props) {
               aria-label="Target sheet"
               value={currentSheet}
               onChange={(e) => sheetMutation.mutate(e.target.value)}
-              className="w-64 rounded border px-3 py-2 text-sm"
+              className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             >
               <option value="">— select a sheet —</option>
               {sheets.map((s) => (
@@ -146,7 +146,7 @@ export function LocalExcelSettings({ repository }: Props) {
           )}
 
           {currentSheet && sheets.length === 0 && (
-            <p className="text-xs text-green-700">✓ {currentSheet}</p>
+            <p className="text-xs text-green-700 dark:text-emerald-400">✓ {currentSheet}</p>
           )}
         </div>
       )}

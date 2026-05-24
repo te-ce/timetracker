@@ -22,7 +22,7 @@ export function AutoCategoryPicker() {
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <label htmlFor="auto-cat-inline" className="text-gray-500 text-xs font-medium">
+      <label htmlFor="auto-cat-inline" className="text-gray-500 dark:text-gray-400 text-xs font-medium">
         Auto:
       </label>
       <select
@@ -33,7 +33,7 @@ export function AutoCategoryPicker() {
           const val = e.target.value
           mutation.mutate(val === '' ? null : val)
         }}
-        className="rounded border px-2 py-1 text-xs"
+        className="rounded border px-2 py-1 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
       >
         <option value="">None</option>
         {allCategories.map((c) => (

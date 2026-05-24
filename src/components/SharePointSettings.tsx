@@ -34,8 +34,8 @@ export function SharePointSettings({ repository }: Props) {
 
   return (
     <section aria-label="SharePoint workbook settings" className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold text-gray-700">SharePoint Workbook</h3>
-      <p className="text-xs text-gray-500">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">SharePoint Workbook</h3>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
         Paste the SharePoint URL of your Excel workbook. Used for sprint export.
       </p>
       <div className="flex gap-2">
@@ -48,13 +48,13 @@ export function SharePointSettings({ repository }: Props) {
           onBlur={() => {
             if (isDirty) handleSave()
           }}
-          className="flex-1 rounded border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="flex-1 rounded border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-indigo-500"
         />
         {isDirty && (
           <button
             onClick={handleSave}
             disabled={mutation.isPending}
-            className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            className="rounded bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
           >
             Save
           </button>
@@ -66,7 +66,7 @@ export function SharePointSettings({ repository }: Props) {
         </p>
       )}
       {config?.sharepointUrl && (
-        <p className="truncate text-xs text-green-700">✓ {config.sharepointUrl}</p>
+        <p className="truncate text-xs text-green-700 dark:text-emerald-400">✓ {config.sharepointUrl}</p>
       )}
     </section>
   )

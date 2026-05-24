@@ -52,21 +52,21 @@ export function SheetSelector({ repository }: Props) {
 
   return (
     <section aria-label="Target sheet settings" className="flex flex-col gap-3">
-      <h3 className="text-sm font-semibold text-gray-700">Target Sheet</h3>
-      <p className="text-xs text-gray-500">
+      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Target Sheet</h3>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
         Select the worksheet tab to write sprint data into.
       </p>
       <div className="flex items-center gap-2">
         <button
           onClick={() => void handleLoadSheets()}
           disabled={!isReady || loadingSheets}
-          className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 disabled:opacity-40"
+          className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
           aria-label="Load sheets from workbook"
         >
           {loadingSheets ? 'Loading…' : 'Load sheets'}
         </button>
         {!isReady && (
-          <span className="text-xs text-gray-400">
+          <span className="text-xs text-gray-400 dark:text-gray-500">
             {!sharepointUrl ? "Enter a SharePoint URL first" : "Sign in to load sheets"}
           </span>
         )}
@@ -81,7 +81,7 @@ export function SheetSelector({ repository }: Props) {
           aria-label="Target sheet"
           value={currentSheet}
           onChange={(e) => saveMutation.mutate(e.target.value)}
-          className="w-64 rounded border px-3 py-2 text-sm"
+          className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
         >
           <option value="">— select a sheet —</option>
           {sheets.map((s) => (
@@ -91,7 +91,7 @@ export function SheetSelector({ repository }: Props) {
       )}
 
       {currentSheet && sheets.length === 0 && (
-        <p className="text-xs text-green-700">✓ {currentSheet}</p>
+        <p className="text-xs text-green-700 dark:text-emerald-400">✓ {currentSheet}</p>
       )}
 
       {saveMutation.isError && (

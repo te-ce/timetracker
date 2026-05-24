@@ -34,7 +34,7 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
         <h3 className="font-semibold">Sprint Report</h3>
         <span
           className={`rounded-full px-3 py-0.5 text-xs font-medium ${
-            exportStatus === 'exported' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+            exportStatus === 'exported' ? 'bg-green-100 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
           }`}
         >
           {exportStatus === 'exported' ? 'Exported' : 'Pending'}
@@ -47,16 +47,16 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
           return (
             <li
               key={category}
-              className="flex items-center justify-between rounded-lg border bg-white px-4 py-2.5 shadow-sm"
+              className="flex items-center justify-between rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 px-4 py-2.5 shadow-sm"
             >
               <span className="text-sm font-medium">{category}</span>
-              <span className={`font-mono text-sm font-bold ${hours === 0 ? 'text-gray-300' : ''}`}>{hours}h</span>
+              <span className={`font-mono text-sm font-bold ${hours === 0 ? 'text-gray-300 dark:text-gray-600' : ''}`}>{hours}h</span>
             </li>
           )
         })}
       </ul>
 
-      <div className="rounded-lg border bg-indigo-50 px-4 py-3 text-right text-sm font-semibold">Total: {total}h</div>
+      <div className="rounded-lg border bg-indigo-50 dark:bg-indigo-900/40 dark:border-indigo-700 px-4 py-3 text-right text-sm font-semibold">Total: {total}h</div>
 
       {exportStatus === 'pending' && onExport && (
         <div className="flex flex-col items-end gap-2">
@@ -69,7 +69,7 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
             {exporting ? 'Exporting…' : 'Export to SharePoint'}
           </button>
           {!exportReady && (
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 dark:text-gray-500">
               Complete SharePoint setup in Settings to enable export.
             </p>
           )}

@@ -240,17 +240,17 @@ export function TimeEntryPanel({
               onDragEnd={handleDragEnd}
               className={`flex items-center justify-between rounded-lg border px-3 py-2.5 shadow-sm transition-colors ${
                 isTracking
-                  ? 'border-green-400 bg-green-50'
+                  ? 'border-green-400 bg-green-50 dark:bg-green-900/20 dark:border-green-700'
                   : isAutoTarget && autoHrs > 0
-                    ? 'border-indigo-300 bg-indigo-50'
+                    ? 'border-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 dark:border-indigo-700'
                     : dragOverIdx === idx
-                      ? 'border-indigo-400 bg-indigo-50/50'
-                      : 'bg-white'
+                      ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/30'
+                      : 'bg-white dark:bg-gray-800 dark:border-gray-700'
               } ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}
             >
               <div className="flex items-center gap-2">
                 {onCategoryReorder && (
-                  <span className="text-gray-300 select-none" aria-hidden>
+                  <span className="text-gray-300 dark:text-gray-600 select-none" aria-hidden>
                     ⠿
                   </span>
                 )}
@@ -261,19 +261,19 @@ export function TimeEntryPanel({
                       isAutoTarget ? `Unset ${category} as auto category` : `Set ${category} as auto category`
                     }
                     onClick={() => onAutoCategoryChange(isAutoTarget ? null : category)}
-                    className={`text-base leading-none transition-colors ${isAutoTarget ? 'text-indigo-600 hover:text-gray-400' : 'text-gray-300 hover:text-indigo-400'}`}
+                    className={`text-base leading-none transition-colors ${isAutoTarget ? 'text-indigo-600 dark:text-indigo-400 hover:text-gray-400 dark:hover:text-gray-500' : 'text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300'}`}
                   >
                     {isAutoTarget ? '◉' : '○'}
                   </button>
                 )}
                 <span className="text-sm font-medium">{category}</span>
                 {isAutoTarget && autoHrs > 0 && (
-                  <span className="rounded bg-indigo-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700">
+                  <span className="rounded bg-indigo-200 dark:bg-indigo-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-300">
                     +{autoHrs.toFixed(2)} auto
                   </span>
                 )}
                 {activeTracking && isTracking && (
-                  <span className="rounded bg-green-200 px-1.5 py-0.5 text-[10px] font-bold text-green-800 tabular-nums">
+                  <span className="rounded bg-green-200 dark:bg-green-900/40 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:text-green-400 tabular-nums">
                     ⏱ {formatElapsed(activeTracking.startedAt)}
                   </span>
                 )}
@@ -283,7 +283,7 @@ export function TimeEntryPanel({
                   <button
                     aria-label={`Stop tracking ${category}`}
                     onClick={() => stopTrackingMutation.mutate()}
-                    className="rounded border border-red-300 bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 hover:bg-red-100"
+                    className="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
                   >
                     ⏹ Stop
                   </button>
@@ -291,7 +291,7 @@ export function TimeEntryPanel({
                   <button
                     aria-label={`Start tracking ${category}`}
                     onClick={() => startTrackingMutation.mutate(category)}
-                    className="rounded border border-green-300 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-100"
+                    className="rounded border border-green-300 dark:border-green-700 bg-green-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-emerald-400 hover:bg-green-100 dark:hover:bg-emerald-900/40"
                   >
                     ▶ Start
                   </button>
@@ -299,7 +299,7 @@ export function TimeEntryPanel({
                 <button
                   aria-label={`Decrease ${category}`}
                   onClick={() => handleIncrement(category, -0.25)}
-                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100"
+                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
                 >
                   −
                 </button>
@@ -315,12 +315,12 @@ export function TimeEntryPanel({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleSave(category)
                   }}
-                  className="w-16 rounded border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  className="w-16 rounded border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
                 />
                 <button
                   aria-label={`Increase ${category}`}
                   onClick={() => handleIncrement(category, 0.25)}
-                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100"
+                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
                 >
                   +
                 </button>
@@ -331,13 +331,13 @@ export function TimeEntryPanel({
                       deleteMutation.mutate(existing.id)
                       setDraft((d) => ({ ...d, [category]: undefined }))
                     }}
-                    className="rounded border px-2 py-0.5 text-sm text-gray-400 hover:border-red-300 hover:text-red-500"
+                    className="rounded border px-2 py-0.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 hover:text-red-500 dark:hover:text-red-400"
                   >
                     ×
                   </button>
                 )}
                 {isAutoTarget && autoHrs > 0 && (
-                  <span className="ml-1 text-xs text-gray-500">= {displayTotal.toFixed(2)}</span>
+                  <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">= {displayTotal.toFixed(2)}</span>
                 )}
               </div>
             </li>
@@ -348,7 +348,7 @@ export function TimeEntryPanel({
       {totalHours > 0 && (
         <div
           aria-label="Total booked hours"
-          className="rounded-lg border bg-indigo-50 px-4 py-3 text-right text-sm font-semibold"
+          className="rounded-lg border bg-indigo-50 dark:bg-indigo-900/40 dark:border-indigo-700 px-4 py-3 text-right text-sm font-semibold"
         >
           Total: {totalHours}h
         </div>
