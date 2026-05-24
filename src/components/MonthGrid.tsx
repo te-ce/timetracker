@@ -258,13 +258,11 @@ export function MonthGrid({
     const existing = entries.find((e) => e.date === row.date && e.category === category)
 
     if (isNaN(hours) || hours === 0) {
-      if (existing) deleteMutation.mutate(existing.id)
+      if (existing) deleteMutation.mutate(existing)
     } else {
       saveMutation.mutate({
-        id: existing?.id ?? crypto.randomUUID(),
-        date: row.date,
-        category,
-        hours,
+        entry: { id: existing?.id ?? crypto.randomUUID(), date: row.date, category, hours },
+        previous: existing ?? null,
       })
     }
 
@@ -277,7 +275,7 @@ export function MonthGrid({
 
   function clearCell(date: string, category: string) {
     const existing = entries.find((e) => e.date === date && e.category === category)
-    if (existing) deleteMutation.mutate(existing.id)
+    if (existing) deleteMutation.mutate(existing)
     setDrafts((d) => {
       const next = { ...d }
       delete next[draftKey(date, category)]

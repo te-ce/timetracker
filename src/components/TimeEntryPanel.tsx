@@ -154,13 +154,11 @@ export function TimeEntryPanel({
     const existing = findEntry(entries, category)
 
     if (isNaN(hours) || hours === 0) {
-      if (existing) deleteMutation.mutate(existing.id)
+      if (existing) deleteMutation.mutate(existing)
     } else {
       saveMutation.mutate({
-        id: existing?.id ?? crypto.randomUUID(),
-        date,
-        category,
-        hours,
+        entry: { id: existing?.id ?? crypto.randomUUID(), date, category, hours },
+        previous: existing ?? null,
       })
     }
 
@@ -173,13 +171,11 @@ export function TimeEntryPanel({
     const newHours = Math.max(0, current + delta)
 
     if (newHours === 0) {
-      if (existing) deleteMutation.mutate(existing.id)
+      if (existing) deleteMutation.mutate(existing)
     } else {
       saveMutation.mutate({
-        id: existing?.id ?? crypto.randomUUID(),
-        date,
-        category,
-        hours: newHours,
+        entry: { id: existing?.id ?? crypto.randomUUID(), date, category, hours: newHours },
+        previous: existing ?? null,
       })
     }
     setDraft((d) => ({ ...d, [category]: undefined }))
@@ -328,7 +324,7 @@ export function TimeEntryPanel({
                   <button
                     aria-label={`Clear ${category}`}
                     onClick={() => {
-                      deleteMutation.mutate(existing.id)
+                      deleteMutation.mutate(existing)
                       setDraft((d) => ({ ...d, [category]: undefined }))
                     }}
                     className="rounded border px-2 py-0.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 hover:text-red-500 dark:hover:text-red-400"
