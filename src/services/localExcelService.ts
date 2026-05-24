@@ -1,9 +1,9 @@
 import * as XLSX from 'xlsx'
 import type { ExcelRow } from './excelService'
-import { loadHandle, verifyPermission } from '../storage/folder-handle-store'
+import { loadHandle, loadExcelHandle, verifyPermission } from '../storage/folder-handle-store'
 
 async function getDir(): Promise<FileSystemDirectoryHandle> {
-  const handle = await loadHandle()
+  const handle = (await loadExcelHandle()) ?? (await loadHandle())
   if (!handle) throw new Error('No local folder configured.')
   const ok = await verifyPermission(handle)
   if (!ok) throw new Error('Permission denied for local folder.')

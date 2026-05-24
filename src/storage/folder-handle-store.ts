@@ -1,6 +1,7 @@
 const DB_NAME = 'timetracker-fs'
 const STORE_NAME = 'handles'
 const HANDLE_KEY = 'folder'
+const EXCEL_HANDLE_KEY = 'excel-folder'
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -11,42 +12,52 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-export async function saveHandle(handle: FileSystemDirectoryHandle): Promise<void> {
-  const db = await openDb()
-  await new Promise<void>((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite')
-    tx.objectStore(STORE_NAME).put(handle, HANDLE_KEY)
-    tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(new Error('Failed to save folder handle'))
-  })
-  db.close()
-}
-
-export async function loadHandle(): Promise<FileSystemDirectoryHandle | null> {
+async function getHandleByKey(key: string): Promise<FileSystemDirectoryHandle | null> {
   const db = await openDb()
   const result = await new Promise<FileSystemDirectoryHandle | null>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly')
-    const req = tx.objectStore(STORE_NAME).get(HANDLE_KEY)
+    const req = tx.objectStore(STORE_NAME).get(key)
     req.onsuccess = () => {
       const handle: unknown = req.result
       resolve((handle as FileSystemDirectoryHandle | undefined) ?? null)
     }
-    req.onerror = () => reject(new Error('Failed to load folder handle'))
+    req.onerror = () => reject(new Error(`Failed to load handle: ${key}`))
   })
   db.close()
   return result
 }
 
-export async function clearHandle(): Promise<void> {
+async function setHandleByKey(key: string, handle: FileSystemDirectoryHandle): Promise<void> {
   const db = await openDb()
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite')
-    tx.objectStore(STORE_NAME).delete(HANDLE_KEY)
+    tx.objectStore(STORE_NAME).put(handle, key)
     tx.oncomplete = () => resolve()
-    tx.onerror = () => reject(new Error('Failed to clear folder handle'))
+    tx.onerror = () => reject(new Error(`Failed to save handle: ${key}`))
   })
   db.close()
 }
+
+async function deleteHandleByKey(key: string): Promise<void> {
+  const db = await openDb()
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite')
+    tx.objectStore(STORE_NAME).delete(key)
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(new Error(`Failed to clear handle: ${key}`))
+  })
+  db.close()
+}
+
+// App data folder
+export const saveHandle = (h: FileSystemDirectoryHandle) => setHandleByKey(HANDLE_KEY, h)
+export const loadHandle = () => getHandleByKey(HANDLE_KEY)
+export const clearHandle = () => deleteHandleByKey(HANDLE_KEY)
+
+// Excel folder (optional — falls back to app data folder in callers)
+export const saveExcelHandle = (h: FileSystemDirectoryHandle) => setHandleByKey(EXCEL_HANDLE_KEY, h)
+export const loadExcelHandle = () => getHandleByKey(EXCEL_HANDLE_KEY)
+export const clearExcelHandle = () => deleteHandleByKey(EXCEL_HANDLE_KEY)
 
 export async function verifyPermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
   if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') return true

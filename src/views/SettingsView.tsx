@@ -4,6 +4,7 @@ import { CloudSyncSettings } from '../components/CloudSyncSettings'
 import { CustomCategorySettings } from '../components/CustomCategorySettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
 import { ExcelMappingSettings } from '../components/ExcelMappingSettings'
+import { LocalExcelFolderSettings } from '../components/LocalExcelFolderSettings'
 import { LocalExcelSettings } from '../components/LocalExcelSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
 import { SheetSelector } from '../components/SheetSelector'
@@ -22,7 +23,10 @@ export function SettingsView() {
       <DefaultLocationSettings repository={configRepo} />
       <CustomCategorySettings repository={configRepo} />
       {localFolder ? (
-        <LocalExcelSettings repository={configRepo} />
+        <>
+          <LocalExcelFolderSettings />
+          <LocalExcelSettings repository={configRepo} />
+        </>
       ) : (
         <>
           <SharePointSettings repository={configRepo} />
