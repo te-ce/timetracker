@@ -22,23 +22,24 @@ function SyncIndicator() {
 
   if (!msalInstance) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500" title="Microsoft not configured — local only">
-        <span aria-label="Local only mode">💾</span>
-        <span className="hidden sm:inline">Local only</span>
-      </div>
+      <span
+        className="text-sm text-gray-400 dark:text-gray-500 leading-none"
+        aria-label="Local only mode"
+        title="Microsoft not configured — local only"
+      >
+        💾
+      </span>
     )
   }
 
   return (
-    <div
-      className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500"
+    <span
+      className="text-sm text-gray-400 dark:text-gray-500 leading-none"
+      aria-label={isAuthenticated ? 'OneDrive sync active' : 'Offline mode'}
       title={isAuthenticated ? 'Synced with OneDrive' : 'Offline — sign in to sync'}
     >
-      <span aria-label={isAuthenticated ? 'OneDrive sync active' : 'Offline mode'}>
-        {isAuthenticated ? '☁️' : '💾'}
-      </span>
-      <span className="hidden sm:inline">{isAuthenticated ? 'Synced' : 'Offline'}</span>
-    </div>
+      {isAuthenticated ? '☁️' : '💾'}
+    </span>
   )
 }
 
@@ -220,22 +221,31 @@ function App() {
             {item.label}
           </Link>
         ))}
-        <div className="ml-auto flex items-center gap-2">
-          <RemainingHoursBadge />
-          <SyncIndicator />
-          <UndoButton />
-          <button
-            onClick={() => setLegendOpen((v) => !v)}
-            aria-label="Keyboard shortcuts"
-            title="Keyboard shortcuts (?)"
-            className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="2" y="4" width="20" height="16" rx="2" />
-              <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
-            </svg>
-          </button>
-          <ThemeToggle />
+        <div className="ml-auto flex items-center gap-3">
+          {/* Status indicators */}
+          <div className="flex items-center gap-2">
+            <RemainingHoursBadge />
+            <SyncIndicator />
+          </div>
+
+          <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-0.5">
+            <UndoButton />
+            <button
+              onClick={() => setLegendOpen((v) => !v)}
+              aria-label="Keyboard shortcuts"
+              title="Keyboard shortcuts (?)"
+              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
+              </svg>
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </nav>
       {legendOpen && <KeyboardShortcutLegend onClose={() => setLegendOpen(false)} />}
