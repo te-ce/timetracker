@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
@@ -7,12 +8,14 @@ import {
   workLocationRepo,
   dayConfirmationRepo,
   dayTypeOverrideRepo,
+  autoCategoryOverrideRepo,
   timeTrackingRepo,
 } from '../repositories/shared'
 import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { DayTypePicker } from '../components/DayTypePicker'
+import { ConfirmDialog } from '../components/ConfirmDialog'
 import { calculateWorkedHours } from '../domain/worktime'
 import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
@@ -114,6 +117,26 @@ export function DayView() {
   })
 
   const { displayStatus: badgeStatus, reason: statusReason } = dayClassification
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  const resetDayMutation = useMutation({
+    mutationFn: async () => {
+      const d = new Date(selectedDate)
+      const entries = await timeEntryRepo.findByDateRange(d, d)
+      const periods = await workPeriodRepo.findByDate(d)
+      await Promise.all([
+        ...entries.map((e) => timeEntryRepo.delete(e.id)),
+        ...periods.map((p) => workPeriodRepo.delete(p.id)),
+        workLocationRepo.delete(selectedDate),
+        dayTypeOverrideRepo.delete(selectedDate),
+        autoCategoryOverrideRepo.delete(selectedDate),
+        dayConfirmationRepo.unconfirm(selectedDate),
+      ])
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries()
+    },
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -196,6 +219,13 @@ export function DayView() {
               Confirm
             </button>
           )}
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="rounded border px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+            aria-label="Reset all data for this day"
+          >
+            Reset all
+          </button>
         </div>
       </div>
 
@@ -219,6 +249,20 @@ export function DayView() {
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
         onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
       />
+
+      {showResetConfirm && (
+        <ConfirmDialog
+          title="Reset all data for this day?"
+          message={`This will permanently delete all time entries, work periods, location, day type, and confirmation for ${formatDate(selectedDate)}. This cannot be undone.`}
+          confirmLabel="Reset day"
+          danger
+          onConfirm={() => {
+            setShowResetConfirm(false)
+            resetDayMutation.mutate()
+          }}
+          onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
     </div>
   )
 }

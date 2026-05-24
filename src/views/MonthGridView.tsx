@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo } from '../repositories/shared'
+import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo, autoCategoryOverrideRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
+import { ConfirmDialog } from '../components/ConfirmDialog'
+import { toLocalIso } from '../domain/dateUtils'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthQuery } from '../hooks/useMonthQuery'
 
@@ -53,6 +55,34 @@ export function MonthGridView() {
   const { config, dayTypeOverrides, workLocations, confirmedDays, overtimeToDate, trackedWorkDays, officeDays, officePercent, sollstunden } =
     useMonthQuery(year, month)
 
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  const resetMonthMutation = useMutation({
+    mutationFn: async () => {
+      const fromIso = toLocalIso(from)
+      const toIso = toLocalIso(to)
+      const [entries, periods, locations, overrides, autoCatOverrides, confirmedSet] = await Promise.all([
+        timeEntryRepo.findByDateRange(from, to),
+        workPeriodRepo.findByDateRange(from, to),
+        workLocationRepo.findByDateRange(fromIso, toIso),
+        dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
+        autoCategoryOverrideRepo.findByDateRange(fromIso, toIso),
+        dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
+      ])
+      await Promise.all([
+        ...entries.map((e) => timeEntryRepo.delete(e.id)),
+        ...periods.map((p) => workPeriodRepo.delete(p.id)),
+        ...[...locations.keys()].map((d) => workLocationRepo.delete(d)),
+        ...[...overrides.keys()].map((d) => dayTypeOverrideRepo.delete(d)),
+        ...[...autoCatOverrides.keys()].map((d) => autoCategoryOverrideRepo.delete(d)),
+        ...[...confirmedSet].map((d) => dayConfirmationRepo.unconfirm(d)),
+      ])
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries()
+    },
+  })
+
   function prevMonth() {
     if (month === 1) {
       setYear(year - 1)
@@ -92,9 +122,18 @@ export function MonthGridView() {
             Today
           </button>
         </div>
-        <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
-          Next →
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+            aria-label="Reset all data for this month"
+          >
+            Reset all
+          </button>
+          <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
+            Next →
+          </button>
+        </div>
       </div>
       <OvertimeBar
         sollstunden={sollstunden}
@@ -126,6 +165,20 @@ export function MonthGridView() {
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
         onSelectDate={(date) => void navigate({ to: '/day', search: { date } })}
       />
+
+      {showResetConfirm && (
+        <ConfirmDialog
+          title="Reset all data for this month?"
+          message={`This will permanently delete all time entries, work periods, locations, day types, and confirmations for ${monthLabel}. This cannot be undone.`}
+          confirmLabel="Reset month"
+          danger
+          onConfirm={() => {
+            setShowResetConfirm(false)
+            resetMonthMutation.mutate()
+          }}
+          onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
     </div>
   )
 }
