@@ -239,6 +239,14 @@ export function CategorySettings({ repository }: Props) {
 
       {loadError && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{loadError}</p>}
 
+      {/* Column headers */}
+      <div className="flex items-center gap-2 px-3 text-xs font-medium text-gray-400 dark:text-gray-500">
+        <span className="w-4 shrink-0" aria-hidden />
+        <span className="w-36 shrink-0">Category</span>
+        <span className="w-4 shrink-0 text-center" aria-hidden>→</span>
+        <span className="flex-1">Excel row</span>
+      </div>
+
       {/* Category list */}
       <ul className="flex flex-col gap-1">
         {categories.map((cat, idx) => {
@@ -281,6 +289,8 @@ export function CategorySettings({ repository }: Props) {
                   {cat}
                 </span>
               )}
+
+              <span className="w-4 shrink-0 text-center text-xs text-gray-300 dark:text-gray-600" aria-hidden>→</span>
 
               {/* Excel mapping */}
               <div className="flex flex-1 items-center gap-1 min-w-0">
