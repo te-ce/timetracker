@@ -6,8 +6,75 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 let mainWindow = null
 let tray = null
+let elapsedTimer = null
+let trayState = { activeCategory: null, categories: [], startedAt: null, workedHours: 0, remaining: 0 }
 
 const autoLauncher = new AutoLaunch({ name: 'Timetracker' })
+
+function formatHHMM(hours) {
+  const totalMinutes = Math.round(hours * 60)
+  const h = Math.floor(totalMinutes / 60)
+  const m = totalMinutes % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+function elapsedHours(startedAt) {
+  if (!startedAt) return 0
+  return (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60)
+}
+
+function updateTrayDisplay() {
+  if (!tray) return
+  const { activeCategory, startedAt, workedHours, remaining } = trayState
+
+  if (activeCategory && startedAt) {
+    const elapsed = elapsedHours(startedAt)
+    tray.setTitle(formatHHMM(elapsed))
+  } else {
+    tray.setTitle('')
+  }
+
+  const lines = [`Timetracker`]
+  if (activeCategory && startedAt) {
+    lines.push(`Tracking: ${activeCategory} (${formatHHMM(elapsedHours(startedAt))})`)
+  }
+  lines.push(`Worked today: ${formatHHMM(workedHours)}`)
+  lines.push(`Remaining: ${formatHHMM(remaining)}`)
+  tray.setToolTip(lines.join('\n'))
+}
+
+function buildTrayMenu(activeCategory, categories) {
+  const openItem = {
+    label: 'Open Timetracker',
+    click: () => { mainWindow.show(); mainWindow.focus() },
+  }
+
+  const categoryItems = categories.map((cat) => ({
+    label: cat,
+    type: 'radio',
+    checked: cat === activeCategory,
+    click: () => {
+      if (mainWindow) mainWindow.webContents.send('tray:setCategory', cat)
+    },
+  }))
+
+  return Menu.buildFromTemplate([
+    openItem,
+    { type: 'separator' },
+    ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
+    { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
+  ])
+}
+
+function createTray() {
+  const iconPath = path.join(__dirname, 'icons/tray.png')
+  const icon = nativeImage.createFromPath(iconPath)
+  tray = new Tray(icon)
+  tray.setTitle('…')
+  tray.setToolTip('Timetracker — loading…')
+  tray.setContextMenu(buildTrayMenu(null, []))
+  tray.on('click', () => { mainWindow.show(); mainWindow.focus() })
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -41,50 +108,9 @@ function createWindow() {
   })
 }
 
-function buildTrayMenu(activeCategory, categories) {
-  const openItem = {
-    label: 'Open Timetracker',
-    click: () => { mainWindow.show(); mainWindow.focus() },
-  }
-
-  if (!categories || categories.length === 0) {
-    return Menu.buildFromTemplate([
-      openItem,
-      { type: 'separator' },
-      { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
-    ])
-  }
-
-  const categoryItems = categories.map((cat) => ({
-    label: cat,
-    type: 'radio',
-    checked: cat === activeCategory,
-    click: () => {
-      if (mainWindow) mainWindow.webContents.send('tray:setCategory', cat)
-    },
-  }))
-
-  return Menu.buildFromTemplate([
-    openItem,
-    { type: 'separator' },
-    ...categoryItems,
-    { type: 'separator' },
-    { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
-  ])
-}
-
-function createTray() {
-  const iconPath = path.join(__dirname, 'icons/tray.png')
-  const icon = nativeImage.createFromPath(iconPath)
-  tray = new Tray(icon)
-  tray.setToolTip('Timetracker')
-  tray.setContextMenu(buildTrayMenu(null, []))
-  tray.on('click', () => { mainWindow.show(); mainWindow.focus() })
-}
-
 app.whenReady().then(() => {
-  createWindow()
   createTray()
+  createWindow()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -96,15 +122,25 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 
-app.on('before-quit', () => { app.isQuitting = true })
+app.on('before-quit', () => {
+  app.isQuitting = true
+  if (elapsedTimer) clearInterval(elapsedTimer)
+})
 
 ipcMain.handle('autolaunch:get', () => autoLauncher.isEnabled())
 ipcMain.handle('autolaunch:set', (_, enabled) =>
   enabled ? autoLauncher.enable() : autoLauncher.disable()
 )
 
-ipcMain.on('tray:sync', (_, { activeCategory, categories }) => {
+ipcMain.on('tray:sync', (_, data) => {
   if (!tray) return
-  tray.setToolTip(activeCategory ? `Tracking: ${activeCategory}` : 'Timetracker')
-  tray.setContextMenu(buildTrayMenu(activeCategory, categories))
+  trayState = data
+
+  tray.setContextMenu(buildTrayMenu(data.activeCategory, data.categories))
+  updateTrayDisplay()
+
+  if (elapsedTimer) clearInterval(elapsedTimer)
+  if (data.activeCategory && data.startedAt) {
+    elapsedTimer = setInterval(updateTrayDisplay, 60_000)
+  }
 })

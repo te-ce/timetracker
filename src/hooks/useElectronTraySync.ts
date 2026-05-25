@@ -4,6 +4,7 @@ import { QUERY_KEYS } from './queryKeys'
 import { configRepo, timeTrackingRepo } from '../repositories/shared'
 import { getAllCategories } from '../domain/categories'
 import { toLocalIso } from '../domain/dateUtils'
+import { useRemainingHours } from './useRemainingHours'
 import type { TimeTrackingRepository } from '../repositories/types'
 
 export async function applyCategorySwitch(
@@ -22,6 +23,7 @@ export async function applyCategorySwitch(
 
 export function useElectronTraySync() {
   const queryClient = useQueryClient()
+  const { workedHours, remaining } = useRemainingHours()
 
   const { data: config } = useQuery({
     queryKey: QUERY_KEYS.config,
@@ -42,8 +44,11 @@ export function useElectronTraySync() {
     window.electronAPI.tray.sync({
       activeCategory: activeTracking?.category ?? null,
       categories,
+      startedAt: activeTracking?.startedAt ?? null,
+      workedHours,
+      remaining,
     })
-  }, [config, activeTracking])
+  }, [config, activeTracking, workedHours, remaining])
 
   const handleSetCategory = useCallback(async (category: string) => {
     await applyCategorySwitch(category, timeTrackingRepo, toLocalIso(new Date()))
