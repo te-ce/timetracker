@@ -5,7 +5,7 @@
 **Every completed feature or fix must be committed before starting the next one.**
 
 - One commit per logical feature/fix — keep them small and focused
-- Run `npx tsc --noEmit && npx vitest run` before committing; all tests must pass
+- Run `npx tsc --noEmit && npx eslint . && npx vitest run` before committing; all must pass
 - Never leave working changes uncommitted at end of a session
 - If multiple features land in one session, split them into separate commits using `git add <files>` per feature group
 

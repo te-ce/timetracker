@@ -5,6 +5,8 @@ import { CloudWorkPeriodRepository } from './work-period-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
 import { CloudWorkLocationRepository } from './work-location-repository'
 import { CloudDayTypeOverrideRepository } from './day-type-override-repository'
+import { CloudTimeTrackingRepository } from './time-tracking-repository'
+import { CloudAutoCategoryOverrideRepository } from './auto-category-override-repository'
 
 describe('CloudConfigRepository', () => {
   it('returns defaults when no data stored', async () => {
@@ -163,5 +165,74 @@ describe('CloudDayTypeOverrideRepository', () => {
     await repo.save('2024-01-20', 'Absence')
     const result = await repo.findByDateRange('2024-01-15', '2024-01-16')
     expect(result.size).toBe(2)
+  })
+})
+
+describe('CloudTimeTrackingRepository', () => {
+  it('getActive returns null when nothing is tracked', async () => {
+    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
+    expect(await repo.getActive()).toBeNull()
+  })
+
+  it('start sets active tracking', async () => {
+    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
+    await repo.start('2026-05-25', '_SUPPORT')
+    const active = await repo.getActive()
+    expect(active?.category).toBe('_SUPPORT')
+    expect(active?.date).toBe('2026-05-25')
+  })
+
+  it('stop returns null when nothing is tracked', async () => {
+    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
+    expect(await repo.stop()).toBeNull()
+  })
+
+  it('stop clears active tracking after starting', async () => {
+    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
+    await repo.start('2026-05-25', '_SUPPORT')
+    await repo.stop()
+    expect(await repo.getActive()).toBeNull()
+  })
+
+  it('stop returns hours when elapsed time is positive', async () => {
+    vi.useFakeTimers()
+    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
+    await repo.start('2026-05-25', '_SUPPORT')
+    vi.advanceTimersByTime(30 * 60 * 1000) // advance 30 minutes
+    const result = await repo.stop()
+    expect(result).not.toBeNull()
+    expect(result?.category).toBe('_SUPPORT')
+    expect(result?.date).toBe('2026-05-25')
+    expect(result?.hours).toBeGreaterThan(0)
+    vi.useRealTimers()
+  })
+})
+
+describe('CloudAutoCategoryOverrideRepository', () => {
+  it('returns null for unknown date', async () => {
+    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
+    expect(await repo.findByDate('2026-05-25')).toBeNull()
+  })
+
+  it('saves and retrieves override', async () => {
+    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
+    await repo.save('2026-05-25', '_SUPPORT')
+    expect(await repo.findByDate('2026-05-25')).toBe('_SUPPORT')
+  })
+
+  it('deletes override', async () => {
+    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
+    await repo.save('2026-05-25', '_SUPPORT')
+    await repo.delete('2026-05-25')
+    expect(await repo.findByDate('2026-05-25')).toBeNull()
+  })
+
+  it('finds by date range', async () => {
+    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
+    await repo.save('2026-05-25', '_SUPPORT')
+    await repo.save('2026-05-26', '_COREMEDIA')
+    const result = await repo.findByDateRange('2026-05-25', '2026-05-25')
+    expect(result.size).toBe(1)
+    expect(result.get('2026-05-25')).toBe('_SUPPORT')
   })
 })

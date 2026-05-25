@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryWorkPeriodRepository } from '../repositories/in-memory'
@@ -138,5 +138,180 @@ describe('WorkPeriodPanel', () => {
     const saved = await repo.findByDate(new Date(DATE))
     expect(saved[0].end).toBeNull()
     expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
+  })
+
+  describe('edit form keyboard shortcuts', () => {
+    it('pressing Enter in the edit start input saves the period', async () => {
+      const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      await screen.findByText('09:00 – 17:00')
+      await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
+
+      const startInput = screen.getByLabelText('Edit start time')
+      await userEvent.clear(startInput)
+      await userEvent.type(startInput, '10:00{Enter}')
+
+      await waitFor(async () => {
+        const saved = await repo.findByDate(new Date(DATE))
+        expect(saved[0].start).toBe('10:00')
+      })
+    })
+
+    it('pressing Enter in the edit end input saves the period', async () => {
+      const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      await screen.findByText('09:00 – 17:00')
+      await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
+
+      const endInput = screen.getByLabelText('Edit end time')
+      await userEvent.clear(endInput)
+      await userEvent.type(endInput, '18:00{Enter}')
+
+      await waitFor(async () => {
+        const saved = await repo.findByDate(new Date(DATE))
+        expect(saved[0].end).toBe('18:00')
+      })
+    })
+
+    it('pressing Escape in the edit end input cancels editing', async () => {
+      setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      await screen.findByText('09:00 – 17:00')
+      await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
+
+      const endInput = screen.getByLabelText('Edit end time')
+      await userEvent.clear(endInput)
+      await userEvent.type(endInput, '20:00')
+      await userEvent.keyboard('{Escape}')
+
+      expect(screen.getByText('09:00 – 17:00')).toBeInTheDocument()
+      expect(screen.queryByDisplayValue('20:00')).not.toBeInTheDocument()
+    })
+
+    it('Cancel button in edit form returns to view mode', async () => {
+      setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      await screen.findByText('09:00 – 17:00')
+      await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
+
+      expect(screen.getByLabelText('Edit start time')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+
+      expect(screen.getByText('09:00 – 17:00')).toBeInTheDocument()
+      expect(screen.queryByLabelText('Edit start time')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('remove button', () => {
+    it('Remove button deletes the period from the repository', async () => {
+      const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      await screen.findByText('09:00 – 17:00')
+      await userEvent.click(screen.getByRole('button', { name: /remove/i }))
+
+      await waitFor(async () => {
+        const saved = await repo.findByDate(new Date(DATE))
+        expect(saved).toHaveLength(0)
+      })
+    })
+  })
+
+  describe('merge button', () => {
+    it('shows merge button between two adjacent periods', async () => {
+      setup([
+        { id: 'w1', date: DATE, start: '09:00', end: '13:00' },
+        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+      ])
+
+      await screen.findByText('09:00 – 13:00')
+      const mergeBtn = screen.getByRole('button', { name: /merge 09:00–13:00 with 14:00–18:00/i })
+      expect(mergeBtn).toBeInTheDocument()
+    })
+
+    it('merge button merges two periods into one spanning both', async () => {
+      const { repo } = setup([
+        { id: 'w1', date: DATE, start: '09:00', end: '13:00' },
+        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+      ])
+
+      await screen.findByText('09:00 – 13:00')
+      await userEvent.click(screen.getByRole('button', { name: /merge/i }))
+
+      await waitFor(async () => {
+        const saved = await repo.findByDate(new Date(DATE))
+        expect(saved).toHaveLength(1)
+        expect(saved[0].start).toBe('09:00')
+        expect(saved[0].end).toBe('18:00')
+      })
+    })
+
+    it('does not show merge button when a period has no end', async () => {
+      setup([
+        { id: 'w1', date: DATE, start: '09:00', end: null },
+        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+      ])
+
+      await screen.findByText('09:00 – …')
+      expect(screen.queryByRole('button', { name: /merge/i })).not.toBeInTheDocument()
+    })
+
+    it('does not show merge button for the last period in the list', async () => {
+      setup([
+        { id: 'w1', date: DATE, start: '09:00', end: '13:00' },
+        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+      ])
+
+      await screen.findByText('14:00 – 18:00')
+      // Only one merge button for the gap between w1 and w2; w2 has no next
+      const mergeBtns = screen.getAllByRole('button', { name: /merge/i })
+      expect(mergeBtns).toHaveLength(1)
+    })
+
+    it('merge picks the later end time when first period ends after second', async () => {
+      const { repo } = setup([
+        { id: 'w1', date: DATE, start: '09:00', end: '19:00' },
+        { id: 'w2', date: DATE, start: '14:00', end: '17:00' },
+      ])
+
+      await screen.findByText('09:00 – 19:00')
+      await userEvent.click(screen.getByRole('button', { name: /merge/i }))
+
+      await waitFor(async () => {
+        const saved = await repo.findByDate(new Date(DATE))
+        expect(saved).toHaveLength(1)
+        expect(saved[0].start).toBe('09:00')
+        expect(saved[0].end).toBe('19:00')
+      })
+    })
+  })
+
+  describe('add via Enter key', () => {
+    it('pressing Enter in the start input submits the form', async () => {
+      const { repo } = setup()
+      await screen.findByText(/no work periods/i)
+      const startInput = screen.getByLabelText(/start/i)
+      await userEvent.type(startInput, '09:00{Enter}')
+
+      await waitFor(async () => {
+        const saved = await repo.findByDate(new Date(DATE))
+        expect(saved).toHaveLength(1)
+        expect(saved[0].start).toBe('09:00')
+      })
+    })
+
+    it('pressing Enter in the end input submits the form', async () => {
+      const { repo } = setup()
+      await screen.findByText(/no work periods/i)
+      await userEvent.type(screen.getByLabelText(/start/i), '09:00')
+      await userEvent.type(screen.getByLabelText(/end/i), '17:00{Enter}')
+
+      await waitFor(async () => {
+        const saved = await repo.findByDate(new Date(DATE))
+        expect(saved).toHaveLength(1)
+        expect(saved[0].start).toBe('09:00')
+        expect(saved[0].end).toBe('17:00')
+      })
+    })
+
+    it('Add button is disabled when start is empty', async () => {
+      setup()
+      await screen.findByText(/no work periods/i)
+      expect(screen.getByRole('button', { name: /add/i })).toBeDisabled()
+    })
   })
 })

@@ -54,7 +54,7 @@ describe('HotkeySettings', () => {
 
   it('shows global hotkey section when electronAPI is present', async () => {
     Object.defineProperty(window, 'electronAPI', {
-      value: { hotkey: {}, storage: {}, tray: {}, autolaunch: {}, notify: {} },
+      value: { hotkey: { setGlobal: vi.fn() }, storage: {}, tray: {}, autolaunch: {}, notify: {} },
       configurable: true,
     })
     const repo = new InMemoryConfigRepository()
@@ -73,7 +73,7 @@ describe('HotkeySettings', () => {
 
   it('saves globalToggle: null when global hotkey disabled', async () => {
     Object.defineProperty(window, 'electronAPI', {
-      value: { hotkey: {}, storage: {}, tray: {}, autolaunch: {}, notify: {} },
+      value: { hotkey: { setGlobal: vi.fn() }, storage: {}, tray: {}, autolaunch: {}, notify: {} },
       configurable: true,
     })
     const repo = new InMemoryConfigRepository()

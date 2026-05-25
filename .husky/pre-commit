@@ -1,1 +1,1 @@
-npx tsc --noEmit && npx eslint src
+npx tsc --noEmit && npx eslint . && npx vitest run

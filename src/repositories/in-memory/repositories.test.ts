@@ -5,6 +5,7 @@ import {
   InMemoryWorkPeriodRepository,
   InMemorySprintExportRepository,
   InMemoryWorkLocationRepository,
+  InMemoryDayConfirmationRepository,
 } from './index'
 import type { AppConfig, TimeEntry, WorkPeriod, SprintExport } from '../types'
 
@@ -156,5 +157,68 @@ describe('InMemoryWorkLocationRepository', () => {
     expect(result.size).toBe(2)
     expect(result.get('2026-05-18')).toBe('Office')
     expect(result.get('2026-05-19')).toBe('Remote')
+  })
+})
+
+describe('InMemoryDayConfirmationRepository', () => {
+  it('isConfirmed returns false for an unknown date', async () => {
+    const repo = new InMemoryDayConfirmationRepository()
+    await expect(repo.isConfirmed('2026-05-25')).resolves.toBe(false)
+  })
+
+  it('confirm marks a date as confirmed', async () => {
+    const repo = new InMemoryDayConfirmationRepository()
+    await repo.confirm('2026-05-25')
+    await expect(repo.isConfirmed('2026-05-25')).resolves.toBe(true)
+  })
+
+  it('unconfirm removes a previously confirmed date', async () => {
+    const repo = new InMemoryDayConfirmationRepository()
+    await repo.confirm('2026-05-25')
+    await repo.unconfirm('2026-05-25')
+    await expect(repo.isConfirmed('2026-05-25')).resolves.toBe(false)
+  })
+
+  it('unconfirm on an unknown date is a no-op', async () => {
+    const repo = new InMemoryDayConfirmationRepository()
+    await expect(repo.unconfirm('2026-05-25')).resolves.toBeUndefined()
+    await expect(repo.isConfirmed('2026-05-25')).resolves.toBe(false)
+  })
+
+  it('accepts initial confirmed dates via constructor', async () => {
+    const repo = new InMemoryDayConfirmationRepository(['2026-05-20', '2026-05-21'])
+    await expect(repo.isConfirmed('2026-05-20')).resolves.toBe(true)
+    await expect(repo.isConfirmed('2026-05-21')).resolves.toBe(true)
+    await expect(repo.isConfirmed('2026-05-22')).resolves.toBe(false)
+  })
+
+  it('findConfirmedInRange returns only dates within the range', async () => {
+    const repo = new InMemoryDayConfirmationRepository(['2026-05-18', '2026-05-19', '2026-05-25'])
+    const result = await repo.findConfirmedInRange('2026-05-18', '2026-05-20')
+    expect(result.size).toBe(2)
+    expect(result.has('2026-05-18')).toBe(true)
+    expect(result.has('2026-05-19')).toBe(true)
+    expect(result.has('2026-05-25')).toBe(false)
+  })
+
+  it('findConfirmedInRange returns empty set when no dates are in range', async () => {
+    const repo = new InMemoryDayConfirmationRepository(['2026-05-18'])
+    const result = await repo.findConfirmedInRange('2026-06-01', '2026-06-30')
+    expect(result.size).toBe(0)
+  })
+
+  it('findConfirmedInRange includes boundary dates', async () => {
+    const repo = new InMemoryDayConfirmationRepository(['2026-05-01', '2026-05-31'])
+    const result = await repo.findConfirmedInRange('2026-05-01', '2026-05-31')
+    expect(result.size).toBe(2)
+  })
+
+  it('multiple confirms for the same date are idempotent', async () => {
+    const repo = new InMemoryDayConfirmationRepository()
+    await repo.confirm('2026-05-25')
+    await repo.confirm('2026-05-25')
+    await expect(repo.isConfirmed('2026-05-25')).resolves.toBe(true)
+    const result = await repo.findConfirmedInRange('2026-05-25', '2026-05-25')
+    expect(result.size).toBe(1)
   })
 })

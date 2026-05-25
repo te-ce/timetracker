@@ -34,7 +34,7 @@ function saveWindowState() {
   saveWindowTimer = setTimeout(() => {
     try {
       fs.writeFileSync(windowStatePath(), JSON.stringify(mainWindow.getBounds()))
-    } catch {}
+    } catch { /* non-critical: window state save failure is silent */ }
   }, 400)
 }
 
@@ -60,7 +60,7 @@ ipcMain.handle('storage:put', (_, key, data) => {
 })
 
 ipcMain.handle('storage:delete', (_, key) => {
-  try { fs.unlinkSync(storagePath(key)) } catch {}
+  try { fs.unlinkSync(storagePath(key)) } catch { /* non-critical: file may not exist */ }
 })
 
 // ── Tray helpers ──────────────────────────────────────────────────────────────
