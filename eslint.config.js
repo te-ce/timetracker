@@ -57,6 +57,8 @@ export default defineConfig([
       ...jsxA11y.flatConfigs.recommended.rules,
       'no-undef': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'error',
+      complexity: ['warn', 10],
+      'max-depth': ['warn', 4],
       ...prettierConfig.rules,
     },
   },
