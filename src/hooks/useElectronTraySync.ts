@@ -4,6 +4,21 @@ import { QUERY_KEYS } from './queryKeys'
 import { configRepo, timeTrackingRepo } from '../repositories/shared'
 import { getAllCategories } from '../domain/categories'
 import { toLocalIso } from '../domain/dateUtils'
+import type { TimeTrackingRepository } from '../repositories/types'
+
+export async function applyCategorySwitch(
+  category: string,
+  repo: TimeTrackingRepository,
+  today: string,
+): Promise<void> {
+  const current = await repo.getActive()
+  if (current?.category === category) {
+    await repo.stop()
+  } else {
+    if (current) await repo.stop()
+    await repo.start(today, category)
+  }
+}
 
 export function useElectronTraySync() {
   const queryClient = useQueryClient()
@@ -31,9 +46,7 @@ export function useElectronTraySync() {
   }, [config, activeTracking])
 
   const handleSetCategory = useCallback(async (category: string) => {
-    const today = toLocalIso(new Date())
-    await timeTrackingRepo.stop()
-    await timeTrackingRepo.start(today, category)
+    await applyCategorySwitch(category, timeTrackingRepo, toLocalIso(new Date()))
     await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
   }, [queryClient])
 
