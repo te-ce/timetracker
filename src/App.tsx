@@ -6,6 +6,7 @@ import { useThemeStore } from './stores/themeStore'
 import { useUndoStore } from './stores/undoStore'
 import { useRemainingHours } from './hooks/useRemainingHours'
 import { useElectronTraySync } from './hooks/useElectronTraySync'
+import { useGoalNotification } from './hooks/useGoalNotification'
 import { KeyboardShortcutLegend } from './components/KeyboardShortcutLegend'
 import { msalInstance } from './auth/msalInstance'
 import { toLocalIso } from './domain/dateUtils'
@@ -112,6 +113,7 @@ function RemainingHoursBadge() {
 
 function App() {
   useElectronTraySync()
+  useGoalNotification()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
   const navigate = useNavigate()

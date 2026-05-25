@@ -15,5 +15,17 @@ interface Window {
       onSetCategory(cb: (category: string) => void): void
       offSetCategory(cb: (category: string) => void): void
     }
+    hotkey: {
+      onToggle(cb: () => void): void
+      offToggle(cb: () => void): void
+    }
+    storage: {
+      get<T>(key: string): Promise<T | null>
+      put<T>(key: string, data: T): Promise<void>
+      delete(key: string): Promise<void>
+    }
+    notify: {
+      goalReached(): void
+    }
   }
 }

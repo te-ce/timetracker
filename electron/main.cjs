@@ -1,5 +1,6 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, globalShortcut, Notification } = require('electron')
 const path = require('path')
+const fs = require('fs')
 const AutoLaunch = require('electron-auto-launch')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
@@ -10,6 +11,59 @@ let elapsedTimer = null
 let trayState = { activeCategory: null, categories: [], startedAt: null, workedHours: 0, remaining: 0 }
 
 const autoLauncher = new AutoLaunch({ name: 'Timetracker' })
+
+// ── Window state persistence ──────────────────────────────────────────────────
+
+function windowStatePath() {
+  return path.join(app.getPath('userData'), 'window-state.json')
+}
+
+function loadWindowState() {
+  try {
+    const raw = fs.readFileSync(windowStatePath(), 'utf8')
+    return JSON.parse(raw)
+  } catch {
+    return { width: 1200, height: 800 }
+  }
+}
+
+let saveWindowTimer = null
+function saveWindowState() {
+  if (!mainWindow || mainWindow.isMaximized() || mainWindow.isMinimized() || mainWindow.isFullScreen()) return
+  clearTimeout(saveWindowTimer)
+  saveWindowTimer = setTimeout(() => {
+    try {
+      fs.writeFileSync(windowStatePath(), JSON.stringify(mainWindow.getBounds()))
+    } catch {}
+  }, 400)
+}
+
+// ── Electron storage (userData JSON files) ────────────────────────────────────
+
+function storagePath(key) {
+  const dir = path.join(app.getPath('userData'), 'storage')
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  return path.join(dir, `${key}.json`)
+}
+
+ipcMain.handle('storage:get', (_, key) => {
+  try {
+    const raw = fs.readFileSync(storagePath(key), 'utf8')
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle('storage:put', (_, key, data) => {
+  fs.writeFileSync(storagePath(key), JSON.stringify(data))
+})
+
+ipcMain.handle('storage:delete', (_, key) => {
+  try { fs.unlinkSync(storagePath(key)) } catch {}
+})
+
+// ── Tray helpers ──────────────────────────────────────────────────────────────
 
 function formatHHMM(hours) {
   const totalMinutes = Math.round(hours * 60)
@@ -28,8 +82,7 @@ function updateTrayDisplay() {
   const { activeCategory, startedAt, workedHours, remaining } = trayState
 
   if (activeCategory && startedAt) {
-    const elapsed = elapsedHours(startedAt)
-    tray.setTitle(formatHHMM(elapsed))
+    tray.setTitle(formatHHMM(elapsedHours(startedAt)))
   } else {
     tray.setTitle('')
   }
@@ -77,9 +130,9 @@ function createTray() {
 }
 
 function createWindow() {
+  const state = loadWindowState()
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    ...state,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
@@ -90,6 +143,9 @@ function createWindow() {
     titleBarStyle: 'default',
     show: false,
   })
+
+  mainWindow.on('resize', saveWindowState)
+  mainWindow.on('move', saveWindowState)
 
   if (isDev) {
     mainWindow.loadURL('http://timetracker.localhost:5173')
@@ -112,6 +168,16 @@ app.whenReady().then(() => {
   createTray()
   createWindow()
 
+  globalShortcut.register('CommandOrControl+Shift+Space', () => {
+    if (!mainWindow) return
+    if (trayState.activeCategory) {
+      mainWindow.webContents.send('hotkey:toggle')
+    } else {
+      mainWindow.show()
+      mainWindow.focus()
+    }
+  })
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
     else { mainWindow.show(); mainWindow.focus() }
@@ -125,6 +191,7 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   app.isQuitting = true
   if (elapsedTimer) clearInterval(elapsedTimer)
+  globalShortcut.unregisterAll()
 })
 
 ipcMain.handle('autolaunch:get', () => autoLauncher.isEnabled())
@@ -142,5 +209,14 @@ ipcMain.on('tray:sync', (_, data) => {
   if (elapsedTimer) clearInterval(elapsedTimer)
   if (data.activeCategory && data.startedAt) {
     elapsedTimer = setInterval(updateTrayDisplay, 60_000)
+  }
+})
+
+ipcMain.on('notify:goalReached', () => {
+  if (Notification.isSupported()) {
+    new Notification({
+      title: 'Timetracker',
+      body: "You've reached your daily target!",
+    }).show()
   }
 })

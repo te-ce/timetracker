@@ -2,6 +2,7 @@ import { LocalStorageAdapter } from '../storage/localstorage-adapter'
 import { OneDriveStorageAdapter } from '../storage/onedrive-adapter'
 import { FallbackStorageAdapter } from '../storage/fallback-adapter'
 import { LocalFolderStorageAdapter } from '../storage/local-folder-adapter'
+import { ElectronStorageAdapter } from '../storage/electron-adapter'
 import { getAccessToken } from '../auth/msalInstance'
 import { isLocalFolderMode } from '../auth/bootstrapConfig'
 import type { StorageAdapter } from '../storage/adapter'
@@ -15,9 +16,15 @@ import { CloudAutoCategoryOverrideRepository } from './cloud/auto-category-overr
 import { CloudDayConfirmationRepository } from './cloud/day-confirmation-repository'
 import { CloudTimeTrackingRepository } from './cloud/time-tracking-repository'
 
-const storage: StorageAdapter = isLocalFolderMode()
-  ? new LocalFolderStorageAdapter()
-  : new FallbackStorageAdapter(new OneDriveStorageAdapter(getAccessToken), new LocalStorageAdapter())
+function makeStorage(): StorageAdapter {
+  if (isLocalFolderMode()) return new LocalFolderStorageAdapter()
+  const offlineFallback = window.electronAPI
+    ? new ElectronStorageAdapter()
+    : new LocalStorageAdapter()
+  return new FallbackStorageAdapter(new OneDriveStorageAdapter(getAccessToken), offlineFallback)
+}
+
+const storage: StorageAdapter = makeStorage()
 
 export const configRepo = new CloudConfigRepository(storage)
 export const timeEntryRepo = new CloudTimeEntryRepository(storage)

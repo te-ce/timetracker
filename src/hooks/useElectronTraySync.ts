@@ -61,4 +61,13 @@ export function useElectronTraySync() {
     window.electronAPI.tray.onSetCategory(listener)
     return () => { window.electronAPI!.tray.offSetCategory(listener) }
   }, [handleSetCategory])
+
+  useEffect(() => {
+    if (!window.electronAPI) return
+    const listener = () => {
+      if (activeTracking) void handleSetCategory(activeTracking.category)
+    }
+    window.electronAPI.hotkey.onToggle(listener)
+    return () => { window.electronAPI!.hotkey.offToggle(listener) }
+  }, [activeTracking, handleSetCategory])
 }
