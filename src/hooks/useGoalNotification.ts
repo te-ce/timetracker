@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { useRemainingHours } from './useRemainingHours'
 
+export function crossedGoal(prev: number | null, current: number): boolean {
+  return prev !== null && prev > 0 && current <= 0
+}
+
 export function useGoalNotification() {
   const { remaining } = useRemainingHours()
   const prevRef = useRef<number | null>(null)
@@ -9,9 +13,8 @@ export function useGoalNotification() {
     const prev = prevRef.current
     prevRef.current = remaining
 
-    if (prev === null || prev <= 0 || remaining > 0) return
+    if (!crossedGoal(prev, remaining)) return
 
-    // remaining just crossed from positive to zero/negative
     if (window.electronAPI) {
       window.electronAPI.notify.goalReached()
     } else if ('Notification' in window) {
