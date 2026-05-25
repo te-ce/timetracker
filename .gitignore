@@ -19,6 +19,9 @@ test-results
 # Generated reports
 architecture-report.html
 
+# Electron build output
+dist-electron/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

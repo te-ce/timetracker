@@ -3,6 +3,7 @@ import { BundeslandSettings } from '../components/BundeslandSettings'
 import { CategorySettings } from '../components/CategorySettings'
 import { CloudSyncSettings } from '../components/CloudSyncSettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
+import { LaunchAtLoginSettings } from '../components/LaunchAtLoginSettings'
 import { LocalExcelFolderSettings } from '../components/LocalExcelFolderSettings'
 import { LocalExcelSettings } from '../components/LocalExcelSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
@@ -11,6 +12,7 @@ import { configRepo } from '../repositories/shared'
 import { isLocalFolderMode } from '../auth/bootstrapConfig'
 
 const localFolder = isLocalFolderMode()
+const isElectron = typeof window !== 'undefined' && !!window.electronAPI
 
 export function SettingsView() {
   return (
@@ -32,6 +34,7 @@ export function SettingsView() {
         </>
       )}
       <CategorySettings repository={configRepo} />
+      {isElectron && <LaunchAtLoginSettings repository={configRepo} />}
     </div>
   )
 }

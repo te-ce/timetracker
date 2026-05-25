@@ -57,6 +57,8 @@ export interface AppConfig {
   categoryMapping?: Record<string, string>
   /** Filename of the Excel workbook in the local folder (local folder mode only) */
   localExcelFile?: string | null
+  /** Whether to launch the app automatically on OS login (Electron desktop only) */
+  launchAtLogin?: boolean
 }
 
 export interface TimeEntryRepository {
