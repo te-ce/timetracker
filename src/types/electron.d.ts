@@ -4,5 +4,10 @@ interface Window {
       get(): Promise<boolean>
       set(enabled: boolean): Promise<void>
     }
+    tray: {
+      sync(data: { activeCategory: string | null; categories: string[] }): void
+      onSetCategory(cb: (category: string) => void): void
+      offSetCategory(cb: (category: string) => void): void
+    }
   }
 }

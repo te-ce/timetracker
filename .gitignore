@@ -21,6 +21,7 @@ architecture-report.html
 
 # Electron build output
 dist-electron/
+electron/icons/
 
 # Editor directories and files
 .vscode/*

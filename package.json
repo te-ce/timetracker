@@ -13,8 +13,9 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "prepare": "husky",
-    "electron:dev": "wait-on http://timetracker.localhost:5173 && NODE_ENV=development electron .",
-    "electron:build": "npm run build && electron-builder",
+    "electron:icons": "node scripts/generate-icons.mjs",
+    "electron:dev": "npm run electron:icons && wait-on http://timetracker.localhost:5173 && NODE_ENV=development electron .",
+    "electron:build": "npm run electron:icons && npm run build && electron-builder",
     "start": "concurrently --kill-others-on-fail \"npm run dev\" \"npm run electron:dev\""
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "@electron/rebuild": "^4.0.4",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.60.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/vite": "^4.3.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

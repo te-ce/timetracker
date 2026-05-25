@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/authStore'
 import { useThemeStore } from './stores/themeStore'
 import { useUndoStore } from './stores/undoStore'
 import { useRemainingHours } from './hooks/useRemainingHours'
+import { useElectronTraySync } from './hooks/useElectronTraySync'
 import { KeyboardShortcutLegend } from './components/KeyboardShortcutLegend'
 import { msalInstance } from './auth/msalInstance'
 import { toLocalIso } from './domain/dateUtils'
@@ -110,6 +111,7 @@ function RemainingHoursBadge() {
 }
 
 function App() {
+  useElectronTraySync()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
   const navigate = useNavigate()

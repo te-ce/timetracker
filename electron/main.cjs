@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, shell } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron')
 const path = require('path')
 const AutoLaunch = require('electron-auto-launch')
 
@@ -41,20 +41,44 @@ function createWindow() {
   })
 }
 
-function buildTrayMenu() {
+function buildTrayMenu(activeCategory, categories) {
+  const openItem = {
+    label: 'Open Timetracker',
+    click: () => { mainWindow.show(); mainWindow.focus() },
+  }
+
+  if (!categories || categories.length === 0) {
+    return Menu.buildFromTemplate([
+      openItem,
+      { type: 'separator' },
+      { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
+    ])
+  }
+
+  const categoryItems = categories.map((cat) => ({
+    label: cat,
+    type: 'radio',
+    checked: cat === activeCategory,
+    click: () => {
+      if (mainWindow) mainWindow.webContents.send('tray:setCategory', cat)
+    },
+  }))
+
   return Menu.buildFromTemplate([
-    { label: 'Open Timetracker', click: () => { mainWindow.show(); mainWindow.focus() } },
+    openItem,
+    { type: 'separator' },
+    ...categoryItems,
     { type: 'separator' },
     { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
   ])
 }
 
 function createTray() {
-  const iconPath = path.join(__dirname, '../public/favicon.svg')
+  const iconPath = path.join(__dirname, 'icons/tray.png')
   const icon = nativeImage.createFromPath(iconPath)
-  tray = new Tray(icon.resize({ width: 16, height: 16 }))
+  tray = new Tray(icon)
   tray.setToolTip('Timetracker')
-  tray.setContextMenu(buildTrayMenu())
+  tray.setContextMenu(buildTrayMenu(null, []))
   tray.on('click', () => { mainWindow.show(); mainWindow.focus() })
 }
 
@@ -74,10 +98,13 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => { app.isQuitting = true })
 
-// IPC: auto-launch toggle called from renderer via preload
-const { ipcMain } = require('electron')
-
 ipcMain.handle('autolaunch:get', () => autoLauncher.isEnabled())
 ipcMain.handle('autolaunch:set', (_, enabled) =>
   enabled ? autoLauncher.enable() : autoLauncher.disable()
 )
+
+ipcMain.on('tray:sync', (_, { activeCategory, categories }) => {
+  if (!tray) return
+  tray.setToolTip(activeCategory ? `Tracking: ${activeCategory}` : 'Timetracker')
+  tray.setContextMenu(buildTrayMenu(activeCategory, categories))
+})
