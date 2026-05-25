@@ -33,3 +33,4 @@ electron/icons/
 *.njsproj
 *.sln
 *.sw?
+coverage/
