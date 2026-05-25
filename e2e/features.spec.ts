@@ -87,3 +87,76 @@ test.describe('auto category', () => {
     await expect(page.getByText('+8.00 auto')).toBeVisible()
   })
 })
+
+// ─── Test 4: Undo reverts a time entry ───────────────────────────────────────
+
+test.describe('undo', () => {
+  test('typing hours in the grid then undoing reverts the cell', async ({ page }) => {
+    // Use today's real local date — MonthGridView always shows the current month
+    // Use _SUPPORT (not _COREMEDIA) because _COREMEDIA is the default auto category
+    // and renders read-only when there are worked hours
+    const d = new Date()
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+    await page.addInitScript((seed: Record<string, string>) => {
+      for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
+    }, seedBase())
+
+    await page.goto('/grid')
+
+    const cell = page.getByLabel(`Hours for _SUPPORT on ${today}`)
+    await cell.fill('6')
+    await cell.press('Enter')
+    await expect(cell).toHaveValue('6')
+
+    await page.getByRole('button', { name: 'Undo' }).click()
+    await expect(cell).toHaveValue('')
+  })
+})
+
+// ─── Test 5: Month calendar day click navigates to DayView ───────────────────
+
+test.describe('month calendar navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((seed: Record<string, string>) => {
+      for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
+    }, seedBase())
+  })
+
+  test('clicking a day in the calendar opens DayView for that date', async ({ page }) => {
+    await page.goto('/?year=2026&month=5')
+
+    const dayBtn = page.getByRole('button', {
+      name: 'Monday, 25 May 2026',
+    })
+    await expect(dayBtn).toBeVisible()
+    await dayBtn.click()
+
+    await expect(page).toHaveURL(/\/day\?date=2026-05-25/)
+    await expect(page.getByRole('region', { name: 'Work windows' })).toBeVisible()
+  })
+})
+
+// ─── Test 6: Sprint view renders without crashing ────────────────────────────
+
+test.describe('sprint view', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((seed: Record<string, string>) => {
+      for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
+    }, seedBase({
+      'timetracker_config.json': JSON.stringify({
+        ...BASE_CONFIG,
+        sprintLengthDays: 14,
+        sprintStartDate: '2026-05-19',
+      }),
+    }))
+  })
+
+  test('sprint view loads with report and config panels', async ({ page }) => {
+    await page.goto('/sprint')
+
+    await expect(page.getByRole('heading', { name: 'Sprint Report' })).toBeVisible()
+    await expect(page.getByLabel('Start date')).toBeVisible()
+    await expect(page.getByLabel('Length')).toBeVisible()
+  })
+})
