@@ -5,6 +5,20 @@ import { CategorySettings } from './CategorySettings'
 import { InMemoryConfigRepository } from '../repositories/in-memory'
 import type { AppConfig } from '../repositories/types'
 
+vi.mock('../auth/msalInstance', () => ({
+  getAccessToken: vi.fn().mockResolvedValue('token'),
+  msalInstance: {},
+  graphScopes: [],
+}))
+
+vi.mock('../auth/bootstrapConfig', () => ({
+  isLocalFolderMode: vi.fn().mockReturnValue(false),
+  clearBootstrapConfig: vi.fn(),
+}))
+
+import { useAuthStore } from '../stores/authStore'
+import { GraphApiWorkbookService } from '../services/workbookService'
+
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return function Wrapper({ children }: { children: React.ReactNode }) {
@@ -330,5 +344,140 @@ describe('CategorySettings', () => {
       expect(saved.customCategories).not.toContain('MyCustom')
     })
     expect(screen.queryByText('MyCustom')).not.toBeInTheDocument()
+  })
+
+  it('shows "Sign in to map" hint when authenticated is false but sharepoint+sheet configured', async () => {
+    useAuthStore.setState({ isAuthenticated: false })
+    const config: AppConfig = {
+      ...baseConfig,
+      sharepointUrl: 'https://example.sharepoint.com/file.xlsx',
+      targetSheet: 'Sheet1',
+    }
+    const repo = new InMemoryConfigRepository(config)
+    render(<CategorySettings repository={repo} />, { wrapper: makeWrapper() })
+    expect(await screen.findByText('Sign in to map')).toBeInTheDocument()
+  })
+
+  it('loads excel rows and shows select dropdowns', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    const config: AppConfig = {
+      ...baseConfig,
+      sharepointUrl: 'https://example.sharepoint.com/file.xlsx',
+      targetSheet: 'Sheet1',
+      categoryMapping: {},
+    }
+    const excelRows = [
+      { taskId: 'TASK-1', description: 'First Task' },
+      { taskId: 'TASK-2', description: 'Second Task' },
+    ]
+    const listRowsSpy = vi.spyOn(GraphApiWorkbookService.prototype, 'listRows').mockResolvedValue(excelRows)
+
+    const repo = new InMemoryConfigRepository(config)
+    render(<CategorySettings repository={repo} />, { wrapper: makeWrapper() })
+
+    const loadBtn = await screen.findByRole('button', { name: 'Load Excel mapping' })
+    expect(loadBtn).not.toBeDisabled()
+    await userEvent.click(loadBtn)
+
+    await screen.findByRole('button', { name: 'Reload from Excel' })
+    const selects = screen.getAllByRole('combobox')
+    expect(selects.length).toBeGreaterThan(0)
+    listRowsSpy.mockRestore()
+  })
+
+  it('shows error message when loading rows fails', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    const config: AppConfig = {
+      ...baseConfig,
+      sharepointUrl: 'https://example.sharepoint.com/file.xlsx',
+      targetSheet: 'Sheet1',
+    }
+    const listRowsSpy = vi.spyOn(GraphApiWorkbookService.prototype, 'listRows').mockRejectedValue(new Error('Network failure'))
+
+    const repo = new InMemoryConfigRepository(config)
+    render(<CategorySettings repository={repo} />, { wrapper: makeWrapper() })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Load Excel mapping' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network failure')
+    listRowsSpy.mockRestore()
+  })
+
+  it('shows mapping change and save mapping button after selecting a task', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    const config: AppConfig = {
+      ...baseConfig,
+      sharepointUrl: 'https://example.sharepoint.com/file.xlsx',
+      targetSheet: 'Sheet1',
+    }
+    const excelRows = [{ taskId: 'TASK-X', description: 'My Task' }]
+    const listRowsSpy = vi.spyOn(GraphApiWorkbookService.prototype, 'listRows').mockResolvedValue(excelRows)
+
+    const repo = new InMemoryConfigRepository(config)
+    render(<CategorySettings repository={repo} />, { wrapper: makeWrapper() })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Load Excel mapping' }))
+    await screen.findByRole('button', { name: 'Reload from Excel' })
+
+    const select = screen.getByRole('combobox', { name: /excel mapping for _LEAVE/i })
+    await userEvent.selectOptions(select, 'TASK-X')
+
+    expect(await screen.findByRole('button', { name: 'Save mapping' })).toBeInTheDocument()
+    listRowsSpy.mockRestore()
+  })
+
+  it('saves mapping after clicking Save mapping', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    const config: AppConfig = {
+      ...baseConfig,
+      sharepointUrl: 'https://example.sharepoint.com/file.xlsx',
+      targetSheet: 'Sheet1',
+    }
+    const excelRows = [{ taskId: 'TASK-Y', description: '' }]
+    const listRowsSpy = vi.spyOn(GraphApiWorkbookService.prototype, 'listRows').mockResolvedValue(excelRows)
+
+    const repo = new InMemoryConfigRepository(config)
+    render(<CategorySettings repository={repo} />, { wrapper: makeWrapper() })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Load Excel mapping' }))
+    await screen.findByRole('button', { name: 'Reload from Excel' })
+
+    const select = screen.getByRole('combobox', { name: /excel mapping for _COREMEDIA/i })
+    await userEvent.selectOptions(select, 'TASK-Y')
+    await userEvent.click(screen.getByRole('button', { name: 'Save mapping' }))
+
+    await waitFor(async () => {
+      const saved = await repo.get()
+      expect(saved.categoryMapping?._COREMEDIA).toBe('TASK-Y')
+    })
+    expect(await screen.findByText('✓ Mapping saved')).toBeInTheDocument()
+    listRowsSpy.mockRestore()
+  })
+
+  it('shows unmapped Excel rows and can add them as category', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    const config: AppConfig = {
+      ...baseConfig,
+      sharepointUrl: 'https://example.sharepoint.com/file.xlsx',
+      targetSheet: 'Sheet1',
+    }
+    const excelRows = [{ taskId: 'UNMAPPED-Z', description: 'Unmapped Task' }]
+    const listRowsSpy = vi.spyOn(GraphApiWorkbookService.prototype, 'listRows').mockResolvedValue(excelRows)
+
+    const repo = new InMemoryConfigRepository(config)
+    render(<CategorySettings repository={repo} />, { wrapper: makeWrapper() })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Load Excel mapping' }))
+    await screen.findByRole('button', { name: 'Reload from Excel' })
+
+    expect(await screen.findByText(/Rows in Excel not yet mapped/)).toBeInTheDocument()
+    const addBtn = screen.getByRole('button', { name: '+ Add as category' })
+    await userEvent.click(addBtn)
+
+    await waitFor(async () => {
+      const saved = await repo.get()
+      expect(saved.customCategories).toContain('Unmapped Task')
+    })
+    listRowsSpy.mockRestore()
   })
 })

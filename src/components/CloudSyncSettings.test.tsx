@@ -81,4 +81,56 @@ describe('CloudSyncSettings', () => {
     await userEvent.click(screen.getByRole('button', { name: /sign in with microsoft/i }))
     expect(mockInstance.loginPopup).toHaveBeenCalledOnce()
   })
+
+  it('handles loginPopup rejection gracefully', async () => {
+    mockInstance.loginPopup.mockRejectedValue(new Error('popup blocked'))
+    render(<CloudSyncSettings />)
+    await userEvent.click(screen.getByRole('button', { name: /sign in with microsoft/i }))
+    expect(mockInstance.loginPopup).toHaveBeenCalledOnce()
+  })
+
+  it('calls instance.logoutPopup when Sign out is clicked', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    mockUseMsal.mockReturnValue({
+      instance: mockInstance,
+      accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
+      inProgress: 'none',
+    } as ReturnType<typeof useMsal>)
+    mockInstance.logoutPopup.mockResolvedValue(undefined)
+    render(<CloudSyncSettings />)
+    await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
+    expect(mockInstance.logoutPopup).toHaveBeenCalledOnce()
+  })
+
+  it('handles logoutPopup rejection gracefully', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    mockUseMsal.mockReturnValue({
+      instance: mockInstance,
+      accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
+      inProgress: 'none',
+    } as ReturnType<typeof useMsal>)
+    mockInstance.logoutPopup.mockRejectedValue(new Error('logout failed'))
+    render(<CloudSyncSettings />)
+    await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
+    expect(mockInstance.logoutPopup).toHaveBeenCalledOnce()
+  })
+
+  it('calls clearBootstrapConfig when Change Azure AD configuration is clicked while authenticated', async () => {
+    useAuthStore.setState({ isAuthenticated: true })
+    mockUseMsal.mockReturnValue({
+      instance: mockInstance,
+      accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
+      inProgress: 'none',
+    } as ReturnType<typeof useMsal>)
+    const originalLocation = window.location
+    Object.defineProperty(window, 'location', {
+      value: { ...originalLocation, reload: vi.fn() },
+      writable: true,
+      configurable: true,
+    })
+    render(<CloudSyncSettings />)
+    await userEvent.click(screen.getByRole('button', { name: /change azure ad configuration/i }))
+    expect(mockClearBootstrapConfig).toHaveBeenCalledOnce()
+    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true })
+  })
 })

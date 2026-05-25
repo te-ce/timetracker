@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CategoryReorderPopover } from './CategoryReorderPopover'
@@ -124,5 +124,63 @@ describe('CategoryReorderPopover', () => {
     for (const cat of defaults) {
       expect(await screen.findByText(cat)).toBeInTheDocument()
     }
+  })
+
+  it('reorders categories on drag and drop', async () => {
+    const config: AppConfig = {
+      ...baseConfig,
+      customCategories: [],
+    }
+    const repo = new InMemoryConfigRepository(config)
+    render(<CategoryReorderPopover repository={repo} />, { wrapper: makeWrapper() })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reorder categories' }))
+    await screen.findByText('Drag to reorder')
+
+    const items = screen.getAllByRole('listitem')
+    const firstItem = items[0]
+    const secondItem = items[1]
+
+    fireEvent.dragStart(firstItem)
+    fireEvent.dragOver(secondItem, { preventDefault: () => {} })
+    fireEvent.drop(secondItem)
+
+    await waitFor(async () => {
+      const saved = await repo.get()
+      expect(saved.categoryOrder).toBeDefined()
+    })
+  })
+
+  it('does nothing when dropping on the same item', async () => {
+    const repo = new InMemoryConfigRepository(baseConfig)
+    const saveSpy = vi.spyOn(repo, 'save')
+    render(<CategoryReorderPopover repository={repo} />, { wrapper: makeWrapper() })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reorder categories' }))
+    await screen.findByText('Drag to reorder')
+
+    const items = screen.getAllByRole('listitem')
+    const firstItem = items[0]
+
+    fireEvent.dragStart(firstItem)
+    fireEvent.dragOver(firstItem, { preventDefault: () => {} })
+    fireEvent.drop(firstItem)
+
+    expect(saveSpy).not.toHaveBeenCalled()
+  })
+
+  it('clears drag state on dragEnd', async () => {
+    const repo = new InMemoryConfigRepository(baseConfig)
+    render(<CategoryReorderPopover repository={repo} />, { wrapper: makeWrapper() })
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Reorder categories' }))
+    await screen.findByText('Drag to reorder')
+
+    const items = screen.getAllByRole('listitem')
+    fireEvent.dragStart(items[0])
+    fireEvent.dragOver(items[1], { preventDefault: () => {} })
+    fireEvent.dragEnd(items[0])
+
+    expect(screen.queryByText('Drag to reorder')).toBeInTheDocument()
   })
 })

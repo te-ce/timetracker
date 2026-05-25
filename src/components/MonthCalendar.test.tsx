@@ -88,4 +88,48 @@ describe('MonthCalendar', () => {
     // Must be local May 19, not UTC-shifted May 18
     expect(onSelectDate).toHaveBeenCalledWith('2026-05-19')
   })
+
+  it('wraps from January to December of prior year on prev click', async () => {
+    const onMonthChange = vi.fn()
+    render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} onMonthChange={onMonthChange} />)
+    await userEvent.click(screen.getByRole('button', { name: /prev/i }))
+    expect(onMonthChange).toHaveBeenCalledWith(2023, 11)
+  })
+
+  it('wraps from December to January of next year on next click', async () => {
+    const onMonthChange = vi.fn()
+    render(<MonthCalendar year={2024} month={11} onSelectDate={vi.fn()} onMonthChange={onMonthChange} />)
+    await userEvent.click(screen.getByRole('button', { name: /next/i }))
+    expect(onMonthChange).toHaveBeenCalledWith(2025, 0)
+  })
+
+  it('does nothing on prev/next when onMonthChange is not provided', async () => {
+    render(<MonthCalendar year={2024} month={5} onSelectDate={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: /prev/i }))
+    await userEvent.click(screen.getByRole('button', { name: /next/i }))
+    expect(screen.getByText(/june/i)).toBeInTheDocument()
+  })
+
+  it('clicking Today button calls onMonthChange with current month', async () => {
+    const onMonthChange = vi.fn()
+    render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} onMonthChange={onMonthChange} />)
+    await userEvent.click(screen.getByRole('button', { name: /current month/i }))
+    const now = new Date()
+    expect(onMonthChange).toHaveBeenCalledWith(now.getFullYear(), now.getMonth())
+  })
+
+  it('shows a reason tooltip element when dayStatusReasonMap has entry', () => {
+    const dayStatusMap: Record<string, DayStatus> = { '2024-01-10': 'tracked' }
+    const dayStatusReasonMap = { '2024-01-10': 'Holiday: New Year' }
+    render(
+      <MonthCalendar
+        year={2024}
+        month={0}
+        onSelectDate={vi.fn()}
+        dayStatusMap={dayStatusMap}
+        dayStatusReasonMap={dayStatusReasonMap}
+      />,
+    )
+    expect(screen.getByText('Holiday: New Year')).toBeInTheDocument()
+  })
 })

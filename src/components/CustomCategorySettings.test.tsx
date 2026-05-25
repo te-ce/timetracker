@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryConfigRepository } from '../repositories/in-memory'
@@ -180,5 +180,76 @@ describe('CustomCategorySettings', () => {
     expect(screen.getByText('_COREMEDIA')).toBeInTheDocument()
     expect(screen.getByText('_SUPPORT')).toBeInTheDocument()
     expect(screen.getByText('_TESTWATCH')).toBeInTheDocument()
+  })
+
+  it('reorders categories on drag and drop', async () => {
+    const { repo } = setup({ ...baseConfig, customCategories: ['Alpha', 'Beta'] })
+    await screen.findByText('Alpha')
+
+    const items = screen.getAllByRole('listitem')
+    fireEvent.dragStart(items[0])
+    fireEvent.dragOver(items[2], { preventDefault: () => {} })
+    fireEvent.drop(items[2])
+
+    await waitFor(async () => {
+      const config = await repo.get()
+      expect(config.categoryOrder).toBeDefined()
+    })
+  })
+
+  it('does nothing when dropping on the same item', async () => {
+    const { repo } = setup({ ...baseConfig, customCategories: ['Alpha'] })
+    await screen.findByText('Alpha')
+    const saveSpy = vi.spyOn(repo, 'save')
+
+    const items = screen.getAllByRole('listitem')
+    fireEvent.dragStart(items[0])
+    fireEvent.dragOver(items[0], { preventDefault: () => {} })
+    fireEvent.drop(items[0])
+
+    expect(saveSpy).not.toHaveBeenCalled()
+  })
+
+  it('clears drag state on dragEnd', async () => {
+    setup({ ...baseConfig, customCategories: ['Alpha'] })
+    await screen.findByText('Alpha')
+
+    const items = screen.getAllByRole('listitem')
+    fireEvent.dragStart(items[0])
+    fireEvent.dragOver(items[1], { preventDefault: () => {} })
+    fireEvent.dragEnd(items[0])
+
+    expect(screen.getByText('Alpha')).toBeInTheDocument()
+  })
+
+  it('renames a default category (adds it to custom list)', async () => {
+    const { repo } = setup()
+    const leaveSpan = await screen.findByText('_LEAVE')
+    await userEvent.dblClick(leaveSpan)
+
+    const renameInput = screen.getByLabelText('Rename _LEAVE')
+    await userEvent.clear(renameInput)
+    await userEvent.type(renameInput, 'MY_LEAVE{Enter}')
+
+    await waitFor(async () => {
+      const config = await repo.get()
+      expect(config.customCategories).toContain('MY_LEAVE')
+    })
+  })
+
+  it('ignores rename to empty string and exits edit mode', async () => {
+    const { repo } = setup({ ...baseConfig, customCategories: ['ToKeep'] })
+    const catSpan = await screen.findByText('ToKeep')
+    await userEvent.dblClick(catSpan)
+
+    const renameInput = screen.getByLabelText('Rename ToKeep')
+    await userEvent.clear(renameInput)
+    renameInput.blur()
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Rename ToKeep')).not.toBeInTheDocument()
+    })
+    const config = await repo.get()
+    expect(config.customCategories).toContain('ToKeep')
   })
 })
