@@ -7,9 +7,13 @@ import { useUndoStore } from './stores/undoStore'
 import { useRemainingHours } from './hooks/useRemainingHours'
 import { useElectronTraySync } from './hooks/useElectronTraySync'
 import { useGoalNotification } from './hooks/useGoalNotification'
+import { useQuery } from '@tanstack/react-query'
 import { KeyboardShortcutLegend } from './components/KeyboardShortcutLegend'
 import { msalInstance } from './auth/msalInstance'
 import { toLocalIso } from './domain/dateUtils'
+import { defaultHotkeyConfig, matchesShortcut } from './domain/hotkeyConfig'
+import { QUERY_KEYS } from './hooks/queryKeys'
+import { configRepo } from './repositories/shared'
 
 const NAV_ITEMS: { label: string; icon: string; to: string }[] = [
   { label: 'Month', icon: '📆', to: '/' },
@@ -121,19 +125,28 @@ function App() {
   const { undo, redo } = useUndoStore()
   const [legendOpen, setLegendOpen] = useState(false)
 
+  const { data: appConfig } = useQuery({
+    queryKey: QUERY_KEYS.config,
+    queryFn: () => configRepo.get(),
+  })
+  const hotkeyConfig = appConfig?.hotkeys ?? defaultHotkeyConfig()
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       const target = e.target as Element
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
       if (target.isContentEditable) return
 
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z' && !e.shiftKey) {
+      const ctrl = e.ctrlKey || e.metaKey
+      const shift = e.shiftKey
+
+      if (ctrl) {
+        if (matchesShortcut(hotkeyConfig, 'undo', e.key, ctrl, shift)) {
           e.preventDefault()
           void undo()
           return
         }
-        if ((e.key === 'z' && e.shiftKey) || e.key === 'y') {
+        if (matchesShortcut(hotkeyConfig, 'redo', e.key, ctrl, shift)) {
           e.preventDefault()
           void redo()
           return
@@ -144,62 +157,42 @@ function App() {
       const loc = router.state.location
       const path = loc.pathname
 
-      switch (e.key) {
-        case 'm':
-        case 'M':
+      if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
+        void navigate({ to: '/' })
+      } else if (matchesShortcut(hotkeyConfig, 'gridView', e.key, ctrl, shift)) {
+        void navigate({ to: '/grid' })
+      } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
+        void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
+      } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {
+        void navigate({ to: '/sprint' })
+      } else if (matchesShortcut(hotkeyConfig, 'today', e.key, ctrl, shift)) {
+        const today = toLocalIso(new Date())
+        if (path === '/day') {
+          void navigate({ to: '/day', search: { date: today } })
+        } else {
           void navigate({ to: '/' })
-          break
-        case 'g':
-        case 'G':
-          void navigate({ to: '/grid' })
-          break
-        case 'd':
-        case 'D':
-          void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
-          break
-        case 's':
-        case 'S':
-          void navigate({ to: '/sprint' })
-          break
-        case 't':
-        case 'T': {
-          const today = toLocalIso(new Date())
-          if (path === '/day') {
-            void navigate({ to: '/day', search: { date: today } })
-          } else {
-            const now = new Date()
-            void navigate({ to: '/' })
-            // MonthGridView will default to current month, nothing else needed
-            void now
-          }
-          break
         }
-        case 'ArrowLeft': {
-          if (path === '/day') {
-            const search = loc.search as { date?: string }
-            const current = search.date ?? toLocalIso(new Date())
-            const d = new Date(current)
-            d.setDate(d.getDate() - 1)
-            void navigate({ to: '/day', search: { date: toLocalIso(d) } })
-          }
-          break
+      } else if (matchesShortcut(hotkeyConfig, 'prevDay', e.key, ctrl, shift)) {
+        if (path === '/day') {
+          const search = loc.search as { date?: string }
+          const current = search.date ?? toLocalIso(new Date())
+          const d = new Date(current)
+          d.setDate(d.getDate() - 1)
+          void navigate({ to: '/day', search: { date: toLocalIso(d) } })
         }
-        case 'ArrowRight': {
-          if (path === '/day') {
-            const search = loc.search as { date?: string }
-            const current = search.date ?? toLocalIso(new Date())
-            const d = new Date(current)
-            d.setDate(d.getDate() + 1)
-            void navigate({ to: '/day', search: { date: toLocalIso(d) } })
-          }
-          break
+      } else if (matchesShortcut(hotkeyConfig, 'nextDay', e.key, ctrl, shift)) {
+        if (path === '/day') {
+          const search = loc.search as { date?: string }
+          const current = search.date ?? toLocalIso(new Date())
+          const d = new Date(current)
+          d.setDate(d.getDate() + 1)
+          void navigate({ to: '/day', search: { date: toLocalIso(d) } })
         }
-        case '?':
-          setLegendOpen((v) => !v)
-          break
+      } else if (matchesShortcut(hotkeyConfig, 'toggleLegend', e.key, ctrl, shift)) {
+        setLegendOpen((v) => !v)
       }
     },
-    [navigate, router, undo, redo],
+    [navigate, router, undo, redo, hotkeyConfig],
   )
 
   useEffect(() => {

@@ -3,6 +3,7 @@ import { BundeslandSettings } from '../components/BundeslandSettings'
 import { CategorySettings } from '../components/CategorySettings'
 import { CloudSyncSettings } from '../components/CloudSyncSettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
+import { HotkeySettings } from '../components/HotkeySettings'
 import { LaunchAtLoginSettings } from '../components/LaunchAtLoginSettings'
 import { LocalExcelFolderSettings } from '../components/LocalExcelFolderSettings'
 import { LocalExcelSettings } from '../components/LocalExcelSettings'
@@ -35,6 +36,7 @@ export function SettingsView() {
       )}
       <CategorySettings repository={configRepo} />
       {isElectron && <LaunchAtLoginSettings repository={configRepo} />}
+      <HotkeySettings repository={configRepo} />
     </div>
   )
 }

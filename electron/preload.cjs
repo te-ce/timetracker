@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   hotkey: {
     onToggle: (cb) => ipcRenderer.on('hotkey:toggle', cb),
     offToggle: (cb) => ipcRenderer.removeListener('hotkey:toggle', cb),
+    setGlobal: (accelerator) => ipcRenderer.invoke('hotkey:setGlobal', accelerator),
   },
   storage: {
     get: (key) => ipcRenderer.invoke('storage:get', key),

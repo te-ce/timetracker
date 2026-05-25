@@ -59,6 +59,8 @@ export interface AppConfig {
   localExcelFile?: string | null
   /** Whether to launch the app automatically on OS login (Electron desktop only) */
   launchAtLogin?: boolean
+  /** Global hotkey and in-app shortcut overrides */
+  hotkeys?: import('../domain/hotkeyConfig').HotkeyConfig
 }
 
 export interface TimeEntryRepository {

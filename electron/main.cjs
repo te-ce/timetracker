@@ -164,11 +164,12 @@ function createWindow() {
   })
 }
 
-app.whenReady().then(() => {
-  createTray()
-  createWindow()
+const DEFAULT_GLOBAL_HOTKEY = 'CommandOrControl+Shift+Space'
 
-  globalShortcut.register('CommandOrControl+Shift+Space', () => {
+function registerGlobalHotkey(accelerator) {
+  globalShortcut.unregisterAll()
+  if (!accelerator) return
+  globalShortcut.register(accelerator, () => {
     if (!mainWindow) return
     if (trayState.activeCategory) {
       mainWindow.webContents.send('hotkey:toggle')
@@ -177,6 +178,25 @@ app.whenReady().then(() => {
       mainWindow.focus()
     }
   })
+}
+
+function loadGlobalHotkey() {
+  try {
+    const raw = fs.readFileSync(storagePath('config.json'), 'utf8')
+    const config = JSON.parse(raw)
+    return config?.hotkeys?.globalToggle !== undefined
+      ? config.hotkeys.globalToggle
+      : DEFAULT_GLOBAL_HOTKEY
+  } catch {
+    return DEFAULT_GLOBAL_HOTKEY
+  }
+}
+
+app.whenReady().then(() => {
+  createTray()
+  createWindow()
+
+  registerGlobalHotkey(loadGlobalHotkey())
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -192,6 +212,10 @@ app.on('before-quit', () => {
   app.isQuitting = true
   if (elapsedTimer) clearInterval(elapsedTimer)
   globalShortcut.unregisterAll()
+})
+
+ipcMain.handle('hotkey:setGlobal', (_, accelerator) => {
+  registerGlobalHotkey(accelerator)
 })
 
 ipcMain.handle('autolaunch:get', () => autoLauncher.isEnabled())
