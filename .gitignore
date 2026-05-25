@@ -18,6 +18,7 @@ test-results
 
 # Generated reports
 architecture-report.html
+reports/
 
 # Electron build output
 dist-electron/
