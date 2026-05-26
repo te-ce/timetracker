@@ -11,8 +11,38 @@ import { useAuthStore } from '../stores/authStore'
 import { getAccessToken } from '../auth/msalInstance'
 import { isLocalFolderMode } from '../auth/bootstrapConfig'
 import { QUERY_KEYS } from '../hooks/queryKeys'
+import type { AppConfig } from '../repositories/types'
+import type { WorkbookService } from '../services/workbookService'
 
 const localFolder = isLocalFolderMode()
+
+function hasCategoryMappings(config: AppConfig | undefined): boolean {
+  const mapping = config ? config.categoryMapping : undefined
+  return Object.keys(mapping ?? {}).length > 0
+}
+
+function isLocalFolderExportReady(config: AppConfig | undefined): boolean {
+  if (!config) return false
+  return !!config.localExcelFile && !!config.targetSheet && hasCategoryMappings(config)
+}
+
+function isCloudExportReady(config: AppConfig | undefined, isAuthenticated: boolean): boolean {
+  if (!config) return false
+  return !!config.sharepointUrl && !!config.targetSheet && hasCategoryMappings(config) && isAuthenticated
+}
+
+function isExportReady(config: AppConfig | undefined, isAuthenticated: boolean): boolean {
+  return localFolder ? isLocalFolderExportReady(config) : isCloudExportReady(config, isAuthenticated)
+}
+
+function buildExportService(config: AppConfig, isAuthenticated: boolean): WorkbookService {
+  if (localFolder) {
+    if (!config.localExcelFile) throw new Error('No local Excel file selected.')
+    return new LocalFolderWorkbookService(config.localExcelFile)
+  }
+  if (!config.sharepointUrl || !isAuthenticated) throw new Error('SharePoint URL or auth missing.')
+  return new GraphApiWorkbookService(config.sharepointUrl, getAccessToken)
+}
 
 export function SprintView() {
   const queryClient = useQueryClient()
@@ -25,13 +55,13 @@ export function SprintView() {
   })
 
   const sprintConfig: SprintConfig = {
-    startDate: config?.sprintStartDate ?? '2024-01-01',
-    lengthDays: config?.sprintLengthDays ?? 14,
+    startDate: config ? (config.sprintStartDate ?? '2024-01-01') : '2024-01-01',
+    lengthDays: config ? config.sprintLengthDays : 14,
   }
 
   const today = new Date().toISOString().slice(0, 10)
   const currentSprint = getSprintForDate(today, sprintConfig)
-  const activeIndex = sprintIndex ?? currentSprint.index
+  const activeIndex = sprintIndex !== null ? sprintIndex : currentSprint.index
 
   const sprint = getSprintBoundaries(activeIndex, sprintConfig)
 
@@ -41,7 +71,8 @@ export function SprintView() {
   })
 
   const hoursPerCategory = aggregateSprintHours(entries, sprint)
-  const allCategories = getAllCategories(config?.customCategories ?? [], config?.categoryOrder)
+  const customCategories = config ? config.customCategories : []
+  const allCategories = getAllCategories(customCategories, config?.categoryOrder)
 
   const { data: sprintExport } = useQuery({
     queryKey: QUERY_KEYS.sprintExportByIndex(activeIndex),
@@ -61,27 +92,13 @@ export function SprintView() {
       }),
   })
 
-  const exportStatus = sprintExport?.status ?? 'pending'
-
-  const sharepointUrl = config?.sharepointUrl ?? null
-  const localExcelFile = config?.localExcelFile ?? null
-  const targetSheet = config?.targetSheet ?? null
-  const categoryMapping = config?.categoryMapping ?? {}
-  const exportReady = localFolder
-    ? !!localExcelFile && !!targetSheet && Object.keys(categoryMapping).length > 0
-    : !!sharepointUrl && !!targetSheet && Object.keys(categoryMapping).length > 0 && isAuthenticated
+  const exportStatus = sprintExport ? sprintExport.status : 'pending'
+  const exportReady = isExportReady(config, isAuthenticated)
 
   async function handleExport(): Promise<void> {
-    if (!targetSheet) throw new Error('No target sheet selected.')
-    let service
-    if (localFolder) {
-      if (!localExcelFile) throw new Error('No local Excel file selected.')
-      service = new LocalFolderWorkbookService(localExcelFile)
-    } else {
-      if (!sharepointUrl || !isAuthenticated) throw new Error('SharePoint URL or auth missing.')
-      service = new GraphApiWorkbookService(sharepointUrl, getAccessToken)
-    }
-    await service.writeSprintData(targetSheet, categoryMapping, hoursPerCategory)
+    if (!config?.targetSheet) throw new Error('No target sheet selected.')
+    const service = buildExportService(config, isAuthenticated)
+    await service.writeSprintData(config.targetSheet, config.categoryMapping ?? {}, hoursPerCategory)
     await markExportedMutation.mutateAsync()
   }
 

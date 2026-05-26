@@ -16,7 +16,107 @@ import { classifyDay as classifyDayType } from '../domain/dayType'
 import { classifyDay } from '../domain/dayStatus'
 import { toLocalIso } from '../domain/dateUtils'
 import { QUERY_KEYS } from './queryKeys'
-import type { DayTypeOverride, WorkLocation } from '../repositories/types'
+import type { AppConfig, DayTypeOverride, WorkLocation, WorkPeriod, TimeEntry } from '../repositories/types'
+import type { DayClassification } from '../domain/dayStatus'
+import type { DayType } from '../domain/dayType'
+
+interface DayDerivedInput {
+  config: AppConfig | undefined
+  windows: WorkPeriod[]
+  entries: TimeEntry[]
+  autoCategoryOverride: string | null
+  monthDayTypeOverrides: Map<string, DayTypeOverride>
+  isConfirmed: boolean
+  date: string
+  todayIso: string
+  workedHoursPerDay: number[]
+  monthDays: Array<{ date: string }>
+}
+
+interface DayDerived {
+  sollstunden: number
+  workedHours: number
+  manualTotal: number
+  autoCategory: string | null
+  selectedDayType: DayType
+  isEntriesBalanced: boolean
+  hasAutoCategory: boolean
+  dayClassification: DayClassification
+  effectiveLocation: WorkLocation
+  defaultWorkLocation: WorkLocation
+  overtimeToDate: ReturnType<typeof calculateOvertimeToDate>
+}
+
+function resolveAutoForDay(
+  date: string,
+  autoCategoryOverride: string | null,
+  globalAutoCategory: string | null,
+): string | null {
+  const dayOverrides = new Map<string, string>()
+  if (autoCategoryOverride) dayOverrides.set(date, autoCategoryOverride)
+  return resolveAutoCategory({ date, globalDefault: globalAutoCategory, dayOverrides })
+}
+
+function computeClassification(
+  date: string,
+  todayIso: string,
+  workedHours: number,
+  manualTotal: number,
+  isConfirmed: boolean,
+  autoCategory: string | null,
+  monthDayTypeOverrides: Map<string, DayTypeOverride>,
+): { selectedDayType: DayType; isEntriesBalanced: boolean; hasAutoCategory: boolean; dayClassification: DayClassification } {
+  const selectedDayType = monthDayTypeOverrides.get(date) ?? classifyDayType(new Date(date))
+  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01
+  const hasAutoCategory = !!autoCategory && manualTotal <= workedHours
+  const dayClassification = classifyDay({
+    dayType: selectedDayType,
+    workedHours,
+    manualTotal,
+    isEntriesBalanced,
+    hasAutoCategory,
+    isConfirmed,
+    isoDate: date,
+    today: todayIso,
+  })
+  return { selectedDayType, isEntriesBalanced, hasAutoCategory, dayClassification }
+}
+
+function computeDayDerived(
+  input: DayDerivedInput,
+  workLocation: WorkLocation | null,
+): DayDerived {
+  const { config, windows, entries, autoCategoryOverride, monthDayTypeOverrides, isConfirmed, date, todayIso, workedHoursPerDay, monthDays } = input
+  const sollstunden = config ? config.sollstunden : 8
+  const workedHours = calculateWorkedHours(windows)
+  const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
+
+  const overtimeToDate = calculateOvertimeToDate(
+    workedHoursPerDay,
+    monthDays.map((d) => d.date),
+    todayIso,
+    sollstunden,
+  )
+
+  const globalAutoCategory = config ? (config.autoCategory ?? null) : null
+  const autoCategory = resolveAutoForDay(date, autoCategoryOverride, globalAutoCategory)
+
+  const classification = computeClassification(date, todayIso, workedHours, manualTotal, isConfirmed, autoCategory, monthDayTypeOverrides)
+
+  const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
+  const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation
+
+  return {
+    sollstunden,
+    workedHours,
+    manualTotal,
+    autoCategory,
+    ...classification,
+    effectiveLocation,
+    defaultWorkLocation,
+    overtimeToDate,
+  }
+}
 
 export function useDayQuery(date: string) {
   const todayIso = toLocalIso(new Date())
@@ -80,11 +180,6 @@ export function useDayQuery(date: string) {
     queryFn: () => dayTypeOverrideRepo.findByDateRange(monthFromIso, monthToIso),
   })
 
-  // Derived values
-  const sollstunden = config?.sollstunden ?? 8
-  const workedHours = calculateWorkedHours(windows)
-  const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
-
   const { days: monthDays, workedHoursPerDay } = buildMonthSummaries(selectedYear, selectedMonth, {
     windows: monthWindows,
     entries: monthEntries,
@@ -92,37 +187,11 @@ export function useDayQuery(date: string) {
     today: todayIso,
     confirmedDays: monthConfirmedDays,
   })
-  const overtimeToDate = calculateOvertimeToDate(
-    workedHoursPerDay,
-    monthDays.map((d) => d.date),
-    todayIso,
-    sollstunden,
+
+  const derived = computeDayDerived(
+    { config, windows, entries, autoCategoryOverride, monthDayTypeOverrides, isConfirmed, date, todayIso, workedHoursPerDay, monthDays },
+    workLocation,
   )
-
-  const dayOverrides = new Map<string, string>()
-  if (autoCategoryOverride) dayOverrides.set(date, autoCategoryOverride)
-  const autoCategory = resolveAutoCategory({
-    date,
-    globalDefault: config?.autoCategory ?? null,
-    dayOverrides,
-  })
-
-  const selectedDayType = monthDayTypeOverrides.get(date) ?? classifyDayType(new Date(date))
-  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01
-  const hasAutoCategory = !!autoCategory && manualTotal <= workedHours
-  const dayClassification = classifyDay({
-    dayType: selectedDayType,
-    workedHours,
-    manualTotal,
-    isEntriesBalanced,
-    hasAutoCategory,
-    isConfirmed,
-    isoDate: date,
-    today: todayIso,
-  })
-
-  const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
-  const effectiveLocation: WorkLocation = workLocation ?? defaultWorkLocation
 
   return {
     config,
@@ -131,17 +200,7 @@ export function useDayQuery(date: string) {
     workLocation,
     autoCategoryOverride,
     isConfirmed,
-    workedHours,
-    manualTotal,
-    autoCategory,
-    selectedDayType,
-    isEntriesBalanced,
-    hasAutoCategory,
-    dayClassification,
-    effectiveLocation,
-    defaultWorkLocation,
-    sollstunden,
-    overtimeToDate,
     todayIso,
+    ...derived,
   }
 }

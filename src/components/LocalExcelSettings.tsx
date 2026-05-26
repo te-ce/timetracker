@@ -8,6 +8,90 @@ interface Props {
   repository: ConfigRepository
 }
 
+interface FileSelectorProps {
+  xlsxFiles: string[]
+  currentFile: string
+  loading: boolean
+  onScanFiles: () => void
+  onFileChange: (filename: string) => void
+}
+
+function FileSelector({ xlsxFiles, currentFile, loading, onScanFiles, onFileChange }: FileSelectorProps) {
+  const showFilePicker = xlsxFiles.length > 0
+  const showCurrentFileHint = currentFile !== '' && xlsxFiles.length === 0
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onScanFiles}
+          disabled={loading}
+          className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
+        >
+          {loading ? 'Scanning…' : 'Scan folder for .xlsx files'}
+        </button>
+      </div>
+      {showFilePicker && (
+        <select
+          aria-label="Excel workbook file"
+          value={currentFile}
+          onChange={(e) => onFileChange(e.target.value)}
+          className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+        >
+          <option value="">— select a file —</option>
+          {xlsxFiles.map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+      )}
+      {showCurrentFileHint && (
+        <p className="text-xs text-green-700 dark:text-emerald-400">✓ {currentFile}</p>
+      )}
+    </div>
+  )
+}
+
+interface SheetSelectorProps {
+  sheets: string[]
+  currentSheet: string
+  loading: boolean
+  onLoadSheets: () => void
+  onSelectSheet: (sheet: string) => void
+}
+
+function SheetPickerSection({ sheets, currentSheet, loading, onLoadSheets, onSelectSheet }: SheetSelectorProps) {
+  const showSheetPicker = sheets.length > 0
+  const showCurrentSheetHint = currentSheet !== '' && sheets.length === 0
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onLoadSheets}
+          disabled={loading}
+          className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
+        >
+          {loading ? 'Loading…' : 'Load sheets'}
+        </button>
+      </div>
+      {showSheetPicker && (
+        <select
+          aria-label="Target sheet"
+          value={currentSheet}
+          onChange={(e) => onSelectSheet(e.target.value)}
+          className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+        >
+          <option value="">— select a sheet —</option>
+          {sheets.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      )}
+      {showCurrentSheetHint && (
+        <p className="text-xs text-green-700 dark:text-emerald-400">✓ {currentSheet}</p>
+      )}
+    </div>
+  )
+}
+
 export function LocalExcelSettings({ repository }: Props) {
   const queryClient = useQueryClient()
   const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => repository.get() })
@@ -89,66 +173,22 @@ export function LocalExcelSettings({ repository }: Props) {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => void handleScanFiles()}
-            disabled={loading}
-            className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
-          >
-            {loading ? 'Scanning…' : 'Scan folder for .xlsx files'}
-          </button>
-        </div>
-
-        {xlsxFiles.length > 0 && (
-          <select
-            aria-label="Excel workbook file"
-            value={currentFile}
-            onChange={(e) => void handleFileChange(e.target.value)}
-            className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-          >
-            <option value="">— select a file —</option>
-            {xlsxFiles.map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-        )}
-
-        {currentFile && xlsxFiles.length === 0 && (
-          <p className="text-xs text-green-700 dark:text-emerald-400">✓ {currentFile}</p>
-        )}
-      </div>
+      <FileSelector
+        xlsxFiles={xlsxFiles}
+        currentFile={currentFile}
+        loading={loading}
+        onScanFiles={() => void handleScanFiles()}
+        onFileChange={(f) => void handleFileChange(f)}
+      />
 
       {currentFile && (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => void handleLoadSheets()}
-              disabled={loading}
-              className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
-            >
-              {loading ? 'Loading…' : 'Load sheets'}
-            </button>
-          </div>
-
-          {sheets.length > 0 && (
-            <select
-              aria-label="Target sheet"
-              value={currentSheet}
-              onChange={(e) => sheetMutation.mutate(e.target.value)}
-              className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-            >
-              <option value="">— select a sheet —</option>
-              {sheets.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          )}
-
-          {currentSheet && sheets.length === 0 && (
-            <p className="text-xs text-green-700 dark:text-emerald-400">✓ {currentSheet}</p>
-          )}
-        </div>
+        <SheetPickerSection
+          sheets={sheets}
+          currentSheet={currentSheet}
+          loading={loading}
+          onLoadSheets={() => void handleLoadSheets()}
+          onSelectSheet={(s) => sheetMutation.mutate(s)}
+        />
       )}
 
       {loadError && (

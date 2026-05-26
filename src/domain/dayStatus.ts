@@ -50,6 +50,47 @@ function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory
   return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h categorized — ${unaccounted.toFixed(1)} h unaccounted`
 }
 
+function classifyLeaveDay(dayType: DayType): DayClassification | null {
+  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') {
+    const reason = dayType === 'Vacation' ? 'Marked as vacation'
+      : dayType === 'SickDay' ? 'Marked as sick day'
+      : 'Marked as absence'
+    return { status: 'leave', displayStatus: 'leave', reason }
+  }
+  return null
+}
+
+function classifyNonWorkingDay(dayType: DayType): DayClassification | null {
+  if (dayType !== 'WorkDay') {
+    const reason = dayType === 'PublicHoliday' ? 'Public holiday' : 'Weekend'
+    return { status: 'non-working', displayStatus: 'non-working', reason }
+  }
+  return null
+}
+
+function classifyTrackedDay(
+  workedHours: number,
+  manualTotal: number,
+  isEntriesBalanced: boolean,
+  hasAutoCategory: boolean,
+  isConfirmed: boolean,
+  isToday: boolean,
+): DayClassification {
+  const prefix = isToday ? 'Today — ' : ''
+  const balance = balanceReason(workedHours, manualTotal, hasAutoCategory)
+
+  if (isConfirmed) {
+    const status: DayStatus = isToday ? 'today' : 'confirmed'
+    return { status, displayStatus: 'confirmed', reason: `${prefix}Confirmed — ${balance}` }
+  }
+  if (isEntriesBalanced) {
+    const status: DayStatus = isToday ? 'today' : 'tracked'
+    return { status, displayStatus: 'tracked', reason: `${prefix}${balance}` }
+  }
+  const status: DayStatus = isToday ? 'today' : 'needs-review'
+  return { status, displayStatus: 'needs-review', reason: `${prefix}${balance}` }
+}
+
 export function classifyDay({
   dayType,
   workedHours,
@@ -60,29 +101,14 @@ export function classifyDay({
   isoDate,
   today,
 }: ClassifyDayInput): DayClassification {
-  const hasWorkedHours = workedHours > 0
-  const hasManualEntries = manualTotal > 0
+  const leaveResult = classifyLeaveDay(dayType)
+  if (leaveResult) return leaveResult
 
-  // Leave days
-  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') {
-    const leaveLabel =
-      dayType === 'Vacation'
-        ? 'Marked as vacation'
-        : dayType === 'SickDay'
-          ? 'Marked as sick day'
-          : 'Marked as absence'
-    return { status: 'leave', displayStatus: 'leave', reason: leaveLabel }
-  }
+  const nonWorkingResult = classifyNonWorkingDay(dayType)
+  if (nonWorkingResult) return nonWorkingResult
 
-  // Non-working (Weekend, PublicHoliday)
-  if (dayType !== 'WorkDay') {
-    const label = dayType === 'PublicHoliday' ? 'Public holiday' : 'Weekend'
-    return { status: 'non-working', displayStatus: 'non-working', reason: label }
-  }
-
-  // Future days
   if (isoDate > today) {
-    if (hasWorkedHours) {
+    if (workedHours > 0) {
       return {
         status: 'tracked',
         displayStatus: 'tracked',
@@ -95,23 +121,10 @@ export function classifyDay({
   const isToday = isoDate === today
   const prefix = isToday ? 'Today — ' : ''
 
-  if (!hasWorkedHours && !hasManualEntries) {
+  if (workedHours === 0 && manualTotal === 0) {
     const status: DayStatus = isToday ? 'today' : 'untracked'
     return { status, displayStatus: 'untracked', reason: `${prefix}No hours recorded` }
   }
 
-  const balance = balanceReason(workedHours, manualTotal, hasAutoCategory)
-
-  if (isConfirmed) {
-    const status: DayStatus = isToday ? 'today' : 'confirmed'
-    return { status, displayStatus: 'confirmed', reason: `${prefix}Confirmed — ${balance}` }
-  }
-
-  if (isEntriesBalanced) {
-    const status: DayStatus = isToday ? 'today' : 'tracked'
-    return { status, displayStatus: 'tracked', reason: `${prefix}${balance}` }
-  }
-
-  const status: DayStatus = isToday ? 'today' : 'needs-review'
-  return { status, displayStatus: 'needs-review', reason: `${prefix}${balance}` }
+  return classifyTrackedDay(workedHours, manualTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, isToday)
 }

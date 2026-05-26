@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { ConfigRepository } from '../repositories/types'
-import type { ExcelRow } from '../services/workbookService'
+import type { ExcelRow, WorkbookService } from '../services/workbookService'
 import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../services/workbookService'
 import { getAllCategories } from '../domain/categories'
 import { useAuthStore } from '../stores/authStore'
@@ -43,6 +43,121 @@ function autoMatchCategories(
   return result
 }
 
+function buildWorkbookService(
+  sharepointUrl: string | undefined,
+  localExcelFile: string | undefined | null,
+  isAuthenticated: boolean,
+): WorkbookService | null {
+  if (localFolder) {
+    if (!localExcelFile) return null
+    return new LocalFolderWorkbookService(localExcelFile)
+  }
+  if (!sharepointUrl || !isAuthenticated) return null
+  return new GraphApiWorkbookService(sharepointUrl, getAccessToken)
+}
+
+function getMappingHint(
+  sharepointUrl: string | undefined,
+  localExcelFile: string | undefined | null,
+  targetSheet: string | undefined | null,
+  isAuthenticated: boolean,
+): string {
+  if (localFolder) {
+    if (!localExcelFile) return 'Select an Excel file to map'
+    if (!targetSheet) return 'Select a sheet to map'
+    return ''
+  }
+  if (!sharepointUrl) return 'Set SharePoint URL to map'
+  if (!targetSheet) return 'Select a sheet to map'
+  if (!isAuthenticated) return 'Sign in to map'
+  return ''
+}
+
+function computeExcelReady(
+  sharepointUrl: string | undefined | null,
+  localExcelFile: string | undefined | null,
+  targetSheet: string | undefined | null,
+  isAuthenticated: boolean,
+): boolean {
+  if (localFolder) return !!localExcelFile && !!targetSheet
+  return !!sharepointUrl && !!targetSheet && isAuthenticated
+}
+
+function loadButtonLabel(loadingRows: boolean, hasRows: boolean): string {
+  if (loadingRows) return 'Loading…'
+  return hasRows ? 'Reload from Excel' : 'Load Excel mapping'
+}
+
+function mappingFooterText(savedMapping: Record<string, string>, hasRows: boolean): string {
+  const count = Object.keys(savedMapping).length
+  if (count > 0 && !hasRows) return `${count} categories mapped — load Excel to edit.`
+  return 'Load Excel mapping to link categories to Task IDs.'
+}
+
+interface UnmappedCategoryRowsSectionProps {
+  unmappedRows: ExcelRow[]
+  onAddAsCategory: (row: ExcelRow) => void
+}
+
+function UnmappedCategoryRowsSection({ unmappedRows, onAddAsCategory }: UnmappedCategoryRowsSectionProps) {
+  if (unmappedRows.length === 0) return null
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-dashed border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/40 p-3">
+      <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
+        Rows in Excel not yet mapped to any category:
+      </p>
+      <ul className="flex flex-col gap-1">
+        {unmappedRows.map((row) => (
+          <li key={row.taskId} className="flex items-center justify-between gap-2">
+            <span className="text-xs text-gray-700 dark:text-gray-300">
+              <span className="font-mono">{row.taskId}</span>
+              {row.description ? ` — ${row.description}` : ''}
+            </span>
+            <button
+              onClick={() => onAddAsCategory(row)}
+              className="shrink-0 rounded border border-indigo-300 dark:border-indigo-700 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+            >
+              + Add as category
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+interface CategoryMappingSaveRowProps {
+  isDirty: boolean
+  isPending: boolean
+  isError: boolean
+  isSaved: boolean
+  onSave: () => void
+}
+
+function CategoryMappingSaveRow({ isDirty, isPending, isError, isSaved, onSave }: CategoryMappingSaveRowProps) {
+  return (
+    <>
+      {isDirty && (
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onSave}
+            disabled={isPending}
+            className="rounded bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
+          >
+            Save mapping
+          </button>
+          {isError && (
+            <p role="alert" className="text-xs text-red-600 dark:text-red-400">Failed to save.</p>
+          )}
+        </div>
+      )}
+      {isSaved && !isDirty && (
+        <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>
+      )}
+    </>
+  )
+}
+
 interface Props {
   repository: ConfigRepository
 }
@@ -51,14 +166,12 @@ export function CategorySettings({ repository }: Props) {
   const queryClient = useQueryClient()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
-  // Category management state
   const [newCategory, setNewCategory] = useState('')
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
   const dragIdx = useRef<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
-  // Excel mapping state
   const [excelRows, setExcelRows] = useState<ExcelRow[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
   const [loadingRows, setLoadingRows] = useState(false)
@@ -105,19 +218,15 @@ export function CategorySettings({ repository }: Props) {
 
   const { customCategories } = config
   const categories = getAllCategories(customCategories, config.categoryOrder)
-  const savedMapping = config.categoryMapping ?? {}
-  const activeMapping = localMapping ?? savedMapping
+  const savedMapping = config.categoryMapping ? config.categoryMapping : {}
+  const activeMapping = localMapping !== null ? localMapping : savedMapping
   const mappedTaskIds = new Set(Object.values(activeMapping))
   const unmappedRows = excelRows.filter((r) => !mappedTaskIds.has(r.taskId))
 
   const sharepointUrl = config.sharepointUrl
   const targetSheet = config.targetSheet
   const localExcelFile = config.localExcelFile
-  const excelReady = localFolder
-    ? !!localExcelFile && !!targetSheet
-    : !!sharepointUrl && !!targetSheet && isAuthenticated
-
-  // ── Category management handlers ────────────────────────────────────────────
+  const excelReady = computeExcelReady(sharepointUrl, localExcelFile, targetSheet, isAuthenticated)
 
   function handleAdd() {
     const trimmed = newCategory.trim()
@@ -169,21 +278,13 @@ export function CategorySettings({ repository }: Props) {
 
   function handleDragEnd() { dragIdx.current = null; setDragOverIdx(null) }
 
-  // ── Excel mapping handlers ───────────────────────────────────────────────────
-
   async function handleLoadRows() {
     setLoadError(null)
     setLoadingRows(true)
     try {
       if (!targetSheet) return
-      let service
-      if (localFolder) {
-        if (!localExcelFile) return
-        service = new LocalFolderWorkbookService(localExcelFile)
-      } else {
-        if (!sharepointUrl || !isAuthenticated) return
-        service = new GraphApiWorkbookService(sharepointUrl, getAccessToken)
-      }
+      const service = buildWorkbookService(sharepointUrl, localExcelFile, isAuthenticated)
+      if (!service) return
       const rows = await service.listRows(targetSheet)
       setExcelRows(rows)
       const merged = autoMatchCategories(categories, rows, savedMapping)
@@ -213,6 +314,8 @@ export function CategorySettings({ repository }: Props) {
   }
 
   const isDirty = localMapping !== null
+  const mappingHint = getMappingHint(sharepointUrl, localExcelFile, targetSheet, isAuthenticated)
+  const showMappingHint = !excelReady && excelRows.length === 0 && mappingHint !== ''
 
   return (
     <div className="flex flex-col gap-3">
@@ -220,11 +323,9 @@ export function CategorySettings({ repository }: Props) {
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">Categories</span>
         <div className="flex items-center gap-2">
-          {!excelReady && excelRows.length === 0 && (
+          {showMappingHint && (
             <span className="text-xs text-gray-400 dark:text-gray-500">
-              {localFolder
-                ? (!localExcelFile ? 'Select an Excel file to map' : !targetSheet ? 'Select a sheet to map' : '')
-                : (!sharepointUrl ? 'Set SharePoint URL to map' : !targetSheet ? 'Select a sheet to map' : !isAuthenticated ? 'Sign in to map' : '')}
+              {mappingHint}
             </span>
           )}
           <button
@@ -232,7 +333,7 @@ export function CategorySettings({ repository }: Props) {
             disabled={!excelReady || loadingRows}
             className="rounded border px-2.5 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 disabled:opacity-40"
           >
-            {loadingRows ? 'Loading…' : excelRows.length > 0 ? 'Reload from Excel' : 'Load Excel mapping'}
+            {loadButtonLabel(loadingRows, excelRows.length > 0)}
           </button>
         </div>
       </div>
@@ -342,49 +443,18 @@ export function CategorySettings({ repository }: Props) {
         })}
       </ul>
 
-      {/* Unmapped Excel rows */}
-      {unmappedRows.length > 0 && (
-        <div className="flex flex-col gap-2 rounded-lg border border-dashed border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/40 p-3">
-          <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
-            Rows in Excel not yet mapped to any category:
-          </p>
-          <ul className="flex flex-col gap-1">
-            {unmappedRows.map((row) => (
-              <li key={row.taskId} className="flex items-center justify-between gap-2">
-                <span className="text-xs text-gray-700 dark:text-gray-300">
-                  <span className="font-mono">{row.taskId}</span>
-                  {row.description ? ` — ${row.description}` : ''}
-                </span>
-                <button
-                  onClick={() => handleAddAsCategory(row)}
-                  className="shrink-0 rounded border border-indigo-300 dark:border-indigo-700 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
-                >
-                  + Add as category
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <UnmappedCategoryRowsSection
+        unmappedRows={unmappedRows}
+        onAddAsCategory={handleAddAsCategory}
+      />
 
-      {/* Mapping save row */}
-      {isDirty && (
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleSaveMapping}
-            disabled={mappingMutation.isPending}
-            className="rounded bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
-          >
-            Save mapping
-          </button>
-          {mappingMutation.isError && (
-            <p role="alert" className="text-xs text-red-600 dark:text-red-400">Failed to save.</p>
-          )}
-        </div>
-      )}
-      {mappingSaved && !isDirty && (
-        <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>
-      )}
+      <CategoryMappingSaveRow
+        isDirty={isDirty}
+        isPending={mappingMutation.isPending}
+        isError={mappingMutation.isError}
+        isSaved={mappingSaved}
+        onSave={handleSaveMapping}
+      />
 
       {/* Add category */}
       <div className="flex gap-2">
@@ -407,9 +477,7 @@ export function CategorySettings({ repository }: Props) {
 
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Drag to reorder. Double-click to rename.{' '}
-        {Object.keys(savedMapping).length > 0 && excelRows.length === 0
-          ? `${Object.keys(savedMapping).length} categories mapped — load Excel to edit.`
-          : 'Load Excel mapping to link categories to Task IDs.'}
+        {mappingFooterText(savedMapping, excelRows.length > 0)}
       </p>
     </div>
   )

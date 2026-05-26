@@ -140,57 +140,58 @@ function App() {
       const ctrl = e.ctrlKey || e.metaKey
       const shift = e.shiftKey
 
-      if (ctrl) {
+      function handleCtrlShortcuts() {
         if (matchesShortcut(hotkeyConfig, 'undo', e.key, ctrl, shift)) {
           e.preventDefault()
           void undo()
-          return
+          return true
         }
         if (matchesShortcut(hotkeyConfig, 'redo', e.key, ctrl, shift)) {
           e.preventDefault()
           void redo()
-          return
+          return true
         }
-        return
+        return false
       }
 
-      const loc = router.state.location
-      const path = loc.pathname
+      function navigateDayOffset(loc: typeof router.state.location, delta: number) {
+        const search = loc.search as { date?: string }
+        const current = search.date !== undefined ? search.date : toLocalIso(new Date())
+        const d = new Date(current)
+        d.setDate(d.getDate() + delta)
+        void navigate({ to: '/day', search: { date: toLocalIso(d) } })
+      }
 
-      if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
-        void navigate({ to: '/' })
-      } else if (matchesShortcut(hotkeyConfig, 'gridView', e.key, ctrl, shift)) {
-        void navigate({ to: '/grid' })
-      } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
-        void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
-      } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {
-        void navigate({ to: '/sprint' })
-      } else if (matchesShortcut(hotkeyConfig, 'today', e.key, ctrl, shift)) {
-        const today = toLocalIso(new Date())
-        if (path === '/day') {
-          void navigate({ to: '/day', search: { date: today } })
-        } else {
+      function handleNavShortcuts() {
+        const loc = router.state.location
+        const path = loc.pathname
+        function goTodayOrHome() {
+          if (path === '/day') { void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } }) }
+          else { void navigate({ to: '/' }) }
+        }
+        function goPrevDay() { if (path === '/day') navigateDayOffset(loc, -1) }
+        function goNextDay() { if (path === '/day') navigateDayOffset(loc, 1) }
+        if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
           void navigate({ to: '/' })
+        } else if (matchesShortcut(hotkeyConfig, 'gridView', e.key, ctrl, shift)) {
+          void navigate({ to: '/grid' })
+        } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
+          void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
+        } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {
+          void navigate({ to: '/sprint' })
+        } else if (matchesShortcut(hotkeyConfig, 'today', e.key, ctrl, shift)) {
+          goTodayOrHome()
+        } else if (matchesShortcut(hotkeyConfig, 'prevDay', e.key, ctrl, shift)) {
+          goPrevDay()
+        } else if (matchesShortcut(hotkeyConfig, 'nextDay', e.key, ctrl, shift)) {
+          goNextDay()
+        } else if (matchesShortcut(hotkeyConfig, 'toggleLegend', e.key, ctrl, shift)) {
+          setLegendOpen((v) => !v)
         }
-      } else if (matchesShortcut(hotkeyConfig, 'prevDay', e.key, ctrl, shift)) {
-        if (path === '/day') {
-          const search = loc.search as { date?: string }
-          const current = search.date ?? toLocalIso(new Date())
-          const d = new Date(current)
-          d.setDate(d.getDate() - 1)
-          void navigate({ to: '/day', search: { date: toLocalIso(d) } })
-        }
-      } else if (matchesShortcut(hotkeyConfig, 'nextDay', e.key, ctrl, shift)) {
-        if (path === '/day') {
-          const search = loc.search as { date?: string }
-          const current = search.date ?? toLocalIso(new Date())
-          const d = new Date(current)
-          d.setDate(d.getDate() + 1)
-          void navigate({ to: '/day', search: { date: toLocalIso(d) } })
-        }
-      } else if (matchesShortcut(hotkeyConfig, 'toggleLegend', e.key, ctrl, shift)) {
-        setLegendOpen((v) => !v)
       }
+
+      if (ctrl) { handleCtrlShortcuts(); return }
+      handleNavShortcuts()
     },
     [navigate, router, undo, redo, hotkeyConfig],
   )

@@ -70,6 +70,86 @@ interface DotPopoverState {
   reason: string
 }
 
+interface DotPopoverPanelProps {
+  state: DotPopoverState | null
+  popoverRef: React.RefObject<HTMLDivElement | null>
+  onSelectDayType: (value: string) => void
+}
+
+function DotPopoverPanel({ state, popoverRef, onSelectDayType }: DotPopoverPanelProps) {
+  if (!state) return null
+  return (
+    <div
+      ref={popoverRef}
+      style={{ top: state.top, left: state.left }}
+      className="fixed z-[300] w-52 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg"
+    >
+      <div className="mb-3 flex items-center gap-2">
+        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[state.displayStatus]}`} aria-hidden="true" />
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{STATUS_LABEL[state.displayStatus]}</span>
+      </div>
+      <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">{state.reason}</p>
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Day type</p>
+      <div className="flex flex-wrap gap-1">
+        {DAY_TYPE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            onClick={() => onSelectDayType(opt.value)}
+            className={`rounded px-2 py-0.5 text-xs transition-colors ${
+              state.currentDayType === opt.value
+                ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
+                : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function resolveWorkLocation(
+  workLocations: Map<string, WorkLocation>,
+  date: string,
+  defaultWorkLocation: WorkLocation | null,
+): WorkLocation {
+  const stored = workLocations.get(date)
+  if (stored !== undefined) return stored
+  if (defaultWorkLocation !== null) return defaultWorkLocation
+  return 'Remote'
+}
+
+interface ConfirmCellProps {
+  date: string
+  isNonWorkDay: boolean
+  isConfirmed: boolean
+  onConfirm: () => void
+  onUnconfirm: () => void
+}
+
+function ConfirmCell({ date, isNonWorkDay, isConfirmed, onConfirm, onUnconfirm }: ConfirmCellProps) {
+  const confirmLabel = isConfirmed ? `Unconfirm ${date}` : `Confirm ${date}`
+  const confirmTitle = isConfirmed ? 'Confirmed — click to undo' : 'Confirm day'
+  return (
+    <td
+      className={`w-10 text-center border-l border-gray-200 dark:border-gray-700 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
+      onClick={() => {
+        if (isNonWorkDay) return
+        if (isConfirmed) { onUnconfirm() } else { onConfirm() }
+      }}
+      aria-label={confirmLabel}
+      title={confirmTitle}
+    >
+      {!isNonWorkDay && (
+        <span className={`text-xs font-bold ${isConfirmed ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-300 dark:text-gray-600'}`}>
+          {isConfirmed ? '✓' : '○'}
+        </span>
+      )}
+    </td>
+  )
+}
+
 function computeSprintGroups(
   rows: MonthGridRow[],
   sprintStartDate: string | null,
@@ -178,20 +258,22 @@ export function MonthGrid({
   const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(timeEntryRepository)
 
   const queryClient = useQueryClient()
+  async function confirmDay(row: MonthGridRow) {
+    const autoHours = row.autoCategoryHours
+    if (autoCategory && autoHours > 0) {
+      const existing = entries.find((e) => e.date === row.date && e.category === autoCategory)
+      await timeEntryRepository.save({
+        id: existing?.id ?? crypto.randomUUID(),
+        date: row.date,
+        category: autoCategory,
+        hours: (existing?.hours ?? 0) + autoHours,
+      })
+    }
+    await dayConfirmationRepository.confirm(row.date)
+  }
+
   const gridConfirmMutation = useMutation({
-    mutationFn: async (row: MonthGridRow) => {
-      const autoHours = row.autoCategoryHours
-      if (autoCategory && autoHours > 0) {
-        const existing = entries.find((e) => e.date === row.date && e.category === autoCategory)
-        await timeEntryRepository.save({
-          id: existing?.id ?? crypto.randomUUID(),
-          date: row.date,
-          category: autoCategory,
-          hours: (existing?.hours ?? 0) + autoHours,
-        })
-      }
-      await dayConfirmationRepository.confirm(row.date)
-    },
+    mutationFn: confirmDay,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationsAll })
@@ -207,28 +289,32 @@ export function MonthGrid({
     },
   })
 
+  async function saveDayType({ date, value }: { date: string; value: string }) {
+    if (value === 'WorkDay') {
+      await dayTypeOverrideRepository.delete(date)
+    } else {
+      if (isDayTypeOverride(value)) await dayTypeOverrideRepository.save(date, value)
+    }
+  }
+
   const dayTypeMutation = useMutation({
-    mutationFn: async ({ date, value }: { date: string; value: string }) => {
-      if (value === 'WorkDay') {
-        await dayTypeOverrideRepository.delete(date)
-      } else {
-        if (isDayTypeOverride(value)) await dayTypeOverrideRepository.save(date, value)
-      }
-    },
+    mutationFn: saveDayType,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayTypeOverridesAll })
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayTypeOverrideAll })
     },
   })
 
+  async function saveLocation({ date, location }: { date: string; location: WorkLocation | null }) {
+    if (location) {
+      await workLocationRepository.save(date, location)
+    } else {
+      await workLocationRepository.delete(date)
+    }
+  }
+
   const locationMutation = useMutation({
-    mutationFn: async ({ date, location }: { date: string; location: WorkLocation | null }) => {
-      if (location) {
-        await workLocationRepository.save(date, location)
-      } else {
-        await workLocationRepository.delete(date)
-      }
-    },
+    mutationFn: saveLocation,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationsAll })
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationAll })
@@ -481,7 +567,9 @@ export function MonthGrid({
                 const displayStatus = getDisplayStatus(row)
                 const bgPair = isToday ? TODAY_ROW_BG : STATUS_ROW_BG[displayStatus]
                 const rowBg = bgPair[globalRowIdx % 2]
-                const loc: WorkLocation = workLocations.get(row.date) ?? defaultWorkLocation ?? 'Remote'
+                const loc = resolveWorkLocation(workLocations, row.date, defaultWorkLocation)
+                const locIcon = loc === 'Office' ? '🏢' : '🏠'
+                const rowOpacityClass = isNonWorkDay ? 'opacity-50' : ''
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
                 globalRowIdx++
                 return (
@@ -489,7 +577,7 @@ export function MonthGrid({
                     key={row.date}
                     role="row"
                     aria-label={row.date}
-                    className={`${rowBg} ${isNonWorkDay ? 'opacity-50' : ''}`}
+                    className={`${rowBg} ${rowOpacityClass}`}
                   >
                     <td className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs ${rowBg}`}>
                       {onSelectDate ? (
@@ -530,7 +618,7 @@ export function MonthGrid({
                         aria-label={`Location ${row.date}`}
                         title={loc}
                       >
-                        {loc === 'Office' ? '🏢' : '🏠'}
+                        {locIcon}
                       </button>
                     </td>
                     <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
@@ -586,27 +674,13 @@ export function MonthGrid({
                         </td>
                       )
                     })}
-                    <td
-                      className={`w-10 text-center border-l border-gray-200 dark:border-gray-700 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
-                      onClick={() => {
-                        if (isNonWorkDay) return
-                        if (confirmedDays.has(row.date)) {
-                          gridUnconfirmMutation.mutate(row.date)
-                        } else {
-                          gridConfirmMutation.mutate(row)
-                        }
-                      }}
-                      aria-label={confirmedDays.has(row.date) ? `Unconfirm ${row.date}` : `Confirm ${row.date}`}
-                      title={confirmedDays.has(row.date) ? 'Confirmed — click to undo' : 'Confirm day'}
-                    >
-                      {!isNonWorkDay && (
-                        <span
-                          className={`text-xs font-bold ${confirmedDays.has(row.date) ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-300 dark:text-gray-600'}`}
-                        >
-                          {confirmedDays.has(row.date) ? '✓' : '○'}
-                        </span>
-                      )}
-                    </td>
+                    <ConfirmCell
+                      date={row.date}
+                      isNonWorkDay={isNonWorkDay}
+                      isConfirmed={confirmedDays.has(row.date)}
+                      onConfirm={() => gridConfirmMutation.mutate(row)}
+                      onUnconfirm={() => gridUnconfirmMutation.mutate(row.date)}
+                    />
                   </tr>
                 )
               })
@@ -685,38 +759,11 @@ export function MonthGrid({
       <StatusLegend className="px-1" />
 
       {/* Status dot popover — fixed, outside overflow container */}
-      {dotPopover && (
-        <div
-          ref={popoverRef}
-          style={{ top: dotPopover.top, left: dotPopover.left }}
-          className="fixed z-[300] w-52 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg"
-        >
-          {/* Status name + reason */}
-          <div className="mb-3 flex items-center gap-2">
-            <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[dotPopover.displayStatus]}`} aria-hidden="true" />
-            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{STATUS_LABEL[dotPopover.displayStatus]}</span>
-          </div>
-          <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">{dotPopover.reason}</p>
-
-          {/* Day type selector */}
-          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Day type</p>
-          <div className="flex flex-wrap gap-1">
-            {DAY_TYPE_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => handleDayTypeSelect(opt.value)}
-                className={`rounded px-2 py-0.5 text-xs transition-colors ${
-                  dotPopover.currentDayType === opt.value
-                    ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
-                    : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <DotPopoverPanel
+        state={dotPopover}
+        popoverRef={popoverRef}
+        onSelectDayType={handleDayTypeSelect}
+      />
     </div>
   )
 }

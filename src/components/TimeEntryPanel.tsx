@@ -6,6 +6,7 @@ import type {
   TimeTrackingRepository,
   WorkPeriodRepository,
 } from '../repositories/types'
+import type { ActiveTracking } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
@@ -24,6 +25,31 @@ interface Props {
   onCategoryReorder?: (order: string[]) => void
 }
 
+interface CategoryRowProps {
+  category: string
+  idx: number
+  date: string
+  entries: TimeEntry[]
+  activeTracking: ActiveTracking | null
+  autoCategory: string | null
+  autoCategoryHours: number
+  draft: Record<string, string | undefined>
+  dragOverIdx: number | null
+  onCategoryReorder: ((order: string[]) => void) | undefined
+  onAutoCategoryChange: ((cat: string | null) => void) | undefined
+  categories: string[]
+  onDragStart: (idx: number) => void
+  onDragOver: (e: React.DragEvent, idx: number) => void
+  onDrop: (idx: number, categories: string[]) => void
+  onDragEnd: () => void
+  onSave: (category: string) => void
+  onIncrement: (category: string, delta: number) => void
+  onDraftChange: (category: string, value: string) => void
+  onDelete: (entry: TimeEntry) => void
+  onStopTracking: () => void
+  onStartTracking: (category: string) => void
+}
+
 function findEntry(entries: TimeEntry[], category: string): TimeEntry | undefined {
   return entries.find((e) => e.category === category)
 }
@@ -35,6 +61,219 @@ function formatElapsed(startedAt: string): string {
   const m = Math.floor((totalSeconds % 3600) / 60)
   const s = totalSeconds % 60
   return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+function rowClassName(isTracking: boolean, isAutoTarget: boolean, autoHrs: number, dragOverIdx: number | null, idx: number, hasReorder: boolean): string {
+  let stateClass = 'bg-white dark:bg-gray-800 dark:border-gray-700'
+  if (isTracking) stateClass = 'border-green-400 bg-green-50 dark:bg-green-900/20 dark:border-green-700'
+  else if (isAutoTarget && autoHrs > 0) stateClass = 'border-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 dark:border-indigo-700'
+  else if (dragOverIdx === idx) stateClass = 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/30'
+  const grabClass = hasReorder ? 'cursor-grab active:cursor-grabbing' : ''
+  return `flex items-center justify-between rounded-lg border px-3 py-2.5 shadow-sm transition-colors ${stateClass} ${grabClass}`
+}
+
+function AutoCategoryButton({ category, isAutoTarget, onAutoCategoryChange }: { category: string; isAutoTarget: boolean; onAutoCategoryChange: (cat: string | null) => void }) {
+  const title = isAutoTarget ? 'Unset auto category' : 'Set as auto category'
+  const label = isAutoTarget ? `Unset ${category} as auto category` : `Set ${category} as auto category`
+  const activeClass = 'text-indigo-600 dark:text-indigo-400 hover:text-gray-400 dark:hover:text-gray-500'
+  const inactiveClass = 'text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300'
+  return (
+    <button
+      title={title}
+      aria-label={label}
+      onClick={() => onAutoCategoryChange(isAutoTarget ? null : category)}
+      className={`text-base leading-none transition-colors ${isAutoTarget ? activeClass : inactiveClass}`}
+    >
+      {isAutoTarget ? '◉' : '○'}
+    </button>
+  )
+}
+
+interface CategoryLabelSectionProps {
+  category: string
+  isAutoTarget: boolean
+  autoHrs: number
+  activeTracking: ActiveTracking | null
+  isTracking: boolean
+  onCategoryReorder: ((order: string[]) => void) | undefined
+  onAutoCategoryChange: ((cat: string | null) => void) | undefined
+}
+
+function CategoryLabelSection({ category, isAutoTarget, autoHrs, activeTracking, isTracking, onCategoryReorder, onAutoCategoryChange }: CategoryLabelSectionProps) {
+  const showAutoHours = isAutoTarget && autoHrs > 0
+  const showElapsed = activeTracking !== null && isTracking
+  return (
+    <div className="flex items-center gap-2">
+      {onCategoryReorder && (
+        <span className="text-gray-300 dark:text-gray-600 select-none" aria-hidden>⠿</span>
+      )}
+      {onAutoCategoryChange && (
+        <AutoCategoryButton category={category} isAutoTarget={isAutoTarget} onAutoCategoryChange={onAutoCategoryChange} />
+      )}
+      <span className="text-sm font-medium">{category}</span>
+      {showAutoHours && (
+        <span className="rounded bg-indigo-200 dark:bg-indigo-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-300">
+          +{autoHrs.toFixed(2)} auto
+        </span>
+      )}
+      {showElapsed && (
+        <span className="rounded bg-green-200 dark:bg-green-900/40 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:text-green-400 tabular-nums">
+          ⏱ {formatElapsed(activeTracking.startedAt)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+interface CategoryControlSectionProps {
+  category: string
+  isTracking: boolean
+  isAutoTarget: boolean
+  autoHrs: number
+  displayTotal: number
+  value: string
+  existing: TimeEntry | undefined
+  onSave: (category: string) => void
+  onIncrement: (category: string, delta: number) => void
+  onDraftChange: (category: string, value: string) => void
+  onDelete: (entry: TimeEntry) => void
+  onStopTracking: () => void
+  onStartTracking: (category: string) => void
+}
+
+function CategoryControlSection({ category, isTracking, isAutoTarget, autoHrs, displayTotal, value, existing, onSave, onIncrement, onDraftChange, onDelete, onStopTracking, onStartTracking }: CategoryControlSectionProps) {
+  return (
+    <div className="flex items-center gap-1">
+      {isTracking ? (
+        <button
+          aria-label={`Stop tracking ${category}`}
+          onClick={onStopTracking}
+          className="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+        >
+          ⏹ Stop
+        </button>
+      ) : (
+        <button
+          aria-label={`Start tracking ${category}`}
+          onClick={() => onStartTracking(category)}
+          className="rounded border border-green-300 dark:border-green-700 bg-green-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-emerald-400 hover:bg-green-100 dark:hover:bg-emerald-900/40"
+        >
+          ▶ Start
+        </button>
+      )}
+      <button
+        aria-label={`Decrease ${category}`}
+        onClick={() => onIncrement(category, -0.25)}
+        className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+      >
+        −
+      </button>
+      <input
+        aria-label={`Hours for ${category}`}
+        type="number"
+        min="0"
+        step="0.25"
+        placeholder="0"
+        value={value}
+        onChange={(e) => onDraftChange(category, e.target.value)}
+        onBlur={() => onSave(category)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onSave(category)
+        }}
+        className="w-16 rounded border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
+      />
+      <button
+        aria-label={`Increase ${category}`}
+        onClick={() => onIncrement(category, 0.25)}
+        className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
+      >
+        +
+      </button>
+      {existing && (
+        <button
+          aria-label={`Clear ${category}`}
+          onClick={() => onDelete(existing)}
+          className="rounded border px-2 py-0.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 hover:text-red-500 dark:hover:text-red-400"
+        >
+          ×
+        </button>
+      )}
+      {isAutoTarget && autoHrs > 0 && (
+        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">= {displayTotal.toFixed(2)}</span>
+      )}
+    </div>
+  )
+}
+
+function CategoryRow({
+  category,
+  idx,
+  date,
+  entries,
+  activeTracking,
+  autoCategory,
+  autoCategoryHours,
+  draft,
+  dragOverIdx,
+  onCategoryReorder,
+  onAutoCategoryChange,
+  categories,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  onSave,
+  onIncrement,
+  onDraftChange,
+  onDelete,
+  onStopTracking,
+  onStartTracking,
+}: CategoryRowProps) {
+  const existing = findEntry(entries, category)
+  const isAutoTarget = autoCategory === category
+  const autoHrs = isAutoTarget ? autoCategoryHours : 0
+  const manualHours = existing ? existing.hours : 0
+  const displayTotal = manualHours + autoHrs
+  const value = draft[category] !== undefined ? draft[category] : (existing ? String(existing.hours) : '')
+  const isTracking =
+    activeTracking !== null && activeTracking.category === category && activeTracking.date === date
+
+  return (
+    <li
+      key={category}
+      draggable={!!onCategoryReorder}
+      onDragStart={() => onDragStart(idx)}
+      onDragOver={(e) => onDragOver(e, idx)}
+      onDrop={() => onDrop(idx, categories)}
+      onDragEnd={onDragEnd}
+      className={rowClassName(isTracking, isAutoTarget, autoHrs, dragOverIdx, idx, !!onCategoryReorder)}
+    >
+      <CategoryLabelSection
+        category={category}
+        isAutoTarget={isAutoTarget}
+        autoHrs={autoHrs}
+        activeTracking={activeTracking}
+        isTracking={isTracking}
+        onCategoryReorder={onCategoryReorder}
+        onAutoCategoryChange={onAutoCategoryChange}
+      />
+      <CategoryControlSection
+        category={category}
+        isTracking={isTracking}
+        isAutoTarget={isAutoTarget}
+        autoHrs={autoHrs}
+        displayTotal={displayTotal}
+        value={value}
+        existing={existing}
+        onSave={onSave}
+        onIncrement={onIncrement}
+        onDraftChange={onDraftChange}
+        onDelete={onDelete}
+        onStopTracking={onStopTracking}
+        onStartTracking={onStartTracking}
+      />
+    </li>
+  )
 }
 
 export function TimeEntryPanel({
@@ -216,129 +455,36 @@ export function TimeEntryPanel({
   return (
     <section aria-label="Time entries" className="flex flex-col gap-4">
       <ul className="flex flex-col gap-2">
-        {categories.map((category, idx) => {
-          const existing = findEntry(entries, category)
-          const isAutoTarget = autoCategory === category
-          const autoHrs = isAutoTarget ? autoCategoryHours : 0
-          const manualHours = existing?.hours ?? 0
-          const displayTotal = manualHours + autoHrs
-          const value = draft[category] ?? (existing ? String(existing.hours) : '')
-          const isTracking =
-            activeTracking !== null && activeTracking.category === category && activeTracking.date === date
-
-          return (
-            <li
-              key={category}
-              draggable={!!onCategoryReorder}
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={(e) => handleDragOver(e, idx)}
-              onDrop={() => handleDrop(idx, categories)}
-              onDragEnd={handleDragEnd}
-              className={`flex items-center justify-between rounded-lg border px-3 py-2.5 shadow-sm transition-colors ${
-                isTracking
-                  ? 'border-green-400 bg-green-50 dark:bg-green-900/20 dark:border-green-700'
-                  : isAutoTarget && autoHrs > 0
-                    ? 'border-indigo-300 bg-indigo-50 dark:bg-indigo-900/40 dark:border-indigo-700'
-                    : dragOverIdx === idx
-                      ? 'border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/30'
-                      : 'bg-white dark:bg-gray-800 dark:border-gray-700'
-              } ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}
-            >
-              <div className="flex items-center gap-2">
-                {onCategoryReorder && (
-                  <span className="text-gray-300 dark:text-gray-600 select-none" aria-hidden>
-                    ⠿
-                  </span>
-                )}
-                {onAutoCategoryChange && (
-                  <button
-                    title={isAutoTarget ? 'Unset auto category' : 'Set as auto category'}
-                    aria-label={
-                      isAutoTarget ? `Unset ${category} as auto category` : `Set ${category} as auto category`
-                    }
-                    onClick={() => onAutoCategoryChange(isAutoTarget ? null : category)}
-                    className={`text-base leading-none transition-colors ${isAutoTarget ? 'text-indigo-600 dark:text-indigo-400 hover:text-gray-400 dark:hover:text-gray-500' : 'text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300'}`}
-                  >
-                    {isAutoTarget ? '◉' : '○'}
-                  </button>
-                )}
-                <span className="text-sm font-medium">{category}</span>
-                {isAutoTarget && autoHrs > 0 && (
-                  <span className="rounded bg-indigo-200 dark:bg-indigo-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-300">
-                    +{autoHrs.toFixed(2)} auto
-                  </span>
-                )}
-                {activeTracking && isTracking && (
-                  <span className="rounded bg-green-200 dark:bg-green-900/40 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:text-green-400 tabular-nums">
-                    ⏱ {formatElapsed(activeTracking.startedAt)}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                {isTracking ? (
-                  <button
-                    aria-label={`Stop tracking ${category}`}
-                    onClick={() => stopTrackingMutation.mutate()}
-                    className="rounded border border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
-                  >
-                    ⏹ Stop
-                  </button>
-                ) : (
-                  <button
-                    aria-label={`Start tracking ${category}`}
-                    onClick={() => startTrackingMutation.mutate(category)}
-                    className="rounded border border-green-300 dark:border-green-700 bg-green-50 dark:bg-emerald-900/30 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-emerald-400 hover:bg-green-100 dark:hover:bg-emerald-900/40"
-                  >
-                    ▶ Start
-                  </button>
-                )}
-                <button
-                  aria-label={`Decrease ${category}`}
-                  onClick={() => handleIncrement(category, -0.25)}
-                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-                >
-                  −
-                </button>
-                <input
-                  aria-label={`Hours for ${category}`}
-                  type="number"
-                  min="0"
-                  step="0.25"
-                  placeholder="0"
-                  value={value}
-                  onChange={(e) => setDraft((d) => ({ ...d, [category]: e.target.value }))}
-                  onBlur={() => handleSave(category)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSave(category)
-                  }}
-                  className="w-16 rounded border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
-                />
-                <button
-                  aria-label={`Increase ${category}`}
-                  onClick={() => handleIncrement(category, 0.25)}
-                  className="rounded border px-2 py-0.5 text-sm font-bold hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
-                >
-                  +
-                </button>
-                {existing && (
-                  <button
-                    aria-label={`Clear ${category}`}
-                    onClick={() => {
-                      deleteMutation.mutate(existing)
-                      setDraft((d) => ({ ...d, [category]: undefined }))
-                    }}
-                    className="rounded border px-2 py-0.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 hover:text-red-500 dark:hover:text-red-400"
-                  >
-                    ×
-                  </button>
-                )}
-                {isAutoTarget && autoHrs > 0 && (
-                  <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">= {displayTotal.toFixed(2)}</span>
-                )}
-              </div>
-            </li>
-          )
-        })}
+        {categories.map((category, idx) => (
+          <CategoryRow
+            key={category}
+            category={category}
+            idx={idx}
+            date={date}
+            entries={entries}
+            activeTracking={activeTracking}
+            autoCategory={autoCategory}
+            autoCategoryHours={autoCategoryHours}
+            draft={draft}
+            dragOverIdx={dragOverIdx}
+            onCategoryReorder={onCategoryReorder}
+            onAutoCategoryChange={onAutoCategoryChange}
+            categories={categories}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
+            onSave={handleSave}
+            onIncrement={handleIncrement}
+            onDraftChange={(cat, value) => setDraft((d) => ({ ...d, [cat]: value }))}
+            onDelete={(entry) => {
+              deleteMutation.mutate(entry)
+              setDraft((d) => ({ ...d, [category]: undefined }))
+            }}
+            onStopTracking={() => stopTrackingMutation.mutate()}
+            onStartTracking={(cat) => startTrackingMutation.mutate(cat)}
+          />
+        ))}
       </ul>
 
       {totalHours > 0 && (

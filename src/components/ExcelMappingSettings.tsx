@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '../hooks/queryKeys'
-import type { ConfigRepository } from '../repositories/types'
-import type { ExcelRow } from '../services/workbookService'
+import type { AppConfig, ConfigRepository } from '../repositories/types'
+import type { ExcelRow, WorkbookService } from '../services/workbookService'
 import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../services/workbookService'
 import { getAllCategories } from '../domain/categories'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
@@ -44,6 +44,170 @@ function autoMatchCategories(
   return result
 }
 
+function buildWorkbookService(
+  sharepointUrl: string | undefined,
+  localExcelFile: string | undefined | null,
+  isAuthenticated: boolean,
+): WorkbookService | null {
+  if (localFolder) {
+    if (!localExcelFile) return null
+    return new LocalFolderWorkbookService(localExcelFile)
+  }
+  if (!sharepointUrl || !isAuthenticated) return null
+  return new GraphApiWorkbookService(sharepointUrl, getAccessToken)
+}
+
+function getNotReadyHint(
+  sharepointUrl: string | undefined,
+  localExcelFile: string | undefined | null,
+): string {
+  if (localFolder) {
+    return !localExcelFile ? 'Select an Excel file first' : 'Select a target sheet first'
+  }
+  return !sharepointUrl ? 'Set a SharePoint URL first' : 'Select a target sheet first'
+}
+
+function computeIsReady(
+  sharepointUrl: string | undefined,
+  localExcelFile: string | undefined | null,
+  targetSheet: string | undefined | null,
+  isAuthenticated: boolean,
+): boolean {
+  if (localFolder) return !!localExcelFile && !!targetSheet
+  return !!sharepointUrl && !!targetSheet && isAuthenticated
+}
+
+interface ServiceParams {
+  sharepointUrl: string | undefined | null
+  targetSheet: string | undefined | null
+  localExcelFile: string | undefined | null
+  isReady: boolean
+}
+
+function resolveServiceParams(config: AppConfig | undefined, isAuthenticated: boolean): ServiceParams {
+  const sharepointUrl = config ? config.sharepointUrl : undefined
+  const targetSheet = config ? config.targetSheet : undefined
+  const localExcelFile = config ? config.localExcelFile : undefined
+  const isReady = computeIsReady(sharepointUrl, localExcelFile, targetSheet, isAuthenticated)
+  return { sharepointUrl, targetSheet, localExcelFile, isReady }
+}
+
+function resolveActiveMapping(
+  localMapping: Record<string, string> | null,
+  savedMapping: Record<string, string>,
+): Record<string, string> {
+  return localMapping !== null ? localMapping : savedMapping
+}
+
+interface MappingRowProps {
+  category: string
+  isFixed: boolean
+  currentTaskId: string
+  isAutoMatched: boolean
+  excelRows: ExcelRow[]
+  onClearAutoMatch: (category: string) => void
+  onMappingChange: (category: string, taskId: string) => void
+}
+
+function MappingRow({ category, isFixed, currentTaskId, isAutoMatched, excelRows, onClearAutoMatch, onMappingChange }: MappingRowProps) {
+  return (
+    <li className="flex items-center gap-3">
+      <span
+        className={`w-40 truncate text-sm font-medium ${isFixed ? '' : 'text-indigo-700 dark:text-indigo-300'}`}
+        title={category}
+      >
+        {category}
+        {!isFixed && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">(custom)</span>}
+      </span>
+      <div className="relative flex flex-1 items-center gap-1">
+        {isAutoMatched && (
+          <span className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400" title="Auto-matched by name — please verify">
+            auto
+          </span>
+        )}
+        <select
+          aria-label={`Map ${category} to Task ID`}
+          value={currentTaskId}
+          onChange={(e) => {
+            onClearAutoMatch(category)
+            onMappingChange(category, e.target.value)
+          }}
+          className="flex-1 rounded border px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+        >
+          <option value="">— skip —</option>
+          {excelRows.map((row) => (
+            <option key={row.taskId} value={row.taskId}>
+              {row.taskId}{row.description ? ` — ${row.description}` : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+    </li>
+  )
+}
+
+interface UnmappedRowsSectionProps {
+  unmappedRows: ExcelRow[]
+  onAddAsCategory: (row: ExcelRow) => void
+}
+
+function UnmappedRowsSection({ unmappedRows, onAddAsCategory }: UnmappedRowsSectionProps) {
+  if (unmappedRows.length === 0) return null
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-dashed border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/40 p-3">
+      <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
+        Investment rows — not yet mapped to any category:
+      </p>
+      <ul className="flex flex-col gap-1">
+        {unmappedRows.map((row) => (
+          <li key={row.taskId} className="flex items-center justify-between gap-2">
+            <span className="text-xs text-gray-700 dark:text-gray-300">
+              <span className="font-mono">{row.taskId}</span>
+              {row.description ? ` — ${row.description}` : ''}
+            </span>
+            <button
+              onClick={() => onAddAsCategory(row)}
+              className="rounded border border-indigo-300 dark:border-indigo-700 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+            >
+              + Add as category
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+interface MappingSaveRowProps {
+  isDirty: boolean
+  isPending: boolean
+  isSuccess: boolean
+  isError: boolean
+  onSave: () => void
+}
+
+function MappingSaveRow({ isDirty, isPending, isSuccess, isError, onSave }: MappingSaveRowProps) {
+  return (
+    <div className="flex items-center gap-3">
+      {isDirty && (
+        <button
+          onClick={onSave}
+          disabled={isPending}
+          className="rounded bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
+        >
+          Save mapping
+        </button>
+      )}
+      {isSuccess && !isDirty && (
+        <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>
+      )}
+      {isError && (
+        <p role="alert" className="text-xs text-red-600">Failed to save mapping.</p>
+      )}
+    </div>
+  )
+}
+
 interface Props {
   repository: ConfigRepository
 }
@@ -60,30 +224,19 @@ export function ExcelMappingSettings({ repository }: Props) {
   const [localMapping, setLocalMapping] = useState<Record<string, string> | null>(null)
   const [autoMatched, setAutoMatched] = useState<Set<string>>(new Set())
 
-  const sharepointUrl = config?.sharepointUrl
-  const targetSheet = config?.targetSheet
-  const localExcelFile = config?.localExcelFile
-  const isReady = localFolder
-    ? !!localExcelFile && !!targetSheet
-    : !!sharepointUrl && !!targetSheet && isAuthenticated
+  const { sharepointUrl, targetSheet, localExcelFile, isReady } = resolveServiceParams(config, isAuthenticated)
 
   async function handleLoadRows() {
     setLoadError(null)
     setLoadingRows(true)
     try {
       if (!targetSheet) return
-      let service
-      if (localFolder) {
-        if (!localExcelFile) return
-        service = new LocalFolderWorkbookService(localExcelFile)
-      } else {
-        if (!sharepointUrl || !isAuthenticated) return
-        service = new GraphApiWorkbookService(sharepointUrl, getAccessToken)
-      }
+      const service = buildWorkbookService(sharepointUrl, localExcelFile, isAuthenticated)
+      if (!service) return
       const rows = await service.listRows(targetSheet)
       setExcelRows(rows)
-      const saved = config.categoryMapping ?? {}
-      const allCats = getAllCategories(config.customCategories, config.categoryOrder)
+      const saved = config ? (config.categoryMapping ?? {}) : {}
+      const allCats = getAllCategories(config ? config.customCategories : [], config ? config.categoryOrder : undefined)
       const merged = autoMatchCategories(allCats, rows, saved)
       const newAutoMatched = new Set(
         Object.keys(merged).filter((k) => !saved[k] && merged[k]),
@@ -97,21 +250,17 @@ export function ExcelMappingSettings({ repository }: Props) {
     }
   }
 
+  async function saveMappingFn({ mapping, newCustomCategories }: { mapping: Record<string, string>; newCustomCategories: string[] }) {
+    const current = await repository.get()
+    const mergedCustom = [
+      ...current.customCategories,
+      ...newCustomCategories.filter((c) => !current.customCategories.includes(c)),
+    ]
+    await repository.save({ ...current, categoryMapping: mapping, customCategories: mergedCustom })
+  }
+
   const saveMutation = useMutation({
-    mutationFn: async ({
-      mapping,
-      newCustomCategories,
-    }: {
-      mapping: Record<string, string>
-      newCustomCategories: string[]
-    }) => {
-      const current = await repository.get()
-      const mergedCustom = [
-        ...current.customCategories,
-        ...newCustomCategories.filter((c) => !current.customCategories.includes(c)),
-      ]
-      await repository.save({ ...current, categoryMapping: mapping, customCategories: mergedCustom })
-    },
+    mutationFn: saveMappingFn,
     onSuccess: () => {
       setLocalMapping(null)
       setAutoMatched(new Set())
@@ -122,30 +271,26 @@ export function ExcelMappingSettings({ repository }: Props) {
   if (!config) return null
 
   const allCategories = getAllCategories(config.customCategories, config.categoryOrder)
-  const activeMapping = localMapping ?? config.categoryMapping ?? {}
+  const savedCategoryMapping = config.categoryMapping ? config.categoryMapping : {}
+  const activeMapping = resolveActiveMapping(localMapping, savedCategoryMapping)
   const defaultCategorySet = new Set<string>(DEFAULT_CATEGORIES)
 
-  // Rows from Excel that haven't been mapped to any existing category yet
   const mappedTaskIds = new Set(Object.values(activeMapping))
   const unmappedRows = excelRows.filter((r) => !mappedTaskIds.has(r.taskId))
 
   function handleMappingChange(category: string, taskId: string) {
-    setLocalMapping((prev) => ({
-      ...(prev ?? config?.categoryMapping ?? {}),
-      [category]: taskId,
-    }))
+    const base = resolveActiveMapping(localMapping, savedCategoryMapping)
+    setLocalMapping({ ...base, [category]: taskId })
+  }
+
+  function handleClearAutoMatch(category: string) {
+    setAutoMatched((prev) => { const s = new Set(prev); s.delete(category); return s })
   }
 
   function handleAddAsCategory(row: ExcelRow) {
     const name = row.description || row.taskId
-    setLocalMapping((prev) => {
-      const m = { ...(prev ?? config?.categoryMapping ?? {}) }
-      m[name] = row.taskId
-      return m
-    })
-    // Immediately save with the new custom category
-    const current = config?.categoryMapping ?? {}
-    const newMapping = { ...current, [name]: row.taskId }
+    const base = resolveActiveMapping(localMapping, savedCategoryMapping)
+    const newMapping = { ...base, [name]: row.taskId }
     saveMutation.mutate({ mapping: newMapping, newCustomCategories: [name] })
   }
 
@@ -155,6 +300,11 @@ export function ExcelMappingSettings({ repository }: Props) {
   }
 
   const isDirty = localMapping !== null
+  const notReadyHint = getNotReadyHint(sharepointUrl, localExcelFile)
+  const showNotReadyHint = !isReady
+  const loadButtonLabel = loadingRows ? 'Loading…' : 'Load from Excel'
+  const savedMappingCount = Object.keys(savedCategoryMapping).length
+  const showMappedHint = excelRows.length === 0 && savedMappingCount > 0
 
   return (
     <section aria-label="Excel category mapping" className="flex flex-col gap-4">
@@ -172,13 +322,11 @@ export function ExcelMappingSettings({ repository }: Props) {
           className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
           aria-label="Load rows from Excel sheet"
         >
-          {loadingRows ? 'Loading…' : 'Load from Excel'}
+          {loadButtonLabel}
         </button>
-        {!isReady && (
+        {showNotReadyHint && (
           <span className="text-xs text-gray-400 dark:text-gray-500">
-            {localFolder
-              ? (!localExcelFile ? 'Select an Excel file first' : 'Select a target sheet first')
-              : (!sharepointUrl ? 'Set a SharePoint URL first' : 'Select a target sheet first')}
+            {notReadyHint}
           </span>
         )}
       </div>
@@ -190,93 +338,38 @@ export function ExcelMappingSettings({ repository }: Props) {
       {excelRows.length > 0 && (
         <>
           <ul className="flex flex-col gap-2">
-            {allCategories.map((category) => {
-              const isFixed = defaultCategorySet.has(category)
-              const currentTaskId = activeMapping[category] ?? ''
-              return (
-                <li key={category} className="flex items-center gap-3">
-                  <span
-                    className={`w-40 truncate text-sm font-medium ${isFixed ? '' : 'text-indigo-700 dark:text-indigo-300'}`}
-                    title={category}
-                  >
-                    {category}
-                    {!isFixed && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">(custom)</span>}
-                  </span>
-                  <div className="relative flex flex-1 items-center gap-1">
-                  {autoMatched.has(category) && (
-                    <span className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400" title="Auto-matched by name — please verify">
-                      auto
-                    </span>
-                  )}
-                  <select
-                    aria-label={`Map ${category} to Task ID`}
-                    value={currentTaskId}
-                    onChange={(e) => {
-                      setAutoMatched((prev) => { const s = new Set(prev); s.delete(category); return s })
-                      handleMappingChange(category, e.target.value)
-                    }}
-                    className="flex-1 rounded border px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  >
-                    <option value="">— skip —</option>
-                    {excelRows.map((row) => (
-                      <option key={row.taskId} value={row.taskId}>
-                        {row.taskId}{row.description ? ` — ${row.description}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  </div>
-                </li>
-              )
-            })}
+            {allCategories.map((category) => (
+              <MappingRow
+                key={category}
+                category={category}
+                isFixed={defaultCategorySet.has(category)}
+                currentTaskId={activeMapping[category] ?? ''}
+                isAutoMatched={autoMatched.has(category)}
+                excelRows={excelRows}
+                onClearAutoMatch={handleClearAutoMatch}
+                onMappingChange={handleMappingChange}
+              />
+            ))}
           </ul>
 
-          {unmappedRows.length > 0 && (
-            <div className="flex flex-col gap-2 rounded-lg border border-dashed border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/40 p-3">
-              <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                Investment rows — not yet mapped to any category:
-              </p>
-              <ul className="flex flex-col gap-1">
-                {unmappedRows.map((row) => (
-                  <li key={row.taskId} className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-gray-700 dark:text-gray-300">
-                      <span className="font-mono">{row.taskId}</span>
-                      {row.description ? ` — ${row.description}` : ''}
-                    </span>
-                    <button
-                      onClick={() => handleAddAsCategory(row)}
-                      className="rounded border border-indigo-300 dark:border-indigo-700 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
-                    >
-                      + Add as category
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <UnmappedRowsSection
+            unmappedRows={unmappedRows}
+            onAddAsCategory={handleAddAsCategory}
+          />
 
-          <div className="flex items-center gap-3">
-            {isDirty && (
-              <button
-                onClick={handleSave}
-                disabled={saveMutation.isPending}
-                className="rounded bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
-              >
-                Save mapping
-              </button>
-            )}
-            {saveMutation.isSuccess && !isDirty && (
-              <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>
-            )}
-            {saveMutation.isError && (
-              <p role="alert" className="text-xs text-red-600">Failed to save mapping.</p>
-            )}
-          </div>
+          <MappingSaveRow
+            isDirty={isDirty}
+            isPending={saveMutation.isPending}
+            isSuccess={saveMutation.isSuccess}
+            isError={saveMutation.isError}
+            onSave={handleSave}
+          />
         </>
       )}
 
-      {excelRows.length === 0 && Object.keys(config.categoryMapping ?? {}).length > 0 && (
+      {showMappedHint && (
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {Object.keys(config.categoryMapping!).length} categories mapped.{' '}
+          {savedMappingCount} categories mapped.{' '}
           Load from Excel to edit.
         </p>
       )}

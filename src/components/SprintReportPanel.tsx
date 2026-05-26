@@ -10,6 +10,12 @@ interface Props {
   onExport?: () => Promise<void>
 }
 
+function exportBadgeClassName(status: ExportStatus): string {
+  const base = 'rounded-full px-3 py-0.5 text-xs font-medium'
+  if (status === 'exported') return `${base} bg-green-100 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400`
+  return `${base} bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400`
+}
+
 export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatus, exportReady = false, onExport }: Props) {
   const total = allCategories.reduce((sum, cat) => sum + (hoursPerCategory[cat] ?? 0), 0)
   const [exporting, setExporting] = useState(false)
@@ -32,11 +38,7 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
     <section aria-label="Sprint report" className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Sprint Report</h3>
-        <span
-          className={`rounded-full px-3 py-0.5 text-xs font-medium ${
-            exportStatus === 'exported' ? 'bg-green-100 dark:bg-emerald-900/30 text-green-700 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-          }`}
-        >
+        <span className={exportBadgeClassName(exportStatus)}>
           {exportStatus === 'exported' ? 'Exported' : 'Pending'}
         </span>
       </div>
@@ -81,4 +83,3 @@ export function SprintReportPanel({ hoursPerCategory, allCategories, exportStatu
     </section>
   )
 }
-

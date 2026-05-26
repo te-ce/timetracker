@@ -6,6 +6,47 @@ interface Props {
   onSkip: () => void
 }
 
+function detectBrowserSupport(ua: string): { isBrave: boolean; isOpera: boolean; isFirefox: boolean; isSafari: boolean } {
+  return {
+    isBrave: 'brave' in navigator,
+    isOpera: ua.includes('OPR/') || ua.includes('Opera/'),
+    isFirefox: ua.includes('Firefox/'),
+    isSafari: ua.includes('Safari/') && !ua.includes('Chrome/') && !ua.includes('Chromium/'),
+  }
+}
+
+function getApiUnsupportedError(ua: string): string {
+  const browser = detectBrowserSupport(ua)
+  if (!window.isSecureContext) {
+    return 'File System Access API requires HTTPS or localhost. The app must be served over a secure connection.'
+  }
+  if (browser.isBrave) {
+    return (
+      'Brave has the File System Access API disabled. ' +
+      'Type brave://flags/#file-system-access-api in the address bar and enable it, then reload.'
+    )
+  }
+  if (browser.isFirefox) {
+    return (
+      'Firefox does not support the File System Access API. ' +
+      'Use Chrome, Edge, or Opera to use local folder sync.'
+    )
+  }
+  if (browser.isSafari) {
+    return (
+      'This version of Safari does not support folder picking. ' +
+      'Update to Safari 17+ or use Chrome, Edge, or Opera for full compatibility.'
+    )
+  }
+  if (browser.isOpera) {
+    return (
+      'Opera may have the File System Access API disabled. ' +
+      'Try opera://flags/#file-system-access-api or use Chrome/Edge instead.'
+    )
+  }
+  return 'File System Access API not supported. Use Chrome, Edge, or Opera.'
+}
+
 export function SetupWizard({ onSkip }: Props) {
   const [clientId, setClientId] = useState('')
   const [tenantId, setTenantId] = useState('')
@@ -27,39 +68,9 @@ export function SetupWizard({ onSkip }: Props) {
 
   async function handleLocalFolder() {
     const ua = navigator.userAgent
-    const isBrave = 'brave' in navigator
-    const isOpera = ua.includes('OPR/') || ua.includes('Opera/')
-    const isFirefox = ua.includes('Firefox/')
-    const isSafari = ua.includes('Safari/') && !ua.includes('Chrome/') && !ua.includes('Chromium/')
-    const isSecure = window.isSecureContext
+    const browser = detectBrowserSupport(ua)
     if (!window.showDirectoryPicker) {
-      if (!isSecure) {
-        setError(
-          'File System Access API requires HTTPS or localhost. The app must be served over a secure connection.',
-        )
-      } else if (isBrave) {
-        setError(
-          'Brave has the File System Access API disabled. ' +
-            'Type brave://flags/#file-system-access-api in the address bar and enable it, then reload.',
-        )
-      } else if (isFirefox) {
-        setError(
-          'Firefox does not support the File System Access API. ' +
-            'Use Chrome, Edge, or Opera to use local folder sync.',
-        )
-      } else if (isSafari) {
-        setError(
-          'This version of Safari does not support folder picking. ' +
-            'Update to Safari 17+ or use Chrome, Edge, or Opera for full compatibility.',
-        )
-      } else if (isOpera) {
-        setError(
-          'Opera may have the File System Access API disabled. ' +
-            'Try opera://flags/#file-system-access-api or use Chrome/Edge instead.',
-        )
-      } else {
-        setError('File System Access API not supported. Use Chrome, Edge, or Opera.')
-      }
+      setError(getApiUnsupportedError(ua))
       return
     }
     setPickingFolder(true)
@@ -75,8 +86,8 @@ export function SetupWizard({ onSkip }: Props) {
       const msg = e instanceof Error ? e.message : 'Failed to open folder picker'
       const detail = name ? `[${name}] ${msg}` : msg
       let hint = ''
-      if (isBrave) hint = ' — try disabling Brave Shields entirely for this site (lion icon → Shields down).'
-      else if (isSafari) hint = ' — Safari has limited folder access support; try Chrome or Edge if this persists.'
+      if (browser.isBrave) hint = ' — try disabling Brave Shields entirely for this site (lion icon → Shields down).'
+      else if (browser.isSafari) hint = ' — Safari has limited folder access support; try Chrome or Edge if this persists.'
       setError(`${detail}${hint}`)
     } finally {
       setPickingFolder(false)

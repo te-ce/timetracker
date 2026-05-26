@@ -7,6 +7,12 @@ interface Props {
   officePercent?: number
 }
 
+function formatRemaining(remaining: number): string {
+  if (remaining > 0) return `${remaining.toFixed(2)}h remaining`
+  if (remaining === 0) return 'Done'
+  return `${Math.abs(remaining).toFixed(2)}h overtime today`
+}
+
 export function OvertimeBar({
   sollstunden,
   priorOvertime,
@@ -19,10 +25,7 @@ export function OvertimeBar({
   const remaining = sollstunden - priorOvertime - workedToday
   const showOffice = officeDays !== undefined && totalWorkDays !== undefined && officePercent !== undefined
 
-  let remainingLabel: string
-  if (remaining > 0) remainingLabel = `${remaining.toFixed(2)}h remaining`
-  else if (remaining === 0) remainingLabel = 'Done'
-  else remainingLabel = `${Math.abs(remaining).toFixed(2)}h overtime today`
+  const remainingLabel = formatRemaining(remaining)
 
   const summary = `${sollstunden}h target, ${Math.abs(priorOvertime).toFixed(2)}h ${hasOvertime ? 'overtime' : 'undertime'} carry-over, ${workedToday.toFixed(2)}h worked today — ${remainingLabel}`
 
