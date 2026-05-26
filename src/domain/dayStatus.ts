@@ -10,7 +10,6 @@ export type DayStatus =
   | 'needs-review'
   | 'untracked'
 
-export type WorkStatus = Exclude<DayStatus, 'today' | 'future'>
 
 export interface ClassifyDayInput {
   dayType: DayType

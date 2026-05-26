@@ -52,7 +52,6 @@ async function deleteHandleByKey(key: string): Promise<void> {
 // App data folder
 export const saveHandle = (h: FileSystemDirectoryHandle) => setHandleByKey(HANDLE_KEY, h)
 export const loadHandle = () => getHandleByKey(HANDLE_KEY)
-export const clearHandle = () => deleteHandleByKey(HANDLE_KEY)
 
 // Excel folder (optional — falls back to app data folder in callers)
 export const saveExcelHandle = (h: FileSystemDirectoryHandle) => setHandleByKey(EXCEL_HANDLE_KEY, h)

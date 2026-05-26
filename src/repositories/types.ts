@@ -23,8 +23,6 @@ export const DEFAULT_CATEGORIES: Category[] = [
   '_TESTWATCH',
 ]
 
-/** @deprecated Use DEFAULT_CATEGORIES instead */
-export const CATEGORIES = DEFAULT_CATEGORIES
 
 export interface TimeEntry {
   id: string
