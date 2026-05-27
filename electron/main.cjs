@@ -8,7 +8,26 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 let mainWindow = null
 let tray = null
 let elapsedTimer = null
-let trayState = { activeCategory: null, categories: [], startedAt: null, workedHours: 0, remaining: 0 }
+let trayState = { activeCategory: null, categories: [], startedAt: null, workedHours: 0, remaining: 0, sollstunden: 8, priorOvertime: 0 }
+
+const DEFAULT_CATEGORIES = [
+  '_LEAVE', '_OTHER', '_COREMEDIA', '_RELEASE', '_SUPPORT',
+  '_GUILDS', '_MAINT', '_INFRA', '_ARCH', '_TESTWATCH',
+]
+
+function getAllCategoriesLocal(customCategories, categoryOrder) {
+  const defaultSet = new Set(DEFAULT_CATEGORIES)
+  const unique = customCategories.filter((c) => !defaultSet.has(c))
+  const all = [...DEFAULT_CATEGORIES, ...unique]
+  if (categoryOrder && categoryOrder.length > 0) {
+    const allSet = new Set(all)
+    const ordered = categoryOrder.filter((c) => allSet.has(c))
+    const orderedSet = new Set(ordered)
+    for (const c of all) { if (!orderedSet.has(c)) ordered.push(c) }
+    return ordered
+  }
+  return all
+}
 
 const autoLauncher = new AutoLaunch({ name: 'Timetracker' })
 
@@ -83,6 +102,7 @@ function updateTrayDisplay() {
 
   if (activeCategory && startedAt) {
     tray.setTitle(formatHHMM(elapsedHours(startedAt)))
+    tray.setContextMenu(buildTrayMenu())
   } else {
     tray.setTitle('')
   }
@@ -96,7 +116,24 @@ function updateTrayDisplay() {
   tray.setToolTip(lines.join('\n'))
 }
 
-function buildTrayMenu(activeCategory, categories) {
+function buildTrayMenu() {
+  const { activeCategory, categories, startedAt, workedHours, sollstunden, priorOvertime } = trayState
+
+  const hoursNeeded = sollstunden - priorOvertime
+  let hoursNeededLabel
+  if (Math.abs(priorOvertime) < 0.01) {
+    hoursNeededLabel = `${formatHHMM(sollstunden)} needed today`
+  } else if (priorOvertime > 0) {
+    hoursNeededLabel = `${formatHHMM(sollstunden)} − ${formatHHMM(priorOvertime)} = ${formatHHMM(Math.max(0, hoursNeeded))} needed`
+  } else {
+    hoursNeededLabel = `${formatHHMM(sollstunden)} + ${formatHHMM(-priorOvertime)} = ${formatHHMM(hoursNeeded)} needed`
+  }
+
+  const elapsed = startedAt ? elapsedHours(startedAt) : 0
+  const totalWorked = workedHours + elapsed
+  const remaining = Math.max(0, hoursNeeded - totalWorked)
+  const workedLabel = `${formatHHMM(totalWorked)} worked = ${formatHHMM(remaining)} remaining`
+
   const openItem = {
     label: 'Open Timetracker',
     click: () => { mainWindow.show(); mainWindow.focus() },
@@ -114,6 +151,9 @@ function buildTrayMenu(activeCategory, categories) {
   return Menu.buildFromTemplate([
     openItem,
     { type: 'separator' },
+    { label: hoursNeededLabel, enabled: false },
+    { label: workedLabel, enabled: false },
+    { type: 'separator' },
     ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
     { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
   ])
@@ -125,8 +165,15 @@ function createTray() {
   tray = new Tray(icon)
   tray.setTitle('…')
   tray.setToolTip('Timetracker — loading…')
-  tray.setContextMenu(buildTrayMenu(null, []))
-  tray.on('click', () => { mainWindow.show(); mainWindow.focus() })
+
+  try {
+    const raw = fs.readFileSync(storagePath('config.json'), 'utf8')
+    const config = JSON.parse(raw)
+    trayState.categories = getAllCategoriesLocal(config.customCategories ?? [], config.categoryOrder)
+    if (typeof config.sollstunden === 'number') trayState.sollstunden = config.sollstunden
+  } catch { /* no stored config yet — use defaults */ }
+
+  tray.setContextMenu(buildTrayMenu())
 }
 
 function createWindow() {
@@ -247,7 +294,7 @@ ipcMain.on('tray:sync', (_, data) => {
   if (!tray) return
   trayState = data
 
-  tray.setContextMenu(buildTrayMenu(data.activeCategory, data.categories))
+  tray.setContextMenu(buildTrayMenu())
   updateTrayDisplay()
 
   if (elapsedTimer) clearInterval(elapsedTimer)

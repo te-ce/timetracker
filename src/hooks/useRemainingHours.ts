@@ -4,7 +4,8 @@ import { useDayQuery } from './useDayQuery'
 
 export function useRemainingHours() {
   const todayIso = toLocalIso(new Date())
-  const { sollstunden, workedHours } = useDayQuery(todayIso)
+  const { sollstunden, workedHours, overtimeToDate } = useDayQuery(todayIso)
+  const priorOvertime = overtimeToDate.priorOvertime
   const remaining = Math.max(0, sollstunden - workedHours)
 
   useEffect(() => {
@@ -22,5 +23,5 @@ export function useRemainingHours() {
     }
   }, [remaining])
 
-  return { remaining, sollstunden, workedHours }
+  return { remaining, sollstunden, workedHours, priorOvertime }
 }

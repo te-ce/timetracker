@@ -11,6 +11,8 @@ interface Window {
         startedAt: string | null
         workedHours: number
         remaining: number
+        sollstunden: number
+        priorOvertime: number
       }): void
       onSetCategory(cb: (category: string) => void): void
       offSetCategory(cb: (category: string) => void): void

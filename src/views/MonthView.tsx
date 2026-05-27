@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -12,8 +12,10 @@ import {
   dayTypeOverrideRepo,
   autoCategoryOverrideRepo,
   dayConfirmationRepo,
+  timeTrackingRepo,
 } from '../repositories/shared'
 import { toLocalIso } from '../domain/dateUtils'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { DayStatus } from '../domain/dayStatus'
 
 export function MonthView() {
@@ -29,6 +31,10 @@ export function MonthView() {
   }
 
   const queryClient = useQueryClient()
+  const { data: activeTracking = null } = useQuery({
+    queryKey: QUERY_KEYS.activeTracking,
+    queryFn: () => timeTrackingRepo.getActive(),
+  })
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const from = new Date(year, month - 1, 1)
@@ -85,6 +91,7 @@ export function MonthView() {
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
         workedToday={overtimeToDate.workedToday}
+        activeTrackingStartedAt={activeTracking?.startedAt}
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}

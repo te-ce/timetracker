@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo, autoCategoryOverrideRepo } from '../repositories/shared'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo, autoCategoryOverrideRepo, timeTrackingRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -99,6 +99,10 @@ export function MonthGridView() {
   const [month, setMonth] = useState(today.getMonth() + 1)
   const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
   const queryClient = useQueryClient()
+  const { data: activeTracking = null } = useQuery({
+    queryKey: QUERY_KEYS.activeTracking,
+    queryFn: () => timeTrackingRepo.getActive(),
+  })
   const from = new Date(year, month - 1, 1)
   const to = new Date(year, month, 0)
 
@@ -189,6 +193,7 @@ export function MonthGridView() {
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
         workedToday={overtimeToDate.workedToday}
+        activeTrackingStartedAt={activeTracking?.startedAt}
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}

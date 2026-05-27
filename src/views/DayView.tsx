@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
   workPeriodRepo,
@@ -56,6 +56,11 @@ export function DayView() {
     overtimeToDate,
     todayIso,
   } = useDayQuery(selectedDate)
+
+  const { data: activeTracking = null } = useQuery({
+    queryKey: QUERY_KEYS.activeTracking,
+    queryFn: () => timeTrackingRepo.getActive(),
+  })
 
   const queryClient = useQueryClient()
 
@@ -233,6 +238,7 @@ export function DayView() {
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
         workedToday={overtimeToDate.workedToday}
+        activeTrackingStartedAt={activeTracking?.startedAt}
       />
 
       <WorkPeriodPanel date={selectedDate} repository={workPeriodRepo} />

@@ -23,18 +23,16 @@ export async function applyCategorySwitch(
 
 export function useElectronTraySync() {
   const queryClient = useQueryClient()
-  const { workedHours, remaining } = useRemainingHours()
+  const { workedHours, remaining, sollstunden, priorOvertime } = useRemainingHours()
 
   const { data: config } = useQuery({
     queryKey: QUERY_KEYS.config,
     queryFn: () => configRepo.get(),
-    enabled: !!window.electronAPI,
   })
 
   const { data: activeTracking } = useQuery({
     queryKey: QUERY_KEYS.activeTracking,
     queryFn: () => timeTrackingRepo.getActive(),
-    enabled: !!window.electronAPI,
     refetchInterval: 30_000,
   })
 
@@ -47,8 +45,10 @@ export function useElectronTraySync() {
       startedAt: activeTracking?.startedAt ?? null,
       workedHours,
       remaining,
+      sollstunden,
+      priorOvertime,
     })
-  }, [config, activeTracking, workedHours, remaining])
+  }, [config, activeTracking, workedHours, remaining, sollstunden, priorOvertime])
 
   const handleSetCategory = useCallback(async (category: string) => {
     await applyCategorySwitch(category, timeTrackingRepo, toLocalIso(new Date()))
