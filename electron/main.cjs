@@ -154,10 +154,12 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
-  mainWindow.once('ready-to-show', () => mainWindow.show())
+  mainWindow.once('ready-to-show', () => {
+    if (!loadConfig().startMinimized) mainWindow.show()
+  })
 
   mainWindow.on('close', (e) => {
-    if (!app.isQuitting) {
+    if (!app.isQuitting && loadConfig().closeToTray !== false) {
       e.preventDefault()
       mainWindow.hide()
     }
@@ -180,23 +182,41 @@ function registerGlobalHotkey(accelerator) {
   })
 }
 
-function loadGlobalHotkey() {
+function loadConfig() {
   try {
     const raw = fs.readFileSync(storagePath('config.json'), 'utf8')
-    const config = JSON.parse(raw)
-    return config?.hotkeys?.globalToggle !== undefined
-      ? config.hotkeys.globalToggle
-      : DEFAULT_GLOBAL_HOTKEY
+    return JSON.parse(raw)
   } catch {
-    return DEFAULT_GLOBAL_HOTKEY
+    return {}
   }
 }
 
-app.whenReady().then(() => {
+function loadGlobalHotkey() {
+  const config = loadConfig()
+  return config?.hotkeys?.globalToggle !== undefined
+    ? config.hotkeys.globalToggle
+    : DEFAULT_GLOBAL_HOTKEY
+}
+
+async function syncAutoLaunch() {
+  try {
+    const raw = fs.readFileSync(storagePath('config.json'), 'utf8')
+    const config = JSON.parse(raw)
+    const shouldEnable = config?.launchAtLogin === true
+    const isEnabled = await autoLauncher.isEnabled()
+    if (shouldEnable && !isEnabled) await autoLauncher.enable()
+    else if (!shouldEnable && isEnabled) await autoLauncher.disable()
+  } catch {
+    // config not yet written; leave OS autolaunch state unchanged
+  }
+}
+
+app.whenReady().then(async () => {
   createTray()
   createWindow()
 
   registerGlobalHotkey(loadGlobalHotkey())
+  await syncAutoLaunch()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
