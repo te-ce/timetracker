@@ -1,4 +1,4 @@
-import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
+import { createRootRoute, createRoute, createRouter, createHashHistory } from '@tanstack/react-router'
 import App from '../App'
 import { DayView } from '../views/DayView'
 import { MonthView } from '../views/MonthView'
@@ -64,7 +64,11 @@ const settingsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([monthRoute, dayRoute, gridRoute, sprintRoute, settingsRoute])
 
-export const router = createRouter({ routeTree })
+const history = typeof window !== 'undefined' && window.location.protocol === 'file:'
+  ? createHashHistory()
+  : undefined
+
+export const router = createRouter({ routeTree, history })
 
 declare module '@tanstack/react-router' {
   interface Register {
