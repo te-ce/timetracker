@@ -5,8 +5,8 @@ import type { AppConfig } from '../repositories/types'
 import { defaultAppConfig } from '../repositories/in-memory/config-repository'
 
 const mockRepo = vi.hoisted(() => ({
-  get: vi.fn<[], Promise<AppConfig>>(),
-  save: vi.fn<[AppConfig], Promise<void>>(),
+  get: vi.fn<() => Promise<AppConfig>>(),
+  save: vi.fn<(config: AppConfig) => Promise<void>>(),
   clearCache: vi.fn(),
 }))
 

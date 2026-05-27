@@ -15,10 +15,12 @@ export interface WorkbookService {
 }
 
 export class GraphApiWorkbookService implements WorkbookService {
-  constructor(
-    private readonly sharepointUrl: string,
-    private readonly getToken: () => Promise<string>,
-  ) {}
+  private readonly sharepointUrl: string
+  private readonly getToken: () => Promise<string>
+  constructor(sharepointUrl: string, getToken: () => Promise<string>) {
+    this.sharepointUrl = sharepointUrl
+    this.getToken = getToken
+  }
 
   async listSheets(): Promise<string[]> {
     return listSheets(this.sharepointUrl, await this.getToken())
@@ -38,7 +40,10 @@ export class GraphApiWorkbookService implements WorkbookService {
 }
 
 export class LocalFolderWorkbookService implements WorkbookService {
-  constructor(private readonly filename: string) {}
+  private readonly filename: string
+  constructor(filename: string) {
+    this.filename = filename
+  }
 
   listSheets(): Promise<string[]> {
     return listLocalSheets(this.filename)

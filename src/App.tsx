@@ -133,7 +133,7 @@ function App() {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const target = e.target as Element
+      const target = e.target as Element & { isContentEditable?: boolean }
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
       if (target.isContentEditable) return
 
@@ -165,20 +165,22 @@ function App() {
       function handleNavShortcuts() {
         const loc = router.state.location
         const path = loc.pathname
+        const now = new Date()
+        const defaultMonthSearch = { year: now.getFullYear(), month: now.getMonth() + 1 }
         function goTodayOrHome() {
           if (path === '/day') { void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } }) }
-          else { void navigate({ to: '/' }) }
+          else { void navigate({ to: '/', search: defaultMonthSearch }) }
         }
         function goPrevDay() { if (path === '/day') navigateDayOffset(loc, -1) }
         function goNextDay() { if (path === '/day') navigateDayOffset(loc, 1) }
         if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
-          void navigate({ to: '/' })
+          void navigate({ to: '/', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'gridView', e.key, ctrl, shift)) {
-          void navigate({ to: '/grid' })
+          void navigate({ to: '/grid', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
           void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
         } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {
-          void navigate({ to: '/sprint' })
+          void navigate({ to: '/sprint', search: { sprint: undefined } })
         } else if (matchesShortcut(hotkeyConfig, 'today', e.key, ctrl, shift)) {
           goTodayOrHome()
         } else if (matchesShortcut(hotkeyConfig, 'prevDay', e.key, ctrl, shift)) {

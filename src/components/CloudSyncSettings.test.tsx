@@ -34,7 +34,7 @@ beforeEach(() => {
     instance: mockInstance,
     accounts: [],
     inProgress: 'none',
-  } as ReturnType<typeof useMsal>)
+  } as unknown as ReturnType<typeof useMsal>)
 })
 
 describe('CloudSyncSettings', () => {
@@ -50,7 +50,7 @@ describe('CloudSyncSettings', () => {
       instance: mockInstance,
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
-    } as ReturnType<typeof useMsal>)
+    } as unknown as ReturnType<typeof useMsal>)
     render(<CloudSyncSettings />)
     expect(screen.getByText(/synced with onedrive/i)).toBeInTheDocument()
     expect(screen.getByText('user@example.com')).toBeInTheDocument()
@@ -95,7 +95,7 @@ describe('CloudSyncSettings', () => {
       instance: mockInstance,
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
-    } as ReturnType<typeof useMsal>)
+    } as unknown as ReturnType<typeof useMsal>)
     mockInstance.logoutPopup.mockResolvedValue(undefined)
     render(<CloudSyncSettings />)
     await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
@@ -108,7 +108,7 @@ describe('CloudSyncSettings', () => {
       instance: mockInstance,
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
-    } as ReturnType<typeof useMsal>)
+    } as unknown as ReturnType<typeof useMsal>)
     mockInstance.logoutPopup.mockRejectedValue(new Error('logout failed'))
     render(<CloudSyncSettings />)
     await userEvent.click(screen.getByRole('button', { name: /sign out/i }))
@@ -121,7 +121,7 @@ describe('CloudSyncSettings', () => {
       instance: mockInstance,
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
-    } as ReturnType<typeof useMsal>)
+    } as unknown as ReturnType<typeof useMsal>)
     const originalLocation = window.location
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, reload: vi.fn() },

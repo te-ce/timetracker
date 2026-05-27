@@ -138,8 +138,8 @@ describe('CategoryReorderPopover', () => {
     await screen.findByText('Drag to reorder')
 
     const items = screen.getAllByRole('listitem')
-    const firstItem = items[0]
-    const secondItem = items[1]
+    const firstItem = items[0]!
+    const secondItem = items[1]!
 
     fireEvent.dragStart(firstItem)
     fireEvent.dragOver(secondItem, { preventDefault: () => {} })
@@ -160,7 +160,7 @@ describe('CategoryReorderPopover', () => {
     await screen.findByText('Drag to reorder')
 
     const items = screen.getAllByRole('listitem')
-    const firstItem = items[0]
+    const firstItem = items[0]!
 
     fireEvent.dragStart(firstItem)
     fireEvent.dragOver(firstItem, { preventDefault: () => {} })
@@ -177,9 +177,9 @@ describe('CategoryReorderPopover', () => {
     await screen.findByText('Drag to reorder')
 
     const items = screen.getAllByRole('listitem')
-    fireEvent.dragStart(items[0])
-    fireEvent.dragOver(items[1], { preventDefault: () => {} })
-    fireEvent.dragEnd(items[0])
+    fireEvent.dragStart(items[0]!)
+    fireEvent.dragOver(items[1]!, { preventDefault: () => {} })
+    fireEvent.dragEnd(items[0]!)
 
     expect(screen.queryByText('Drag to reorder')).toBeInTheDocument()
   })

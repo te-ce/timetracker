@@ -6,7 +6,9 @@ export type Restarbeitszeit = {
 }
 
 function parseMinutes(time: string): number {
-  const [h, m] = time.split(':').map(Number)
+  const parts = time.split(':').map(Number)
+  const h = parts[0] ?? 0
+  const m = parts[1] ?? 0
   return h * 60 + m
 }
 

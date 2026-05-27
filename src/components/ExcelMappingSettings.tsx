@@ -88,7 +88,7 @@ function resolveServiceParams(config: AppConfig | undefined, isAuthenticated: bo
   const sharepointUrl = config ? config.sharepointUrl : undefined
   const targetSheet = config ? config.targetSheet : undefined
   const localExcelFile = config ? config.localExcelFile : undefined
-  const isReady = computeIsReady(sharepointUrl, localExcelFile, targetSheet, isAuthenticated)
+  const isReady = computeIsReady(sharepointUrl ?? undefined, localExcelFile, targetSheet, isAuthenticated)
   return { sharepointUrl, targetSheet, localExcelFile, isReady }
 }
 
@@ -231,7 +231,7 @@ export function ExcelMappingSettings({ repository }: Props) {
     setLoadingRows(true)
     try {
       if (!targetSheet) return
-      const service = buildWorkbookService(sharepointUrl, localExcelFile, isAuthenticated)
+      const service = buildWorkbookService(sharepointUrl ?? undefined, localExcelFile, isAuthenticated)
       if (!service) return
       const rows = await service.listRows(targetSheet)
       setExcelRows(rows)
@@ -300,7 +300,7 @@ export function ExcelMappingSettings({ repository }: Props) {
   }
 
   const isDirty = localMapping !== null
-  const notReadyHint = getNotReadyHint(sharepointUrl, localExcelFile)
+  const notReadyHint = getNotReadyHint(sharepointUrl ?? undefined, localExcelFile)
   const showNotReadyHint = !isReady
   const loadButtonLabel = loadingRows ? 'Loading…' : 'Load from Excel'
   const savedMappingCount = Object.keys(savedCategoryMapping).length

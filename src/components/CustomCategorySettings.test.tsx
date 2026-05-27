@@ -187,9 +187,9 @@ describe('CustomCategorySettings', () => {
     await screen.findByText('Alpha')
 
     const items = screen.getAllByRole('listitem')
-    fireEvent.dragStart(items[0])
-    fireEvent.dragOver(items[2], { preventDefault: () => {} })
-    fireEvent.drop(items[2])
+    fireEvent.dragStart(items[0]!)
+    fireEvent.dragOver(items[2]!, { preventDefault: () => {} })
+    fireEvent.drop(items[2]!)
 
     await waitFor(async () => {
       const config = await repo.get()
@@ -203,9 +203,9 @@ describe('CustomCategorySettings', () => {
     const saveSpy = vi.spyOn(repo, 'save')
 
     const items = screen.getAllByRole('listitem')
-    fireEvent.dragStart(items[0])
-    fireEvent.dragOver(items[0], { preventDefault: () => {} })
-    fireEvent.drop(items[0])
+    fireEvent.dragStart(items[0]!)
+    fireEvent.dragOver(items[0]!, { preventDefault: () => {} })
+    fireEvent.drop(items[0]!)
 
     expect(saveSpy).not.toHaveBeenCalled()
   })
@@ -215,9 +215,9 @@ describe('CustomCategorySettings', () => {
     await screen.findByText('Alpha')
 
     const items = screen.getAllByRole('listitem')
-    fireEvent.dragStart(items[0])
-    fireEvent.dragOver(items[1], { preventDefault: () => {} })
-    fireEvent.dragEnd(items[0])
+    fireEvent.dragStart(items[0]!)
+    fireEvent.dragOver(items[1]!, { preventDefault: () => {} })
+    fireEvent.dragEnd(items[0]!)
 
     expect(screen.getByText('Alpha')).toBeInTheDocument()
   })

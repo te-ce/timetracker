@@ -56,7 +56,7 @@ describe('CloudTimeEntryRepository', () => {
     await repo.save({ id: 'e1', date: '2024-01-15', category: 'QA', hours: 6 })
     const results = await repo.findByDateRange(new Date('2024-01-15'), new Date('2024-01-15'))
     expect(results).toHaveLength(1)
-    expect(results[0].hours).toBe(6)
+    expect(results[0]!.hours).toBe(6)
   })
 
   it('deletes entry', async () => {
@@ -76,7 +76,7 @@ describe('CloudWorkPeriodRepository', () => {
     await repo.save({ id: 'w1', date: '2024-01-15', start: '09:00', end: '17:00' })
     const results = await repo.findByDate(new Date('2024-01-15'))
     expect(results).toHaveLength(1)
-    expect(results[0].start).toBe('09:00')
+    expect(results[0]!.start).toBe('09:00')
   })
 
   it('finds by date range', async () => {

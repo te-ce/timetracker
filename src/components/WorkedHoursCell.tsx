@@ -20,8 +20,12 @@ function nowHHMM() {
 
 function windowDuration(start: string, end: string | null): number {
   if (!end) return 0
-  const [sh, sm] = start.split(':').map(Number)
-  const [eh, em] = end.split(':').map(Number)
+  const startParts = start.split(':').map(Number)
+  const endParts = end.split(':').map(Number)
+  const sh = startParts[0] ?? 0
+  const sm = startParts[1] ?? 0
+  const eh = endParts[0] ?? 0
+  const em = endParts[1] ?? 0
   return (eh * 60 + em - sh * 60 - sm) / 60
 }
 

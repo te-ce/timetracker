@@ -247,7 +247,7 @@ export function CategorySettings({ repository }: Props) {
   function handleRename(idx: number) {
     const trimmed = editValue.trim()
     const oldName = categories[idx]
-    if (!trimmed || trimmed === oldName || categories.includes(trimmed)) {
+    if (!trimmed || !oldName || trimmed === oldName || categories.includes(trimmed)) {
       setEditingIdx(null)
       return
     }
@@ -269,7 +269,9 @@ export function CategorySettings({ repository }: Props) {
     const from = dragIdx.current
     if (from === null || from === idx) { dragIdx.current = null; setDragOverIdx(null); return }
     const newOrder = [...categories]
-    const [moved] = newOrder.splice(from, 1)
+    const spliced = newOrder.splice(from, 1)
+    const moved = spliced[0]
+    if (moved === undefined) return
     newOrder.splice(idx, 0, moved)
     categoryMutation.mutate({ categoryOrder: newOrder })
     dragIdx.current = null
@@ -283,7 +285,7 @@ export function CategorySettings({ repository }: Props) {
     setLoadingRows(true)
     try {
       if (!targetSheet) return
-      const service = buildWorkbookService(sharepointUrl, localExcelFile, isAuthenticated)
+      const service = buildWorkbookService(sharepointUrl ?? undefined, localExcelFile, isAuthenticated)
       if (!service) return
       const rows = await service.listRows(targetSheet)
       setExcelRows(rows)
@@ -314,7 +316,7 @@ export function CategorySettings({ repository }: Props) {
   }
 
   const isDirty = localMapping !== null
-  const mappingHint = getMappingHint(sharepointUrl, localExcelFile, targetSheet, isAuthenticated)
+  const mappingHint = getMappingHint(sharepointUrl ?? undefined, localExcelFile, targetSheet ?? undefined, isAuthenticated)
   const showMappingHint = !excelReady && excelRows.length === 0 && mappingHint !== ''
 
   return (

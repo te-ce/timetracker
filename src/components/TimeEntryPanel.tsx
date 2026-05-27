@@ -437,7 +437,9 @@ export function TimeEntryPanel({
       return
     }
     const newOrder = [...categories]
-    const [moved] = newOrder.splice(from, 1)
+    const spliced = newOrder.splice(from, 1)
+    const moved = spliced[0]
+    if (moved === undefined) return
     newOrder.splice(idx, 0, moved)
     onCategoryReorder?.(newOrder)
     dragIdx.current = null

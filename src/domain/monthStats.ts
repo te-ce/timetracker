@@ -46,9 +46,10 @@ export function calculateOvertimeToDate(
   let priorTrackedDays = 0
 
   for (let i = 0; i < dates.length; i++) {
-    if (dates[i] > today) break
-    const hours = workedHoursPerDay[i]
-    if (dates[i] === today) {
+    const date = dates[i]
+    if (date === undefined || date > today) break
+    const hours = workedHoursPerDay[i] ?? 0
+    if (date === today) {
       workedToday = hours
     } else if (hours > 0) {
       priorWorked += hours

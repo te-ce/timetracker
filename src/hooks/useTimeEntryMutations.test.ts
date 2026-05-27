@@ -39,9 +39,9 @@ describe('useTimeEntryMutations', () => {
 
     const saved = await repo.findByDateRange(new Date('2026-05-25'), new Date('2026-05-25'))
     expect(saved).toHaveLength(1)
-    expect(saved[0].hours).toBe(4)
+    expect(saved[0]!.hours).toBe(4)
     expect(useUndoStore.getState().canUndo).toBe(true)
-    expect(useUndoStore.getState().past[0].description).toBe('Add _COREMEDIA')
+    expect(useUndoStore.getState().past[0]!.description).toBe('Add _COREMEDIA')
   })
 
   it('save.mutate for an existing entry uses "Edit" description', async () => {
@@ -54,7 +54,7 @@ describe('useTimeEntryMutations', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
 
-    expect(useUndoStore.getState().past[0].description).toBe('Edit _COREMEDIA')
+    expect(useUndoStore.getState().past[0]!.description).toBe('Edit _COREMEDIA')
   })
 
   it('undo after add removes the entry', async () => {
@@ -90,7 +90,7 @@ describe('useTimeEntryMutations', () => {
     })
 
     const restored = await repo.findByDateRange(new Date('2026-05-25'), new Date('2026-05-25'))
-    expect(restored[0].hours).toBe(4)
+    expect(restored[0]!.hours).toBe(4)
   })
 
   it('redo after undo of add re-saves the entry', async () => {
@@ -108,7 +108,7 @@ describe('useTimeEntryMutations', () => {
 
     const redone = await repo.findByDateRange(new Date('2026-05-25'), new Date('2026-05-25'))
     expect(redone).toHaveLength(1)
-    expect(redone[0].hours).toBe(4)
+    expect(redone[0]!.hours).toBe(4)
   })
 
   it('remove.mutate deletes the entry and pushes an undo command', async () => {
@@ -124,7 +124,7 @@ describe('useTimeEntryMutations', () => {
     const remaining = await repo.findByDateRange(new Date('2026-05-25'), new Date('2026-05-25'))
     expect(remaining).toHaveLength(0)
     expect(useUndoStore.getState().canUndo).toBe(true)
-    expect(useUndoStore.getState().past[0].description).toBe('Delete _COREMEDIA')
+    expect(useUndoStore.getState().past[0]!.description).toBe('Delete _COREMEDIA')
   })
 
   it('undo after delete restores the entry', async () => {
@@ -141,7 +141,7 @@ describe('useTimeEntryMutations', () => {
 
     const restored = await repo.findByDateRange(new Date('2026-05-25'), new Date('2026-05-25'))
     expect(restored).toHaveLength(1)
-    expect(restored[0].category).toBe('_COREMEDIA')
+    expect(restored[0]!.category).toBe('_COREMEDIA')
   })
 
   it('redo after undo of delete re-deletes the entry', async () => {

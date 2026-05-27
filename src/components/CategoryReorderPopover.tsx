@@ -57,7 +57,9 @@ export function CategoryReorderPopover({ repository }: Props) {
       return
     }
     const newOrder = [...categories]
-    const [moved] = newOrder.splice(from, 1)
+    const spliced = newOrder.splice(from, 1)
+    const moved = spliced[0]
+    if (moved === undefined) return
     newOrder.splice(idx, 0, moved)
     saveMutation.mutate(newOrder)
     dragIdx.current = null

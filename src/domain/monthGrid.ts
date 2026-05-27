@@ -51,7 +51,10 @@ function buildDayRow(
     entries[e.category] = (entries[e.category] ?? 0) + e.hours
     manualTotal += e.hours
   }
-  const [year, month, day] = date.split('-').map(Number)
+  const dateParts = date.split('-').map(Number)
+  const year = dateParts[0] ?? 0
+  const month = dateParts[1] ?? 0
+  const day = dateParts[2] ?? 0
   const autoCategoryManualValue = input.autoCategoryManualValues?.get(date) ?? null
   const computedAuto = Math.max(0, workedHours - manualTotal)
   const autoCategoryHours = autoCategoryManualValue ?? computedAuto

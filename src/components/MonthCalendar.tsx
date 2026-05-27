@@ -102,7 +102,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
         ))}
 
         {/* Leading empty cells for alignment */}
-        {Array.from({ length: (days[0].getDay() + 6) % 7 }).map((_, i) => (
+        {Array.from({ length: ((days[0]?.getDay() ?? 0) + 6) % 7 }).map((_, i) => (
           <div key={`empty-${i}`} />
         ))}
 

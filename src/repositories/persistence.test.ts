@@ -17,7 +17,7 @@ describe('LocalStorage persistence', () => {
     const repo2 = new CloudWorkPeriodRepository(storage)
     const windows = await repo2.findByDate(new Date(2026, 4, 19))
     expect(windows).toHaveLength(1)
-    expect(windows[0].id).toBe('w1')
+    expect(windows[0]!.id).toBe('w1')
   })
 
   it('time entries persist across repository instances', async () => {
@@ -28,7 +28,7 @@ describe('LocalStorage persistence', () => {
     const repo2 = new CloudTimeEntryRepository(storage)
     const entries = await repo2.findByDateRange(new Date(2026, 4, 19), new Date(2026, 4, 19))
     expect(entries).toHaveLength(1)
-    expect(entries[0].hours).toBe(4)
+    expect(entries[0]!.hours).toBe(4)
   })
 
   it('data saved in DayView date query is found by MonthView date range query', async () => {
@@ -44,6 +44,6 @@ describe('LocalStorage persistence', () => {
     const windows = await repo.findByDateRange(from, to)
 
     expect(windows).toHaveLength(1)
-    expect(windows[0].date).toBe('2026-05-19')
+    expect(windows[0]!.date).toBe('2026-05-19')
   })
 })

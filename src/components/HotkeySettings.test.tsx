@@ -33,7 +33,7 @@ describe('HotkeySettings', () => {
     const repo = new InMemoryConfigRepository()
     render(<HotkeySettings repository={repo} />, { wrapper })
     const disableButtons = await screen.findAllByRole('button', { name: /disable/i })
-    await userEvent.click(disableButtons[0])
+    await userEvent.click(disableButtons[0]!)
     const saved = await repo.get()
     const actions = Object.values(saved.hotkeys?.inApp ?? {})
     expect(actions).toContain(null)
@@ -43,7 +43,7 @@ describe('HotkeySettings', () => {
     const repo = new InMemoryConfigRepository()
     render(<HotkeySettings repository={repo} />, { wrapper })
     const changeButtons = await screen.findAllByRole('button', { name: /change/i })
-    await userEvent.click(changeButtons[0])
+    await userEvent.click(changeButtons[0]!)
     const captureField = await screen.findByRole('textbox', { name: /press a key/i })
     fireEvent.keyDown(captureField, { key: '1', code: 'Digit1' })
     await waitFor(async () => {

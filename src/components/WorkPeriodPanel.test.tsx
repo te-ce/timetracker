@@ -75,7 +75,7 @@ describe('WorkPeriodPanel', () => {
 
     expect(await screen.findByText('08:00 – 17:00')).toBeInTheDocument()
     const saved = await repo.findByDate(new Date(DATE))
-    expect(saved[0].start).toBe('08:00')
+    expect(saved[0]!.start).toBe('08:00')
   })
 
   it('pressing Escape cancels editing without saving', async () => {
@@ -105,8 +105,8 @@ describe('WorkPeriodPanel', () => {
     await userEvent.type(screen.getByLabelText(/start/i), '09:00')
     await userEvent.click(screen.getByRole('button', { name: /add/i }))
     const windows = await repo.findByDate(new Date(DATE))
-    expect(windows[0].start).toBe('09:00')
-    expect(windows[0].end).toBeNull()
+    expect(windows[0]!.start).toBe('09:00')
+    expect(windows[0]!.end).toBeNull()
   })
 
   it('displays an open WorkPeriod as "HH:MM – …"', async () => {
@@ -118,10 +118,10 @@ describe('WorkPeriodPanel', () => {
     setup()
     await screen.findByText(/no work periods/i)
     const nowButtons = screen.getAllByRole('button', { name: /now/i })
-    await userEvent.click(nowButtons[0]) // start Now
+    await userEvent.click(nowButtons[0]!) // start Now
     const startInput = screen.getByLabelText<HTMLInputElement>(/start/i)
     expect(startInput.value).toMatch(/^\d{2}:\d{2}$/)
-    await userEvent.click(nowButtons[1]) // end Now
+    await userEvent.click(nowButtons[1]!) // end Now
     const endInput = screen.getByLabelText<HTMLInputElement>(/end/i)
     expect(endInput.value).toMatch(/^\d{2}:\d{2}$/)
   })
@@ -136,7 +136,7 @@ describe('WorkPeriodPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /save/i }))
 
     const saved = await repo.findByDate(new Date(DATE))
-    expect(saved[0].end).toBeNull()
+    expect(saved[0]!.end).toBeNull()
     expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
   })
 
@@ -152,7 +152,7 @@ describe('WorkPeriodPanel', () => {
 
       await waitFor(async () => {
         const saved = await repo.findByDate(new Date(DATE))
-        expect(saved[0].start).toBe('10:00')
+        expect(saved[0]!.start).toBe('10:00')
       })
     })
 
@@ -167,7 +167,7 @@ describe('WorkPeriodPanel', () => {
 
       await waitFor(async () => {
         const saved = await repo.findByDate(new Date(DATE))
-        expect(saved[0].end).toBe('18:00')
+        expect(saved[0]!.end).toBe('18:00')
       })
     })
 
@@ -235,8 +235,8 @@ describe('WorkPeriodPanel', () => {
       await waitFor(async () => {
         const saved = await repo.findByDate(new Date(DATE))
         expect(saved).toHaveLength(1)
-        expect(saved[0].start).toBe('09:00')
-        expect(saved[0].end).toBe('18:00')
+        expect(saved[0]!.start).toBe('09:00')
+        expect(saved[0]!.end).toBe('18:00')
       })
     })
 
@@ -274,8 +274,8 @@ describe('WorkPeriodPanel', () => {
       await waitFor(async () => {
         const saved = await repo.findByDate(new Date(DATE))
         expect(saved).toHaveLength(1)
-        expect(saved[0].start).toBe('09:00')
-        expect(saved[0].end).toBe('19:00')
+        expect(saved[0]!.start).toBe('09:00')
+        expect(saved[0]!.end).toBe('19:00')
       })
     })
   })
@@ -290,7 +290,7 @@ describe('WorkPeriodPanel', () => {
       await waitFor(async () => {
         const saved = await repo.findByDate(new Date(DATE))
         expect(saved).toHaveLength(1)
-        expect(saved[0].start).toBe('09:00')
+        expect(saved[0]!.start).toBe('09:00')
       })
     })
 
@@ -303,8 +303,8 @@ describe('WorkPeriodPanel', () => {
       await waitFor(async () => {
         const saved = await repo.findByDate(new Date(DATE))
         expect(saved).toHaveLength(1)
-        expect(saved[0].start).toBe('09:00')
-        expect(saved[0].end).toBe('17:00')
+        expect(saved[0]!.start).toBe('09:00')
+        expect(saved[0]!.end).toBe('17:00')
       })
     })
 

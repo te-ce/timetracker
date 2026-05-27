@@ -132,7 +132,7 @@ export function SheetSelector({ repository }: Props) {
         showSaveError={saveMutation.isError}
         onLoadSheets={() => void handleLoadSheets()}
         onSelectSheet={(sheet) => saveMutation.mutate(sheet)}
-        notReadyHint={getNotReadyHint(sharepointUrl)}
+        notReadyHint={getNotReadyHint(sharepointUrl ?? undefined)}
       />
     </section>
   )

@@ -137,8 +137,9 @@ export function WorkPeriodPanel({ date, repository }: Props) {
         <div className="flex flex-col gap-3">
           <ul className="flex flex-col gap-2">
             {sorted.map((w, i) => {
-              const next = i < sorted.length - 1 ? sorted[i + 1] : null
-              const canMergeWithNext = next !== null && w.end !== null
+              const nextOrNull = i < sorted.length - 1 ? (sorted[i + 1] ?? null) : null
+              const canMergeWithNext = nextOrNull !== null && w.end !== null
+              const next = nextOrNull
               return (
                 <li
                   key={w.id}
@@ -208,7 +209,7 @@ export function WorkPeriodPanel({ date, repository }: Props) {
                       </button>
                     </>
                   )}
-                  {canMergeWithNext && (
+                  {canMergeWithNext && next !== null && (
                     <div className="group absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 translate-y-1/2">
                       <button
                         onClick={() => handleMerge(w, next)}

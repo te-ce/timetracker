@@ -26,8 +26,8 @@ describe('materializeAutoFillRules', () => {
     })
 
     expect(entries).toHaveLength(5)
-    expect(entries[0]).toMatchObject({ category: 'Coremedia', hours: 0.5, date: '2026-05-18' })
-    expect(entries[4].date).toBe('2026-05-22')
+    expect(entries[0]!).toMatchObject({ category: 'Coremedia', hours: 0.5, date: '2026-05-18' })
+    expect(entries[4]!.date).toBe('2026-05-22')
   })
 
   it('skips weekends for everyWorkday', () => {
@@ -86,7 +86,7 @@ describe('materializeAutoFillRules', () => {
     })
 
     expect(entries).toHaveLength(1)
-    expect(entries[0].date).toBe('2026-05-20')
+    expect(entries[0]!.date).toBe('2026-05-20')
   })
 
   it('materializes weekly rule on matching weekdays at interval', () => {
@@ -125,6 +125,6 @@ describe('materializeAutoFillRules', () => {
       dayTypes: new Map(),
     })
 
-    expect(entries[0].id).not.toBe(entries[1].id)
+    expect(entries[0]!.id).not.toBe(entries[1]!.id)
   })
 })

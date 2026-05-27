@@ -32,7 +32,7 @@ function MsalSyncPanel() {
             <span className="text-sm">☁️</span>
             <div className="flex flex-col">
               <span className="text-xs font-medium text-green-800 dark:text-emerald-400">Synced with OneDrive</span>
-              <span className="text-xs text-green-700 dark:text-emerald-400">{account.username}</span>
+              <span className="text-xs text-green-700 dark:text-emerald-400">{account?.username}</span>
             </div>
           </div>
           <div className="flex gap-2">

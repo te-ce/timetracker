@@ -13,7 +13,7 @@ describe('Timezone-safe date queries', () => {
     // If using toISOString(), this would produce '2026-05-18' and miss the window
     const result = await repo.findByDate(new Date(2026, 4, 19))
     expect(result).toHaveLength(1)
-    expect(result[0].id).toBe('w1')
+    expect(result[0]!.id).toBe('w1')
   })
 
   it('findByDateRange boundaries use local dates', async () => {
@@ -39,7 +39,7 @@ describe('Timezone-safe date queries', () => {
     // Same timezone issue: new Date(2026, 4, 19) should match '2026-05-19'
     const result = await repo.findByDateRange(new Date(2026, 4, 19), new Date(2026, 4, 19))
     expect(result).toHaveLength(1)
-    expect(result[0].id).toBe('e1')
+    expect(result[0]!.id).toBe('e1')
   })
 
   it('shared repo: MonthView sees data saved in DayView', async () => {

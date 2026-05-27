@@ -13,8 +13,8 @@ describe('buildMonthSummaries', () => {
     })
 
     expect(result.days).toHaveLength(31)
-    expect(result.days[0].date).toBe('2026-05-01')
-    expect(result.days[30].date).toBe('2026-05-31')
+    expect(result.days[0]!.date).toBe('2026-05-01')
+    expect(result.days[30]!.date).toBe('2026-05-31')
   })
 
   it('computes workedHours from windows', () => {
@@ -28,7 +28,7 @@ describe('buildMonthSummaries', () => {
       today,
     })
 
-    expect(result.days[0].workedHours).toBe(7)
+    expect(result.days[0]!.workedHours).toBe(7)
   })
 
   it('computes entryTotal from time entries', () => {
@@ -42,7 +42,7 @@ describe('buildMonthSummaries', () => {
       today,
     })
 
-    expect(result.days[0].entryTotal).toBe(5)
+    expect(result.days[0]!.entryTotal).toBe(5)
   })
 
   it('marks balanced when entries match worked hours', () => {
@@ -53,8 +53,8 @@ describe('buildMonthSummaries', () => {
       today,
     })
 
-    expect(result.days[0].isEntriesBalanced).toBe(true)
-    expect(result.days[0].dayStatus).toBe('tracked')
+    expect(result.days[0]!.isEntriesBalanced).toBe(true)
+    expect(result.days[0]!.dayStatus).toBe('tracked')
   })
 
   it('marks needs-review when entries do not match worked hours', () => {
@@ -65,8 +65,8 @@ describe('buildMonthSummaries', () => {
       today,
     })
 
-    expect(result.days[0].isEntriesBalanced).toBe(false)
-    expect(result.days[0].dayStatus).toBe('needs-review')
+    expect(result.days[0]!.isEntriesBalanced).toBe(false)
+    expect(result.days[0]!.dayStatus).toBe('needs-review')
   })
 
   it('marks needs-review when auto category covers remaining but day is not confirmed', () => {
@@ -78,7 +78,7 @@ describe('buildMonthSummaries', () => {
       globalAutoCategory: 'Internal',
     })
 
-    expect(result.days[0].dayStatus).toBe('needs-review')
+    expect(result.days[0]!.dayStatus).toBe('needs-review')
   })
 
   it('marks needs-review when entries exceed worked hours even with auto category', () => {
@@ -90,7 +90,7 @@ describe('buildMonthSummaries', () => {
       globalAutoCategory: 'Internal',
     })
 
-    expect(result.days[0].dayStatus).toBe('needs-review')
+    expect(result.days[0]!.dayStatus).toBe('needs-review')
   })
 
   it('respects dayTypeOverrides for non-working days', () => {
@@ -101,8 +101,8 @@ describe('buildMonthSummaries', () => {
       today,
     })
 
-    expect(result.days[0].dayType).toBe('Vacation')
-    expect(result.days[0].dayStatus).toBe('leave')
+    expect(result.days[0]!.dayType).toBe('Vacation')
+    expect(result.days[0]!.dayStatus).toBe('leave')
   })
 
   it('counts only WorkDays in workDayCount', () => {
@@ -144,6 +144,6 @@ describe('buildMonthSummaries', () => {
       today,
     })
 
-    expect(result.days[18].dayStatus).toBe('today')
+    expect(result.days[18]!.dayStatus).toBe('today')
   })
 })

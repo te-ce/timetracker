@@ -254,8 +254,8 @@ describe('CategorySettings', () => {
 
     const listItems = screen.getAllByRole('listitem')
     // Drag item at index 0 (_LEAVE) to index 2 (_COREMEDIA slot)
-    const dragSource = listItems[0]
-    const dropTarget = listItems[2]
+    const dragSource = listItems[0]!
+    const dropTarget = listItems[2]!
 
     fireEvent.dragStart(dragSource)
     fireEvent.dragOver(dropTarget, { preventDefault: () => {} })
@@ -282,7 +282,7 @@ describe('CategorySettings', () => {
     await screen.findByText('_LEAVE')
 
     const listItems = screen.getAllByRole('listitem')
-    const item = listItems[0]
+    const item = listItems[0]!
 
     fireEvent.dragStart(item)
     fireEvent.dragOver(item, { preventDefault: () => {} })

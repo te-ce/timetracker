@@ -95,7 +95,7 @@ export async function writeSprintData(
   const rangeJson = (await rangeRes.json()) as { address: string }
   // address looks like "Sheet1!A1:C20" — extract starting row number
   const addressMatch = /!.*?(\d+):/.exec(rangeJson.address)
-  const startRow = addressMatch ? parseInt(addressMatch[1], 10) : 1
+  const startRow = addressMatch ? parseInt(addressMatch[1] ?? '1', 10) : 1
 
   // Write each mapped category
   const writes: Promise<void>[] = []

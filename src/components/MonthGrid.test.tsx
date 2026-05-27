@@ -312,7 +312,7 @@ describe('MonthGrid', () => {
         const entries = await entryRepo.findByDateRange(new Date('2026-05-01'), new Date('2026-05-01'))
         const supportEntries = entries.filter((e) => e.category === '_SUPPORT')
         expect(supportEntries).toHaveLength(1)
-        expect(supportEntries[0].hours).toBe(5)
+        expect(supportEntries[0]!.hours).toBe(5)
       })
     })
   })

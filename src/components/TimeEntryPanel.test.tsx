@@ -127,7 +127,7 @@ describe('TimeEntryPanel', () => {
     await waitFor(async () => {
       const windows = await workPeriodRepo.findByDate(new Date(DATE))
       expect(windows).toHaveLength(1)
-      expect(windows[0].end).toBeNull()
+      expect(windows[0]!.end).toBeNull()
     })
   })
 
@@ -149,14 +149,14 @@ describe('TimeEntryPanel', () => {
     await waitFor(async () => {
       const windows = await workPeriodRepo.findByDate(new Date(DATE))
       expect(windows).toHaveLength(1)
-      expect(windows[0].end).toBeNull()
+      expect(windows[0]!.end).toBeNull()
     })
     // Switch to a different category
     await userEvent.click(screen.getByLabelText('Start tracking _INFRA'))
     await waitFor(async () => {
       const windows = await workPeriodRepo.findByDate(new Date(DATE))
       expect(windows).toHaveLength(1)
-      expect(windows[0].end).toBeNull()
+      expect(windows[0]!.end).toBeNull()
     })
   })
 
@@ -166,13 +166,13 @@ describe('TimeEntryPanel', () => {
     await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
     await waitFor(async () => {
       const windows = await workPeriodRepo.findByDate(new Date(DATE))
-      expect(windows[0].end).toBeNull()
+      expect(windows[0]!.end).toBeNull()
     })
     await userEvent.click(screen.getByLabelText('Stop tracking _SUPPORT'))
     await waitFor(async () => {
       const windows = await workPeriodRepo.findByDate(new Date(DATE))
-      expect(windows[0].end).not.toBeNull()
-      expect(windows[0].end).toMatch(/^\d{2}:\d{2}$/)
+      expect(windows[0]!.end).not.toBeNull()
+      expect(windows[0]!.end).toMatch(/^\d{2}:\d{2}$/)
     })
   })
 

@@ -27,7 +27,7 @@ beforeEach(() => {
       onSetCategory: () => {},
       offSetCategory: () => {},
     },
-    hotkey: { onToggle: () => {}, offToggle: () => {} },
+    hotkey: { onToggle: () => {}, offToggle: () => {}, setGlobal: () => Promise.resolve() },
     storage: stub,
     notify: { goalReached: () => {} },
   }

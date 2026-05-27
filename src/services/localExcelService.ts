@@ -75,6 +75,6 @@ export async function writeLocalSprintData(
   if (!(rawOutput instanceof Uint8Array)) throw new Error('XLSX.write returned unexpected type')
   const output: Uint8Array = rawOutput
   const writable = await fileHandle.createWritable()
-  await writable.write(output)
+  await writable.write(output as unknown as FileSystemWriteChunkType)
   await writable.close()
 }

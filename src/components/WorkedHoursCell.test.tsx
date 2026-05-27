@@ -51,8 +51,8 @@ describe('WorkedHoursCell', () => {
     await waitFor(async () => {
       const windows = await repo.findByDate(new Date(DATE))
       expect(windows.length).toBe(1)
-      expect(windows[0].start).toBe('09:00')
-      expect(windows[0].end).toBe('13:30')
+      expect(windows[0]!.start).toBe('09:00')
+      expect(windows[0]!.end).toBe('13:30')
     })
   })
 
@@ -105,7 +105,7 @@ describe('WorkedHoursCell', () => {
 
       await waitFor(async () => {
         const windows = await repo.findByDate(new Date(DATE))
-        expect(windows[0].start).toBe('08:00')
+        expect(windows[0]!.start).toBe('08:00')
       })
     })
 
@@ -121,7 +121,7 @@ describe('WorkedHoursCell', () => {
 
       await waitFor(async () => {
         const windows = await repo.findByDate(new Date(DATE))
-        expect(windows[0].start).toBe('10:00')
+        expect(windows[0]!.start).toBe('10:00')
       })
     })
 
@@ -137,7 +137,7 @@ describe('WorkedHoursCell', () => {
 
       await waitFor(async () => {
         const windows = await repo.findByDate(new Date(DATE))
-        expect(windows[0].end).toBe('18:00')
+        expect(windows[0]!.end).toBe('18:00')
       })
     })
 

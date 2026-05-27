@@ -38,7 +38,7 @@ beforeEach(() => {
 
 describe('useMsalSync', () => {
   it('sets isAuthenticated to false when no accounts are present', () => {
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' })
+    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
@@ -49,7 +49,7 @@ describe('useMsalSync', () => {
       accounts: [{ homeAccountId: 'user1', username: 'user@example.com' } as unknown as never],
       instance: {} as unknown as never,
       inProgress: 'none',
-    })
+    } as unknown as ReturnType<typeof useMsal>)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
@@ -61,7 +61,7 @@ describe('useMsalSync', () => {
     queryClient.invalidateQueries = invalidateQueries
 
     // Start unauthenticated
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' })
+    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
     // Sign in
@@ -69,7 +69,7 @@ describe('useMsalSync', () => {
       accounts: [{ homeAccountId: 'user1' } as unknown as never],
       instance: {} as unknown as never,
       inProgress: 'none',
-    })
+    } as unknown as ReturnType<typeof useMsal>)
     act(() => { rerender() })
 
     expect(mockResetAllRepositories).toHaveBeenCalled()
@@ -86,14 +86,14 @@ describe('useMsalSync', () => {
       accounts: [{ homeAccountId: 'user1' } as unknown as never],
       instance: {} as unknown as never,
       inProgress: 'none',
-    })
+    } as unknown as ReturnType<typeof useMsal>)
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
     invalidateQueries.mockClear()
 
     // Sign out
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' })
+    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
     act(() => { rerender() })
 
     expect(mockResetAllRepositories).toHaveBeenCalled()
@@ -101,7 +101,7 @@ describe('useMsalSync', () => {
   })
 
   it('does not reset repositories when auth state stays false', () => {
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' })
+    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
@@ -115,7 +115,7 @@ describe('useMsalSync', () => {
 
   it('does not reset repositories when auth state stays true', () => {
     const account = { homeAccountId: 'user1' } as unknown as never
-    mockUseMsal.mockReturnValue({ accounts: [account], instance: {} as unknown as never, inProgress: 'none' })
+    mockUseMsal.mockReturnValue({ accounts: [account], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 

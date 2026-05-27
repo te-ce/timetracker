@@ -51,7 +51,7 @@ export function matchesShortcut(
   const parts = effective.split('+')
   const needsCtrl = parts.includes('Ctrl')
   const needsShift = parts.includes('Shift')
-  const keyPart = parts[parts.length - 1]
+  const keyPart = parts[parts.length - 1] ?? ''
 
   if (needsCtrl !== ctrl || needsShift !== shift) return false
   return key.toLowerCase() === keyPart.toLowerCase()
