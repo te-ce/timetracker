@@ -5,6 +5,7 @@ import { CloudSyncSettings } from '../components/CloudSyncSettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
 import { HotkeySettings } from '../components/HotkeySettings'
 import { LaunchAtLoginSettings } from '../components/LaunchAtLoginSettings'
+import { WindowBehaviorSettings } from '../components/WindowBehaviorSettings'
 import { LocalExcelFolderSettings } from '../components/LocalExcelFolderSettings'
 import { LocalExcelSettings } from '../components/LocalExcelSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
@@ -36,6 +37,7 @@ export function SettingsView() {
       )}
       <CategorySettings repository={configRepo} />
       {isElectron && <LaunchAtLoginSettings repository={configRepo} />}
+      {isElectron && <WindowBehaviorSettings repository={configRepo} />}
       <HotkeySettings repository={configRepo} />
     </div>
   )

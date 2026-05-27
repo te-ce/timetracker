@@ -57,6 +57,10 @@ export interface AppConfig {
   localExcelFile?: string | null
   /** Whether to launch the app automatically on OS login (Electron desktop only) */
   launchAtLogin?: boolean
+  /** Whether to start the app hidden in the tray instead of showing the window (Electron desktop only) */
+  startMinimized?: boolean
+  /** Whether closing the window hides to tray instead of quitting (Electron desktop only) */
+  closeToTray?: boolean
   /** Global hotkey and in-app shortcut overrides */
   hotkeys?: import('../domain/hotkeyConfig').HotkeyConfig
 }
