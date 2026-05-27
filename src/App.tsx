@@ -7,6 +7,7 @@ import { useUndoStore } from './stores/undoStore'
 import { useRemainingHours } from './hooks/useRemainingHours'
 import { useElectronTraySync } from './hooks/useElectronTraySync'
 import { useGoalNotification } from './hooks/useGoalNotification'
+import { usePrefetchCurrentMonth } from './hooks/usePrefetchCurrentMonth'
 import { useQuery } from '@tanstack/react-query'
 import { KeyboardShortcutLegend } from './components/KeyboardShortcutLegend'
 import { msalInstance } from './auth/msalInstance'
@@ -118,6 +119,7 @@ function RemainingHoursBadge() {
 function App() {
   useElectronTraySync()
   useGoalNotification()
+  usePrefetchCurrentMonth()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
   const navigate = useNavigate()
