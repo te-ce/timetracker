@@ -110,6 +110,38 @@ export function DayView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
+  const categoryRenameMutation = useMutation({
+    mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
+      const cfg = await configRepo.get()
+      const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
+      const newOrder = (cfg.categoryOrder ?? []).map((c) => (c === oldName ? newName : c))
+      const newDescriptions = cfg.categoryDescriptions
+        ? Object.fromEntries(Object.entries(cfg.categoryDescriptions).map(([k, v]) => [k === oldName ? newName : k, v]))
+        : undefined
+      const newMapping = cfg.categoryMapping
+        ? Object.fromEntries(Object.entries(cfg.categoryMapping).map(([k, v]) => [k === oldName ? newName : k, v]))
+        : undefined
+      await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder, categoryDescriptions: newDescriptions, categoryMapping: newMapping })
+      const allEntries = await timeEntryRepo.findByDateRange(new Date('2000-01-01'), new Date('2099-12-31'))
+      for (const entry of allEntries.filter((e) => e.category === oldName)) {
+        await timeEntryRepo.save({ ...entry, category: newName })
+      }
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
+    },
+  })
+
+  const categoryDescriptionMutation = useMutation({
+    mutationFn: ({ category, description }: { category: string; description: string }) => {
+      const current = config?.categoryDescriptions ?? {}
+      const updated = description ? { ...current, [category]: description } : Object.fromEntries(Object.entries(current).filter(([k]) => k !== category))
+      return configRepo.save({ ...config!, categoryDescriptions: updated })
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+  })
+
   const locationMutation = useMutation({
     mutationFn: async () => {
       const next: WorkLocation = effectiveLocation === 'Remote' ? 'Office' : 'Remote'
@@ -250,10 +282,13 @@ export function DayView() {
         workPeriodRepository={workPeriodRepo}
         customCategories={config?.customCategories ?? []}
         categoryOrder={config?.categoryOrder}
+        categoryDescriptions={config?.categoryDescriptions}
         autoCategory={autoCategory}
         autoCategoryHours={Math.max(0, workedHours - manualTotal)}
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
         onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
+        onCategoryDescriptionChange={(category, description) => categoryDescriptionMutation.mutate({ category, description })}
+        onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       />
 
       {showResetConfirm && (

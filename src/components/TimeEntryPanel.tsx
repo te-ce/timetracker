@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type {
   TimeEntry,
@@ -19,10 +19,13 @@ interface Props {
   workPeriodRepository?: WorkPeriodRepository
   customCategories?: string[]
   categoryOrder?: string[]
+  categoryDescriptions?: Record<string, string>
   autoCategory?: string | null
   autoCategoryHours?: number
   onAutoCategoryChange?: (cat: string | null) => void
   onCategoryReorder?: (order: string[]) => void
+  onCategoryDescriptionChange?: (category: string, description: string) => void
+  onCategoryRename?: (oldName: string, newName: string) => void
 }
 
 interface CategoryRowProps {
@@ -37,7 +40,10 @@ interface CategoryRowProps {
   dragOverIdx: number | null
   onCategoryReorder: ((order: string[]) => void) | undefined
   onAutoCategoryChange: ((cat: string | null) => void) | undefined
+  onCategoryDescriptionChange: ((category: string, description: string) => void) | undefined
+  onCategoryRename: ((oldName: string, newName: string) => void) | undefined
   categories: string[]
+  categoryDescription?: string
   onDragStart: (idx: number) => void
   onDragOver: (e: React.DragEvent, idx: number) => void
   onDrop: (idx: number, categories: string[]) => void
@@ -91,33 +97,120 @@ function AutoCategoryButton({ category, isAutoTarget, onAutoCategoryChange }: { 
 
 interface CategoryLabelSectionProps {
   category: string
+  categoryDescription?: string
   isAutoTarget: boolean
   autoHrs: number
   activeTracking: ActiveTracking | null
   isTracking: boolean
   onCategoryReorder: ((order: string[]) => void) | undefined
   onAutoCategoryChange: ((cat: string | null) => void) | undefined
+  onCategoryDescriptionChange: ((category: string, description: string) => void) | undefined
+  onCategoryRename: ((oldName: string, newName: string) => void) | undefined
 }
 
-function CategoryLabelSection({ category, isAutoTarget, autoHrs, activeTracking, isTracking, onCategoryReorder, onAutoCategoryChange }: CategoryLabelSectionProps) {
+function CategoryLabelSection({ category, categoryDescription, isAutoTarget, autoHrs, activeTracking, isTracking, onCategoryReorder, onAutoCategoryChange, onCategoryDescriptionChange, onCategoryRename }: CategoryLabelSectionProps) {
   const showAutoHours = isAutoTarget && autoHrs > 0
   const showElapsed = activeTracking !== null && isTracking
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [descDraft, setDescDraft] = useState('')
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+
+  const startEditDesc = useCallback(() => {
+    if (!onCategoryDescriptionChange) return
+    setDescDraft(categoryDescription ?? '')
+    setEditingDesc(true)
+  }, [categoryDescription, onCategoryDescriptionChange])
+
+  const commitEditDesc = useCallback(() => {
+    setEditingDesc(false)
+    onCategoryDescriptionChange?.(category, descDraft.trim())
+  }, [category, descDraft, onCategoryDescriptionChange])
+
+  const startEditName = useCallback(() => {
+    if (!onCategoryRename) return
+    setNameDraft(category)
+    setEditingName(true)
+  }, [category, onCategoryRename])
+
+  const commitEditName = useCallback(() => {
+    setEditingName(false)
+    const trimmed = nameDraft.trim()
+    if (trimmed && trimmed !== category) onCategoryRename?.(category, trimmed)
+  }, [category, nameDraft, onCategoryRename])
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 group/desc min-w-0">
       {onCategoryReorder && (
         <span className="text-gray-300 dark:text-gray-600 select-none" aria-hidden>⠿</span>
       )}
       {onAutoCategoryChange && (
         <AutoCategoryButton category={category} isAutoTarget={isAutoTarget} onAutoCategoryChange={onAutoCategoryChange} />
       )}
-      <span className="text-sm font-medium">{category}</span>
+      {editingName ? (
+        <input
+          ref={(el) => el?.focus()}
+          type="text"
+          value={nameDraft}
+          onChange={(e) => setNameDraft(e.target.value)}
+          onBlur={commitEditName}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commitEditName()
+            if (e.key === 'Escape') setEditingName(false)
+          }}
+          aria-label={`Rename category ${category}`}
+          className="text-sm font-medium bg-transparent border-b border-indigo-400 dark:border-indigo-500 focus:outline-none w-32 shrink-0"
+        />
+      ) : (
+        <span
+          className={`text-sm font-medium shrink-0 ${onCategoryRename ? 'cursor-text' : ''}`}
+          onDoubleClick={startEditName}
+          title={onCategoryRename ? 'Double-click to rename' : undefined}
+        >
+          {category}
+        </span>
+      )}
+      {onCategoryDescriptionChange && (
+        editingDesc ? (
+          <input
+            ref={(el) => el?.focus()}
+            type="text"
+            value={descDraft}
+            onChange={(e) => setDescDraft(e.target.value)}
+            onBlur={commitEditDesc}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitEditDesc()
+              if (e.key === 'Escape') setEditingDesc(false)
+            }}
+            aria-label={`Description for ${category}`}
+            className="text-xs text-gray-500 dark:text-gray-400 bg-transparent border-b border-indigo-400 dark:border-indigo-500 focus:outline-none w-48"
+          />
+        ) : categoryDescription ? (
+          <button
+            onClick={startEditDesc}
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-left truncate max-w-48"
+            aria-label={`Edit description for ${category}`}
+            title="Click to edit description"
+          >
+            {categoryDescription}
+          </button>
+        ) : (
+          <button
+            onClick={startEditDesc}
+            className="text-[10px] text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 opacity-0 group-hover/desc:opacity-100 transition-opacity shrink-0"
+            aria-label={`Add description for ${category}`}
+          >
+            + add description
+          </button>
+        )
+      )}
       {showAutoHours && (
-        <span className="rounded bg-indigo-200 dark:bg-indigo-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-300">
+        <span className="rounded bg-indigo-200 dark:bg-indigo-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-300 shrink-0">
           +{autoHrs.toFixed(2)} auto
         </span>
       )}
       {showElapsed && (
-        <span className="rounded bg-green-200 dark:bg-green-900/40 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:text-green-400 tabular-nums">
+        <span className="rounded bg-green-200 dark:bg-green-900/40 px-1.5 py-0.5 text-[10px] font-bold text-green-800 dark:text-green-400 tabular-nums shrink-0">
           ⏱ {formatElapsed(activeTracking.startedAt)}
         </span>
       )}
@@ -217,7 +310,10 @@ function CategoryRow({
   dragOverIdx,
   onCategoryReorder,
   onAutoCategoryChange,
+  onCategoryDescriptionChange,
+  onCategoryRename,
   categories,
+  categoryDescription,
   onDragStart,
   onDragOver,
   onDrop,
@@ -250,12 +346,15 @@ function CategoryRow({
     >
       <CategoryLabelSection
         category={category}
+        categoryDescription={categoryDescription}
         isAutoTarget={isAutoTarget}
         autoHrs={autoHrs}
         activeTracking={activeTracking}
         isTracking={isTracking}
         onCategoryReorder={onCategoryReorder}
         onAutoCategoryChange={onAutoCategoryChange}
+        onCategoryDescriptionChange={onCategoryDescriptionChange}
+        onCategoryRename={onCategoryRename}
       />
       <CategoryControlSection
         category={category}
@@ -283,10 +382,13 @@ export function TimeEntryPanel({
   workPeriodRepository,
   customCategories = [],
   categoryOrder,
+  categoryDescriptions,
   autoCategory = null,
   autoCategoryHours = 0,
   onAutoCategoryChange,
   onCategoryReorder,
+  onCategoryDescriptionChange,
+  onCategoryRename,
 }: Props) {
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
   const [tick, setTick] = useState(0)
@@ -471,7 +573,10 @@ export function TimeEntryPanel({
             dragOverIdx={dragOverIdx}
             onCategoryReorder={onCategoryReorder}
             onAutoCategoryChange={onAutoCategoryChange}
+            onCategoryDescriptionChange={onCategoryDescriptionChange}
+            onCategoryRename={onCategoryRename}
             categories={categories}
+            categoryDescription={categoryDescriptions?.[category]}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
