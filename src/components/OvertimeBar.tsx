@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from '@tanstack/react-router'
 
 interface Props {
   sollstunden: number
@@ -84,9 +85,14 @@ export function OvertimeBar({
           <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
             −
           </span>
-          <span aria-hidden="true" className="font-medium text-green-700 dark:text-green-400 tabular-nums">
+          <Link
+            to="/day"
+            search={{ date: activeTrackingStartedAt.slice(0, 10) }}
+            aria-hidden="true"
+            className="font-medium text-green-700 dark:text-green-400 tabular-nums hover:underline"
+          >
             {formatElapsed(activeTrackingStartedAt)} tracking
-          </span>
+          </Link>
         </>
       )}
       <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
