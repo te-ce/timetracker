@@ -140,7 +140,7 @@ function CategoryLabelSection({ category, categoryDescription, isAutoTarget, aut
   }, [category, nameDraft, onCategoryRename])
 
   return (
-    <div className="flex items-center gap-2 group/desc min-w-0">
+    <div className="flex flex-1 items-center gap-2 group/desc min-w-0">
       {onCategoryReorder && (
         <span className="text-gray-300 dark:text-gray-600 select-none" aria-hidden>⠿</span>
       )}
@@ -282,18 +282,14 @@ function CategoryControlSection({ category, isTracking, isAutoTarget, autoHrs, d
       >
         +
       </button>
-      {existing && (
-        <button
-          aria-label={`Clear ${category}`}
-          onClick={() => onDelete(existing)}
-          className="rounded border px-2 py-0.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 hover:text-red-500 dark:hover:text-red-400"
-        >
-          ×
-        </button>
-      )}
-      {isAutoTarget && autoHrs > 0 && (
-        <span className="ml-1 text-xs text-gray-500 dark:text-gray-400">= {displayTotal.toFixed(2)}</span>
-      )}
+      <button
+        aria-label={`Clear ${category}`}
+        onClick={() => existing && onDelete(existing)}
+        className={`rounded border px-2 py-0.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-700 hover:text-red-500 dark:hover:text-red-400 ${existing ? '' : 'invisible'}`}
+      >
+        ×
+      </button>
+      <span className={`ml-1 text-xs text-gray-500 dark:text-gray-400 ${isAutoTarget && autoHrs > 0 ? '' : 'invisible'}`}>= {displayTotal.toFixed(2)}</span>
     </div>
   )
 }
