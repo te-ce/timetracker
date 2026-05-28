@@ -53,6 +53,10 @@ export interface AppConfig {
   targetSheet?: string | null
   /** Maps app category keys to Excel Task IDs for export */
   categoryMapping?: Record<string, string>
+  /** Optional descriptions for categories, keyed by category name */
+  categoryDescriptions?: Record<string, string>
+  /** Category order saved from the last Excel import, used to reset sorting */
+  categoryImportOrder?: string[]
   /** Filename of the Excel workbook in the local folder (local folder mode only) */
   localExcelFile?: string | null
   /** Whether to launch the app automatically on OS login (Electron desktop only) */

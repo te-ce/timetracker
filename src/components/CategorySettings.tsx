@@ -169,6 +169,8 @@ export function CategorySettings({ repository }: Props) {
   const [newCategory, setNewCategory] = useState('')
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [editingDescIdx, setEditingDescIdx] = useState<number | null>(null)
+  const [editDescValue, setEditDescValue] = useState('')
   const dragIdx = useRef<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
@@ -185,7 +187,7 @@ export function CategorySettings({ repository }: Props) {
   })
 
   const categoryMutation = useMutation({
-    mutationFn: (updates: { customCategories?: string[]; categoryOrder?: string[] }) =>
+    mutationFn: (updates: { customCategories?: string[]; categoryOrder?: string[]; categoryDescriptions?: Record<string, string>; categoryImportOrder?: string[] }) =>
       repository.save({ ...config!, ...updates }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
@@ -194,16 +196,20 @@ export function CategorySettings({ repository }: Props) {
     mutationFn: async ({
       mapping,
       newCustomCategories,
+      importOrder,
     }: {
       mapping: Record<string, string>
       newCustomCategories: string[]
+      importOrder?: string[]
     }) => {
       const current = await repository.get()
       const mergedCustom = [
         ...current.customCategories,
         ...newCustomCategories.filter((c) => !current.customCategories.includes(c)),
       ]
-      await repository.save({ ...current, categoryMapping: mapping, customCategories: mergedCustom })
+      const update: typeof current = { ...current, categoryMapping: mapping, customCategories: mergedCustom }
+      if (importOrder) update.categoryImportOrder = importOrder
+      await repository.save(update)
     },
     onSuccess: () => {
       setLocalMapping(null)
@@ -280,6 +286,22 @@ export function CategorySettings({ repository }: Props) {
 
   function handleDragEnd() { dragIdx.current = null; setDragOverIdx(null) }
 
+  function handleSaveDesc(idx: number) {
+    const cat = categories[idx]
+    if (!cat) { setEditingDescIdx(null); return }
+    const trimmed = editDescValue.trim()
+    const descs = { ...(config.categoryDescriptions ?? {}) }
+    if (trimmed) descs[cat] = trimmed
+    else delete descs[cat]
+    categoryMutation.mutate({ categoryDescriptions: descs })
+    setEditingDescIdx(null)
+  }
+
+  function handleResetToImportOrder() {
+    if (!config.categoryImportOrder) return
+    categoryMutation.mutate({ categoryOrder: config.categoryImportOrder })
+  }
+
   async function handleLoadRows() {
     setLoadError(null)
     setLoadingRows(true)
@@ -306,13 +328,19 @@ export function CategorySettings({ repository }: Props) {
 
   function handleSaveMapping() {
     if (!localMapping) return
-    mappingMutation.mutate({ mapping: localMapping, newCustomCategories: [] })
+    const rowIdx = new Map(excelRows.map((r, i) => [r.taskId, i]))
+    const importOrder = [...categories].sort((a, b) => {
+      const ai = localMapping[a] !== undefined ? (rowIdx.get(localMapping[a]) ?? Infinity) : Infinity
+      const bi = localMapping[b] !== undefined ? (rowIdx.get(localMapping[b]) ?? Infinity) : Infinity
+      return ai - bi
+    })
+    mappingMutation.mutate({ mapping: localMapping, newCustomCategories: [], importOrder })
   }
 
   function handleAddAsCategory(row: ExcelRow) {
     const name = row.description || row.taskId
     const newMapping = { ...(localMapping ?? savedMapping), [name]: row.taskId }
-    mappingMutation.mutate({ mapping: newMapping, newCustomCategories: [name] })
+    mappingMutation.mutate({ mapping: newMapping, newCustomCategories: [name], importOrder: undefined })
   }
 
   const isDirty = localMapping !== null
@@ -325,6 +353,15 @@ export function CategorySettings({ repository }: Props) {
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium">Categories</span>
         <div className="flex items-center gap-2">
+          {config.categoryImportOrder && (
+            <button
+              onClick={handleResetToImportOrder}
+              className="rounded border px-2.5 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
+              title="Reset sort order to the order categories appeared in Excel"
+            >
+              Reset to Excel order
+            </button>
+          )}
           {showMappingHint && (
             <span className="text-xs text-gray-400 dark:text-gray-500">
               {mappingHint}
@@ -369,29 +406,56 @@ export function CategorySettings({ repository }: Props) {
             >
               <span className="text-gray-300 dark:text-gray-600 select-none shrink-0" aria-hidden>⠿</span>
 
-              {/* Category name */}
-              {editingIdx === idx ? (
-                <input
-                  aria-label={`Rename ${cat}`}
-                  ref={(el) => { el?.focus() }}
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onBlur={() => handleRename(idx)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleRename(idx)
-                    if (e.key === 'Escape') setEditingIdx(null)
-                  }}
-                  className="w-36 rounded border px-2 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                />
-              ) : (
-                <span
-                  className={`w-36 shrink-0 truncate cursor-pointer ${isCustom ? 'text-indigo-700 dark:text-indigo-300' : ''}`}
-                  onDoubleClick={() => { setEditingIdx(idx); setEditValue(cat) }}
-                  title={isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'}
-                >
-                  {cat}
-                </span>
-              )}
+              {/* Category name + description */}
+              <div className="w-36 shrink-0 flex flex-col gap-0.5 min-w-0">
+                {editingIdx === idx ? (
+                  <input
+                    aria-label={`Rename ${cat}`}
+                    ref={(el) => { el?.focus() }}
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onBlur={() => handleRename(idx)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleRename(idx)
+                      if (e.key === 'Escape') setEditingIdx(null)
+                    }}
+                    className="rounded border px-2 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  />
+                ) : (
+                  <span
+                    className={`truncate cursor-pointer ${isCustom ? 'text-indigo-700 dark:text-indigo-300' : ''}`}
+                    onDoubleClick={() => { setEditingIdx(idx); setEditValue(cat) }}
+                    title={isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'}
+                  >
+                    {cat}
+                  </span>
+                )}
+                {editingDescIdx === idx ? (
+                  <input
+                    aria-label={`Description for ${cat}`}
+                    ref={(el) => { el?.focus() }}
+                    value={editDescValue}
+                    onChange={(e) => setEditDescValue(e.target.value)}
+                    onBlur={() => handleSaveDesc(idx)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSaveDesc(idx)
+                      if (e.key === 'Escape') setEditingDescIdx(null)
+                    }}
+                    placeholder="Add description…"
+                    className="rounded border px-1.5 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    aria-label={`Edit description for ${cat}`}
+                    className="truncate text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                    onClick={() => { setEditingDescIdx(idx); setEditDescValue(config.categoryDescriptions?.[cat] ?? '') }}
+                    title="Click to edit description"
+                  >
+                    {config.categoryDescriptions?.[cat] ?? <em>add description</em>}
+                  </button>
+                )}
+              </div>
 
               <span className="w-4 shrink-0 text-center text-xs text-gray-300 dark:text-gray-600" aria-hidden>→</span>
 
