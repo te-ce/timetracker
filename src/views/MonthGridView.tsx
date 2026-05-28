@@ -209,6 +209,7 @@ export function MonthGridView() {
         autoCategory={gridConfig.autoCategory}
         customCategories={gridConfig.customCategories}
         categoryOrder={config ? config.categoryOrder : undefined}
+        categoryDescriptions={config?.categoryDescriptions}
         dayTypes={dayTypeOverrides}
         confirmedDays={confirmedDays}
         sprintStartDate={gridConfig.sprintStartDate}

@@ -50,6 +50,7 @@ interface Props {
   sprintLengthDays?: number
   workLocations?: Map<string, WorkLocation>
   defaultWorkLocation?: WorkLocation | null
+  categoryDescriptions?: Record<string, string>
   onCategoryReorder?: (order: string[]) => void
   onCategoryRename?: (oldName: string, newName: string) => void
   onAutoCategoryChange?: (category: string) => void
@@ -210,6 +211,7 @@ export function MonthGrid({
   sprintLengthDays = 14,
   workLocations = new Map(),
   defaultWorkLocation = null,
+  categoryDescriptions,
   onCategoryReorder,
   onCategoryRename,
   onAutoCategoryChange,
@@ -498,10 +500,18 @@ export function MonthGrid({
                   role="columnheader"
                   title={
                     cat === autoCategory
-                      ? `${cat} — auto category (absorbs remaining hours)`
-                      : onCategoryRename
-                        ? 'Double-click to rename'
-                        : cat
+                      ? [
+                          `${cat} — auto category (absorbs remaining hours)`,
+                          categoryDescriptions?.[cat],
+                        ]
+                          .filter(Boolean)
+                          .join('\n\n')
+                      : [
+                          categoryDescriptions?.[cat],
+                          onCategoryRename ? 'Double-click to rename' : undefined,
+                        ]
+                          .filter(Boolean)
+                          .join('\n\n') || cat
                   }
                 >
                   {editingCat === cat ? (
