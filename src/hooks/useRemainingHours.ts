@@ -11,16 +11,6 @@ export function useRemainingHours() {
   useEffect(() => {
     const label = remaining > 0 ? `(${remaining.toFixed(1)}h left) ` : ''
     document.title = `${label}Timetracker`
-
-    if ('setAppBadge' in navigator) {
-      if (remaining > 0) {
-        void (navigator as Navigator & { setAppBadge(count?: number): Promise<void> }).setAppBadge(
-          Math.ceil(remaining),
-        )
-      } else {
-        void (navigator as Navigator & { clearAppBadge(): Promise<void> }).clearAppBadge()
-      }
-    }
   }, [remaining])
 
   return { remaining, sollstunden, workedHours, priorOvertime }
