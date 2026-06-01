@@ -1,4 +1,6 @@
 import { AutoCategorySettings } from '../components/AutoCategorySettings'
+import { AppDataFolderSettings } from '../components/AppDataFolderSettings'
+import { ClearDataSettings } from '../components/ClearDataSettings'
 import { BundeslandSettings } from '../components/BundeslandSettings'
 import { CategorySettings } from '../components/CategorySettings'
 import { CloudSyncSettings } from '../components/CloudSyncSettings'
@@ -26,6 +28,7 @@ export function SettingsView() {
       <DefaultLocationSettings repository={configRepo} />
       {localFolder ? (
         <>
+          <AppDataFolderSettings />
           <LocalExcelFolderSettings />
           <LocalExcelSettings repository={configRepo} />
         </>
@@ -39,6 +42,7 @@ export function SettingsView() {
       {isElectron && <LaunchAtLoginSettings repository={configRepo} />}
       {isElectron && <WindowBehaviorSettings repository={configRepo} />}
       <HotkeySettings repository={configRepo} />
+      <ClearDataSettings />
     </div>
   )
 }
