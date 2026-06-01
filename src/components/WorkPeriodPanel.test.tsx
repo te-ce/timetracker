@@ -2,6 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryMonthRepository } from '../repositories/in-memory'
+import { CloudMonthRepository } from '../repositories/cloud/month-repository'
+import { InMemoryStorageAdapter } from '../storage/in-memory-adapter'
 import { WorkPeriodPanel } from './WorkPeriodPanel'
 import type { WorkPeriod, MonthData, MonthRepository } from '../repositories/types'
 import { QUERY_KEYS } from '../hooks/queryKeys'
@@ -300,6 +302,132 @@ describe('WorkPeriodPanel', () => {
         expect(saved).toHaveLength(1)
         expect(saved[0]!.start).toBe('09:00')
         expect(saved[0]!.end).toBe('19:00')
+      })
+    })
+  })
+
+  describe('auto-merge on add — async repo (race condition regression)', () => {
+    // These tests use CloudMonthRepository + InMemoryStorageAdapter, which is async
+    // (await at store.get). The old code fired addMutation + removeMutation as two
+    // concurrent updateDay calls; the remove read stale data and wiped the day.
+    // InMemoryMonthRepository.updateDay is synchronous so it never exhibited the race.
+    function setupCloud(initialWindows: WorkPeriod[] = []) {
+      const storage = new InMemoryStorageAdapter()
+      if (initialWindows.length > 0) {
+        // InMemoryStorageAdapter.put is synchronous — map is populated before render
+        void storage.put('months/2024-01.json', { [DATE]: { entries: [], windows: initialWindows } })
+      }
+      const repo = new CloudMonthRepository(storage)
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      function TestPanelCloud() {
+        const { data: monthData = {} } = useQuery<MonthData>({
+          queryKey: QUERY_KEYS.month(YEAR, MONTH),
+          queryFn: () => repo.getMonth(YEAR, MONTH),
+        })
+        const windows = monthData[DATE]?.windows ?? []
+        return <WorkPeriodPanel date={DATE} windows={windows} repository={repo} />
+      }
+      render(<QueryClientProvider client={queryClient}><TestPanelCloud /></QueryClientProvider>)
+      return { repo }
+    }
+
+    it('merges into exactly one period when new start matches existing end', async () => {
+      const { repo } = setupCloud([{ id: 'w1', start: '09:00', end: '10:00' }])
+      await screen.findByText('09:00 – 10:00')
+      await addWindow('10:00', '11:00')
+
+      await waitFor(async () => {
+        const saved = (await repo.getMonth(YEAR, MONTH))[DATE]?.windows ?? []
+        expect(saved).toHaveLength(1)
+        expect(saved[0]!.start).toBe('09:00')
+        expect(saved[0]!.end).toBe('11:00')
+      })
+    })
+
+    it('merges a three-period chain into exactly one period', async () => {
+      const { repo } = setupCloud([
+        { id: 'w1', start: '08:00', end: '09:00' },
+        { id: 'w2', start: '10:00', end: '11:00' },
+      ])
+      await screen.findByText('08:00 – 09:00')
+      await addWindow('09:00', '10:00')
+
+      await waitFor(async () => {
+        const saved = (await repo.getMonth(YEAR, MONTH))[DATE]?.windows ?? []
+        expect(saved).toHaveLength(1)
+        expect(saved[0]!.start).toBe('08:00')
+        expect(saved[0]!.end).toBe('11:00')
+      })
+    })
+
+    it('manual merge button produces exactly one period', async () => {
+      const { repo } = setupCloud([
+        { id: 'w1', start: '09:00', end: '13:00' },
+        { id: 'w2', start: '14:00', end: '18:00' },
+      ])
+      await screen.findByText('09:00 – 13:00')
+      await userEvent.click(screen.getByRole('button', { name: /merge/i }))
+
+      await waitFor(async () => {
+        const saved = (await repo.getMonth(YEAR, MONTH))[DATE]?.windows ?? []
+        expect(saved).toHaveLength(1)
+        expect(saved[0]!.start).toBe('09:00')
+        expect(saved[0]!.end).toBe('18:00')
+      })
+    })
+  })
+
+  describe('auto-merge on add', () => {
+    it('merges into one period when new start matches existing end', async () => {
+      const { repo } = setup([{ id: 'w1', start: '09:00', end: '10:00' }])
+      await screen.findByText('09:00 – 10:00')
+      await addWindow('10:00', '11:00')
+
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved).toHaveLength(1)
+        expect(saved[0]!.start).toBe('09:00')
+        expect(saved[0]!.end).toBe('11:00')
+      })
+    })
+
+    it('merges into one period when new end matches existing start', async () => {
+      const { repo } = setup([{ id: 'w1', start: '11:00', end: '12:00' }])
+      await screen.findByText('11:00 – 12:00')
+      await addWindow('10:00', '11:00')
+
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved).toHaveLength(1)
+        expect(saved[0]!.start).toBe('10:00')
+        expect(saved[0]!.end).toBe('12:00')
+      })
+    })
+
+    it('chains three adjacent periods into one', async () => {
+      const { repo } = setup([
+        { id: 'w1', start: '08:00', end: '09:00' },
+        { id: 'w2', start: '10:00', end: '11:00' },
+      ])
+      await screen.findByText('08:00 – 09:00')
+      await addWindow('09:00', '10:00')
+
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved).toHaveLength(1)
+        expect(saved[0]!.start).toBe('08:00')
+        expect(saved[0]!.end).toBe('11:00')
+      })
+    })
+
+    it('does not merge when there is a gap', async () => {
+      const { repo } = setup([{ id: 'w1', start: '09:00', end: '10:00' }])
+      await screen.findByText('09:00 – 10:00')
+      await addWindow('10:30', '11:30')
+
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved).toHaveLength(2)
       })
     })
   })
