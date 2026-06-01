@@ -24,10 +24,109 @@ function formatDate(iso: string): string {
   })
 }
 
+function resolveConfigValues(config: import('../repositories/types').AppConfig | undefined) {
+  return {
+    autoCategory: config?.autoCategory ?? null,
+    customCategories: config?.customCategories ?? [],
+    categoryOrder: config?.categoryOrder,
+    categoryDescriptions: config?.categoryDescriptions,
+  }
+}
+
 function invalidateMonth(queryClient: ReturnType<typeof useQueryClient>, date: string) {
   const year = parseInt(date.slice(0, 4))
   const month = parseInt(date.slice(5, 7))
   void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
+}
+
+async function confirmDayWithAutoCategory(date: string, windows: import('../repositories/types').WorkPeriod[], entries: import('../repositories/types').TimeEntry[], autoCategoryOverride: string | null, globalAutoCategory: string | null): Promise<void> {
+  const autoHours = Math.max(0, calculateWorkedHours(windows) - entries.reduce((s, e) => s + e.hours, 0))
+  const resolvedAuto = resolveAutoCategory({
+    date,
+    globalDefault: globalAutoCategory,
+    dayOverrides: autoCategoryOverride
+      ? new Map<string, string>([[date, autoCategoryOverride]])
+      : new Map<string, string>(),
+  })
+  await monthRepo.updateDay(date, (day) => {
+    let updatedEntries = [...day.entries]
+    if (resolvedAuto && autoHours > 0) {
+      const existing = updatedEntries.find((e) => e.category === resolvedAuto)
+      updatedEntries = updatedEntries.filter((e) => e.category !== resolvedAuto || e.id === existing?.id)
+      const autoEntry = { id: existing?.id ?? crypto.randomUUID(), category: resolvedAuto, hours: (existing?.hours ?? 0) + autoHours }
+      updatedEntries = [...updatedEntries.filter((e) => e.id !== autoEntry.id), autoEntry]
+    }
+    return { ...day, entries: updatedEntries, confirmed: true }
+  })
+}
+
+async function renameCategoryAcrossAllMonths(oldName: string, newName: string): Promise<void> {
+  const cfg = await configRepo.get()
+  const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
+  const newOrder = (cfg.categoryOrder ?? []).map((c) => (c === oldName ? newName : c))
+  const newDescriptions = cfg.categoryDescriptions
+    ? Object.fromEntries(Object.entries(cfg.categoryDescriptions).map(([k, v]) => [k === oldName ? newName : k, v]))
+    : undefined
+  const newMapping = cfg.categoryMapping
+    ? Object.fromEntries(Object.entries(cfg.categoryMapping).map(([k, v]) => [k === oldName ? newName : k, v]))
+    : undefined
+  await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder, categoryDescriptions: newDescriptions, categoryMapping: newMapping })
+  const allMonths = await monthRepo.getAllMonths()
+  for (const ym of allMonths) {
+    const year = parseInt(ym.slice(0, 4))
+    const month = parseInt(ym.slice(5, 7))
+    const data = await monthRepo.getMonth(year, month)
+    for (const [date, day] of Object.entries(data)) {
+      if (day.entries.some((e) => e.category === oldName)) {
+        await monthRepo.updateDay(date, (d) => ({
+          ...d,
+          entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
+        }))
+      }
+    }
+  }
+}
+
+function DayNoteEditor({ dayNote, onSave }: { dayNote: string | null; onSave: (note: string) => void }) {
+  const [noteValue, setNoteValue] = useState<string | null>(null)
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Note</span>
+        {noteValue === null && dayNote && (
+          <button onClick={() => onSave('')} className="text-xs text-red-500 dark:text-red-400 hover:underline">Clear</button>
+        )}
+      </div>
+      {noteValue !== null ? (
+        <div className="flex flex-col gap-1">
+          <textarea
+            className="w-full rounded border px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 resize-none"
+            rows={3}
+            value={noteValue}
+            onChange={(e) => setNoteValue(e.target.value)}
+            ref={(el) => el?.focus()}
+            placeholder="Add a note for this day…"
+          />
+          <div className="flex gap-2 justify-end">
+            <button onClick={() => setNoteValue(null)} className="rounded border px-3 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">Cancel</button>
+            <button
+              onClick={() => { onSave(noteValue.trim()); setNoteValue(null) }}
+              className="rounded border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+            >Save</button>
+          </div>
+        </div>
+      ) : dayNote ? (
+        <button onClick={() => setNoteValue(dayNote)} className="w-full text-left rounded border px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 whitespace-pre-wrap">
+          {dayNote}
+        </button>
+      ) : (
+        <button onClick={() => setNoteValue('')} className="w-full text-left rounded border border-dashed px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+          Add a note…
+        </button>
+      )}
+    </div>
+  )
 }
 
 export function DayView() {
@@ -64,32 +163,7 @@ export function DayView() {
   const queryClient = useQueryClient()
 
   const confirmMutation = useMutation({
-    mutationFn: async () => {
-      const autoHours = Math.max(0, calculateWorkedHours(windows) - entries.reduce((s, e) => s + e.hours, 0))
-      const resolvedAuto = resolveAutoCategory({
-        date: selectedDate,
-        globalDefault: config?.autoCategory ?? null,
-        dayOverrides: autoCategoryOverride
-          ? new Map<string, string>([[selectedDate, autoCategoryOverride]])
-          : new Map<string, string>(),
-      })
-      await monthRepo.updateDay(selectedDate, (day) => {
-        let updatedEntries = [...day.entries]
-        if (resolvedAuto && autoHours > 0) {
-          const existing = updatedEntries.find((e) => e.category === resolvedAuto)
-          updatedEntries = [
-            ...updatedEntries.filter((e) => e.category !== resolvedAuto || e.id === existing?.id),
-          ]
-          const autoEntry = {
-            id: existing?.id ?? crypto.randomUUID(),
-            category: resolvedAuto,
-            hours: (existing?.hours ?? 0) + autoHours,
-          }
-          updatedEntries = [...updatedEntries.filter((e) => e.id !== autoEntry.id), autoEntry]
-        }
-        return { ...day, entries: updatedEntries, confirmed: true }
-      })
-    },
+    mutationFn: () => confirmDayWithAutoCategory(selectedDate, windows, entries, autoCategoryOverride, configAutoCategory),
     onSuccess: () => invalidateMonth(queryClient, selectedDate),
   })
 
@@ -109,32 +183,8 @@ export function DayView() {
   })
 
   const categoryRenameMutation = useMutation({
-    mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
-      const cfg = await configRepo.get()
-      const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
-      const newOrder = (cfg.categoryOrder ?? []).map((c) => (c === oldName ? newName : c))
-      const newDescriptions = cfg.categoryDescriptions
-        ? Object.fromEntries(Object.entries(cfg.categoryDescriptions).map(([k, v]) => [k === oldName ? newName : k, v]))
-        : undefined
-      const newMapping = cfg.categoryMapping
-        ? Object.fromEntries(Object.entries(cfg.categoryMapping).map(([k, v]) => [k === oldName ? newName : k, v]))
-        : undefined
-      await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder, categoryDescriptions: newDescriptions, categoryMapping: newMapping })
-      const allMonths = await monthRepo.getAllMonths()
-      for (const ym of allMonths) {
-        const year = parseInt(ym.slice(0, 4))
-        const month = parseInt(ym.slice(5, 7))
-        const data = await monthRepo.getMonth(year, month)
-        for (const [date, day] of Object.entries(data)) {
-          if (day.entries.some((e) => e.category === oldName)) {
-            await monthRepo.updateDay(date, (d) => ({
-              ...d,
-              entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
-            }))
-          }
-        }
-      }
-    },
+    mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
+      renameCategoryAcrossAllMonths(oldName, newName),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
@@ -170,7 +220,9 @@ export function DayView() {
 
   const { displayStatus: badgeStatus, reason: statusReason } = dayClassification
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  const [noteValue, setNoteValue] = useState<string | null>(null)
+  const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
+  const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
+  const { autoCategory: configAutoCategory, customCategories, categoryOrder, categoryDescriptions } = resolveConfigValues(config)
 
   const resetDayMutation = useMutation({
     mutationFn: () =>
@@ -226,9 +278,9 @@ export function DayView() {
           <button
             onClick={() => locationMutation.mutate()}
             className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-            aria-label={`Work location: ${effectiveLocation}. Click to switch to ${effectiveLocation === 'Office' ? 'Remote' : 'Office'}`}
+            aria-label={`Work location: ${effectiveLocation}. Click to switch to ${locationToggle}`}
           >
-            <span aria-hidden="true">{effectiveLocation === 'Office' ? '🏢' : '🏠'}</span> {effectiveLocation}
+            <span aria-hidden="true">{locationIcon}</span> {effectiveLocation}
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -288,9 +340,9 @@ export function DayView() {
         repository={monthRepo}
         timeTrackingRepository={timeTrackingRepo}
         activeTracking={activeTracking}
-        customCategories={config?.customCategories ?? []}
-        categoryOrder={config?.categoryOrder}
-        categoryDescriptions={config?.categoryDescriptions}
+        customCategories={customCategories}
+        categoryOrder={categoryOrder}
+        categoryDescriptions={categoryDescriptions}
         autoCategory={autoCategory}
         autoCategoryHours={Math.max(0, workedHours - manualTotal)}
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
@@ -299,62 +351,7 @@ export function DayView() {
         onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       />
 
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Note</span>
-          {noteValue === null && dayNote && (
-            <button
-              onClick={() => noteMutation.mutate('')}
-              className="text-xs text-red-500 dark:text-red-400 hover:underline"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        {noteValue !== null ? (
-          <div className="flex flex-col gap-1">
-            <textarea
-              className="w-full rounded border px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 resize-none"
-              rows={3}
-              value={noteValue}
-              onChange={(e) => setNoteValue(e.target.value)}
-              ref={(el) => el?.focus()}
-              placeholder="Add a note for this day…"
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => setNoteValue(null)}
-                className="rounded border px-3 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  noteMutation.mutate(noteValue.trim())
-                  setNoteValue(null)
-                }}
-                className="rounded border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        ) : dayNote ? (
-          <button
-            onClick={() => setNoteValue(dayNote)}
-            className="w-full text-left rounded border px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 whitespace-pre-wrap"
-          >
-            {dayNote}
-          </button>
-        ) : (
-          <button
-            onClick={() => setNoteValue('')}
-            className="w-full text-left rounded border border-dashed px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-          >
-            Add a note…
-          </button>
-        )}
-      </div>
+      <DayNoteEditor dayNote={dayNote} onSave={(note) => noteMutation.mutate(note)} />
 
       {showResetConfirm && (
         <ConfirmDialog

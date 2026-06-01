@@ -26,6 +26,35 @@ interface DayDerived {
   overtimeToDate: ReturnType<typeof calculateOvertimeToDate>
 }
 
+function resolveDayCategory(date: string, dayData: Day | undefined, globalAutoCategory: string | null): string | null {
+  const dayOverrides = dayData?.autoCategoryOverride
+    ? new Map<string, string>([[date, dayData.autoCategoryOverride]])
+    : new Map<string, string>()
+  return resolveAutoCategory({ date, globalDefault: globalAutoCategory, dayOverrides })
+}
+
+function classifyDayStatus(
+  date: string,
+  todayIso: string,
+  dayData: Day | undefined,
+  workedHours: number,
+  manualTotal: number,
+  autoCategory: string | null,
+) {
+  const selectedDayType: DayType = dayData?.dayTypeOverride ?? classifyDayType(new Date(date))
+  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01
+  const hasAutoCategory = !!autoCategory && manualTotal <= workedHours
+  const isConfirmed = dayData?.confirmed ?? false
+  const dayClassification = classifyDay({ dayType: selectedDayType, workedHours, manualTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, isoDate: date, today: todayIso })
+  return { selectedDayType, isEntriesBalanced, hasAutoCategory, dayClassification }
+}
+
+function resolveLocation(dayData: Day | undefined, config: AppConfig | undefined): { effectiveLocation: WorkLocation; defaultWorkLocation: WorkLocation } {
+  const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
+  const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
+  return { effectiveLocation, defaultWorkLocation }
+}
+
 function computeDayDerived(
   config: AppConfig | undefined,
   date: string,
@@ -35,58 +64,27 @@ function computeDayDerived(
   dayData: Day | undefined,
 ): DayDerived {
   const sollstunden = config?.sollstunden ?? 8
-  const windows = dayData?.windows ?? []
-  const entries = dayData?.entries ?? []
-  const workedHours = calculateWorkedHours(windows)
-  const manualTotal = entries.reduce((sum, e) => sum + e.hours, 0)
+  const workedHours = calculateWorkedHours(dayData?.windows ?? [])
+  const manualTotal = (dayData?.entries ?? []).reduce((sum, e) => sum + e.hours, 0)
+  const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, monthDays.map((d) => d.date), todayIso, sollstunden)
+  const autoCategory = resolveDayCategory(date, dayData, config?.autoCategory ?? null)
+  const { selectedDayType, isEntriesBalanced, hasAutoCategory, dayClassification } = classifyDayStatus(date, todayIso, dayData, workedHours, manualTotal, autoCategory)
+  const { effectiveLocation, defaultWorkLocation } = resolveLocation(dayData, config)
+  return { sollstunden, workedHours, manualTotal, autoCategory, selectedDayType, isEntriesBalanced, hasAutoCategory, dayClassification, effectiveLocation, defaultWorkLocation, overtimeToDate }
+}
 
-  const overtimeToDate = calculateOvertimeToDate(
-    workedHoursPerDay,
-    monthDays.map((d) => d.date),
-    todayIso,
-    sollstunden,
-  )
+const EMPTY_DAY: Day = { entries: [], windows: [] }
 
-  const globalAutoCategory = config?.autoCategory ?? null
-  const autoCategory = resolveAutoCategory({
-    date,
-    globalDefault: globalAutoCategory,
-    dayOverrides: dayData?.autoCategoryOverride
-      ? new Map<string, string>([[date, dayData.autoCategoryOverride]])
-      : new Map<string, string>(),
-  })
-
-  const selectedDayType: DayType = dayData?.dayTypeOverride ?? classifyDayType(new Date(date))
-  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - manualTotal) < 0.01
-  const hasAutoCategory = !!autoCategory && manualTotal <= workedHours
-  const isConfirmed = dayData?.confirmed ?? false
-
-  const dayClassification = classifyDay({
-    dayType: selectedDayType,
-    workedHours,
-    manualTotal,
-    isEntriesBalanced,
-    hasAutoCategory,
-    isConfirmed,
-    isoDate: date,
-    today: todayIso,
-  })
-
-  const defaultWorkLocation: WorkLocation = config?.defaultWorkLocation ?? 'Remote'
-  const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
-
+function extractDayFields(dayData: Day | undefined) {
+  const day = dayData ?? EMPTY_DAY
   return {
-    sollstunden,
-    workedHours,
-    manualTotal,
-    autoCategory,
-    selectedDayType,
-    isEntriesBalanced,
-    hasAutoCategory,
-    dayClassification,
-    effectiveLocation,
-    defaultWorkLocation,
-    overtimeToDate,
+    windows: day.windows,
+    entries: day.entries,
+    workLocation: day.location ?? null,
+    autoCategoryOverride: day.autoCategoryOverride ?? null,
+    dayTypeOverride: day.dayTypeOverride,
+    isConfirmed: day.confirmed ?? false,
+    dayNote: day.note ?? null,
   }
 }
 
@@ -106,7 +104,6 @@ export function useDayQuery(date: string) {
   })
 
   const dayData = monthData[date]
-
   const { days: monthDays, workedHoursPerDay } = buildMonthSummaries(selectedYear, selectedMonth, {
     monthData,
     today: todayIso,
@@ -115,16 +112,5 @@ export function useDayQuery(date: string) {
 
   const derived = computeDayDerived(config, date, todayIso, workedHoursPerDay, monthDays, dayData)
 
-  return {
-    config,
-    windows: dayData?.windows ?? [],
-    entries: dayData?.entries ?? [],
-    workLocation: dayData?.location ?? null,
-    autoCategoryOverride: dayData?.autoCategoryOverride ?? null,
-    dayTypeOverride: dayData?.dayTypeOverride,
-    isConfirmed: dayData?.confirmed ?? false,
-    dayNote: dayData?.note ?? null,
-    todayIso,
-    ...derived,
-  }
+  return { config, ...extractDayFields(dayData), todayIso, ...derived }
 }

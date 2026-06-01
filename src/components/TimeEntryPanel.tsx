@@ -108,36 +108,98 @@ interface CategoryLabelSectionProps {
   onCategoryRename: ((oldName: string, newName: string) => void) | undefined
 }
 
+function CategoryDescriptionEditor({ category, categoryDescription, onChange }: { category: string; categoryDescription?: string; onChange: (cat: string, desc: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  const startEdit = useCallback(() => {
+    setDraft(categoryDescription ?? '')
+    setEditing(true)
+  }, [categoryDescription])
+
+  const commit = useCallback(() => {
+    setEditing(false)
+    onChange(category, draft.trim())
+  }, [category, draft, onChange])
+
+  if (editing) {
+    return (
+      <input
+        ref={(el) => el?.focus()}
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+        aria-label={`Description for ${category}`}
+        className="text-xs text-gray-500 dark:text-gray-400 bg-transparent border-b border-indigo-400 dark:border-indigo-500 focus:outline-none w-48"
+      />
+    )
+  }
+  if (categoryDescription) {
+    return (
+      <button onClick={startEdit} className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-left truncate max-w-48" aria-label={`Edit description for ${category}`} title="Click to edit description">
+        {categoryDescription}
+      </button>
+    )
+  }
+  return (
+    <button onClick={startEdit} className="text-[10px] text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 opacity-0 group-hover/desc:opacity-100 transition-opacity shrink-0" aria-label={`Add description for ${category}`}>
+      + add description
+    </button>
+  )
+}
+
+function CategoryNameLabel({ category, onCategoryRename }: { category: string; onCategoryRename?: (o: string, n: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+
+  const startEdit = useCallback(() => {
+    if (!onCategoryRename) return
+    setDraft(category)
+    setEditing(true)
+  }, [category, onCategoryRename])
+
+  const commit = useCallback(() => {
+    setEditing(false)
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== category) onCategoryRename?.(category, trimmed)
+  }, [category, draft, onCategoryRename])
+
+  if (editing) {
+    return (
+      <input
+        ref={(el) => el?.focus()}
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit()
+          if (e.key === 'Escape') setEditing(false)
+        }}
+        aria-label={`Rename category ${category}`}
+        className="text-sm font-medium bg-transparent border-b border-indigo-400 dark:border-indigo-500 focus:outline-none w-32 shrink-0"
+      />
+    )
+  }
+  return (
+    <span
+      className={`text-sm font-medium shrink-0 ${onCategoryRename ? 'cursor-text' : ''}`}
+      onDoubleClick={startEdit}
+      title={onCategoryRename ? 'Double-click to rename' : undefined}
+    >
+      {category}
+    </span>
+  )
+}
+
 function CategoryLabelSection({ category, categoryDescription, isAutoTarget, autoHrs, activeTracking, isTracking, onCategoryReorder, onAutoCategoryChange, onCategoryDescriptionChange, onCategoryRename }: CategoryLabelSectionProps) {
   const showAutoHours = isAutoTarget && autoHrs > 0
   const showElapsed = activeTracking !== null && isTracking
-  const [editingDesc, setEditingDesc] = useState(false)
-  const [descDraft, setDescDraft] = useState('')
-  const [editingName, setEditingName] = useState(false)
-  const [nameDraft, setNameDraft] = useState('')
-
-  const startEditDesc = useCallback(() => {
-    if (!onCategoryDescriptionChange) return
-    setDescDraft(categoryDescription ?? '')
-    setEditingDesc(true)
-  }, [categoryDescription, onCategoryDescriptionChange])
-
-  const commitEditDesc = useCallback(() => {
-    setEditingDesc(false)
-    onCategoryDescriptionChange?.(category, descDraft.trim())
-  }, [category, descDraft, onCategoryDescriptionChange])
-
-  const startEditName = useCallback(() => {
-    if (!onCategoryRename) return
-    setNameDraft(category)
-    setEditingName(true)
-  }, [category, onCategoryRename])
-
-  const commitEditName = useCallback(() => {
-    setEditingName(false)
-    const trimmed = nameDraft.trim()
-    if (trimmed && trimmed !== category) onCategoryRename?.(category, trimmed)
-  }, [category, nameDraft, onCategoryRename])
 
   return (
     <div className="flex flex-1 items-center gap-2 group/desc min-w-0">
@@ -147,62 +209,9 @@ function CategoryLabelSection({ category, categoryDescription, isAutoTarget, aut
       {onAutoCategoryChange && (
         <AutoCategoryButton category={category} isAutoTarget={isAutoTarget} onAutoCategoryChange={onAutoCategoryChange} />
       )}
-      {editingName ? (
-        <input
-          ref={(el) => el?.focus()}
-          type="text"
-          value={nameDraft}
-          onChange={(e) => setNameDraft(e.target.value)}
-          onBlur={commitEditName}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitEditName()
-            if (e.key === 'Escape') setEditingName(false)
-          }}
-          aria-label={`Rename category ${category}`}
-          className="text-sm font-medium bg-transparent border-b border-indigo-400 dark:border-indigo-500 focus:outline-none w-32 shrink-0"
-        />
-      ) : (
-        <span
-          className={`text-sm font-medium shrink-0 ${onCategoryRename ? 'cursor-text' : ''}`}
-          onDoubleClick={startEditName}
-          title={onCategoryRename ? 'Double-click to rename' : undefined}
-        >
-          {category}
-        </span>
-      )}
+      <CategoryNameLabel category={category} onCategoryRename={onCategoryRename} />
       {onCategoryDescriptionChange && (
-        editingDesc ? (
-          <input
-            ref={(el) => el?.focus()}
-            type="text"
-            value={descDraft}
-            onChange={(e) => setDescDraft(e.target.value)}
-            onBlur={commitEditDesc}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitEditDesc()
-              if (e.key === 'Escape') setEditingDesc(false)
-            }}
-            aria-label={`Description for ${category}`}
-            className="text-xs text-gray-500 dark:text-gray-400 bg-transparent border-b border-indigo-400 dark:border-indigo-500 focus:outline-none w-48"
-          />
-        ) : categoryDescription ? (
-          <button
-            onClick={startEditDesc}
-            className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-left truncate max-w-48"
-            aria-label={`Edit description for ${category}`}
-            title="Click to edit description"
-          >
-            {categoryDescription}
-          </button>
-        ) : (
-          <button
-            onClick={startEditDesc}
-            className="text-[10px] text-gray-300 dark:text-gray-600 hover:text-gray-400 dark:hover:text-gray-500 opacity-0 group-hover/desc:opacity-100 transition-opacity shrink-0"
-            aria-label={`Add description for ${category}`}
-          >
-            + add description
-          </button>
-        )
+        <CategoryDescriptionEditor category={category} categoryDescription={categoryDescription} onChange={onCategoryDescriptionChange} />
       )}
       {showAutoHours && (
         <span className="rounded bg-indigo-200 dark:bg-indigo-800 px-1.5 py-0.5 text-[10px] font-bold uppercase text-indigo-700 dark:text-indigo-300 shrink-0">

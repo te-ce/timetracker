@@ -57,6 +57,10 @@ function buildWorkbookService(
   return new GraphApiWorkbookService(sharepointUrl, getAccessToken)
 }
 
+function resolveNotReadyHint(url: string | null | undefined, file: string | null | undefined): string {
+  return getNotReadyHint(url ?? undefined, file)
+}
+
 function getNotReadyHint(
   sharepointUrl: string | undefined,
   localExcelFile: string | undefined | null,
@@ -300,7 +304,7 @@ export function ExcelMappingSettings({ repository }: Props) {
   }
 
   const isDirty = localMapping !== null
-  const notReadyHint = getNotReadyHint(sharepointUrl ?? undefined, localExcelFile)
+  const notReadyHint = resolveNotReadyHint(sharepointUrl, localExcelFile)
   const showNotReadyHint = !isReady
   const loadButtonLabel = loadingRows ? 'Loading…' : 'Load from Excel'
   const savedMappingCount = Object.keys(savedCategoryMapping).length

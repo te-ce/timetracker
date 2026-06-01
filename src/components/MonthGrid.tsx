@@ -18,6 +18,33 @@ import { StatusLegend } from './StatusLegend'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
 
+async function confirmDayInRepo(repository: MonthRepository, date: string, autoHours: number, autoCategory: string): Promise<void> {
+  await repository.updateDay(date, (day) => {
+    const existing = day.entries.find((e) => e.category === autoCategory)
+    const confirmed = {
+      id: existing?.id ?? crypto.randomUUID(),
+      category: autoCategory,
+      hours: (existing?.hours ?? 0) + autoHours,
+    }
+    const filtered = day.entries.filter((e) => e.id !== confirmed.id)
+    return { ...day, entries: [...filtered, confirmed], confirmed: true }
+  })
+}
+
+function saveDayTypeInRepo(repository: MonthRepository, date: string, value: string): Promise<void> {
+  if (value === 'WorkDay') {
+    return repository.updateDay(date, (day) => {
+      const updated = { ...day }
+      delete updated.dayTypeOverride
+      return updated
+    })
+  }
+  if (isDayTypeOverride(value)) {
+    return repository.updateDay(date, (day) => ({ ...day, dayTypeOverride: value }))
+  }
+  return Promise.resolve()
+}
+
 const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'WorkDay', label: 'Work Day' },
   { value: 'Vacation', label: 'Vacation' },
@@ -25,6 +52,87 @@ const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'PublicHoliday', label: 'Public Holiday' },
   { value: 'Absence', label: 'Absence' },
 ]
+
+interface CategoryColumnHeaderProps {
+  cat: string
+  catIdx: number
+  autoCategory: string
+  editingCat: string | null
+  editValue: string
+  colDragOverIdx: number | null
+  categoryDescriptions?: Record<string, string>
+  onCategoryReorder?: (order: string[]) => void
+  onCategoryRename?: (oldName: string, newName: string) => void
+  onAutoCategoryChange?: (category: string) => void
+  onDragStart: (idx: number) => void
+  onDragOver: (e: React.DragEvent, idx: number) => void
+  onDrop: (idx: number, allCats: string[]) => void
+  onDragEnd: () => void
+  allCategories: string[]
+  onEditValueChange: (v: string) => void
+  onCommitRename: (cat: string) => void
+  onSetEditingCat: (cat: string | null) => void
+}
+
+function CategoryBadge({ cat, isAuto, onAutoCategoryChange }: { cat: string; isAuto: boolean; onAutoCategoryChange?: (cat: string) => void }) {
+  if (isAuto) return <span className="text-[9px] text-indigo-400 dark:text-indigo-300 font-medium tracking-wide leading-none">auto</span>
+  if (onAutoCategoryChange) return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onAutoCategoryChange(cat) }}
+      className="text-[9px] text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300 leading-none transition-colors"
+      title={`Set "${cat}" as auto category`}
+    >○</button>
+  )
+  return <span className="text-[9px] leading-none">&nbsp;</span>
+}
+
+function buildColTitle(cat: string, autoCategory: string, categoryDescriptions?: Record<string, string>, onCategoryRename?: (o: string, n: string) => void): string {
+  if (cat === autoCategory) return [`${cat} — auto category (absorbs remaining hours)`, categoryDescriptions?.[cat]].filter(Boolean).join('\n\n')
+  return [categoryDescriptions?.[cat], onCategoryRename ? 'Double-click to rename' : undefined].filter(Boolean).join('\n\n') || cat
+}
+
+function CategoryColumnHeader({ cat, catIdx, autoCategory, editingCat, editValue, colDragOverIdx, categoryDescriptions, onCategoryReorder, onCategoryRename, onAutoCategoryChange, onDragStart, onDragOver, onDrop, onDragEnd, allCategories, onEditValueChange, onCommitRename, onSetEditingCat }: CategoryColumnHeaderProps) {
+  const isAuto = cat === autoCategory
+  const dragClass = onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''
+  const dragOverClass = colDragOverIdx === catIdx ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''
+  const nameClass = `block truncate text-xs ${onCategoryRename ? 'cursor-text' : ''}`
+  return (
+    <th
+      draggable={editingCat !== cat && !!onCategoryReorder}
+      onDragStart={() => onDragStart(catIdx)}
+      onDragOver={(e) => onDragOver(e, catIdx)}
+      onDrop={() => onDrop(catIdx, allCategories)}
+      onDragEnd={onDragEnd}
+      className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
+      role="columnheader"
+      title={buildColTitle(cat, autoCategory, categoryDescriptions, onCategoryRename)}
+    >
+      {editingCat === cat ? (
+        <input
+          ref={(el) => { el?.focus() }}
+          type="text"
+          aria-label={`Rename category ${cat}`}
+          value={editValue}
+          onChange={(e) => onEditValueChange(e.target.value)}
+          onBlur={() => onCommitRename(cat)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onCommitRename(cat)
+            if (e.key === 'Escape') onSetEditingCat(null)
+          }}
+          className="w-full bg-transparent text-xs border-b border-indigo-400 dark:border-indigo-500 focus:outline-none text-left"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <span className={nameClass} onDoubleClick={() => { if (onCategoryRename) { onSetEditingCat(cat); onEditValueChange(cat) } }}>
+          {cat}
+        </span>
+      )}
+      <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
+        <CategoryBadge cat={cat} isAuto={isAuto} onAutoCategoryChange={onAutoCategoryChange} />
+      </span>
+    </th>
+  )
+}
 
 interface Props {
   year: number
@@ -312,22 +420,10 @@ export function MonthGrid({
   }
 
   const gridConfirmMutation = useMutation({
-    mutationFn: async (row: MonthGridRow) => {
-      const autoHours = row.autoCategoryHours
-      await repository.updateDay(row.date, (day) => {
-        let updatedEntries = [...day.entries]
-        if (autoCategory && autoHours > 0) {
-          const existing = updatedEntries.find((e) => e.category === autoCategory)
-          const confirmed = {
-            id: existing?.id ?? crypto.randomUUID(),
-            category: autoCategory,
-            hours: (existing?.hours ?? 0) + autoHours,
-          }
-          updatedEntries = [...updatedEntries.filter((e) => e.id !== confirmed.id), confirmed]
-        }
-        return { ...day, entries: updatedEntries, confirmed: true }
-      })
-    },
+    mutationFn: (row: MonthGridRow) =>
+      autoCategory && row.autoCategoryHours > 0
+        ? confirmDayInRepo(repository, row.date, row.autoCategoryHours, autoCategory)
+        : repository.updateDay(row.date, (day) => ({ ...day, confirmed: true })),
     onSuccess: invalidate,
   })
 
@@ -338,19 +434,8 @@ export function MonthGrid({
   })
 
   const dayTypeMutation = useMutation({
-    mutationFn: ({ date, value }: { date: string; value: string }) => {
-      if (value === 'WorkDay') {
-        return repository.updateDay(date, (day) => {
-          const updated = { ...day }
-          delete updated.dayTypeOverride
-          return updated
-        })
-      }
-      if (isDayTypeOverride(value)) {
-        return repository.updateDay(date, (day) => ({ ...day, dayTypeOverride: value }))
-      }
-      return Promise.resolve()
-    },
+    mutationFn: ({ date, value }: { date: string; value: string }) =>
+      saveDayTypeInRepo(repository, date, value),
     onSuccess: invalidate,
   })
 
@@ -528,80 +613,27 @@ export function MonthGrid({
               <th className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700">📍</th>
               <th className="w-px border-l border-b border-gray-300 dark:border-gray-600"></th>
               {allCategories.map((cat, catIdx) => (
-                <th
+                <CategoryColumnHeader
                   key={cat}
-                  draggable={editingCat !== cat && !!onCategoryReorder}
-                  onDragStart={() => handleColDragStart(catIdx)}
-                  onDragOver={(e) => handleColDragOver(e, catIdx)}
-                  onDrop={() => handleColDrop(catIdx, allCategories)}
+                  cat={cat}
+                  catIdx={catIdx}
+                  autoCategory={autoCategory}
+                  editingCat={editingCat}
+                  editValue={editValue}
+                  colDragOverIdx={colDragOverIdx}
+                  categoryDescriptions={categoryDescriptions}
+                  onCategoryReorder={onCategoryReorder}
+                  onCategoryRename={onCategoryRename}
+                  onAutoCategoryChange={onAutoCategoryChange}
+                  onDragStart={handleColDragStart}
+                  onDragOver={handleColDragOver}
+                  onDrop={handleColDrop}
                   onDragEnd={handleColDragEnd}
-                  className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''} ${colDragOverIdx === catIdx ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
-                  role="columnheader"
-                  title={
-                    cat === autoCategory
-                      ? [
-                          `${cat} — auto category (absorbs remaining hours)`,
-                          categoryDescriptions?.[cat],
-                        ]
-                          .filter(Boolean)
-                          .join('\n\n')
-                      : [
-                          categoryDescriptions?.[cat],
-                          onCategoryRename ? 'Double-click to rename' : undefined,
-                        ]
-                          .filter(Boolean)
-                          .join('\n\n') || cat
-                  }
-                >
-                  {editingCat === cat ? (
-                    <input
-                      ref={(el) => {
-                        el?.focus()
-                      }}
-                      type="text"
-                      aria-label={`Rename category ${cat}`}
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onBlur={() => commitRename(cat)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') commitRename(cat)
-                        if (e.key === 'Escape') setEditingCat(null)
-                      }}
-                      className="w-full bg-transparent text-xs border-b border-indigo-400 dark:border-indigo-500 focus:outline-none text-left"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span
-                      className={`block truncate text-xs ${onCategoryRename ? 'cursor-text' : ''}`}
-                      onDoubleClick={() => {
-                        if (onCategoryRename) {
-                          setEditingCat(cat)
-                          setEditValue(cat)
-                        }
-                      }}
-                    >
-                      {cat}
-                    </span>
-                  )}
-                  <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
-                    {cat === autoCategory ? (
-                      <span className="text-[9px] text-indigo-400 dark:text-indigo-300 font-medium tracking-wide leading-none">auto</span>
-                    ) : onAutoCategoryChange ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onAutoCategoryChange(cat)
-                        }}
-                        className="text-[9px] text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300 leading-none transition-colors"
-                        title={`Set "${cat}" as auto category`}
-                      >
-                        ○
-                      </button>
-                    ) : (
-                      <span className="text-[9px] leading-none">&nbsp;</span>
-                    )}
-                  </span>
-                </th>
+                  allCategories={allCategories}
+                  onEditValueChange={setEditValue}
+                  onCommitRename={commitRename}
+                  onSetEditingCat={setEditingCat}
+                />
               ))}
               <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200 dark:border-gray-700">
                 <span className="text-xs">✓</span>

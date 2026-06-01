@@ -4,7 +4,28 @@ import { buildMonthSummaries } from '../domain/daySummary'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { toLocalIso } from '../domain/dateUtils'
 import { QUERY_KEYS } from './queryKeys'
-import type { DayTypeOverride, WorkLocation } from '../repositories/types'
+import type { DayTypeOverride, MonthData, WorkLocation } from '../repositories/types'
+
+interface MonthMaps {
+  dayTypeOverrides: Map<string, DayTypeOverride>
+  workLocations: Map<string, WorkLocation>
+  confirmedDays: Set<string>
+  dayNotes: Map<string, string>
+}
+
+function extractMonthMaps(monthData: MonthData): MonthMaps {
+  const dayTypeOverrides = new Map<string, DayTypeOverride>()
+  const workLocations = new Map<string, WorkLocation>()
+  const confirmedDays = new Set<string>()
+  const dayNotes = new Map<string, string>()
+  for (const [date, day] of Object.entries(monthData)) {
+    if (day.dayTypeOverride) dayTypeOverrides.set(date, day.dayTypeOverride)
+    if (day.location) workLocations.set(date, day.location)
+    if (day.confirmed) confirmedDays.add(date)
+    if (day.note) dayNotes.set(date, day.note)
+  }
+  return { dayTypeOverrides, workLocations, confirmedDays, dayNotes }
+}
 
 export function useMonthQuery(year: number, month: number) {
   const todayIso = toLocalIso(new Date())
@@ -34,17 +55,7 @@ export function useMonthQuery(year: number, month: number) {
     sollstunden,
   )
 
-  const dayTypeOverrides = new Map<string, DayTypeOverride>()
-  const workLocations = new Map<string, WorkLocation>()
-  const confirmedDays = new Set<string>()
-  const dayNotes = new Map<string, string>()
-
-  for (const [date, day] of Object.entries(monthData)) {
-    if (day.dayTypeOverride) dayTypeOverrides.set(date, day.dayTypeOverride)
-    if (day.location) workLocations.set(date, day.location)
-    if (day.confirmed) confirmedDays.add(date)
-    if (day.note) dayNotes.set(date, day.note)
-  }
+  const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length

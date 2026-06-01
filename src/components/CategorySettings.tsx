@@ -158,6 +158,117 @@ function CategoryMappingSaveRow({ isDirty, isPending, isError, isSaved, onSave }
   )
 }
 
+interface CategorySettingsRowProps {
+  cat: string
+  idx: number
+  isCustom: boolean
+  taskId: string
+  isAutoMatch: boolean
+  dragOverIdx: number | null
+  editingIdx: number | null
+  editValue: string
+  editingDescIdx: number | null
+  editDescValue: string
+  categoryDescription: string | undefined
+  excelRows: ExcelRow[]
+  onDragStart: (idx: number) => void
+  onDragOver: (e: React.DragEvent, idx: number) => void
+  onDrop: (idx: number) => void
+  onDragEnd: () => void
+  onRename: (idx: number) => void
+  onSaveDesc: (idx: number) => void
+  onMappingChange: (cat: string, taskId: string) => void
+  onRemove: (idx: number) => void
+  setEditingIdx: (idx: number | null) => void
+  setEditValue: (v: string) => void
+  setEditingDescIdx: (idx: number | null) => void
+  setEditDescValue: (v: string) => void
+}
+
+function CategorySettingsRow({ cat, idx, isCustom, taskId, isAutoMatch, dragOverIdx, editingIdx, editValue, editingDescIdx, editDescValue, categoryDescription, excelRows, onDragStart, onDragOver, onDrop, onDragEnd, onRename, onSaveDesc, onMappingChange, onRemove, setEditingIdx, setEditValue, setEditingDescIdx, setEditDescValue }: CategorySettingsRowProps) {
+  const dragOverClass = dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : ''
+  const nameClass = `truncate cursor-pointer ${isCustom ? 'text-indigo-700 dark:text-indigo-300' : ''}`
+  const nameTitle = isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'
+  return (
+    <li
+      draggable
+      onDragStart={() => onDragStart(idx)}
+      onDragOver={(e) => onDragOver(e, idx)}
+      onDrop={() => onDrop(idx)}
+      onDragEnd={onDragEnd}
+      className={`flex items-center gap-2 rounded border bg-white dark:bg-gray-800 dark:border-gray-700 px-3 py-1.5 text-sm cursor-grab active:cursor-grabbing ${dragOverClass}`}
+    >
+      <span className="text-gray-300 dark:text-gray-600 select-none shrink-0" aria-hidden>⠿</span>
+      <div className="w-36 shrink-0 flex flex-col gap-0.5 min-w-0">
+        {editingIdx === idx ? (
+          <input
+            aria-label={`Rename ${cat}`}
+            ref={(el) => { el?.focus() }}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={() => onRename(idx)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onRename(idx)
+              if (e.key === 'Escape') setEditingIdx(null)
+            }}
+            className="rounded border px-2 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          />
+        ) : (
+          <span className={nameClass} onDoubleClick={() => { setEditingIdx(idx); setEditValue(cat) }} title={nameTitle}>
+            {cat}
+          </span>
+        )}
+        {editingDescIdx === idx ? (
+          <input
+            aria-label={`Description for ${cat}`}
+            ref={(el) => { el?.focus() }}
+            value={editDescValue}
+            onChange={(e) => setEditDescValue(e.target.value)}
+            onBlur={() => onSaveDesc(idx)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') onSaveDesc(idx)
+              if (e.key === 'Escape') setEditingDescIdx(null)
+            }}
+            placeholder="Add description…"
+            className="rounded border px-1.5 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          />
+        ) : (
+          <button type="button" aria-label={`Edit description for ${cat}`} className="truncate text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" onClick={() => { setEditingDescIdx(idx); setEditDescValue(categoryDescription ?? '') }} title="Click to edit description">
+            {categoryDescription ?? <em>add description</em>}
+          </button>
+        )}
+      </div>
+      <span className="w-4 shrink-0 text-center text-xs text-gray-300 dark:text-gray-600" aria-hidden>→</span>
+      <div className="flex flex-1 items-center gap-1 min-w-0">
+        {excelRows.length > 0 ? (
+          <>
+            {isAutoMatch && <span className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400" title="Auto-matched — please verify">auto</span>}
+            <select aria-label={`Excel mapping for ${cat}`} value={taskId} onChange={(e) => onMappingChange(cat, e.target.value)} className="flex-1 rounded border px-2 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 min-w-0">
+              <option value="">— not mapped —</option>
+              {excelRows.map((row) => (
+                <option key={row.taskId} value={row.taskId}>{row.taskId}{row.description ? ` — ${row.description}` : ''}</option>
+              ))}
+            </select>
+          </>
+        ) : taskId ? (
+          <span className="rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 font-mono text-xs text-gray-600 dark:text-gray-400 truncate" title={taskId}>{taskId}</span>
+        ) : (
+          <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+        )}
+      </div>
+      <button aria-label={`Remove ${cat}`} onClick={() => onRemove(idx)} className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium">✕</button>
+    </li>
+  )
+}
+
+function resolveMappingHint(url: string | null | undefined, file: string | null | undefined, sheet: string | null | undefined, auth: boolean): string {
+  return getMappingHint(url ?? undefined, file, sheet ?? undefined, auth)
+}
+
+function shouldShowMappingHint(excelReady: boolean, rowCount: number, hint: string): boolean {
+  return !excelReady && rowCount === 0 && hint !== ''
+}
+
 interface Props {
   repository: ConfigRepository
 }
@@ -344,8 +455,8 @@ export function CategorySettings({ repository }: Props) {
   }
 
   const isDirty = localMapping !== null
-  const mappingHint = getMappingHint(sharepointUrl ?? undefined, localExcelFile, targetSheet ?? undefined, isAuthenticated)
-  const showMappingHint = !excelReady && excelRows.length === 0 && mappingHint !== ''
+  const mappingHint = resolveMappingHint(sharepointUrl, localExcelFile, targetSheet, isAuthenticated)
+  const showMappingHint = shouldShowMappingHint(excelReady, excelRows.length, mappingHint)
 
   return (
     <div className="flex flex-col gap-3">
@@ -389,124 +500,35 @@ export function CategorySettings({ repository }: Props) {
 
       {/* Category list */}
       <ul className="flex flex-col gap-1">
-        {categories.map((cat, idx) => {
-          const isCustom = customCategories.includes(cat)
-          const taskId = activeMapping[cat] ?? ''
-          const isAutoMatch = autoMatched.has(cat)
-
-          return (
-            <li
-              key={cat}
-              draggable
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={(e) => handleDragOver(e, idx)}
-              onDrop={() => handleDrop(idx)}
-              onDragEnd={handleDragEnd}
-              className={`flex items-center gap-2 rounded border bg-white dark:bg-gray-800 dark:border-gray-700 px-3 py-1.5 text-sm cursor-grab active:cursor-grabbing ${dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
-            >
-              <span className="text-gray-300 dark:text-gray-600 select-none shrink-0" aria-hidden>⠿</span>
-
-              {/* Category name + description */}
-              <div className="w-36 shrink-0 flex flex-col gap-0.5 min-w-0">
-                {editingIdx === idx ? (
-                  <input
-                    aria-label={`Rename ${cat}`}
-                    ref={(el) => { el?.focus() }}
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onBlur={() => handleRename(idx)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleRename(idx)
-                      if (e.key === 'Escape') setEditingIdx(null)
-                    }}
-                    className="rounded border px-2 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  />
-                ) : (
-                  <span
-                    className={`truncate cursor-pointer ${isCustom ? 'text-indigo-700 dark:text-indigo-300' : ''}`}
-                    onDoubleClick={() => { setEditingIdx(idx); setEditValue(cat) }}
-                    title={isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'}
-                  >
-                    {cat}
-                  </span>
-                )}
-                {editingDescIdx === idx ? (
-                  <input
-                    aria-label={`Description for ${cat}`}
-                    ref={(el) => { el?.focus() }}
-                    value={editDescValue}
-                    onChange={(e) => setEditDescValue(e.target.value)}
-                    onBlur={() => handleSaveDesc(idx)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSaveDesc(idx)
-                      if (e.key === 'Escape') setEditingDescIdx(null)
-                    }}
-                    placeholder="Add description…"
-                    className="rounded border px-1.5 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    aria-label={`Edit description for ${cat}`}
-                    className="truncate text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                    onClick={() => { setEditingDescIdx(idx); setEditDescValue(config.categoryDescriptions?.[cat] ?? '') }}
-                    title="Click to edit description"
-                  >
-                    {config.categoryDescriptions?.[cat] ?? <em>add description</em>}
-                  </button>
-                )}
-              </div>
-
-              <span className="w-4 shrink-0 text-center text-xs text-gray-300 dark:text-gray-600" aria-hidden>→</span>
-
-              {/* Excel mapping */}
-              <div className="flex flex-1 items-center gap-1 min-w-0">
-                {excelRows.length > 0 ? (
-                  <>
-                    {isAutoMatch && (
-                      <span
-                        className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400"
-                        title="Auto-matched — please verify"
-                      >
-                        auto
-                      </span>
-                    )}
-                    <select
-                      aria-label={`Excel mapping for ${cat}`}
-                      value={taskId}
-                      onChange={(e) => handleMappingChange(cat, e.target.value)}
-                      className="flex-1 rounded border px-2 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 min-w-0"
-                    >
-                      <option value="">— not mapped —</option>
-                      {excelRows.map((row) => (
-                        <option key={row.taskId} value={row.taskId}>
-                          {row.taskId}{row.description ? ` — ${row.description}` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </>
-                ) : taskId ? (
-                  <span
-                    className="rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 font-mono text-xs text-gray-600 dark:text-gray-400 truncate"
-                    title={taskId}
-                  >
-                    {taskId}
-                  </span>
-                ) : (
-                  <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
-                )}
-              </div>
-
-              <button
-                aria-label={`Remove ${cat}`}
-                onClick={() => handleRemove(idx)}
-                className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium"
-              >
-                ✕
-              </button>
-            </li>
-          )
-        })}
+        {categories.map((cat, idx) => (
+          <CategorySettingsRow
+            key={cat}
+            cat={cat}
+            idx={idx}
+            isCustom={customCategories.includes(cat)}
+            taskId={activeMapping[cat] ?? ''}
+            isAutoMatch={autoMatched.has(cat)}
+            dragOverIdx={dragOverIdx}
+            editingIdx={editingIdx}
+            editValue={editValue}
+            editingDescIdx={editingDescIdx}
+            editDescValue={editDescValue}
+            categoryDescription={config.categoryDescriptions?.[cat]}
+            excelRows={excelRows}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={handleDragEnd}
+            onRename={handleRename}
+            onSaveDesc={handleSaveDesc}
+            onMappingChange={handleMappingChange}
+            onRemove={handleRemove}
+            setEditingIdx={setEditingIdx}
+            setEditValue={setEditValue}
+            setEditingDescIdx={setEditingDescIdx}
+            setEditDescValue={setEditDescValue}
+          />
+        ))}
       </ul>
 
       <UnmappedCategoryRowsSection
