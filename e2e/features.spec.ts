@@ -56,9 +56,13 @@ test.describe('month status', () => {
     await page.addInitScript((seed: Record<string, string>) => {
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
     }, seedBase({
-      'timetracker_time-entries.json': JSON.stringify([{ id: 'e1', date: TEST_DATE, category: CATEGORY, hours: 8 }]),
-      'timetracker_work-windows.json': JSON.stringify([{ id: 'w1', date: TEST_DATE, start: '09:00', end: '17:00' }]),
-      'timetracker_day-confirmations.json': JSON.stringify({ [TEST_DATE]: true }),
+      'timetracker_months/2026-05.json': JSON.stringify({
+        [TEST_DATE]: {
+          entries: [{ id: 'e1', category: CATEGORY, hours: 8 }],
+          windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
+          confirmed: true,
+        },
+      }),
     }))
 
     await page.goto('/?year=2026&month=5')

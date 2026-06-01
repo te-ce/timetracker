@@ -80,7 +80,7 @@ export class JsonRecordStore<V> {
 
   async set(recordKey: string, value: V): Promise<void> {
     const store = await this.getAll()
-    store[recordKey] = value
+    this.cache = { ...store, [recordKey]: value }
     await this.persist()
   }
 
@@ -91,7 +91,11 @@ export class JsonRecordStore<V> {
 
   async remove(recordKey: string): Promise<void> {
     const store = await this.getAll()
-    delete store[recordKey]
+    const updated: Record<string, V> = {}
+    for (const [k, v] of Object.entries(store)) {
+      if (k !== recordKey) updated[k] = v
+    }
+    this.cache = updated
     await this.persist()
   }
 
