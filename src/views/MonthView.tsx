@@ -5,16 +5,7 @@ import { MonthCalendar } from '../components/MonthCalendar'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useMonthQuery } from '../hooks/useMonthQuery'
-import {
-  timeEntryRepo,
-  workPeriodRepo,
-  workLocationRepo,
-  dayTypeOverrideRepo,
-  autoCategoryOverrideRepo,
-  dayConfirmationRepo,
-  timeTrackingRepo,
-} from '../repositories/shared'
-import { toLocalIso } from '../domain/dateUtils'
+import { monthRepo, timeTrackingRepo } from '../repositories/shared'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { DayStatus } from '../domain/dayStatus'
 
@@ -37,34 +28,11 @@ export function MonthView() {
   })
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
-  const from = new Date(year, month - 1, 1)
-  const to = new Date(year, month, 0)
-  const monthLabel = from.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
 
   const resetMonthMutation = useMutation({
-    mutationFn: async () => {
-      const fromIso = toLocalIso(from)
-      const toIso = toLocalIso(to)
-      const [entries, periods, locations, overrides, autoCatOverrides, confirmedSet] = await Promise.all([
-        timeEntryRepo.findByDateRange(from, to),
-        workPeriodRepo.findByDateRange(from, to),
-        workLocationRepo.findByDateRange(fromIso, toIso),
-        dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
-        autoCategoryOverrideRepo.findByDateRange(fromIso, toIso),
-        dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
-      ])
-      await Promise.all([
-        ...entries.map((e) => timeEntryRepo.delete(e.id)),
-        ...periods.map((p) => workPeriodRepo.delete(p.id)),
-        ...[...locations.keys()].map((d) => workLocationRepo.delete(d)),
-        ...[...overrides.keys()].map((d) => dayTypeOverrideRepo.delete(d)),
-        ...[...autoCatOverrides.keys()].map((d) => autoCategoryOverrideRepo.delete(d)),
-        ...[...confirmedSet].map((d) => dayConfirmationRepo.unconfirm(d)),
-      ])
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries()
-    },
+    mutationFn: () => monthRepo.deleteMonth(year, month),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
   const { summaries, overtimeToDate, officeDays, officePercent, trackedWorkDays, sollstunden, dayNotes } =

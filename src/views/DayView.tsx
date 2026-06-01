@@ -1,17 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import {
-  workPeriodRepo,
-  timeEntryRepo,
-  configRepo,
-  workLocationRepo,
-  dayConfirmationRepo,
-  dayTypeOverrideRepo,
-  autoCategoryOverrideRepo,
-  timeTrackingRepo,
-  dayNoteRepo,
-} from '../repositories/shared'
+import { monthRepo, configRepo, timeTrackingRepo } from '../repositories/shared'
 import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
@@ -34,6 +24,12 @@ function formatDate(iso: string): string {
   })
 }
 
+function invalidateMonth(queryClient: ReturnType<typeof useQueryClient>, date: string) {
+  const year = parseInt(date.slice(0, 4))
+  const month = parseInt(date.slice(5, 7))
+  void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
+}
+
 export function DayView() {
   const navigate = useNavigate()
   const { date: selectedDate } = useSearch({ from: '/day' })
@@ -47,6 +43,7 @@ export function DayView() {
     windows,
     entries,
     autoCategoryOverride,
+    dayTypeOverride,
     isConfirmed,
     dayNote,
     workedHours,
@@ -76,30 +73,29 @@ export function DayView() {
           ? new Map<string, string>([[selectedDate, autoCategoryOverride]])
           : new Map<string, string>(),
       })
-      if (resolvedAuto && autoHours > 0) {
-        const existing = entries.find((e) => e.category === resolvedAuto)
-        await timeEntryRepo.save({
-          id: existing?.id ?? crypto.randomUUID(),
-          date: selectedDate,
-          category: resolvedAuto,
-          hours: (existing?.hours ?? 0) + autoHours,
-        })
-      }
-      await dayConfirmationRepo.confirm(selectedDate)
+      await monthRepo.updateDay(selectedDate, (day) => {
+        let updatedEntries = [...day.entries]
+        if (resolvedAuto && autoHours > 0) {
+          const existing = updatedEntries.find((e) => e.category === resolvedAuto)
+          updatedEntries = [
+            ...updatedEntries.filter((e) => e.category !== resolvedAuto || e.id === existing?.id),
+          ]
+          const autoEntry = {
+            id: existing?.id ?? crypto.randomUUID(),
+            category: resolvedAuto,
+            hours: (existing?.hours ?? 0) + autoHours,
+          }
+          updatedEntries = [...updatedEntries.filter((e) => e.id !== autoEntry.id), autoEntry]
+        }
+        return { ...day, entries: updatedEntries, confirmed: true }
+      })
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationByDate(selectedDate) })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationsAll })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
-    },
+    onSuccess: () => invalidateMonth(queryClient, selectedDate),
   })
 
   const unconfirmMutation = useMutation({
-    mutationFn: () => dayConfirmationRepo.unconfirm(selectedDate),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationByDate(selectedDate) })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationsAll })
-    },
+    mutationFn: () => monthRepo.updateDay(selectedDate, (day) => ({ ...day, confirmed: false })),
+    onSuccess: () => invalidateMonth(queryClient, selectedDate),
   })
 
   const autoCategoryMutation = useMutation({
@@ -124,14 +120,24 @@ export function DayView() {
         ? Object.fromEntries(Object.entries(cfg.categoryMapping).map(([k, v]) => [k === oldName ? newName : k, v]))
         : undefined
       await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder, categoryDescriptions: newDescriptions, categoryMapping: newMapping })
-      const allEntries = await timeEntryRepo.findByDateRange(new Date('2000-01-01'), new Date('2099-12-31'))
-      for (const entry of allEntries.filter((e) => e.category === oldName)) {
-        await timeEntryRepo.save({ ...entry, category: newName })
+      const allMonths = await monthRepo.getAllMonths()
+      for (const ym of allMonths) {
+        const year = parseInt(ym.slice(0, 4))
+        const month = parseInt(ym.slice(5, 7))
+        const data = await monthRepo.getMonth(year, month)
+        for (const [date, day] of Object.entries(data)) {
+          if (day.entries.some((e) => e.category === oldName)) {
+            await monthRepo.updateDay(date, (d) => ({
+              ...d,
+              entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
+            }))
+          }
+        }
       }
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
     },
   })
 
@@ -147,21 +153,19 @@ export function DayView() {
   const locationMutation = useMutation({
     mutationFn: async () => {
       const next: WorkLocation = effectiveLocation === 'Remote' ? 'Office' : 'Remote'
-      await workLocationRepo.save(selectedDate, next)
+      await monthRepo.updateDay(selectedDate, (day) => ({ ...day, location: next }))
     },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationByDate(selectedDate) })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationsAll })
-    },
+    onSuccess: () => invalidateMonth(queryClient, selectedDate),
   })
 
   const noteMutation = useMutation({
     mutationFn: (note: string) =>
-      note ? dayNoteRepo.save(selectedDate, note) : dayNoteRepo.delete(selectedDate),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayNoteByDate(selectedDate) })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayNotesAll })
-    },
+      monthRepo.updateDay(selectedDate, (day) => {
+        const updated = { ...day }
+        delete updated.note
+        return note ? { ...updated, note } : updated
+      }),
+    onSuccess: () => invalidateMonth(queryClient, selectedDate),
   })
 
   const { displayStatus: badgeStatus, reason: statusReason } = dayClassification
@@ -169,23 +173,9 @@ export function DayView() {
   const [noteValue, setNoteValue] = useState<string | null>(null)
 
   const resetDayMutation = useMutation({
-    mutationFn: async () => {
-      const d = new Date(selectedDate)
-      const entries = await timeEntryRepo.findByDateRange(d, d)
-      const periods = await workPeriodRepo.findByDate(d)
-      await Promise.all([
-        ...entries.map((e) => timeEntryRepo.delete(e.id)),
-        ...periods.map((p) => workPeriodRepo.delete(p.id)),
-        workLocationRepo.delete(selectedDate),
-        dayTypeOverrideRepo.delete(selectedDate),
-        autoCategoryOverrideRepo.delete(selectedDate),
-        dayConfirmationRepo.unconfirm(selectedDate),
-        dayNoteRepo.delete(selectedDate),
-      ])
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries()
-    },
+    mutationFn: () =>
+      monthRepo.updateDay(selectedDate, () => ({ entries: [], windows: [] })),
+    onSuccess: () => invalidateMonth(queryClient, selectedDate),
   })
 
   return (
@@ -228,7 +218,11 @@ export function DayView() {
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <DayTypePicker date={selectedDate} repository={dayTypeOverrideRepo} />
+          <DayTypePicker
+            date={selectedDate}
+            override={dayTypeOverride}
+            repository={monthRepo}
+          />
           <button
             onClick={() => locationMutation.mutate()}
             className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
@@ -286,13 +280,14 @@ export function DayView() {
         activeTrackingStartedAt={activeTracking?.startedAt}
       />
 
-      <WorkPeriodPanel date={selectedDate} repository={workPeriodRepo} />
+      <WorkPeriodPanel date={selectedDate} windows={windows} repository={monthRepo} />
 
       <TimeEntryPanel
         date={selectedDate}
-        repository={timeEntryRepo}
+        entries={entries}
+        repository={monthRepo}
         timeTrackingRepository={timeTrackingRepo}
-        workPeriodRepository={workPeriodRepo}
+        activeTracking={activeTracking}
         customCategories={config?.customCategories ?? []}
         categoryOrder={config?.categoryOrder}
         categoryDescriptions={config?.categoryDescriptions}

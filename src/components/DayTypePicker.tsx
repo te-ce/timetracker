@@ -1,12 +1,11 @@
-import { QUERY_KEYS } from '../hooks/queryKeys'
-import { useQuery } from '@tanstack/react-query'
-import type { DayTypeOverrideRepository } from '../repositories/types'
+import type { MonthRepository, DayTypeOverride } from '../repositories/types'
 import { useDayTypeOverrideMutations } from '../hooks/useDayTypeOverrideMutations'
 import { isDayTypeOverride } from '../domain/dayType'
 
 interface Props {
   date: string
-  repository: DayTypeOverrideRepository
+  override: DayTypeOverride | undefined
+  repository: MonthRepository
 }
 
 const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
@@ -17,12 +16,7 @@ const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'Absence', label: 'Absence' },
 ]
 
-export function DayTypePicker({ date, repository }: Props) {
-  const { data: override } = useQuery({
-    queryKey: QUERY_KEYS.dayTypeOverrideByDate(date),
-    queryFn: () => repository.findByDate(date),
-  })
-
+export function DayTypePicker({ date, override, repository }: Props) {
   const { save: saveMutation, remove: removeMutation } = useDayTypeOverrideMutations(repository)
 
   function handleChange(value: string) {

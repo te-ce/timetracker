@@ -4,7 +4,7 @@ import type { WorkPeriod } from '../repositories/types'
 
 const makeWindow = (start: string, end: string | null): WorkPeriod => ({
   id: '1',
-  date: '2024-01-15',
+  
   start,
   end,
 })

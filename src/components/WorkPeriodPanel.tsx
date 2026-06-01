@@ -1,26 +1,20 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { QUERY_KEYS } from '../hooks/queryKeys'
-import type { WorkPeriod, WorkPeriodRepository } from '../repositories/types'
+import type { WorkPeriod, MonthRepository } from '../repositories/types'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
 
 interface Props {
   date: string
-  repository: WorkPeriodRepository
+  windows: WorkPeriod[]
+  repository: MonthRepository
 }
 
-export function WorkPeriodPanel({ date, repository }: Props) {
+export function WorkPeriodPanel({ date, windows, repository }: Props) {
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editStart, setEditStart] = useState('')
   const [editEnd, setEditEnd] = useState('')
-
-  const { data: windows = [] } = useQuery({
-    queryKey: QUERY_KEYS.workWindowsByDate(date),
-    queryFn: () => repository.findByDate(new Date(date)),
-  })
 
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
 
@@ -28,16 +22,16 @@ export function WorkPeriodPanel({ date, repository }: Props) {
 
   function handleAdd() {
     if (!start) return
-    const incoming: WorkPeriod = { id: crypto.randomUUID(), date, start, end: end || null }
+    const incoming: WorkPeriod = { id: crypto.randomUUID(), start, end: end || null }
     const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    addMutation.mutate(merged)
-    absorbed.forEach((id) => removeMutation.mutate(id))
+    addMutation.mutate({ date, window: merged })
+    absorbed.forEach((id) => removeMutation.mutate({ date, id }))
     setStart('')
     setEnd('')
   }
 
   function handleRemove(id: string) {
-    removeMutation.mutate(id)
+    removeMutation.mutate({ date, id })
   }
 
   function handleEditStart(w: WorkPeriod) {
@@ -52,8 +46,8 @@ export function WorkPeriodPanel({ date, repository }: Props) {
     if (!existing) return
     const incoming: WorkPeriod = { ...existing, start: editStart, end: editEnd || null }
     const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    addMutation.mutate(merged)
-    absorbed.forEach((id) => removeMutation.mutate(id))
+    addMutation.mutate({ date, window: merged })
+    absorbed.forEach((id) => removeMutation.mutate({ date, id }))
     setEditingId(null)
   }
 
@@ -62,10 +56,9 @@ export function WorkPeriodPanel({ date, repository }: Props) {
   }
 
   function handleMerge(a: WorkPeriod, b: WorkPeriod) {
-    // a.start <= b.start (sorted), a.end !== null
     const laterEnd = b.end === null ? null : a.end! >= b.end ? a.end : b.end
-    addMutation.mutate({ ...a, end: laterEnd })
-    removeMutation.mutate(b.id)
+    addMutation.mutate({ date, window: { ...a, end: laterEnd } })
+    removeMutation.mutate({ date, id: b.id })
   }
 
   function nowHHMM() {
@@ -75,7 +68,6 @@ export function WorkPeriodPanel({ date, repository }: Props) {
 
   return (
     <section aria-label="Work windows" className="flex flex-col gap-6">
-      {/* Add period form */}
       <div className="flex items-end gap-3 rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 p-4 shadow-sm">
         <label className="flex flex-col gap-1 text-sm font-medium">
           Start
@@ -128,7 +120,6 @@ export function WorkPeriodPanel({ date, repository }: Props) {
         </button>
       </div>
 
-      {/* Periods list + summary */}
       {sorted.length === 0 ? (
         <p className="rounded-xl border border-dashed bg-white dark:bg-gray-800 dark:border-gray-700 p-6 text-center text-sm text-gray-400 dark:text-gray-500">
           No work periods recorded — add your first time block above.

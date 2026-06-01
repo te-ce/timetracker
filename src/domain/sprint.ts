@@ -1,4 +1,4 @@
-import type { TimeEntry } from '../repositories/types'
+import type { DatedTimeEntry } from '../repositories/types'
 
 export interface SprintConfig {
   startDate: string
@@ -30,7 +30,7 @@ export function getSprintForDate(date: string, config: SprintConfig): Sprint {
   return getSprintBoundaries(index, config)
 }
 
-export function aggregateSprintHours(entries: TimeEntry[], sprint: Sprint): Record<string, number> {
+export function aggregateSprintHours(entries: DatedTimeEntry[], sprint: Sprint): Record<string, number> {
   const result: Record<string, number> = {}
   for (const entry of entries) {
     if (entry.date >= sprint.start && entry.date <= sprint.end) {

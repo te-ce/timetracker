@@ -1,4 +1,4 @@
-import type { TimeEntry } from '../repositories/types'
+import type { DatedTimeEntry } from '../repositories/types'
 import type { DayType } from './dayType'
 
 export type AutoFillPattern =
@@ -50,9 +50,9 @@ function matchesPattern(date: string, pattern: AutoFillPattern): boolean {
 
 let counter = 0
 
-export function materializeAutoFillRules(input: MaterializeInput): TimeEntry[] {
+export function materializeAutoFillRules(input: MaterializeInput): DatedTimeEntry[] {
   const { rules, fromDate, toDate, dayTypes } = input
-  const entries: TimeEntry[] = []
+  const entries: DatedTimeEntry[] = []
 
   for (const rule of rules) {
     let current = fromDate

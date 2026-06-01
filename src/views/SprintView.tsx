@@ -4,7 +4,7 @@ import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../
 import type { SprintConfig } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
-import { sprintExportRepo, timeEntryRepo, configRepo } from '../repositories/shared'
+import { sprintExportRepo, monthRepo, configRepo } from '../repositories/shared'
 import { getAllCategories } from '../domain/categories'
 import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../services/workbookService'
 import { useAuthStore } from '../stores/authStore'
@@ -66,8 +66,8 @@ export function SprintView() {
   const sprint = getSprintBoundaries(activeIndex, sprintConfig)
 
   const { data: entries = [] } = useQuery({
-    queryKey: QUERY_KEYS.timeEntriesSprint(activeIndex, sprintConfig.startDate, sprintConfig.lengthDays),
-    queryFn: () => timeEntryRepo.findByDateRange(new Date(sprint.start), new Date(sprint.end)),
+    queryKey: QUERY_KEYS.sprintEntries(activeIndex, sprintConfig.startDate, sprintConfig.lengthDays),
+    queryFn: () => monthRepo.findEntriesByDateRange(sprint.start, sprint.end),
   })
 
   const hoursPerCategory = aggregateSprintHours(entries, sprint)

@@ -1,13 +1,6 @@
 import { useState, useRef, useEffect, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type {
-  TimeEntryRepository,
-  WorkPeriodRepository,
-  DayConfirmationRepository,
-  DayTypeOverrideRepository,
-  WorkLocationRepository,
-  WorkLocation,
-} from '../repositories/types'
+import type { MonthRepository, WorkLocation } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
 import { isDayTypeOverride } from '../domain/dayType'
 import { classifyDay } from '../domain/dayStatus'
@@ -36,11 +29,7 @@ const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
 interface Props {
   year: number
   month: number
-  timeEntryRepository: TimeEntryRepository
-  workPeriodRepository: WorkPeriodRepository
-  dayConfirmationRepository: DayConfirmationRepository
-  dayTypeOverrideRepository: DayTypeOverrideRepository
-  workLocationRepository: WorkLocationRepository
+  repository: MonthRepository
   autoCategory: string
   customCategories?: string[]
   categoryOrder?: string[]
@@ -250,11 +239,7 @@ function computeSprintGroups(
 export function MonthGrid({
   year,
   month,
-  timeEntryRepository,
-  workPeriodRepository,
-  dayConfirmationRepository,
-  dayTypeOverrideRepository,
-  workLocationRepository,
+  repository,
   autoCategory,
   customCategories = [],
   categoryOrder,
@@ -282,8 +267,6 @@ export function MonthGrid({
   const [editingCat, setEditingCat] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
 
-  const from = new Date(year, month - 1, 1)
-  const to = new Date(year, month, 0)
   const todayIso = toLocalIso(new Date())
 
   useEffect(() => {
@@ -315,91 +298,76 @@ export function MonthGrid({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [notePopover])
 
-  const { data: entries = [] } = useQuery({
-    queryKey: QUERY_KEYS.timeEntriesByMonth(year, month),
-    queryFn: () => timeEntryRepository.findByDateRange(from, to),
+  const { data: monthData = {} } = useQuery({
+    queryKey: QUERY_KEYS.month(year, month),
+    queryFn: () => repository.getMonth(year, month),
   })
 
-  const { data: windows = [] } = useQuery({
-    queryKey: QUERY_KEYS.workWindowsByMonth(year, month),
-    queryFn: () => workPeriodRepository.findByDateRange(from, to),
-  })
-
-  const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(timeEntryRepository)
+  const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(repository)
 
   const queryClient = useQueryClient()
-  async function confirmDay(row: MonthGridRow) {
-    const autoHours = row.autoCategoryHours
-    if (autoCategory && autoHours > 0) {
-      const existing = entries.find((e) => e.date === row.date && e.category === autoCategory)
-      await timeEntryRepository.save({
-        id: existing?.id ?? crypto.randomUUID(),
-        date: row.date,
-        category: autoCategory,
-        hours: (existing?.hours ?? 0) + autoHours,
-      })
-    }
-    await dayConfirmationRepository.confirm(row.date)
+
+  function invalidate() {
+    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
   }
 
   const gridConfirmMutation = useMutation({
-    mutationFn: confirmDay,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationsAll })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationAll })
+    mutationFn: async (row: MonthGridRow) => {
+      const autoHours = row.autoCategoryHours
+      await repository.updateDay(row.date, (day) => {
+        let updatedEntries = [...day.entries]
+        if (autoCategory && autoHours > 0) {
+          const existing = updatedEntries.find((e) => e.category === autoCategory)
+          const confirmed = {
+            id: existing?.id ?? crypto.randomUUID(),
+            category: autoCategory,
+            hours: (existing?.hours ?? 0) + autoHours,
+          }
+          updatedEntries = [...updatedEntries.filter((e) => e.id !== confirmed.id), confirmed]
+        }
+        return { ...day, entries: updatedEntries, confirmed: true }
+      })
     },
+    onSuccess: invalidate,
   })
 
   const gridUnconfirmMutation = useMutation({
-    mutationFn: (date: string) => dayConfirmationRepository.unconfirm(date),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationsAll })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayConfirmationAll })
-    },
+    mutationFn: (date: string) =>
+      repository.updateDay(date, (day) => ({ ...day, confirmed: false })),
+    onSuccess: invalidate,
   })
-
-  async function saveDayType({ date, value }: { date: string; value: string }) {
-    if (value === 'WorkDay') {
-      await dayTypeOverrideRepository.delete(date)
-    } else {
-      if (isDayTypeOverride(value)) await dayTypeOverrideRepository.save(date, value)
-    }
-  }
 
   const dayTypeMutation = useMutation({
-    mutationFn: saveDayType,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayTypeOverridesAll })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayTypeOverrideAll })
+    mutationFn: ({ date, value }: { date: string; value: string }) => {
+      if (value === 'WorkDay') {
+        return repository.updateDay(date, (day) => {
+          const updated = { ...day }
+          delete updated.dayTypeOverride
+          return updated
+        })
+      }
+      if (isDayTypeOverride(value)) {
+        return repository.updateDay(date, (day) => ({ ...day, dayTypeOverride: value }))
+      }
+      return Promise.resolve()
     },
+    onSuccess: invalidate,
   })
-
-  async function saveLocation({ date, location }: { date: string; location: WorkLocation | null }) {
-    if (location) {
-      await workLocationRepository.save(date, location)
-    } else {
-      await workLocationRepository.delete(date)
-    }
-  }
 
   const locationMutation = useMutation({
-    mutationFn: saveLocation,
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationsAll })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workLocationAll })
-    },
+    mutationFn: ({ date, location }: { date: string; location: WorkLocation | null }) =>
+      repository.updateDay(date, (day) => {
+        if (!location) {
+          const updated = { ...day }
+          delete updated.location
+          return updated
+        }
+        return { ...day, location }
+      }),
+    onSuccess: invalidate,
   })
 
-  const rows = buildMonthGrid({
-    year,
-    month,
-    timeEntries: entries,
-    workPeriods: windows,
-    dayTypes,
-    autoCategory,
-    autoCategoryOverrides: new Map(),
-  })
+  const rows = buildMonthGrid({ year, month, monthData, dayTypes })
 
   function draftKey(date: string, category: string) {
     return `${date}::${category}`
@@ -411,13 +379,15 @@ export function MonthGrid({
     if (raw === undefined) return
 
     const hours = parseFloat(raw)
-    const existing = entries.find((e) => e.date === row.date && e.category === category)
+    const dayEntries = monthData[row.date]?.entries ?? []
+    const existing = dayEntries.find((e) => e.category === category)
 
     if (isNaN(hours) || hours === 0) {
-      if (existing) deleteMutation.mutate(existing)
+      if (existing) deleteMutation.mutate({ date: row.date, entry: existing })
     } else {
       saveMutation.mutate({
-        entry: { id: existing?.id ?? crypto.randomUUID(), date: row.date, category, hours },
+        date: row.date,
+        entry: { id: existing?.id ?? crypto.randomUUID(), category, hours },
         previous: existing ?? null,
       })
     }
@@ -430,8 +400,9 @@ export function MonthGrid({
   }
 
   function clearCell(date: string, category: string) {
-    const existing = entries.find((e) => e.date === date && e.category === category)
-    if (existing) deleteMutation.mutate(existing)
+    const dayEntries = monthData[date]?.entries ?? []
+    const existing = dayEntries.find((e) => e.category === category)
+    if (existing) deleteMutation.mutate({ date, entry: existing })
     setDrafts((d) => {
       const next = { ...d }
       delete next[draftKey(date, category)]
@@ -612,7 +583,6 @@ export function MonthGrid({
                       {cat}
                     </span>
                   )}
-                  {/* Fixed-height badge row keeps all headers the same height */}
                   <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
                     {cat === autoCategory ? (
                       <span className="text-[9px] text-indigo-400 dark:text-indigo-300 font-medium tracking-wide leading-none">auto</span>
@@ -691,7 +661,8 @@ export function MonthGrid({
                     <WorkedHoursCell
                       date={row.date}
                       workedHours={parseFloat(row.workedHours.toFixed(2))}
-                      repository={workPeriodRepository}
+                      windows={monthData[row.date]?.windows ?? []}
+                      repository={repository}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}`}
                     />
                     <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">
@@ -855,10 +826,8 @@ export function MonthGrid({
         </table>
       </div>
 
-      {/* Status legend */}
       <StatusLegend className="px-1" />
 
-      {/* Status dot popover — fixed, outside overflow container */}
       <DotPopoverPanel
         state={dotPopover}
         popoverRef={popoverRef}

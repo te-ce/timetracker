@@ -1,33 +1,66 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {
-  InMemoryTimeEntryRepository,
-  InMemoryTimeTrackingRepository,
-  InMemoryWorkPeriodRepository,
-} from '../repositories/in-memory'
+import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { InMemoryMonthRepository, InMemoryTimeTrackingRepository } from '../repositories/in-memory'
 import { TimeEntryPanel } from './TimeEntryPanel'
 import { DEFAULT_CATEGORIES } from '../repositories/types'
-import type { TimeEntry, WorkPeriod } from '../repositories/types'
+import type { MonthData, MonthRepository } from '../repositories/types'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 
 const DATE = '2024-01-15'
+const YEAR = 2024
+const MONTH = 1
 
-function setup(initialEntries: TimeEntry[] = [], initialWindows: WorkPeriod[] = []) {
-  const repo = new InMemoryTimeEntryRepository(initialEntries)
+function TestPanel({
+  repo,
+  trackingRepo,
+  autoCategory,
+  onAutoCategoryChange,
+  onCategoryReorder,
+  customCategories,
+}: {
+  repo: MonthRepository
+  trackingRepo: InMemoryTimeTrackingRepository
+  autoCategory?: string
+  onAutoCategoryChange?: (cat: string | null) => void
+  onCategoryReorder?: (order: string[]) => void
+  customCategories?: string[]
+}) {
+  const { data: monthData = {} } = useQuery<MonthData>({
+    queryKey: QUERY_KEYS.month(YEAR, MONTH),
+    queryFn: () => repo.getMonth(YEAR, MONTH),
+  })
+  const { data: activeTracking = null } = useQuery({
+    queryKey: QUERY_KEYS.activeTracking,
+    queryFn: () => trackingRepo.getActive(),
+  })
+  const entries = monthData[DATE]?.entries ?? []
+
+  return (
+    <TimeEntryPanel
+      date={DATE}
+      entries={entries}
+      repository={repo}
+      timeTrackingRepository={trackingRepo}
+      activeTracking={activeTracking}
+      autoCategory={autoCategory ?? null}
+      onAutoCategoryChange={onAutoCategoryChange}
+      onCategoryReorder={onCategoryReorder}
+      customCategories={customCategories}
+    />
+  )
+}
+
+function setup(initialMonthData: MonthData = {}) {
+  const repo = new InMemoryMonthRepository({ [YEAR + '-' + String(MONTH).padStart(2, '0')]: initialMonthData })
   const trackingRepo = new InMemoryTimeTrackingRepository()
-  const workPeriodRepo = new InMemoryWorkPeriodRepository(initialWindows)
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <TimeEntryPanel
-        date={DATE}
-        repository={repo}
-        timeTrackingRepository={trackingRepo}
-        workPeriodRepository={workPeriodRepo}
-      />
+      <TestPanel repo={repo} trackingRepo={trackingRepo} />
     </QueryClientProvider>,
   )
-  return { repo, trackingRepo, workPeriodRepo }
+  return { repo, trackingRepo }
 }
 
 describe('TimeEntryPanel', () => {
@@ -39,7 +72,7 @@ describe('TimeEntryPanel', () => {
   })
 
   it('loads existing bookings from the repository on mount', async () => {
-    setup([{ id: '1', date: DATE, category: '_SUPPORT', hours: 3 }])
+    setup({ [DATE]: { entries: [{ id: '1', category: '_SUPPORT', hours: 3 }], windows: [] } })
     const input = await screen.findByLabelText('Hours for _SUPPORT')
     await waitFor(() => expect(input).toHaveValue(3))
   })
@@ -51,156 +84,159 @@ describe('TimeEntryPanel', () => {
     await userEvent.type(input, '2.5')
     await userEvent.tab()
     await waitFor(async () => {
-      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
-      expect(entries.find((e) => e.category === '_SUPPORT')?.hours).toBe(2.5)
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.entries.find((e) => e.category === '_SUPPORT')?.hours).toBe(2.5)
     })
   })
 
   it('updates an existing booking with a new value', async () => {
-    const { repo } = setup([{ id: '1', date: DATE, category: '_INFRA', hours: 4 }])
+    const { repo } = setup({ [DATE]: { entries: [{ id: '1', category: '_INFRA', hours: 4 }], windows: [] } })
     const input = await screen.findByLabelText('Hours for _INFRA')
     await waitFor(() => expect(input).toHaveValue(4))
     await userEvent.clear(input)
     await userEvent.type(input, '6')
     await userEvent.tab()
     await waitFor(async () => {
-      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
-      expect(entries.find((e) => e.category === '_INFRA')?.hours).toBe(6)
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.entries.find((e) => e.category === '_INFRA')?.hours).toBe(6)
     })
   })
 
   it('removes the entry when hours set to 0', async () => {
-    const { repo } = setup([{ id: '1', date: DATE, category: '_SUPPORT', hours: 3 }])
+    const { repo } = setup({ [DATE]: { entries: [{ id: '1', category: '_SUPPORT', hours: 3 }], windows: [] } })
     const input = await screen.findByLabelText('Hours for _SUPPORT')
     await waitFor(() => expect(input).toHaveValue(3))
     await userEvent.clear(input)
     await userEvent.type(input, '0')
     await userEvent.tab()
     await waitFor(async () => {
-      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
-      expect(entries.find((e) => e.category === '_SUPPORT')).toBeUndefined()
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.entries.find((e) => e.category === '_SUPPORT')).toBeUndefined()
     })
   })
 
   it('displays total booked hours', async () => {
-    setup([
-      { id: '1', date: DATE, category: '_SUPPORT', hours: 3 },
-      { id: '2', date: DATE, category: '_INFRA', hours: 2 },
-    ])
+    setup({
+      [DATE]: {
+        entries: [
+          { id: '1', category: '_SUPPORT', hours: 3 },
+          { id: '2', category: '_INFRA', hours: 2 },
+        ],
+        windows: [],
+      },
+    })
     expect(await screen.findByLabelText('Total booked hours')).toHaveTextContent('5h')
   })
 
   it('increments hours by 0.25 when + button is clicked', async () => {
-    const { repo } = setup([{ id: '1', date: DATE, category: '_SUPPORT', hours: 2 }])
+    const { repo } = setup({ [DATE]: { entries: [{ id: '1', category: '_SUPPORT', hours: 2 }], windows: [] } })
     const btn = await screen.findByLabelText('Increase _SUPPORT')
     await userEvent.click(btn)
     await waitFor(async () => {
-      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
-      expect(entries.find((e) => e.category === '_SUPPORT')?.hours).toBe(2.25)
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.entries.find((e) => e.category === '_SUPPORT')?.hours).toBe(2.25)
     })
   })
 
   it('decrements hours by 0.25 when - button is clicked', async () => {
-    const { repo } = setup([{ id: '1', date: DATE, category: '_SUPPORT', hours: 2 }])
+    const { repo } = setup({ [DATE]: { entries: [{ id: '1', category: '_SUPPORT', hours: 2 }], windows: [] } })
     const btn = await screen.findByLabelText('Decrease _SUPPORT')
     await userEvent.click(btn)
     await waitFor(async () => {
-      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
-      expect(entries.find((e) => e.category === '_SUPPORT')?.hours).toBe(1.75)
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.entries.find((e) => e.category === '_SUPPORT')?.hours).toBe(1.75)
     })
   })
 
   it('does not go below 0 when decrementing', async () => {
-    const { repo } = setup([{ id: '1', date: DATE, category: '_SUPPORT', hours: 0.25 }])
+    const { repo } = setup({ [DATE]: { entries: [{ id: '1', category: '_SUPPORT', hours: 0.25 }], windows: [] } })
     const btn = await screen.findByLabelText('Decrease _SUPPORT')
     await userEvent.click(btn)
     await waitFor(async () => {
-      const entries = await repo.findByDateRange(new Date(DATE), new Date(DATE))
-      expect(entries.find((e) => e.category === '_SUPPORT')).toBeUndefined()
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.entries.find((e) => e.category === '_SUPPORT')).toBeUndefined()
     })
   })
 
   it('starting category tracking opens a WorkPeriod when none exists', async () => {
-    const { workPeriodRepo } = setup()
+    const { repo } = setup()
     await screen.findByLabelText('Start tracking _SUPPORT')
     await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
     await waitFor(async () => {
-      const windows = await workPeriodRepo.findByDate(new Date(DATE))
+      const data = await repo.getMonth(YEAR, MONTH)
+      const windows = data[DATE]?.windows ?? []
       expect(windows).toHaveLength(1)
       expect(windows[0]!.end).toBeNull()
     })
   })
 
   it('starting category tracking does not open a second WorkPeriod when one is already open', async () => {
-    const openWindow = { id: 'existing', date: DATE, start: '09:00', end: null }
-    const { workPeriodRepo } = setup([], [openWindow])
+    const { repo } = setup({ [DATE]: { entries: [], windows: [{ id: 'existing', start: '09:00', end: null }] } })
     await screen.findByLabelText('Start tracking _SUPPORT')
     await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
     await waitFor(async () => {
-      const windows = await workPeriodRepo.findByDate(new Date(DATE))
+      const data = await repo.getMonth(YEAR, MONTH)
+      const windows = data[DATE]?.windows ?? []
       expect(windows.filter((w) => w.end === null)).toHaveLength(1)
     })
   })
 
   it('switching categories keeps the existing open WorkPeriod open and does not create a new one', async () => {
-    const { workPeriodRepo } = setup()
+    const { repo } = setup()
     await screen.findByLabelText('Start tracking _SUPPORT')
     await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
     await waitFor(async () => {
-      const windows = await workPeriodRepo.findByDate(new Date(DATE))
-      expect(windows).toHaveLength(1)
-      expect(windows[0]!.end).toBeNull()
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect((data[DATE]?.windows ?? []).length).toBe(1)
     })
-    // Switch to a different category
     await userEvent.click(screen.getByLabelText('Start tracking _INFRA'))
     await waitFor(async () => {
-      const windows = await workPeriodRepo.findByDate(new Date(DATE))
+      const data = await repo.getMonth(YEAR, MONTH)
+      const windows = data[DATE]?.windows ?? []
       expect(windows).toHaveLength(1)
       expect(windows[0]!.end).toBeNull()
     })
   })
 
   it('stopping category tracking closes the latest open WorkPeriod', async () => {
-    const { workPeriodRepo } = setup()
+    const { repo } = setup()
     await screen.findByLabelText('Start tracking _SUPPORT')
     await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
     await waitFor(async () => {
-      const windows = await workPeriodRepo.findByDate(new Date(DATE))
-      expect(windows[0]!.end).toBeNull()
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect((data[DATE]?.windows ?? [])[0]?.end).toBeNull()
     })
     await userEvent.click(screen.getByLabelText('Stop tracking _SUPPORT'))
     await waitFor(async () => {
-      const windows = await workPeriodRepo.findByDate(new Date(DATE))
+      const data = await repo.getMonth(YEAR, MONTH)
+      const windows = data[DATE]?.windows ?? []
       expect(windows[0]!.end).not.toBeNull()
       expect(windows[0]!.end).toMatch(/^\d{2}:\d{2}$/)
     })
   })
 
   it('stopping tracking is a no-op on WorkPeriods when none are open', async () => {
-    const { workPeriodRepo } = setup()
+    const { repo } = setup()
     await screen.findByLabelText('Start tracking _SUPPORT')
     await userEvent.click(screen.getByLabelText('Start tracking _SUPPORT'))
     await userEvent.click(screen.getByLabelText('Stop tracking _SUPPORT'))
-    // windows now closed; stop again does nothing
     await waitFor(async () => {
-      const windows = await workPeriodRepo.findByDate(new Date(DATE))
-      expect(windows).toHaveLength(1) // still just the one, not a new one
+      const data = await repo.getMonth(YEAR, MONTH)
+      const windows = data[DATE]?.windows ?? []
+      expect(windows).toHaveLength(1)
     })
   })
 
   describe('auto-category toggle', () => {
     function setupWithAutoCategory(autoCategory: string, onAutoCategoryChange: (cat: string | null) => void) {
-      const repo = new InMemoryTimeEntryRepository([])
+      const repo = new InMemoryMonthRepository()
       const trackingRepo = new InMemoryTimeTrackingRepository()
-      const workPeriodRepo = new InMemoryWorkPeriodRepository([])
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <TimeEntryPanel
-            date={DATE}
-            repository={repo}
-            timeTrackingRepository={trackingRepo}
-            workPeriodRepository={workPeriodRepo}
+          <TestPanel
+            repo={repo}
+            trackingRepo={trackingRepo}
             autoCategory={autoCategory}
             onAutoCategoryChange={onAutoCategoryChange}
           />
@@ -211,9 +247,7 @@ describe('TimeEntryPanel', () => {
     it('renders toggle buttons for each category when onAutoCategoryChange is provided', async () => {
       const onChange = vi.fn<(cat: string | null) => void>()
       setupWithAutoCategory('_SUPPORT', onChange)
-      // filled circle on the active auto category
       expect(await screen.findByLabelText('Unset _SUPPORT as auto category')).toBeInTheDocument()
-      // empty circle on the others
       expect(screen.getByLabelText('Set _INFRA as auto category')).toBeInTheDocument()
     })
 
@@ -240,24 +274,19 @@ describe('TimeEntryPanel', () => {
 
   describe('category reorder', () => {
     it('renders drag handles when onCategoryReorder is provided', async () => {
-      const onReorder = vi.fn()
-      const repo = new InMemoryTimeEntryRepository([])
+      const repo = new InMemoryMonthRepository()
       const trackingRepo = new InMemoryTimeTrackingRepository()
-      const workPeriodRepo = new InMemoryWorkPeriodRepository([])
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <TimeEntryPanel
-            date={DATE}
-            repository={repo}
-            timeTrackingRepository={trackingRepo}
-            workPeriodRepository={workPeriodRepo}
-            onCategoryReorder={onReorder}
+          <TestPanel
+            repo={repo}
+            trackingRepo={trackingRepo}
+            onCategoryReorder={vi.fn()}
             customCategories={[]}
           />
         </QueryClientProvider>,
       )
-      // All 10 default categories should be draggable
       const items = await screen.findAllByRole('listitem')
       for (const item of items) {
         expect(item).toHaveAttribute('draggable', 'true')

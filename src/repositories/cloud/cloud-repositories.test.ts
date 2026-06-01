@@ -1,12 +1,8 @@
 import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'
-import { CloudTimeEntryRepository } from './time-entry-repository'
-import { CloudWorkPeriodRepository } from './work-period-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
-import { CloudWorkLocationRepository } from './work-location-repository'
-import { CloudDayTypeOverrideRepository } from './day-type-override-repository'
 import { CloudTimeTrackingRepository } from './time-tracking-repository'
-import { CloudAutoCategoryOverrideRepository } from './auto-category-override-repository'
+import { CloudMonthRepository } from './month-repository'
 
 describe('CloudConfigRepository', () => {
   it('returns defaults when no data stored', async () => {
@@ -28,7 +24,6 @@ describe('CloudConfigRepository', () => {
       sprintStartDate: '2024-01-01',
       customCategories: ['Custom1'],
     })
-    // New instance to verify persistence through adapter
     const repo2 = new CloudConfigRepository(adapter)
     const config = await repo2.get()
     expect(config.sollstunden).toBe(7)
@@ -37,64 +32,101 @@ describe('CloudConfigRepository', () => {
   })
 })
 
-describe('CloudTimeEntryRepository', () => {
-  it('saves and finds entries by date range', async () => {
+describe('CloudMonthRepository', () => {
+  it('returns empty object for month with no data', async () => {
     const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudTimeEntryRepository(adapter)
-    await repo.save({ id: 'e1', date: '2024-01-15', category: 'QA', hours: 4 })
-    await repo.save({ id: 'e2', date: '2024-01-16', category: 'Infra', hours: 2 })
-    await repo.save({ id: 'e3', date: '2024-01-20', category: 'QA', hours: 3 })
+    const repo = new CloudMonthRepository(adapter)
+    const data = await repo.getMonth(2026, 5)
+    expect(data).toEqual({})
+  })
 
-    const results = await repo.findByDateRange(new Date('2024-01-15'), new Date('2024-01-16'))
+  it('updateDay writes and retrieves day data', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-05-15', (day) => ({
+      ...day,
+      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
+    }))
+    const data = await repo.getMonth(2026, 5)
+    expect(data['2026-05-15']?.entries).toHaveLength(1)
+    expect(data['2026-05-15']?.entries[0]?.hours).toBe(6)
+  })
+
+  it('updateDay removes day when empty', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-05-15', (day) => ({
+      ...day,
+      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
+    }))
+    await repo.updateDay('2026-05-15', (day) => ({
+      ...day,
+      entries: [],
+    }))
+    const data = await repo.getMonth(2026, 5)
+    expect(data['2026-05-15']).toBeUndefined()
+  })
+
+  it('deleteMonth removes all data for month', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-05-15', () => ({
+      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
+      windows: [],
+    }))
+    await repo.deleteMonth(2026, 5)
+    const data = await repo.getMonth(2026, 5)
+    expect(Object.keys(data)).toHaveLength(0)
+  })
+
+  it('getAllMonths returns months that have data', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-05-15', () => ({
+      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
+      windows: [],
+    }))
+    await repo.updateDay('2026-06-01', () => ({
+      entries: [{ id: 'e2', category: '_SUPPORT', hours: 4 }],
+      windows: [],
+    }))
+    const months = await repo.getAllMonths()
+    expect(months).toContain('2026-05')
+    expect(months).toContain('2026-06')
+  })
+
+  it('findEntriesByDateRange returns dated entries across months', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-05-15', () => ({
+      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
+      windows: [],
+    }))
+    await repo.updateDay('2026-06-01', () => ({
+      entries: [{ id: 'e2', category: '_SUPPORT', hours: 4 }],
+      windows: [],
+    }))
+    const results = await repo.findEntriesByDateRange('2026-05-01', '2026-06-30')
     expect(results).toHaveLength(2)
+    const e1 = results.find((e) => e.id === 'e1')
+    expect(e1?.date).toBe('2026-05-15')
+    expect(e1?.hours).toBe(6)
   })
 
-  it('updates existing entry', async () => {
+  it('findEntriesByDateRange filters by date bounds', async () => {
     const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudTimeEntryRepository(adapter)
-    await repo.save({ id: 'e1', date: '2024-01-15', category: 'QA', hours: 4 })
-    await repo.save({ id: 'e1', date: '2024-01-15', category: 'QA', hours: 6 })
-    const results = await repo.findByDateRange(new Date('2024-01-15'), new Date('2024-01-15'))
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-05-10', () => ({
+      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 2 }],
+      windows: [],
+    }))
+    await repo.updateDay('2026-05-20', () => ({
+      entries: [{ id: 'e2', category: '_COREMEDIA', hours: 3 }],
+      windows: [],
+    }))
+    const results = await repo.findEntriesByDateRange('2026-05-15', '2026-05-31')
     expect(results).toHaveLength(1)
-    expect(results[0]!.hours).toBe(6)
-  })
-
-  it('deletes entry', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudTimeEntryRepository(adapter)
-    await repo.save({ id: 'e1', date: '2024-01-15', category: 'QA', hours: 4 })
-    await repo.delete('e1')
-    const results = await repo.findByDateRange(new Date('2024-01-15'), new Date('2024-01-15'))
-    expect(results).toHaveLength(0)
-  })
-})
-
-describe('CloudWorkPeriodRepository', () => {
-  it('saves and finds by date', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkPeriodRepository(adapter)
-    await repo.save({ id: 'w1', date: '2024-01-15', start: '09:00', end: '17:00' })
-    const results = await repo.findByDate(new Date('2024-01-15'))
-    expect(results).toHaveLength(1)
-    expect(results[0]!.start).toBe('09:00')
-  })
-
-  it('finds by date range', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkPeriodRepository(adapter)
-    await repo.save({ id: 'w1', date: '2024-01-15', start: '09:00', end: '12:00' })
-    await repo.save({ id: 'w2', date: '2024-01-16', start: '10:00', end: '18:00' })
-    const results = await repo.findByDateRange(new Date('2024-01-15'), new Date('2024-01-16'))
-    expect(results).toHaveLength(2)
-  })
-
-  it('deletes window', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkPeriodRepository(adapter)
-    await repo.save({ id: 'w1', date: '2024-01-15', start: '09:00', end: '17:00' })
-    await repo.delete('w1')
-    const results = await repo.findByDate(new Date('2024-01-15'))
-    expect(results).toHaveLength(0)
+    expect(results[0]?.id).toBe('e2')
   })
 })
 
@@ -111,60 +143,6 @@ describe('CloudSprintExportRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudSprintExportRepository(adapter)
     expect(await repo.findBySprintIndex(99)).toBeNull()
-  })
-})
-
-describe('CloudWorkLocationRepository', () => {
-  it('saves and finds by date', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkLocationRepository(adapter)
-    await repo.save('2024-01-15', 'Office')
-    expect(await repo.findByDate('2024-01-15')).toBe('Office')
-  })
-
-  it('deletes location', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkLocationRepository(adapter)
-    await repo.save('2024-01-15', 'Remote')
-    await repo.delete('2024-01-15')
-    expect(await repo.findByDate('2024-01-15')).toBeNull()
-  })
-
-  it('finds by date range', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudWorkLocationRepository(adapter)
-    await repo.save('2024-01-15', 'Office')
-    await repo.save('2024-01-16', 'Remote')
-    await repo.save('2024-01-20', 'Office')
-    const result = await repo.findByDateRange('2024-01-15', '2024-01-16')
-    expect(result.size).toBe(2)
-  })
-})
-
-describe('CloudDayTypeOverrideRepository', () => {
-  it('saves and finds by date', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudDayTypeOverrideRepository(adapter)
-    await repo.save('2024-01-15', 'Vacation')
-    expect(await repo.findByDate('2024-01-15')).toBe('Vacation')
-  })
-
-  it('deletes override', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudDayTypeOverrideRepository(adapter)
-    await repo.save('2024-01-15', 'SickDay')
-    await repo.delete('2024-01-15')
-    expect(await repo.findByDate('2024-01-15')).toBeNull()
-  })
-
-  it('finds by date range', async () => {
-    const adapter = new InMemoryStorageAdapter()
-    const repo = new CloudDayTypeOverrideRepository(adapter)
-    await repo.save('2024-01-15', 'Vacation')
-    await repo.save('2024-01-16', 'SickDay')
-    await repo.save('2024-01-20', 'Absence')
-    const result = await repo.findByDateRange('2024-01-15', '2024-01-16')
-    expect(result.size).toBe(2)
   })
 })
 
@@ -198,41 +176,12 @@ describe('CloudTimeTrackingRepository', () => {
     vi.useFakeTimers()
     const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
     await repo.start('2026-05-25', '_SUPPORT')
-    vi.advanceTimersByTime(30 * 60 * 1000) // advance 30 minutes
+    vi.advanceTimersByTime(30 * 60 * 1000)
     const result = await repo.stop()
     expect(result).not.toBeNull()
     expect(result?.category).toBe('_SUPPORT')
     expect(result?.date).toBe('2026-05-25')
     expect(result?.hours).toBeGreaterThan(0)
     vi.useRealTimers()
-  })
-})
-
-describe('CloudAutoCategoryOverrideRepository', () => {
-  it('returns null for unknown date', async () => {
-    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
-    expect(await repo.findByDate('2026-05-25')).toBeNull()
-  })
-
-  it('saves and retrieves override', async () => {
-    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
-    await repo.save('2026-05-25', '_SUPPORT')
-    expect(await repo.findByDate('2026-05-25')).toBe('_SUPPORT')
-  })
-
-  it('deletes override', async () => {
-    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
-    await repo.save('2026-05-25', '_SUPPORT')
-    await repo.delete('2026-05-25')
-    expect(await repo.findByDate('2026-05-25')).toBeNull()
-  })
-
-  it('finds by date range', async () => {
-    const repo = new CloudAutoCategoryOverrideRepository(new InMemoryStorageAdapter())
-    await repo.save('2026-05-25', '_SUPPORT')
-    await repo.save('2026-05-26', '_COREMEDIA')
-    const result = await repo.findByDateRange('2026-05-25', '2026-05-25')
-    expect(result.size).toBe(1)
-    expect(result.get('2026-05-25')).toBe('_SUPPORT')
   })
 })

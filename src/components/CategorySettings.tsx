@@ -288,7 +288,7 @@ export function CategorySettings({ repository }: Props) {
 
   function handleSaveDesc(idx: number) {
     const cat = categories[idx]
-    if (!cat) { setEditingDescIdx(null); return }
+    if (!cat || !config) { setEditingDescIdx(null); return }
     const trimmed = editDescValue.trim()
     const descs = { ...(config.categoryDescriptions ?? {}) }
     if (trimmed) descs[cat] = trimmed
@@ -298,7 +298,7 @@ export function CategorySettings({ repository }: Props) {
   }
 
   function handleResetToImportOrder() {
-    if (!config.categoryImportOrder) return
+    if (!config?.categoryImportOrder) return
     categoryMutation.mutate({ categoryOrder: config.categoryImportOrder })
   }
 

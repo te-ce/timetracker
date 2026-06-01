@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo, autoCategoryOverrideRepo, timeTrackingRepo, dayNoteRepo } from '../repositories/shared'
+import { monthRepo, configRepo, timeTrackingRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import { toLocalIso } from '../domain/dateUtils'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthQuery } from '../hooks/useMonthQuery'
 import type { AppConfig, WorkLocation } from '../repositories/types'
@@ -52,46 +51,6 @@ async function saveAutoCategory(category: string): Promise<void> {
   await configRepo.save({ ...cfg, autoCategory: category })
 }
 
-async function renameCategoryData(
-  oldName: string,
-  newName: string,
-  from: Date,
-  to: Date,
-): Promise<void> {
-  const cfg = await configRepo.get()
-  const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
-  const categoryOrder = cfg.categoryOrder ? cfg.categoryOrder : []
-  const newOrder = categoryOrder.map((c) => (c === oldName ? newName : c))
-  await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder })
-  const currentEntries = await timeEntryRepo.findByDateRange(from, to)
-  for (const entry of currentEntries.filter((e) => e.category === oldName)) {
-    await timeEntryRepo.save({ ...entry, category: newName })
-  }
-}
-
-async function deleteAllMonthData(year: number, month: number): Promise<void> {
-  const from = new Date(year, month - 1, 1)
-  const to = new Date(year, month, 0)
-  const fromIso = toLocalIso(from)
-  const toIso = toLocalIso(to)
-  const [entries, periods, locations, overrides, autoCatOverrides, confirmedSet] = await Promise.all([
-    timeEntryRepo.findByDateRange(from, to),
-    workPeriodRepo.findByDateRange(from, to),
-    workLocationRepo.findByDateRange(fromIso, toIso),
-    dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
-    autoCategoryOverrideRepo.findByDateRange(fromIso, toIso),
-    dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
-  ])
-  await Promise.all([
-    ...entries.map((e) => timeEntryRepo.delete(e.id)),
-    ...periods.map((p) => workPeriodRepo.delete(p.id)),
-    ...[...locations.keys()].map((d) => workLocationRepo.delete(d)),
-    ...[...overrides.keys()].map((d) => dayTypeOverrideRepo.delete(d)),
-    ...[...autoCatOverrides.keys()].map((d) => autoCategoryOverrideRepo.delete(d)),
-    ...[...confirmedSet].map((d) => dayConfirmationRepo.unconfirm(d)),
-  ])
-}
-
 export function MonthGridView() {
   const navigate = useNavigate()
   const today = new Date()
@@ -103,8 +62,6 @@ export function MonthGridView() {
     queryKey: QUERY_KEYS.activeTracking,
     queryFn: () => timeTrackingRepo.getActive(),
   })
-  const from = new Date(year, month - 1, 1)
-  const to = new Date(year, month, 0)
 
   const categoryReorderMutation = useMutation({
     mutationFn: saveCategoryOrder,
@@ -117,18 +74,40 @@ export function MonthGridView() {
   })
 
   const categoryRenameMutation = useMutation({
-    mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
-      renameCategoryData(oldName, newName, from, to),
+    mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
+      const cfg = await configRepo.get()
+      const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
+      const categoryOrder = cfg.categoryOrder ? cfg.categoryOrder : []
+      const newOrder = categoryOrder.map((c) => (c === oldName ? newName : c))
+      await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder })
+      await monthRepo.updateDay(
+        `${year}-${String(month).padStart(2, '0')}-01`,
+        (day) => day,
+      )
+      const data = await monthRepo.getMonth(year, month)
+      for (const [date, day] of Object.entries(data)) {
+        if (day.entries.some((e) => e.category === oldName)) {
+          await monthRepo.updateDay(date, (d) => ({
+            ...d,
+            entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
+          }))
+        }
+      }
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.timeEntriesAll })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
     },
   })
 
   const noteMutation = useMutation({
     mutationFn: ({ date, note }: { date: string; note: string }) =>
-      note ? dayNoteRepo.save(date, note) : dayNoteRepo.delete(date),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayNotesAll }),
+      monthRepo.updateDay(date, (day) => {
+        const updated = { ...day }
+        delete updated.note
+        return note ? { ...updated, note } : updated
+      }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
   const { config, dayTypeOverrides, workLocations, confirmedDays, dayNotes, overtimeToDate, trackedWorkDays, officeDays, officePercent, sollstunden } =
@@ -137,10 +116,8 @@ export function MonthGridView() {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const resetMonthMutation = useMutation({
-    mutationFn: () => deleteAllMonthData(year, month),
-    onSuccess: () => {
-      void queryClient.invalidateQueries()
-    },
+    mutationFn: () => monthRepo.deleteMonth(year, month),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
   function prevMonth() {
@@ -207,11 +184,7 @@ export function MonthGridView() {
       <MonthGrid
         year={year}
         month={month}
-        timeEntryRepository={timeEntryRepo}
-        workPeriodRepository={workPeriodRepo}
-        dayConfirmationRepository={dayConfirmationRepo}
-        dayTypeOverrideRepository={dayTypeOverrideRepo}
-        workLocationRepository={workLocationRepo}
+        repository={monthRepo}
         autoCategory={gridConfig.autoCategory}
         customCategories={gridConfig.customCategories}
         categoryOrder={config ? config.categoryOrder : undefined}

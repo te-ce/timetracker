@@ -1,13 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import {
-  workPeriodRepo,
-  timeEntryRepo,
-  configRepo,
-  dayTypeOverrideRepo,
-  dayConfirmationRepo,
-  workLocationRepo,
-  dayNoteRepo,
-} from '../repositories/shared'
+import { monthRepo, configRepo } from '../repositories/shared'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { toLocalIso } from '../domain/dateUtils'
@@ -15,10 +7,6 @@ import { QUERY_KEYS } from './queryKeys'
 import type { DayTypeOverride, WorkLocation } from '../repositories/types'
 
 export function useMonthQuery(year: number, month: number) {
-  const from = new Date(year, month - 1, 1)
-  const to = new Date(year, month, 0)
-  const fromIso = toLocalIso(from)
-  const toIso = toLocalIso(to)
   const todayIso = toLocalIso(new Date())
 
   const { data: config } = useQuery({
@@ -26,44 +14,17 @@ export function useMonthQuery(year: number, month: number) {
     queryFn: () => configRepo.get(),
   })
 
-  const { data: windows = [] } = useQuery({
-    queryKey: QUERY_KEYS.workWindowsByMonthTagged(year, month, 'month'),
-    queryFn: () => workPeriodRepo.findByDateRange(from, to),
-  })
-
-  const { data: entries = [] } = useQuery({
-    queryKey: QUERY_KEYS.timeEntriesByMonthTagged(year, month, 'month'),
-    queryFn: () => timeEntryRepo.findByDateRange(from, to),
-  })
-
-  const { data: dayTypeOverrides = new Map<string, DayTypeOverride>() } = useQuery({
-    queryKey: QUERY_KEYS.dayTypeOverridesByMonth(year, month),
-    queryFn: () => dayTypeOverrideRepo.findByDateRange(fromIso, toIso),
-  })
-
-  const { data: confirmedDays = new Set<string>() } = useQuery({
-    queryKey: QUERY_KEYS.dayConfirmationsByMonth(year, month),
-    queryFn: () => dayConfirmationRepo.findConfirmedInRange(fromIso, toIso),
-  })
-
-  const { data: workLocations = new Map<string, WorkLocation>() } = useQuery({
-    queryKey: QUERY_KEYS.workLocationsByMonth(year, month),
-    queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
-  })
-
-  const { data: dayNotes = new Map<string, string>() } = useQuery({
-    queryKey: QUERY_KEYS.dayNotesByMonth(year, month),
-    queryFn: () => dayNoteRepo.findByDateRange(fromIso, toIso),
+  const { data: monthData = {} } = useQuery({
+    queryKey: QUERY_KEYS.month(year, month),
+    queryFn: () => monthRepo.getMonth(year, month),
   })
 
   const sollstunden = config?.sollstunden ?? 8
 
   const summaries = buildMonthSummaries(year, month, {
-    windows,
-    entries,
-    dayTypeOverrides,
+    monthData,
     today: todayIso,
-    confirmedDays,
+    globalAutoCategory: config?.autoCategory ?? null,
   })
 
   const overtimeToDate = calculateOvertimeToDate(
@@ -72,6 +33,18 @@ export function useMonthQuery(year: number, month: number) {
     todayIso,
     sollstunden,
   )
+
+  const dayTypeOverrides = new Map<string, DayTypeOverride>()
+  const workLocations = new Map<string, WorkLocation>()
+  const confirmedDays = new Set<string>()
+  const dayNotes = new Map<string, string>()
+
+  for (const [date, day] of Object.entries(monthData)) {
+    if (day.dayTypeOverride) dayTypeOverrides.set(date, day.dayTypeOverride)
+    if (day.location) workLocations.set(date, day.location)
+    if (day.confirmed) confirmedDays.add(date)
+    if (day.note) dayNotes.set(date, day.note)
+  }
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length

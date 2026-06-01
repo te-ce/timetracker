@@ -1,7 +1,6 @@
 import type { DayType } from './dayType'
 import type { DayStatus } from './dayStatus'
-import type { TimeEntry, WorkPeriod } from '../repositories/types'
-import type { DayTypeOverride } from '../repositories/types'
+import type { MonthData } from '../repositories/types'
 import { classifyDay } from './dayStatus'
 import { classifyDay as classifyDayType } from './dayType'
 import { calculateWorkedHours } from './worktime'
@@ -20,13 +19,9 @@ export interface DaySummary {
 }
 
 export interface MonthSummaryInput {
-  windows: WorkPeriod[]
-  entries: TimeEntry[]
-  dayTypeOverrides: Map<string, DayTypeOverride>
+  monthData: MonthData
   today: string
   globalAutoCategory?: string | null
-  autoCategoryOverrides?: Map<string, string>
-  confirmedDays?: Set<string>
 }
 
 export interface MonthSummaryResult {
@@ -36,112 +31,45 @@ export interface MonthSummaryResult {
   hasAnyTrackedHours: boolean
 }
 
-function groupByDate<T extends { date: string }>(items: T[]): Map<string, T[]> {
-  const map = new Map<string, T[]>()
-  for (const item of items) {
-    const list = map.get(item.date) ?? []
-    list.push(item)
-    map.set(item.date, list)
-  }
-  return map
-}
-
-interface DaySummaryInput {
-  iso: string
-  date: Date
-  dayWindows: WorkPeriod[]
-  dayEntries: TimeEntry[]
-  dayTypeOverrides: Map<string, DayTypeOverride>
-  today: string
-  globalAutoCategory: string | null
-  autoCategoryOverrides: Map<string, string>
-  confirmedDays: Set<string>
-}
-
-function buildDaySummary(input: DaySummaryInput): DaySummary & { isWorkDay: boolean } {
-  const { iso, date, dayWindows, dayEntries, dayTypeOverrides, today, globalAutoCategory, autoCategoryOverrides, confirmedDays } = input
-  const workedHours = calculateWorkedHours(dayWindows)
-  const entryTotal = dayEntries.reduce((sum, e) => sum + e.hours, 0)
-  const override = dayTypeOverrides.get(iso)
-  const dayType: DayType = override ?? classifyDayType(date)
-  const autoCategory = autoCategoryOverrides.get(iso) ?? globalAutoCategory
-  const hasAutoCategory = !!autoCategory && entryTotal <= workedHours
-  const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01
-
-  const { status: dayStatus, displayStatus, reason: statusReason } = classifyDay({
-    dayType,
-    workedHours,
-    manualTotal: entryTotal,
-    isEntriesBalanced,
-    hasAutoCategory,
-    isConfirmed: confirmedDays.has(iso),
-    isoDate: iso,
-    today,
-  })
-
-  return {
-    date: iso,
-    dayType,
-    workedHours,
-    entryTotal,
-    isEntriesBalanced,
-    hasAutoCategory,
-    dayStatus,
-    displayStatus,
-    statusReason,
-    isWorkDay: dayType === 'WorkDay',
-  }
-}
-
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
-  const {
-    windows,
-    entries,
-    dayTypeOverrides,
-    today,
-    globalAutoCategory = null,
-    autoCategoryOverrides = new Map<string, string>(),
-    confirmedDays = new Set<string>(),
-  } = input
+  const { monthData, today, globalAutoCategory = null } = input
   const daysInMonth = new Date(year, month, 0).getDate()
-
-  const windowsByDate = groupByDate(windows)
-  const entriesByDate = groupByDate(entries)
 
   const days: DaySummary[] = []
   const workedHoursPerDay: number[] = []
   let workDayCount = 0
 
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month - 1, day)
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month - 1, d)
     const iso = toLocalIso(date)
-    const summary = buildDaySummary({
-      iso,
-      date,
-      dayWindows: windowsByDate.get(iso) ?? [],
-      dayEntries: entriesByDate.get(iso) ?? [],
-      dayTypeOverrides,
+    const dayData = monthData[iso]
+    const dayWindows = dayData?.windows ?? []
+    const dayEntries = dayData?.entries ?? []
+
+    const workedHours = calculateWorkedHours(dayWindows)
+    const entryTotal = dayEntries.reduce((sum, e) => sum + e.hours, 0)
+    const dayType: DayType = dayData?.dayTypeOverride ?? classifyDayType(date)
+    const autoCategory = dayData?.autoCategoryOverride ?? globalAutoCategory
+    const hasAutoCategory = !!autoCategory && entryTotal <= workedHours
+    const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01
+    const isConfirmed = dayData?.confirmed ?? false
+
+    const { status: dayStatus, displayStatus, reason: statusReason } = classifyDay({
+      dayType,
+      workedHours,
+      manualTotal: entryTotal,
+      isEntriesBalanced,
+      hasAutoCategory,
+      isConfirmed,
+      isoDate: iso,
       today,
-      globalAutoCategory,
-      autoCategoryOverrides,
-      confirmedDays,
     })
-    if (summary.isWorkDay) workDayCount++
-    workedHoursPerDay.push(summary.workedHours)
-    days.push({
-      date: summary.date,
-      dayType: summary.dayType,
-      workedHours: summary.workedHours,
-      entryTotal: summary.entryTotal,
-      isEntriesBalanced: summary.isEntriesBalanced,
-      hasAutoCategory: summary.hasAutoCategory,
-      dayStatus: summary.dayStatus,
-      displayStatus: summary.displayStatus,
-      statusReason: summary.statusReason,
-    })
+
+    if (dayType === 'WorkDay') workDayCount++
+    workedHoursPerDay.push(workedHours)
+    days.push({ date: iso, dayType, workedHours, entryTotal, isEntriesBalanced, hasAutoCategory, dayStatus, displayStatus, statusReason })
   }
 
   const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)
-
   return { days, workDayCount, workedHoursPerDay, hasAnyTrackedHours }
 }

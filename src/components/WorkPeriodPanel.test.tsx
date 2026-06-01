@@ -1,18 +1,34 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { InMemoryWorkPeriodRepository } from '../repositories/in-memory'
+import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { InMemoryMonthRepository } from '../repositories/in-memory'
 import { WorkPeriodPanel } from './WorkPeriodPanel'
-import type { WorkPeriod } from '../repositories/types'
+import type { WorkPeriod, MonthData, MonthRepository } from '../repositories/types'
+import { QUERY_KEYS } from '../hooks/queryKeys'
 
 const DATE = '2024-01-15'
+const YEAR = 2024
+const MONTH = 1
+
+function TestPanel({ repo }: { repo: MonthRepository }) {
+  const { data: monthData = {} } = useQuery<MonthData>({
+    queryKey: QUERY_KEYS.month(YEAR, MONTH),
+    queryFn: () => repo.getMonth(YEAR, MONTH),
+  })
+  const windows = monthData[DATE]?.windows ?? []
+  return <WorkPeriodPanel date={DATE} windows={windows} repository={repo} />
+}
 
 function setup(initialWindows: WorkPeriod[] = []) {
-  const repo = new InMemoryWorkPeriodRepository(initialWindows)
+  const repo = new InMemoryMonthRepository(
+    initialWindows.length > 0
+      ? { '2024-01': { [DATE]: { entries: [], windows: initialWindows } } }
+      : {},
+  )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <WorkPeriodPanel date={DATE} repository={repo} />
+      <TestPanel repo={repo} />
     </QueryClientProvider>,
   )
   return { repo }
@@ -22,6 +38,11 @@ async function addWindow(start: string, end: string) {
   await userEvent.type(screen.getByLabelText(/start/i), start)
   await userEvent.type(screen.getByLabelText(/end/i), end)
   await userEvent.click(screen.getByRole('button', { name: /add/i }))
+}
+
+async function getWindows(repo: InMemoryMonthRepository): Promise<WorkPeriod[]> {
+  const data = await repo.getMonth(YEAR, MONTH)
+  return data[DATE]?.windows ?? []
 }
 
 describe('WorkPeriodPanel', () => {
@@ -56,7 +77,7 @@ describe('WorkPeriodPanel', () => {
   })
 
   it('clicking a window shows edit inputs with current values', async () => {
-    setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    setup([{ id: 'w1', start: '09:00', end: '17:00' }])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
     expect(screen.getByDisplayValue('09:00')).toBeInTheDocument()
@@ -64,7 +85,7 @@ describe('WorkPeriodPanel', () => {
   })
 
   it('editing a window updates the stored time', async () => {
-    const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
 
@@ -74,12 +95,12 @@ describe('WorkPeriodPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /save/i }))
 
     expect(await screen.findByText('08:00 – 17:00')).toBeInTheDocument()
-    const saved = await repo.findByDate(new Date(DATE))
+    const saved = await getWindows(repo)
     expect(saved[0]!.start).toBe('08:00')
   })
 
   it('pressing Escape cancels editing without saving', async () => {
-    setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    setup([{ id: 'w1', start: '09:00', end: '17:00' }])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
 
@@ -104,13 +125,15 @@ describe('WorkPeriodPanel', () => {
     await screen.findByText(/no work periods/i)
     await userEvent.type(screen.getByLabelText(/start/i), '09:00')
     await userEvent.click(screen.getByRole('button', { name: /add/i }))
-    const windows = await repo.findByDate(new Date(DATE))
-    expect(windows[0]!.start).toBe('09:00')
-    expect(windows[0]!.end).toBeNull()
+    await waitFor(async () => {
+      const windows = await getWindows(repo)
+      expect(windows[0]!.start).toBe('09:00')
+      expect(windows[0]!.end).toBeNull()
+    })
   })
 
   it('displays an open WorkPeriod as "HH:MM – …"', async () => {
-    setup([{ id: 'w1', date: DATE, start: '09:00', end: null }])
+    setup([{ id: 'w1', start: '09:00', end: null }])
     expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
   })
 
@@ -118,16 +141,16 @@ describe('WorkPeriodPanel', () => {
     setup()
     await screen.findByText(/no work periods/i)
     const nowButtons = screen.getAllByRole('button', { name: /now/i })
-    await userEvent.click(nowButtons[0]!) // start Now
+    await userEvent.click(nowButtons[0]!)
     const startInput = screen.getByLabelText<HTMLInputElement>(/start/i)
     expect(startInput.value).toMatch(/^\d{2}:\d{2}$/)
-    await userEvent.click(nowButtons[1]!) // end Now
+    await userEvent.click(nowButtons[1]!)
     const endInput = screen.getByLabelText<HTMLInputElement>(/end/i)
     expect(endInput.value).toMatch(/^\d{2}:\d{2}$/)
   })
 
   it('edit form saves with no end, storing end: null', async () => {
-    const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+    const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
 
@@ -135,14 +158,16 @@ describe('WorkPeriodPanel', () => {
     await userEvent.clear(endInput)
     await userEvent.click(screen.getByRole('button', { name: /save/i }))
 
-    const saved = await repo.findByDate(new Date(DATE))
-    expect(saved[0]!.end).toBeNull()
+    await waitFor(async () => {
+      const windows = await getWindows(repo)
+      expect(windows[0]!.end).toBeNull()
+    })
     expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
   })
 
   describe('edit form keyboard shortcuts', () => {
     it('pressing Enter in the edit start input saves the period', async () => {
-      const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -151,13 +176,13 @@ describe('WorkPeriodPanel', () => {
       await userEvent.type(startInput, '10:00{Enter}')
 
       await waitFor(async () => {
-        const saved = await repo.findByDate(new Date(DATE))
+        const saved = await getWindows(repo)
         expect(saved[0]!.start).toBe('10:00')
       })
     })
 
     it('pressing Enter in the edit end input saves the period', async () => {
-      const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -166,13 +191,13 @@ describe('WorkPeriodPanel', () => {
       await userEvent.type(endInput, '18:00{Enter}')
 
       await waitFor(async () => {
-        const saved = await repo.findByDate(new Date(DATE))
+        const saved = await getWindows(repo)
         expect(saved[0]!.end).toBe('18:00')
       })
     })
 
     it('pressing Escape in the edit end input cancels editing', async () => {
-      setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      setup([{ id: 'w1', start: '09:00', end: '17:00' }])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -186,7 +211,7 @@ describe('WorkPeriodPanel', () => {
     })
 
     it('Cancel button in edit form returns to view mode', async () => {
-      setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      setup([{ id: 'w1', start: '09:00', end: '17:00' }])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -200,12 +225,12 @@ describe('WorkPeriodPanel', () => {
 
   describe('remove button', () => {
     it('Remove button deletes the period from the repository', async () => {
-      const { repo } = setup([{ id: 'w1', date: DATE, start: '09:00', end: '17:00' }])
+      const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /remove/i }))
 
       await waitFor(async () => {
-        const saved = await repo.findByDate(new Date(DATE))
+        const saved = await getWindows(repo)
         expect(saved).toHaveLength(0)
       })
     })
@@ -214,8 +239,8 @@ describe('WorkPeriodPanel', () => {
   describe('merge button', () => {
     it('shows merge button between two adjacent periods', async () => {
       setup([
-        { id: 'w1', date: DATE, start: '09:00', end: '13:00' },
-        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+        { id: 'w1', start: '09:00', end: '13:00' },
+        { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
       await screen.findByText('09:00 – 13:00')
@@ -225,15 +250,15 @@ describe('WorkPeriodPanel', () => {
 
     it('merge button merges two periods into one spanning both', async () => {
       const { repo } = setup([
-        { id: 'w1', date: DATE, start: '09:00', end: '13:00' },
-        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+        { id: 'w1', start: '09:00', end: '13:00' },
+        { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
       await screen.findByText('09:00 – 13:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
 
       await waitFor(async () => {
-        const saved = await repo.findByDate(new Date(DATE))
+        const saved = await getWindows(repo)
         expect(saved).toHaveLength(1)
         expect(saved[0]!.start).toBe('09:00')
         expect(saved[0]!.end).toBe('18:00')
@@ -242,8 +267,8 @@ describe('WorkPeriodPanel', () => {
 
     it('does not show merge button when a period has no end', async () => {
       setup([
-        { id: 'w1', date: DATE, start: '09:00', end: null },
-        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+        { id: 'w1', start: '09:00', end: null },
+        { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
       await screen.findByText('09:00 – …')
@@ -252,27 +277,26 @@ describe('WorkPeriodPanel', () => {
 
     it('does not show merge button for the last period in the list', async () => {
       setup([
-        { id: 'w1', date: DATE, start: '09:00', end: '13:00' },
-        { id: 'w2', date: DATE, start: '14:00', end: '18:00' },
+        { id: 'w1', start: '09:00', end: '13:00' },
+        { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
       await screen.findByText('14:00 – 18:00')
-      // Only one merge button for the gap between w1 and w2; w2 has no next
       const mergeBtns = screen.getAllByRole('button', { name: /merge/i })
       expect(mergeBtns).toHaveLength(1)
     })
 
     it('merge picks the later end time when first period ends after second', async () => {
       const { repo } = setup([
-        { id: 'w1', date: DATE, start: '09:00', end: '19:00' },
-        { id: 'w2', date: DATE, start: '14:00', end: '17:00' },
+        { id: 'w1', start: '09:00', end: '19:00' },
+        { id: 'w2', start: '14:00', end: '17:00' },
       ])
 
       await screen.findByText('09:00 – 19:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
 
       await waitFor(async () => {
-        const saved = await repo.findByDate(new Date(DATE))
+        const saved = await getWindows(repo)
         expect(saved).toHaveLength(1)
         expect(saved[0]!.start).toBe('09:00')
         expect(saved[0]!.end).toBe('19:00')
@@ -288,7 +312,7 @@ describe('WorkPeriodPanel', () => {
       await userEvent.type(startInput, '09:00{Enter}')
 
       await waitFor(async () => {
-        const saved = await repo.findByDate(new Date(DATE))
+        const saved = await getWindows(repo)
         expect(saved).toHaveLength(1)
         expect(saved[0]!.start).toBe('09:00')
       })
@@ -301,7 +325,7 @@ describe('WorkPeriodPanel', () => {
       await userEvent.type(screen.getByLabelText(/end/i), '17:00{Enter}')
 
       await waitFor(async () => {
-        const saved = await repo.findByDate(new Date(DATE))
+        const saved = await getWindows(repo)
         expect(saved).toHaveLength(1)
         expect(saved[0]!.start).toBe('09:00')
         expect(saved[0]!.end).toBe('17:00')

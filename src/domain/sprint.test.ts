@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from './sprint'
-import type { TimeEntry } from '../repositories/types'
+import type { DatedTimeEntry } from '../repositories/types'
 
 const config = { startDate: '2024-01-01', lengthDays: 14 }
 
-const makeEntry = (date: string, hours: number): TimeEntry => ({
+const makeEntry = (date: string, hours: number): DatedTimeEntry => ({
   id: date,
   date,
   category: 'QA',
