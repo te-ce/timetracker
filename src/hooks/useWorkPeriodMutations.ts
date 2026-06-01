@@ -29,5 +29,14 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     onSuccess: (_, { date }) => invalidate(date),
   })
 
-  return { save, remove }
+  const saveWithAbsorbed = useMutation({
+    mutationFn: ({ date, window, absorbed }: { date: string; window: WorkPeriod; absorbed: string[] }) =>
+      repository.updateDay(date, (day) => {
+        const filtered = day.windows.filter((w) => w.id !== window.id && !absorbed.includes(w.id))
+        return { ...day, windows: [...filtered, window] }
+      }),
+    onSuccess: (_, { date }) => invalidate(date),
+  })
+
+  return { save, remove, saveWithAbsorbed }
 }

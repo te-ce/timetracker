@@ -18,14 +18,13 @@ export function WorkPeriodPanel({ date, windows, repository }: Props) {
 
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
 
-  const { save: addMutation, remove: removeMutation } = useWorkPeriodMutations(repository)
+  const { remove: removeMutation, saveWithAbsorbed } = useWorkPeriodMutations(repository)
 
   function handleAdd() {
     if (!start) return
     const incoming: WorkPeriod = { id: crypto.randomUUID(), start, end: end || null }
     const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    addMutation.mutate({ date, window: merged })
-    absorbed.forEach((id) => removeMutation.mutate({ date, id }))
+    saveWithAbsorbed.mutate({ date, window: merged, absorbed })
     setStart('')
     setEnd('')
   }
@@ -46,8 +45,7 @@ export function WorkPeriodPanel({ date, windows, repository }: Props) {
     if (!existing) return
     const incoming: WorkPeriod = { ...existing, start: editStart, end: editEnd || null }
     const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    addMutation.mutate({ date, window: merged })
-    absorbed.forEach((id) => removeMutation.mutate({ date, id }))
+    saveWithAbsorbed.mutate({ date, window: merged, absorbed })
     setEditingId(null)
   }
 
@@ -57,8 +55,7 @@ export function WorkPeriodPanel({ date, windows, repository }: Props) {
 
   function handleMerge(a: WorkPeriod, b: WorkPeriod) {
     const laterEnd = b.end === null ? null : a.end! >= b.end ? a.end : b.end
-    addMutation.mutate({ date, window: { ...a, end: laterEnd } })
-    removeMutation.mutate({ date, id: b.id })
+    saveWithAbsorbed.mutate({ date, window: { ...a, end: laterEnd }, absorbed: [b.id] })
   }
 
   function nowHHMM() {
