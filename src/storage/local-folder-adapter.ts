@@ -14,10 +14,25 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
     return this.handle
   }
 
+  private toFilename(key: string): string {
+    return key.endsWith('.json') ? key : `${key}.json`
+  }
+
+  private async resolveParent(key: string, create: boolean): Promise<{ parent: FileSystemDirectoryHandle; filename: string }> {
+    const parts = this.toFilename(key).split('/')
+    const filename = parts[parts.length - 1]
+    const dirs = parts.slice(0, -1)
+    let dir = await this.getDir()
+    for (const name of dirs) {
+      dir = await dir.getDirectoryHandle(name, { create })
+    }
+    return { parent: dir, filename }
+  }
+
   async get<T>(key: string): Promise<T | null> {
     try {
-      const dir = await this.getDir()
-      const fileHandle = await dir.getFileHandle(`${key}.json`)
+      const { parent, filename } = await this.resolveParent(key, false)
+      const fileHandle = await parent.getFileHandle(filename)
       const file = await fileHandle.getFile()
       const data: unknown = JSON.parse(await file.text())
       return data as T
@@ -28,8 +43,8 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
   }
 
   async put<T>(key: string, data: T): Promise<void> {
-    const dir = await this.getDir()
-    const fileHandle = await dir.getFileHandle(`${key}.json`, { create: true })
+    const { parent, filename } = await this.resolveParent(key, true)
+    const fileHandle = await parent.getFileHandle(filename, { create: true })
     const writable = await fileHandle.createWritable()
     await writable.write(JSON.stringify(data, null, 2))
     await writable.close()
@@ -37,8 +52,8 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
 
   async delete(key: string): Promise<void> {
     try {
-      const dir = await this.getDir()
-      await dir.removeEntry(`${key}.json`)
+      const { parent, filename } = await this.resolveParent(key, false)
+      await parent.removeEntry(filename)
     } catch (e) {
       if (e instanceof DOMException && e.name === 'NotFoundError') return
       throw e
