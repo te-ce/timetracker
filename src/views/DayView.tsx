@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { DayNoteEditor } from './DayNoteEditor'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { monthRepo, configRepo, timeTrackingRepo } from '../repositories/shared'
@@ -87,47 +88,6 @@ async function renameCategoryAcrossAllMonths(oldName: string, newName: string): 
   }
 }
 
-function DayNoteEditor({ dayNote, onSave }: { dayNote: string | null; onSave: (note: string) => void }) {
-  const [noteValue, setNoteValue] = useState<string | null>(null)
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Note</span>
-        {noteValue === null && dayNote && (
-          <button onClick={() => onSave('')} className="text-xs text-red-500 dark:text-red-400 hover:underline">Clear</button>
-        )}
-      </div>
-      {noteValue !== null ? (
-        <div className="flex flex-col gap-1">
-          <textarea
-            className="w-full rounded border px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 resize-none"
-            rows={3}
-            value={noteValue}
-            onChange={(e) => setNoteValue(e.target.value)}
-            ref={(el) => el?.focus()}
-            placeholder="Add a note for this day…"
-          />
-          <div className="flex gap-2 justify-end">
-            <button onClick={() => setNoteValue(null)} className="rounded border px-3 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">Cancel</button>
-            <button
-              onClick={() => { onSave(noteValue.trim()); setNoteValue(null) }}
-              className="rounded border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
-            >Save</button>
-          </div>
-        </div>
-      ) : dayNote ? (
-        <button onClick={() => setNoteValue(dayNote)} className="w-full text-left rounded border px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 whitespace-pre-wrap">
-          {dayNote}
-        </button>
-      ) : (
-        <button onClick={() => setNoteValue('')} className="w-full text-left rounded border border-dashed px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-          Add a note…
-        </button>
-      )}
-    </div>
-  )
-}
 
 export function DayView() {
   const navigate = useNavigate()
