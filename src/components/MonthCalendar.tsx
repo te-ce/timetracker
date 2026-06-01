@@ -10,6 +10,7 @@ interface Props {
   onMonthChange?: (year: number, month: number) => void
   dayStatusMap?: Record<string, DayStatus>
   dayStatusReasonMap?: Record<string, string>
+  dayNoteMap?: Record<string, string>
 }
 
 const STATUS_NAME: Record<DayStatus, string> = {
@@ -41,7 +42,7 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days
 }
 
-export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {}, dayStatusReasonMap = {} }: Props) {
+export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {}, dayStatusReasonMap = {}, dayNoteMap = {} }: Props) {
   const days = getDaysInMonth(year, month)
   const now = new Date()
   const todayIso = toLocalIso(now)
@@ -111,6 +112,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
           const status = dayStatusMap[iso] ?? 'future'
           const isToday = iso === todayIso
           const reason = dayStatusReasonMap[iso]
+          const note = dayNoteMap[iso]
           const label = date.toLocaleDateString('en-GB', {
             weekday: 'long',
             day: 'numeric',
@@ -133,11 +135,18 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
                   />
                 )}
               </button>
-              {reason && (
+              {(reason || note) && (
                 <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden w-max max-w-52 -translate-x-1/2 group-hover:block">
                   <div className="rounded bg-gray-800 dark:bg-gray-700 px-2.5 py-2 text-xs text-white shadow-lg">
-                    <p className="font-semibold">{STATUS_NAME[status]}</p>
-                    <p className="mt-0.5 text-gray-300">{reason}</p>
+                    {reason && (
+                      <>
+                        <p className="font-semibold">{STATUS_NAME[status]}</p>
+                        <p className="mt-0.5 text-gray-300">{reason}</p>
+                      </>
+                    )}
+                    {note && (
+                      <p className={`whitespace-pre-wrap text-gray-200 ${reason ? 'mt-1.5 border-t border-gray-600 pt-1.5' : ''}`}>{note}</p>
+                    )}
                   </div>
                 </div>
               )}

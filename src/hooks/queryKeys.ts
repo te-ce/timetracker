@@ -35,6 +35,10 @@ export const QUERY_KEYS = {
     ['dayTypeOverrides', year, month, tag] as const,
   dayTypeOverridesAll: ['dayTypeOverrides'] as const,
 
+  dayNoteByDate: (date: string) => ['dayNote', date] as const,
+  dayNotesByMonth: (year: number, month: number) => ['dayNotes', year, month] as const,
+  dayNotesAll: ['dayNotes'] as const,
+
   activeTracking: ['activeTracking'] as const,
 
   holidays: (state: string, year: number) => ['holidays', state, year] as const,

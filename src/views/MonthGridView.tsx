@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo, autoCategoryOverrideRepo, timeTrackingRepo } from '../repositories/shared'
+import { timeEntryRepo, configRepo, dayTypeOverrideRepo, dayConfirmationRepo, workLocationRepo, workPeriodRepo, autoCategoryOverrideRepo, timeTrackingRepo, dayNoteRepo } from '../repositories/shared'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -125,7 +125,13 @@ export function MonthGridView() {
     },
   })
 
-  const { config, dayTypeOverrides, workLocations, confirmedDays, overtimeToDate, trackedWorkDays, officeDays, officePercent, sollstunden } =
+  const noteMutation = useMutation({
+    mutationFn: ({ date, note }: { date: string; note: string }) =>
+      note ? dayNoteRepo.save(date, note) : dayNoteRepo.delete(date),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayNotesAll }),
+  })
+
+  const { config, dayTypeOverrides, workLocations, confirmedDays, dayNotes, overtimeToDate, trackedWorkDays, officeDays, officePercent, sollstunden } =
     useMonthQuery(year, month)
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -216,9 +222,11 @@ export function MonthGridView() {
         sprintLengthDays={gridConfig.sprintLengthDays}
         workLocations={workLocations}
         defaultWorkLocation={gridConfig.defaultWorkLocation}
+        dayNotes={dayNotes}
         onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
         onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
+        onNoteChange={(date, note) => noteMutation.mutate({ date, note })}
         onSelectDate={(date) => void navigate({ to: '/day', search: { date } })}
       />
 

@@ -6,6 +6,7 @@ import {
   dayTypeOverrideRepo,
   dayConfirmationRepo,
   workLocationRepo,
+  dayNoteRepo,
 } from '../repositories/shared'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { calculateOvertimeToDate } from '../domain/monthStats'
@@ -50,6 +51,11 @@ export function useMonthQuery(year: number, month: number) {
     queryFn: () => workLocationRepo.findByDateRange(fromIso, toIso),
   })
 
+  const { data: dayNotes = new Map<string, string>() } = useQuery({
+    queryKey: QUERY_KEYS.dayNotesByMonth(year, month),
+    queryFn: () => dayNoteRepo.findByDateRange(fromIso, toIso),
+  })
+
   const sollstunden = config?.sollstunden ?? 8
 
   const summaries = buildMonthSummaries(year, month, {
@@ -77,6 +83,7 @@ export function useMonthQuery(year: number, month: number) {
     dayTypeOverrides,
     workLocations,
     confirmedDays,
+    dayNotes,
     overtimeToDate,
     trackedWorkDays,
     officeDays,

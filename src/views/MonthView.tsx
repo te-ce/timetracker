@@ -67,7 +67,7 @@ export function MonthView() {
     },
   })
 
-  const { summaries, overtimeToDate, officeDays, officePercent, trackedWorkDays, sollstunden } =
+  const { summaries, overtimeToDate, officeDays, officePercent, trackedWorkDays, sollstunden, dayNotes } =
     useMonthQuery(year, month)
 
   const dayStatusMap: Record<string, DayStatus> = {}
@@ -76,6 +76,7 @@ export function MonthView() {
     dayStatusMap[day.date] = day.displayStatus
     dayStatusReasonMap[day.date] = day.statusReason
   }
+  const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,6 +87,7 @@ export function MonthView() {
         onMonthChange={onMonthChange}
         dayStatusMap={dayStatusMap}
         dayStatusReasonMap={dayStatusReasonMap}
+        dayNoteMap={dayNoteMap}
       />
       <OvertimeBar
         sollstunden={sollstunden}

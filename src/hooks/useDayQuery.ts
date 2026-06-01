@@ -7,6 +7,7 @@ import {
   dayTypeOverrideRepo,
   autoCategoryOverrideRepo,
   dayConfirmationRepo,
+  dayNoteRepo,
 } from '../repositories/shared'
 import { calculateWorkedHours } from '../domain/worktime'
 import { calculateOvertimeToDate } from '../domain/monthStats'
@@ -155,6 +156,11 @@ export function useDayQuery(date: string) {
     queryFn: () => autoCategoryOverrideRepo.findByDate(date),
   })
 
+  const { data: dayNote = null } = useQuery({
+    queryKey: QUERY_KEYS.dayNoteByDate(date),
+    queryFn: () => dayNoteRepo.findByDate(date),
+  })
+
   const { data: isConfirmed = false } = useQuery({
     queryKey: QUERY_KEYS.dayConfirmationByDate(date),
     queryFn: () => dayConfirmationRepo.isConfirmed(date),
@@ -200,6 +206,7 @@ export function useDayQuery(date: string) {
     workLocation,
     autoCategoryOverride,
     isConfirmed,
+    dayNote,
     todayIso,
     ...derived,
   }

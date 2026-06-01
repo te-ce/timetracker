@@ -123,6 +123,13 @@ export interface AutoCategoryOverrideRepository {
   delete(date: string): Promise<void>
 }
 
+export interface DayNoteRepository {
+  save(date: string, note: string): Promise<void>
+  findByDate(date: string): Promise<string | null>
+  findByDateRange(from: string, to: string): Promise<Map<string, string>>
+  delete(date: string): Promise<void>
+}
+
 export interface DayConfirmationRepository {
   confirm(date: string): Promise<void>
   unconfirm(date: string): Promise<void>

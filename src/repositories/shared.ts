@@ -15,6 +15,7 @@ import { CloudDayTypeOverrideRepository } from './cloud/day-type-override-reposi
 import { CloudAutoCategoryOverrideRepository } from './cloud/auto-category-override-repository'
 import { CloudDayConfirmationRepository } from './cloud/day-confirmation-repository'
 import { CloudTimeTrackingRepository } from './cloud/time-tracking-repository'
+import { CloudDayNoteRepository } from './cloud/day-note-repository'
 
 function makeStorage(): StorageAdapter {
   if (isLocalFolderMode()) return new LocalFolderStorageAdapter()
@@ -35,6 +36,7 @@ export const dayTypeOverrideRepo = new CloudDayTypeOverrideRepository(storage)
 export const autoCategoryOverrideRepo = new CloudAutoCategoryOverrideRepository(storage)
 export const dayConfirmationRepo = new CloudDayConfirmationRepository(storage)
 export const timeTrackingRepo = new CloudTimeTrackingRepository(storage)
+export const dayNoteRepo = new CloudDayNoteRepository(storage)
 
 /**
  * Clears all repository caches. Call this after login so the next read
@@ -49,4 +51,5 @@ export function resetAllRepositories(): void {
   dayTypeOverrideRepo.clearCache()
   autoCategoryOverrideRepo.clearCache()
   dayConfirmationRepo.clearCache()
+  dayNoteRepo.clearCache()
 }

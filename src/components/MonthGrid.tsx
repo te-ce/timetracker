@@ -51,9 +51,11 @@ interface Props {
   workLocations?: Map<string, WorkLocation>
   defaultWorkLocation?: WorkLocation | null
   categoryDescriptions?: Record<string, string>
+  dayNotes?: Map<string, string>
   onCategoryReorder?: (order: string[]) => void
   onCategoryRename?: (oldName: string, newName: string) => void
   onAutoCategoryChange?: (category: string) => void
+  onNoteChange?: (date: string, note: string) => void
   onSelectDate?: (isoDate: string) => void
 }
 
@@ -69,6 +71,13 @@ interface DotPopoverState {
   left: number
   displayStatus: DisplayStatus
   reason: string
+}
+
+interface NotePopoverState {
+  date: string
+  value: string
+  top: number
+  left: number
 }
 
 interface DotPopoverPanelProps {
@@ -105,6 +114,50 @@ function DotPopoverPanel({ state, popoverRef, onSelectDayType }: DotPopoverPanel
             {opt.label}
           </button>
         ))}
+      </div>
+    </div>
+  )
+}
+
+interface NotePopoverPanelProps {
+  state: NotePopoverState | null
+  popoverRef: React.RefObject<HTMLDivElement | null>
+  onChange: (value: string) => void
+  onSave: () => void
+  onClose: () => void
+}
+
+function NotePopoverPanel({ state, popoverRef, onChange, onSave, onClose }: NotePopoverPanelProps) {
+  if (!state) return null
+  return (
+    <div
+      ref={popoverRef}
+      style={{ top: state.top, left: state.left }}
+      className="fixed z-[300] w-64 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg"
+    >
+      <p className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-300">Note for {state.date}</p>
+      <textarea
+        className="w-full rounded border px-2 py-1.5 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 resize-none"
+        rows={4}
+        value={state.value}
+        onChange={(e) => onChange(e.target.value)}
+        ref={(el) => el?.focus()}
+        placeholder="Add a note…"
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') onClose()
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) onSave()
+        }}
+      />
+      <div className="mt-2 flex justify-end gap-2">
+        <button onClick={onClose} className="rounded border px-2 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          className="rounded border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+        >
+          Save
+        </button>
       </div>
     </div>
   )
@@ -212,14 +265,18 @@ export function MonthGrid({
   workLocations = new Map(),
   defaultWorkLocation = null,
   categoryDescriptions,
+  dayNotes = new Map(),
   onCategoryReorder,
   onCategoryRename,
   onAutoCategoryChange,
+  onNoteChange,
   onSelectDate,
 }: Props) {
   const [drafts, setDrafts] = useState<Record<string, string | undefined>>({})
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
+  const [notePopover, setNotePopover] = useState<NotePopoverState | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const notePopoverRef = useRef<HTMLDivElement>(null)
   const colDragIdx = useRef<number | null>(null)
   const [colDragOverIdx, setColDragOverIdx] = useState<number | null>(null)
   const [editingCat, setEditingCat] = useState<string | null>(null)
@@ -246,6 +303,17 @@ export function MonthGrid({
       document.removeEventListener('keydown', handleKey)
     }
   }, [dotPopover])
+
+  useEffect(() => {
+    if (!notePopover) return
+    function handleClick(e: MouseEvent) {
+      if (notePopoverRef.current && e.target instanceof Node && !notePopoverRef.current.contains(e.target)) {
+        setNotePopover(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [notePopover])
 
   const { data: entries = [] } = useQuery({
     queryKey: QUERY_KEYS.timeEntriesByMonth(year, month),
@@ -467,8 +535,8 @@ export function MonthGrid({
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, sprintStartDate, sprintLengthDays)
 
-  // day + status + worked + location + separator + categories + confirm
-  const colCount = allCategories.length + 6
+  // day + status + worked + location + separator + categories + confirm + note
+  const colCount = allCategories.length + 7
 
   let globalRowIdx = 0
 
@@ -567,6 +635,9 @@ export function MonthGrid({
               ))}
               <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200 dark:border-gray-700">
                 <span className="text-xs">✓</span>
+              </th>
+              <th className="px-1 py-1.5 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700" title="Notes">
+                <span className="text-xs">📝</span>
               </th>
             </tr>
           </thead>
@@ -693,6 +764,21 @@ export function MonthGrid({
                       onConfirm={() => gridConfirmMutation.mutate(row)}
                       onUnconfirm={() => gridUnconfirmMutation.mutate(row.date)}
                     />
+                    <td className="w-8 text-center border-l border-gray-200 dark:border-gray-700">
+                      {onNoteChange && (
+                        <button
+                          onClick={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect()
+                            setNotePopover({ date: row.date, value: dayNotes.get(row.date) ?? '', top: rect.bottom + 6, left: rect.left - 220 })
+                          }}
+                          className="w-full py-1 text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+                          aria-label={`Note for ${row.date}`}
+                          title={dayNotes.get(row.date) ?? 'Add note'}
+                        >
+                          <span className={dayNotes.has(row.date) ? 'opacity-100' : 'opacity-20'}>📝</span>
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 )
               })
@@ -734,6 +820,7 @@ export function MonthGrid({
                         )
                       })}
                       <td></td>
+                      <td></td>
                     </tr>
                   )}
                 </Fragment>
@@ -762,6 +849,7 @@ export function MonthGrid({
                 )
               })}
               <td className="w-10 border-l border-gray-200 dark:border-gray-700"></td>
+              <td className="w-8 border-l border-gray-200 dark:border-gray-700"></td>
             </tr>
           </tfoot>
         </table>
@@ -775,6 +863,17 @@ export function MonthGrid({
         state={dotPopover}
         popoverRef={popoverRef}
         onSelectDayType={handleDayTypeSelect}
+      />
+      <NotePopoverPanel
+        state={notePopover}
+        popoverRef={notePopoverRef}
+        onChange={(value) => setNotePopover((s) => s ? { ...s, value } : null)}
+        onSave={() => {
+          if (!notePopover) return
+          onNoteChange?.(notePopover.date, notePopover.value.trim())
+          setNotePopover(null)
+        }}
+        onClose={() => setNotePopover(null)}
       />
     </div>
   )

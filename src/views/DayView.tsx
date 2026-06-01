@@ -10,6 +10,7 @@ import {
   dayTypeOverrideRepo,
   autoCategoryOverrideRepo,
   timeTrackingRepo,
+  dayNoteRepo,
 } from '../repositories/shared'
 import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
@@ -47,6 +48,7 @@ export function DayView() {
     entries,
     autoCategoryOverride,
     isConfirmed,
+    dayNote,
     workedHours,
     manualTotal,
     autoCategory,
@@ -153,8 +155,18 @@ export function DayView() {
     },
   })
 
+  const noteMutation = useMutation({
+    mutationFn: (note: string) =>
+      note ? dayNoteRepo.save(selectedDate, note) : dayNoteRepo.delete(selectedDate),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayNoteByDate(selectedDate) })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.dayNotesAll })
+    },
+  })
+
   const { displayStatus: badgeStatus, reason: statusReason } = dayClassification
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [noteValue, setNoteValue] = useState<string | null>(null)
 
   const resetDayMutation = useMutation({
     mutationFn: async () => {
@@ -168,6 +180,7 @@ export function DayView() {
         dayTypeOverrideRepo.delete(selectedDate),
         autoCategoryOverrideRepo.delete(selectedDate),
         dayConfirmationRepo.unconfirm(selectedDate),
+        dayNoteRepo.delete(selectedDate),
       ])
     },
     onSuccess: () => {
@@ -290,6 +303,63 @@ export function DayView() {
         onCategoryDescriptionChange={(category, description) => categoryDescriptionMutation.mutate({ category, description })}
         onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       />
+
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Note</span>
+          {noteValue === null && dayNote && (
+            <button
+              onClick={() => noteMutation.mutate('')}
+              className="text-xs text-red-500 dark:text-red-400 hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        {noteValue !== null ? (
+          <div className="flex flex-col gap-1">
+            <textarea
+              className="w-full rounded border px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 resize-none"
+              rows={3}
+              value={noteValue}
+              onChange={(e) => setNoteValue(e.target.value)}
+              ref={(el) => el?.focus()}
+              placeholder="Add a note for this day…"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => setNoteValue(null)}
+                className="rounded border px-3 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  noteMutation.mutate(noteValue.trim())
+                  setNoteValue(null)
+                }}
+                className="rounded border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : dayNote ? (
+          <button
+            onClick={() => setNoteValue(dayNote)}
+            className="w-full text-left rounded border px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 whitespace-pre-wrap"
+          >
+            {dayNote}
+          </button>
+        ) : (
+          <button
+            onClick={() => setNoteValue('')}
+            className="w-full text-left rounded border border-dashed px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+          >
+            Add a note…
+          </button>
+        )}
+      </div>
 
       {showResetConfirm && (
         <ConfirmDialog
