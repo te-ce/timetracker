@@ -14,7 +14,7 @@ import { msalInstance } from './auth/msalInstance'
 import { toLocalIso } from './domain/dateUtils'
 import { defaultHotkeyConfig, matchesShortcut } from './domain/hotkeyConfig'
 import { QUERY_KEYS } from './hooks/queryKeys'
-import { configRepo } from './repositories/shared'
+import { useRepositories } from './repositories/RepositoryContext'
 
 const NAV_ITEMS: { label: string; icon: string; to: string }[] = [
   { label: 'Month', icon: '📆', to: '/' },
@@ -117,6 +117,7 @@ function RemainingHoursBadge() {
 }
 
 function App() {
+  const { configRepo } = useRepositories()
   useElectronTraySync()
   useGoalNotification()
   usePrefetchCurrentMonth()

@@ -12,13 +12,14 @@ import { LocalExcelFolderSettings } from '../components/LocalExcelFolderSettings
 import { LocalExcelSettings } from '../components/LocalExcelSettings'
 import { SharePointSettings } from '../components/SharePointSettings'
 import { SheetSelector } from '../components/SheetSelector'
-import { configRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { isLocalFolderMode } from '../auth/bootstrapConfig'
 
 const localFolder = isLocalFolderMode()
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI
 
 export function SettingsView() {
+  const { configRepo } = useRepositories()
   return (
     <div className="flex flex-col gap-8">
       <h2 className="text-xl font-semibold dark:text-gray-100">Settings</h2>

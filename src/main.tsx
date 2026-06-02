@@ -7,6 +7,7 @@ import { msalInstance } from './auth/msalInstance.ts'
 import { readBootstrapConfig, isSetupSkipped, isLocalFolderMode } from './auth/bootstrapConfig.ts'
 import { SetupWizard } from './components/SetupWizard.tsx'
 import { useMsalSync } from './hooks/useMsalSync.ts'
+import { RepositoryProvider } from './repositories/RepositoryContext.tsx'
 import { router } from './routes/router.ts'
 import './index.css'
 
@@ -50,9 +51,11 @@ function Root() {
   }
 
   const app = (
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <RepositoryProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </RepositoryProvider>
   )
 
   return msalInstance ? (

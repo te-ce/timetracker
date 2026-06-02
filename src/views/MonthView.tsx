@@ -5,11 +5,12 @@ import { MonthCalendar } from '../components/MonthCalendar'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useMonthQuery } from '../hooks/useMonthQuery'
-import { monthRepo, timeTrackingRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { DayStatus } from '../domain/dayStatus'
 
 export function MonthView() {
+  const { monthRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
   const { year, month } = useSearch({ from: '/' })
 

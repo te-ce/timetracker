@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { DayNoteEditor } from './DayNoteEditor'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { monthRepo, configRepo, timeTrackingRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
@@ -34,6 +34,7 @@ function resolveConfigValues(config: import('../repositories/types').AppConfig |
 }
 
 export function DayView() {
+  const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
   const { date: selectedDate } = useSearch({ from: '/day' })
 

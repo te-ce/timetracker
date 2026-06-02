@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { monthRepo, configRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries, type DaySummary } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
@@ -68,6 +68,7 @@ function resolveDayExtras(
 }
 
 export function useDayQuery(date: string) {
+  const { monthRepo, configRepo } = useRepositories()
   const todayIso = toLocalIso(new Date())
   const selectedYear = parseInt(date.slice(0, 4))
   const selectedMonth = parseInt(date.slice(5, 7))

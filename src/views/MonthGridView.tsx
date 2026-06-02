@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { monthRepo, configRepo, timeTrackingRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
+import type { ConfigRepository, MonthRepository } from '../repositories/types'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -41,17 +42,43 @@ function shiftMonth(year: number, month: number, delta: -1 | 1): { year: number;
   return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
 }
 
-async function saveCategoryOrder(categoryOrder: string[]): Promise<void> {
+async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
   const cfg = await configRepo.get()
   await configRepo.save({ ...cfg, categoryOrder })
 }
 
-async function saveAutoCategory(category: string): Promise<void> {
+async function saveAutoCategory(configRepo: ConfigRepository, category: string): Promise<void> {
   const cfg = await configRepo.get()
   await configRepo.save({ ...cfg, autoCategory: category })
 }
 
+async function renameCategory(
+  configRepo: ConfigRepository,
+  monthRepo: MonthRepository,
+  year: number,
+  month: number,
+  oldName: string,
+  newName: string,
+): Promise<void> {
+  const cfg = await configRepo.get()
+  const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
+  const categoryOrder = cfg.categoryOrder ? cfg.categoryOrder : []
+  const newOrder = categoryOrder.map((c) => (c === oldName ? newName : c))
+  await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder })
+  await monthRepo.updateDay(`${year}-${String(month).padStart(2, '0')}-01`, (day) => day)
+  const data = await monthRepo.getMonth(year, month)
+  for (const [date, day] of Object.entries(data)) {
+    if (day.entries.some((e) => e.category === oldName)) {
+      await monthRepo.updateDay(date, (d) => ({
+        ...d,
+        entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
+      }))
+    }
+  }
+}
+
 export function MonthGridView() {
+  const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -64,36 +91,18 @@ export function MonthGridView() {
   })
 
   const categoryReorderMutation = useMutation({
-    mutationFn: saveCategoryOrder,
+    mutationFn: (categoryOrder: string[]) => saveCategoryOrder(configRepo, categoryOrder),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   const autoCategoryMutation = useMutation({
-    mutationFn: saveAutoCategory,
+    mutationFn: (category: string) => saveAutoCategory(configRepo, category),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
   const categoryRenameMutation = useMutation({
-    mutationFn: async ({ oldName, newName }: { oldName: string; newName: string }) => {
-      const cfg = await configRepo.get()
-      const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
-      const categoryOrder = cfg.categoryOrder ? cfg.categoryOrder : []
-      const newOrder = categoryOrder.map((c) => (c === oldName ? newName : c))
-      await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder })
-      await monthRepo.updateDay(
-        `${year}-${String(month).padStart(2, '0')}-01`,
-        (day) => day,
-      )
-      const data = await monthRepo.getMonth(year, month)
-      for (const [date, day] of Object.entries(data)) {
-        if (day.entries.some((e) => e.category === oldName)) {
-          await monthRepo.updateDay(date, (d) => ({
-            ...d,
-            entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
-          }))
-        }
-      }
-    },
+    mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
+      renameCategory(configRepo, monthRepo, year, month, oldName, newName),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })

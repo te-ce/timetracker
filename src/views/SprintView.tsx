@@ -4,7 +4,7 @@ import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../
 import type { SprintConfig } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
-import { sprintExportRepo, monthRepo, configRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { getAllCategories } from '../domain/categories'
 import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../services/workbookService'
 import { useAuthStore } from '../stores/authStore'
@@ -45,6 +45,7 @@ function buildExportService(config: AppConfig, isAuthenticated: boolean): Workbo
 }
 
 export function SprintView() {
+  const { configRepo, monthRepo, sprintExportRepo } = useRepositories()
   const queryClient = useQueryClient()
   const [sprintIndex, setSprintIndex] = useState<number | null>(null)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)

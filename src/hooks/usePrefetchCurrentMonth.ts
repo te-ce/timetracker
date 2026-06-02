@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { monthRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { QUERY_KEYS } from './queryKeys'
 
 export function usePrefetchCurrentMonth() {
+  const { monthRepo } = useRepositories()
   const today = new Date()
   const year = today.getFullYear()
   const month = today.getMonth() + 1

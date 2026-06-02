@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '../hooks/queryKeys'
-import { configRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { getAllCategories } from '../domain/categories'
 
 export function AutoCategoryPicker() {
+  const { configRepo } = useRepositories()
   const queryClient = useQueryClient()
 
   const { data: config } = useQuery({

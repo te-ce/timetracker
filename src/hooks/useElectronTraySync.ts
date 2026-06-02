@@ -1,7 +1,7 @@
 import { useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from './queryKeys'
-import { configRepo, timeTrackingRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { getAllCategories } from '../domain/categories'
 import { toLocalIso } from '../domain/dateUtils'
 import { useRemainingHours } from './useRemainingHours'
@@ -22,6 +22,7 @@ export async function applyCategorySwitch(
 }
 
 export function useElectronTraySync() {
+  const { configRepo, timeTrackingRepo } = useRepositories()
   const queryClient = useQueryClient()
   const { workedHours, remaining, sollstunden, priorOvertime } = useRemainingHours()
 
@@ -53,7 +54,7 @@ export function useElectronTraySync() {
   const handleSetCategory = useCallback(async (category: string) => {
     await applyCategorySwitch(category, timeTrackingRepo, toLocalIso(new Date()))
     await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
-  }, [queryClient])
+  }, [queryClient, timeTrackingRepo])
 
   useEffect(() => {
     if (!window.electronAPI) return

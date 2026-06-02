@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { monthRepo, configRepo } from '../repositories/shared'
+import { useRepositories } from '../repositories/RepositoryContext'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { toLocalIso } from '../domain/dateUtils'
@@ -28,6 +28,7 @@ function extractMonthMaps(monthData: MonthData): MonthMaps {
 }
 
 export function useMonthQuery(year: number, month: number) {
+  const { monthRepo, configRepo } = useRepositories()
   const todayIso = toLocalIso(new Date())
 
   const { data: config } = useQuery({
