@@ -1,19 +1,8 @@
 import type { StorageAdapter } from '../../storage/adapter'
 import type { AppConfig, ConfigRepository } from '../types'
+import { DEFAULT_APP_CONFIG } from '../../domain/appConfigDefaults'
 
 const KEY = 'config.json'
-
-const DEFAULT_CONFIG: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-  sharepointUrl: null,
-  targetSheet: null,
-  categoryMapping: {},
-}
 
 export class CloudConfigRepository implements ConfigRepository {
   private adapter: StorageAdapter
@@ -26,7 +15,7 @@ export class CloudConfigRepository implements ConfigRepository {
   async get(): Promise<AppConfig> {
     if (this.cache) return { ...this.cache }
     const data = await this.adapter.get<AppConfig>(KEY)
-    this.cache = data ?? { ...DEFAULT_CONFIG }
+    this.cache = data ?? { ...DEFAULT_APP_CONFIG }
     return { ...this.cache }
   }
 
