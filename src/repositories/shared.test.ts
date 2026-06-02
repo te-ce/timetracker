@@ -22,11 +22,8 @@ describe('resetAllRepositories', () => {
     expect(() => resetAllRepositories()).not.toThrow()
   })
 
-  it('clears caches on all repos (smoke test)', () => {
-    const repos = [configRepo, monthRepo, sprintExportRepo]
-    repos.forEach((repo) => {
-      expect(typeof repo.clearCache).toBe('function')
-    })
+  it('does not throw when called multiple times', () => {
+    expect(() => resetAllRepositories()).not.toThrow()
     expect(() => resetAllRepositories()).not.toThrow()
   })
 })

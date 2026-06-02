@@ -66,7 +66,4 @@ export class InMemoryMonthRepository implements MonthRepository {
     return Promise.resolve([...this.months.keys()].sort())
   }
 
-  clearCache(): void {
-    // no-op for in-memory
-  }
 }

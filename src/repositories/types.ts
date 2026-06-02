@@ -59,7 +59,6 @@ export interface MonthRepository {
   deleteMonth(year: number, month: number): Promise<void>
   findEntriesByDateRange(from: string, to: string): Promise<DatedTimeEntry[]>
   getAllMonths(): Promise<string[]>
-  clearCache(): void
 }
 
 export interface AppConfig {
