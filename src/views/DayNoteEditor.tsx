@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 interface Props {
   dayNote: string | null
@@ -7,10 +7,12 @@ interface Props {
 
 export function DayNoteEditor({ dayNote, onSave }: Props) {
   const [noteValue, setNoteValue] = useState<string | null>(null)
+  const [prevDayNote, setPrevDayNote] = useState(dayNote)
 
-  useEffect(() => {
+  if (prevDayNote !== dayNote) {
+    setPrevDayNote(dayNote)
     setNoteValue(null)
-  }, [dayNote])
+  }
 
   return (
     <div className="flex flex-col gap-1">
