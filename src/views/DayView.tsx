@@ -198,14 +198,14 @@ export function DayView() {
         categoryDescriptions={categoryDescriptions}
         autoCategory={autoCategory}
         autoCategoryHours={Math.max(0, workedHours - manualTotal)}
-        onAutoCategoryChange={(cat) => categoryMutations.setAutoCategory.mutate(cat)}
-        onCategoryReorder={(order) => categoryMutations.reorderCategories.mutate(order)}
-        onCategoryDescriptionChange={(category, description) =>
-          categoryMutations.setCategoryDescription.mutate({ category, description })
-        }
-        onCategoryRename={(oldName, newName) =>
-          categoryMutations.renameCategory.mutate({ oldName, newName })
-        }
+        callbacks={{
+          onAutoCategoryChange: (cat) => categoryMutations.setAutoCategory.mutate(cat),
+          onCategoryReorder: (order) => categoryMutations.reorderCategories.mutate(order),
+          onCategoryDescriptionChange: (category, description) =>
+            categoryMutations.setCategoryDescription.mutate({ category, description }),
+          onCategoryRename: (oldName, newName) =>
+            categoryMutations.renameCategory.mutate({ oldName, newName }),
+        }}
       />
 
       <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />

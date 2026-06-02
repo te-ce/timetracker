@@ -9,6 +9,13 @@ import { getAllCategories } from '../domain/categories'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 import { useTrackingMutations } from '../hooks/useTrackingMutations'
 
+export interface PanelCallbacks {
+  onAutoCategoryChange?: (cat: string | null) => void
+  onCategoryReorder?: (order: string[]) => void
+  onCategoryDescriptionChange?: (category: string, description: string) => void
+  onCategoryRename?: (oldName: string, newName: string) => void
+}
+
 interface Props {
   date: string
   entries: TimeEntry[]
@@ -20,10 +27,7 @@ interface Props {
   categoryDescriptions?: Record<string, string>
   autoCategory?: string | null
   autoCategoryHours?: number
-  onAutoCategoryChange?: (cat: string | null) => void
-  onCategoryReorder?: (order: string[]) => void
-  onCategoryDescriptionChange?: (category: string, description: string) => void
-  onCategoryRename?: (oldName: string, newName: string) => void
+  callbacks?: PanelCallbacks
 }
 
 interface CategoryRowProps {
@@ -389,11 +393,9 @@ export function TimeEntryPanel({
   categoryDescriptions,
   autoCategory = null,
   autoCategoryHours = 0,
-  onAutoCategoryChange,
-  onCategoryReorder,
-  onCategoryDescriptionChange,
-  onCategoryRename,
+  callbacks,
 }: Props) {
+  const { onAutoCategoryChange, onCategoryReorder, onCategoryDescriptionChange, onCategoryRename } = callbacks ?? {}
   const [draft, setDraft] = useState<Record<string, string | undefined>>({})
   const [tick, setTick] = useState(0)
   const dragIdx = useRef<number | null>(null)

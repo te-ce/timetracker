@@ -44,9 +44,8 @@ function TestPanel({
       timeTrackingRepository={trackingRepo}
       activeTracking={activeTracking}
       autoCategory={autoCategory ?? null}
-      onAutoCategoryChange={onAutoCategoryChange}
-      onCategoryReorder={onCategoryReorder}
       customCategories={customCategories}
+      callbacks={{ onAutoCategoryChange, onCategoryReorder }}
     />
   )
 }
