@@ -6,15 +6,20 @@ import { isDayTypeOverride } from '../domain/dayType'
 import { classifyDay } from '../domain/dayStatus'
 import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
+import { computeSprintGroups } from '../domain/sprintGroups'
 import { WorkedHoursCell } from './WorkedHoursCell'
+import { CategoryColumnHeader } from './CategoryColumnHeader'
+import { DotPopoverPanel } from './DotPopoverPanel'
+import { NotePopoverPanel } from './NotePopoverPanel'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { toLocalIso } from '../domain/dateUtils'
 import type { MonthGridRow } from '../domain/monthGrid'
-import { STATUS_DOT, STATUS_ROW_BG, STATUS_LABEL } from '../domain/statusColors'
+import type { DotPopoverState } from './DotPopoverPanel'
+import type { NotePopoverState } from './NotePopoverPanel'
+import { STATUS_DOT, STATUS_ROW_BG } from '../domain/statusColors'
 import type { DisplayStatus } from '../domain/statusColors'
 import { StatusLegend } from './StatusLegend'
-
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
 
@@ -45,94 +50,6 @@ function saveDayTypeInRepo(repository: MonthRepository, date: string, value: str
   return Promise.resolve()
 }
 
-const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: 'WorkDay', label: 'Work Day' },
-  { value: 'Vacation', label: 'Vacation' },
-  { value: 'SickDay', label: 'Sick Day' },
-  { value: 'PublicHoliday', label: 'Public Holiday' },
-  { value: 'Absence', label: 'Absence' },
-]
-
-interface CategoryColumnHeaderProps {
-  cat: string
-  catIdx: number
-  autoCategory: string
-  editingCat: string | null
-  editValue: string
-  colDragOverIdx: number | null
-  categoryDescriptions?: Record<string, string>
-  onCategoryReorder?: (order: string[]) => void
-  onCategoryRename?: (oldName: string, newName: string) => void
-  onAutoCategoryChange?: (category: string) => void
-  onDragStart: (idx: number) => void
-  onDragOver: (e: React.DragEvent, idx: number) => void
-  onDrop: (idx: number, allCats: string[]) => void
-  onDragEnd: () => void
-  allCategories: string[]
-  onEditValueChange: (v: string) => void
-  onCommitRename: (cat: string) => void
-  onSetEditingCat: (cat: string | null) => void
-}
-
-function CategoryBadge({ cat, isAuto, onAutoCategoryChange }: { cat: string; isAuto: boolean; onAutoCategoryChange?: (cat: string) => void }) {
-  if (isAuto) return <span className="text-[9px] text-indigo-400 dark:text-indigo-300 font-medium tracking-wide leading-none">auto</span>
-  if (onAutoCategoryChange) return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onAutoCategoryChange(cat) }}
-      className="text-[9px] text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300 leading-none transition-colors"
-      title={`Set "${cat}" as auto category`}
-    >○</button>
-  )
-  return <span className="text-[9px] leading-none">&nbsp;</span>
-}
-
-function buildColTitle(cat: string, autoCategory: string, categoryDescriptions?: Record<string, string>, onCategoryRename?: (o: string, n: string) => void): string {
-  if (cat === autoCategory) return [`${cat} — auto category (absorbs remaining hours)`, categoryDescriptions?.[cat]].filter(Boolean).join('\n\n')
-  return [categoryDescriptions?.[cat], onCategoryRename ? 'Double-click to rename' : undefined].filter(Boolean).join('\n\n') || cat
-}
-
-function CategoryColumnHeader({ cat, catIdx, autoCategory, editingCat, editValue, colDragOverIdx, categoryDescriptions, onCategoryReorder, onCategoryRename, onAutoCategoryChange, onDragStart, onDragOver, onDrop, onDragEnd, allCategories, onEditValueChange, onCommitRename, onSetEditingCat }: CategoryColumnHeaderProps) {
-  const isAuto = cat === autoCategory
-  const dragClass = onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''
-  const dragOverClass = colDragOverIdx === catIdx ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''
-  const nameClass = `block truncate text-xs ${onCategoryRename ? 'cursor-text' : ''}`
-  return (
-    <th
-      draggable={editingCat !== cat && !!onCategoryReorder}
-      onDragStart={() => onDragStart(catIdx)}
-      onDragOver={(e) => onDragOver(e, catIdx)}
-      onDrop={() => onDrop(catIdx, allCategories)}
-      onDragEnd={onDragEnd}
-      className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
-      role="columnheader"
-      title={buildColTitle(cat, autoCategory, categoryDescriptions, onCategoryRename)}
-    >
-      {editingCat === cat ? (
-        <input
-          ref={(el) => { el?.focus() }}
-          type="text"
-          aria-label={`Rename category ${cat}`}
-          value={editValue}
-          onChange={(e) => onEditValueChange(e.target.value)}
-          onBlur={() => onCommitRename(cat)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onCommitRename(cat)
-            if (e.key === 'Escape') onSetEditingCat(null)
-          }}
-          className="w-full bg-transparent text-xs border-b border-indigo-400 dark:border-indigo-500 focus:outline-none text-left"
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <span className={nameClass} onDoubleClick={() => { if (onCategoryRename) { onSetEditingCat(cat); onEditValueChange(cat) } }}>
-          {cat}
-        </span>
-      )}
-      <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
-        <CategoryBadge cat={cat} isAuto={isAuto} onAutoCategoryChange={onAutoCategoryChange} />
-      </span>
-    </th>
-  )
-}
 
 interface Props {
   year: number
@@ -156,109 +73,6 @@ interface Props {
   onSelectDate?: (isoDate: string) => void
 }
 
-interface SprintGroup {
-  label: string
-  rows: MonthGridRow[]
-}
-
-interface DotPopoverState {
-  date: string
-  currentDayType: string
-  top: number
-  left: number
-  displayStatus: DisplayStatus
-  reason: string
-}
-
-interface NotePopoverState {
-  date: string
-  value: string
-  top: number
-  left: number
-}
-
-interface DotPopoverPanelProps {
-  state: DotPopoverState | null
-  popoverRef: React.RefObject<HTMLDivElement | null>
-  onSelectDayType: (value: string) => void
-}
-
-function DotPopoverPanel({ state, popoverRef, onSelectDayType }: DotPopoverPanelProps) {
-  if (!state) return null
-  return (
-    <div
-      ref={popoverRef}
-      style={{ top: state.top, left: state.left }}
-      className="fixed z-[300] w-52 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg"
-    >
-      <div className="mb-3 flex items-center gap-2">
-        <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[state.displayStatus]}`} aria-hidden="true" />
-        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{STATUS_LABEL[state.displayStatus]}</span>
-      </div>
-      <p className="mb-3 text-xs text-gray-600 dark:text-gray-400">{state.reason}</p>
-      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">Day type</p>
-      <div className="flex flex-wrap gap-1">
-        {DAY_TYPE_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            onClick={() => onSelectDayType(opt.value)}
-            className={`rounded px-2 py-0.5 text-xs transition-colors ${
-              state.currentDayType === opt.value
-                ? 'bg-indigo-600 dark:bg-indigo-500 text-white'
-                : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-interface NotePopoverPanelProps {
-  state: NotePopoverState | null
-  popoverRef: React.RefObject<HTMLDivElement | null>
-  onChange: (value: string) => void
-  onSave: () => void
-  onClose: () => void
-}
-
-function NotePopoverPanel({ state, popoverRef, onChange, onSave, onClose }: NotePopoverPanelProps) {
-  if (!state) return null
-  return (
-    <div
-      ref={popoverRef}
-      style={{ top: state.top, left: state.left }}
-      className="fixed z-[300] w-64 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg"
-    >
-      <p className="mb-2 text-xs font-semibold text-gray-700 dark:text-gray-300">Note for {state.date}</p>
-      <textarea
-        className="w-full rounded border px-2 py-1.5 text-xs dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 resize-none"
-        rows={4}
-        value={state.value}
-        onChange={(e) => onChange(e.target.value)}
-        ref={(el) => el?.focus()}
-        placeholder="Add a note…"
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose()
-          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) onSave()
-        }}
-      />
-      <div className="mt-2 flex justify-end gap-2">
-        <button onClick={onClose} className="rounded border px-2 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
-          Cancel
-        </button>
-        <button
-          onClick={onSave}
-          className="rounded border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
-        >
-          Save
-        </button>
-      </div>
-    </div>
-  )
-}
 
 function resolveWorkLocation(
   workLocations: Map<string, WorkLocation>,
@@ -301,48 +115,6 @@ function ConfirmCell({ date, isNonWorkDay, isConfirmed, onConfirm, onUnconfirm }
   )
 }
 
-function computeSprintGroups(
-  rows: MonthGridRow[],
-  sprintStartDate: string | null,
-  sprintLengthDays: number,
-): SprintGroup[] {
-  if (!sprintStartDate || sprintLengthDays <= 0) {
-    return [{ label: '', rows }]
-  }
-
-  const sprintStart = new Date(sprintStartDate)
-  const groups: SprintGroup[] = []
-  let currentRows: MonthGridRow[] = []
-  let currentSprintIdx: number | null = null
-
-  for (const row of rows) {
-    const rowDate = new Date(row.date)
-    const diffMs = rowDate.getTime() - sprintStart.getTime()
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    const sprintIdx = Math.floor(diffDays / sprintLengthDays)
-
-    if (currentSprintIdx === null || sprintIdx !== currentSprintIdx) {
-      if (currentRows.length > 0) {
-        groups.push({
-          label: `Sprint ${currentSprintIdx! + 1}`,
-          rows: currentRows,
-        })
-      }
-      currentRows = [row]
-      currentSprintIdx = sprintIdx
-    } else {
-      currentRows.push(row)
-    }
-  }
-  if (currentRows.length > 0) {
-    groups.push({
-      label: `Sprint ${currentSprintIdx! + 1}`,
-      rows: currentRows,
-    })
-  }
-
-  return groups
-}
 
 export function MonthGrid({
   year,
