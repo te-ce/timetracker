@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { DayNoteEditor } from './DayNoteEditor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { monthRepo, configRepo, timeTrackingRepo } from '../repositories/shared'
 import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
@@ -8,13 +8,12 @@ import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import { calculateWorkedHours } from '../domain/worktime'
-import { resolveAutoCategory } from '../domain/autoCategoryOverride'
 import { toLocalIso } from '../domain/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../domain/statusColors'
-import type { WorkLocation } from '../repositories/types'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useDayQuery } from '../hooks/useDayQuery'
+import { useDayMutations } from '../hooks/useDayMutations'
+import { useCategoryMutations } from '../hooks/useCategoryMutations'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -27,67 +26,12 @@ function formatDate(iso: string): string {
 
 function resolveConfigValues(config: import('../repositories/types').AppConfig | undefined) {
   return {
-    autoCategory: config?.autoCategory ?? null,
+    globalAutoCategory: config?.autoCategory ?? null,
     customCategories: config?.customCategories ?? [],
     categoryOrder: config?.categoryOrder,
     categoryDescriptions: config?.categoryDescriptions,
   }
 }
-
-function invalidateMonth(queryClient: ReturnType<typeof useQueryClient>, date: string) {
-  const year = parseInt(date.slice(0, 4))
-  const month = parseInt(date.slice(5, 7))
-  void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
-}
-
-async function confirmDayWithAutoCategory(date: string, windows: import('../repositories/types').WorkPeriod[], entries: import('../repositories/types').TimeEntry[], autoCategoryOverride: string | null, globalAutoCategory: string | null): Promise<void> {
-  const autoHours = Math.max(0, calculateWorkedHours(windows) - entries.reduce((s, e) => s + e.hours, 0))
-  const resolvedAuto = resolveAutoCategory({
-    date,
-    globalDefault: globalAutoCategory,
-    dayOverrides: autoCategoryOverride
-      ? new Map<string, string>([[date, autoCategoryOverride]])
-      : new Map<string, string>(),
-  })
-  await monthRepo.updateDay(date, (day) => {
-    let updatedEntries = [...day.entries]
-    if (resolvedAuto && autoHours > 0) {
-      const existing = updatedEntries.find((e) => e.category === resolvedAuto)
-      updatedEntries = updatedEntries.filter((e) => e.category !== resolvedAuto || e.id === existing?.id)
-      const autoEntry = { id: existing?.id ?? crypto.randomUUID(), category: resolvedAuto, hours: (existing?.hours ?? 0) + autoHours }
-      updatedEntries = [...updatedEntries.filter((e) => e.id !== autoEntry.id), autoEntry]
-    }
-    return { ...day, entries: updatedEntries, confirmed: true }
-  })
-}
-
-async function renameCategoryAcrossAllMonths(oldName: string, newName: string): Promise<void> {
-  const cfg = await configRepo.get()
-  const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
-  const newOrder = (cfg.categoryOrder ?? []).map((c) => (c === oldName ? newName : c))
-  const newDescriptions = cfg.categoryDescriptions
-    ? Object.fromEntries(Object.entries(cfg.categoryDescriptions).map(([k, v]) => [k === oldName ? newName : k, v]))
-    : undefined
-  const newMapping = cfg.categoryMapping
-    ? Object.fromEntries(Object.entries(cfg.categoryMapping).map(([k, v]) => [k === oldName ? newName : k, v]))
-    : undefined
-  await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder, categoryDescriptions: newDescriptions, categoryMapping: newMapping })
-  const allMonths = await monthRepo.getAllMonths()
-  for (const ym of allMonths) {
-    const year = parseInt(ym.slice(0, 4))
-    const month = parseInt(ym.slice(5, 7))
-    const data = await monthRepo.getMonth(year, month)
-    for (const [date, day] of Object.entries(data)) {
-      if (day.entries.some((e) => e.category === oldName)) {
-        await monthRepo.updateDay(date, (d) => ({
-          ...d,
-          entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
-        }))
-      }
-    }
-  }
-}
-
 
 export function DayView() {
   const navigate = useNavigate()
@@ -120,75 +64,23 @@ export function DayView() {
     queryFn: () => timeTrackingRepo.getActive(),
   })
 
-  const queryClient = useQueryClient()
-
-  const confirmMutation = useMutation({
-    mutationFn: () => confirmDayWithAutoCategory(selectedDate, windows, entries, autoCategoryOverride, configAutoCategory),
-    onSuccess: () => invalidateMonth(queryClient, selectedDate),
+  const { globalAutoCategory, customCategories, categoryOrder, categoryDescriptions } = resolveConfigValues(config)
+  const dayMutations = useDayMutations({
+    date: selectedDate,
+    windows,
+    entries,
+    autoCategoryOverride,
+    globalAutoCategory,
+    effectiveLocation,
+    repository: monthRepo,
   })
 
-  const unconfirmMutation = useMutation({
-    mutationFn: () => monthRepo.updateDay(selectedDate, (day) => ({ ...day, confirmed: false })),
-    onSuccess: () => invalidateMonth(queryClient, selectedDate),
-  })
-
-  const autoCategoryMutation = useMutation({
-    mutationFn: (cat: string | null) => configRepo.save({ ...config!, autoCategory: cat }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
-  })
-
-  const categoryReorderMutation = useMutation({
-    mutationFn: (categoryOrder: string[]) => configRepo.save({ ...config!, categoryOrder }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
-  })
-
-  const categoryRenameMutation = useMutation({
-    mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
-      renameCategoryAcrossAllMonths(oldName, newName),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
-    },
-  })
-
-  const categoryDescriptionMutation = useMutation({
-    mutationFn: ({ category, description }: { category: string; description: string }) => {
-      const current = config?.categoryDescriptions ?? {}
-      const updated = description ? { ...current, [category]: description } : Object.fromEntries(Object.entries(current).filter(([k]) => k !== category))
-      return configRepo.save({ ...config!, categoryDescriptions: updated })
-    },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
-  })
-
-  const locationMutation = useMutation({
-    mutationFn: async () => {
-      const next: WorkLocation = effectiveLocation === 'Remote' ? 'Office' : 'Remote'
-      await monthRepo.updateDay(selectedDate, (day) => ({ ...day, location: next }))
-    },
-    onSuccess: () => invalidateMonth(queryClient, selectedDate),
-  })
-
-  const noteMutation = useMutation({
-    mutationFn: (note: string) =>
-      monthRepo.updateDay(selectedDate, (day) => {
-        const updated = { ...day }
-        delete updated.note
-        return note ? { ...updated, note } : updated
-      }),
-    onSuccess: () => invalidateMonth(queryClient, selectedDate),
-  })
+  const categoryMutations = useCategoryMutations(config, configRepo, monthRepo)
 
   const { displayStatus: badgeStatus, reason: statusReason } = dayClassification
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
-  const { autoCategory: configAutoCategory, customCategories, categoryOrder, categoryDescriptions } = resolveConfigValues(config)
-
-  const resetDayMutation = useMutation({
-    mutationFn: () =>
-      monthRepo.updateDay(selectedDate, () => ({ entries: [], windows: [] })),
-    onSuccess: () => invalidateMonth(queryClient, selectedDate),
-  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -236,7 +128,7 @@ export function DayView() {
             repository={monthRepo}
           />
           <button
-            onClick={() => locationMutation.mutate()}
+            onClick={() => dayMutations.toggleLocation.mutate()}
             className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
             aria-label={`Work location: ${effectiveLocation}. Click to switch to ${locationToggle}`}
           >
@@ -260,7 +152,7 @@ export function DayView() {
           )}
           {isConfirmed ? (
             <button
-              onClick={() => unconfirmMutation.mutate()}
+              onClick={() => dayMutations.unconfirm.mutate()}
               className="rounded border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
               aria-label="Unconfirm day"
             >
@@ -268,7 +160,7 @@ export function DayView() {
             </button>
           ) : (
             <button
-              onClick={() => confirmMutation.mutate()}
+              onClick={() => dayMutations.confirm.mutate()}
               className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
               aria-label="Confirm day"
             >
@@ -305,13 +197,17 @@ export function DayView() {
         categoryDescriptions={categoryDescriptions}
         autoCategory={autoCategory}
         autoCategoryHours={Math.max(0, workedHours - manualTotal)}
-        onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
-        onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
-        onCategoryDescriptionChange={(category, description) => categoryDescriptionMutation.mutate({ category, description })}
-        onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
+        onAutoCategoryChange={(cat) => categoryMutations.setAutoCategory.mutate(cat)}
+        onCategoryReorder={(order) => categoryMutations.reorderCategories.mutate(order)}
+        onCategoryDescriptionChange={(category, description) =>
+          categoryMutations.setCategoryDescription.mutate({ category, description })
+        }
+        onCategoryRename={(oldName, newName) =>
+          categoryMutations.renameCategory.mutate({ oldName, newName })
+        }
       />
 
-      <DayNoteEditor dayNote={dayNote} onSave={(note) => noteMutation.mutate(note)} />
+      <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />
 
       {showResetConfirm && (
         <ConfirmDialog
@@ -321,7 +217,7 @@ export function DayView() {
           danger
           onConfirm={() => {
             setShowResetConfirm(false)
-            resetDayMutation.mutate()
+            dayMutations.resetDay.mutate()
           }}
           onCancel={() => setShowResetConfirm(false)}
         />
