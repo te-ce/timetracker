@@ -41,7 +41,7 @@ describe('MonthCalendar', () => {
       '2026-05-17': 'non-working', // Saturday
       '2026-05-18': 'non-working', // Sunday
       '2026-05-19': 'today', // Tuesday
-      '2026-05-15': 'tracked', // Friday (work day with hours)
+      '2026-05-15': 'complete', // Friday (work day with hours)
       '2026-05-16': 'untracked', // Past Friday without hours
       '2026-05-20': 'future', // Wednesday
     }
@@ -119,7 +119,7 @@ describe('MonthCalendar', () => {
   })
 
   it('shows a reason tooltip element when dayStatusReasonMap has entry', () => {
-    const dayStatusMap: Record<string, DayStatus> = { '2024-01-10': 'tracked' }
+    const dayStatusMap: Record<string, DayStatus> = { '2024-01-10': 'complete' }
     const dayStatusReasonMap = { '2024-01-10': 'Holiday: New Year' }
     render(
       <MonthCalendar

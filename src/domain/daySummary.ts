@@ -13,6 +13,7 @@ export interface DaySummary {
   entryTotal: number
   isEntriesBalanced: boolean
   hasAutoCategory: boolean
+  isConfirmed: boolean
   dayStatus: DayStatus
   displayStatus: Exclude<DayStatus, 'today'>
   statusReason: string
@@ -58,7 +59,7 @@ function buildDaySummary(
     dayType, workedHours, manualTotal: entryTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, isoDate: iso, today,
   })
 
-  return { date: iso, dayType, workedHours, entryTotal, isEntriesBalanced, hasAutoCategory, dayStatus, displayStatus, statusReason, isWorkDay: dayType === 'WorkDay' }
+  return { date: iso, dayType, workedHours, entryTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, dayStatus, displayStatus, statusReason, isWorkDay: dayType === 'WorkDay' }
 }
 
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
@@ -75,7 +76,8 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     const summary = buildDaySummary(iso, date, monthData[iso], globalAutoCategory, today)
     if (summary.isWorkDay) workDayCount++
     workedHoursPerDay.push(summary.workedHours)
-    days.push({ date: summary.date, dayType: summary.dayType, workedHours: summary.workedHours, entryTotal: summary.entryTotal, isEntriesBalanced: summary.isEntriesBalanced, hasAutoCategory: summary.hasAutoCategory, dayStatus: summary.dayStatus, displayStatus: summary.displayStatus, statusReason: summary.statusReason })
+    const { isWorkDay: _isWorkDay, ...daySummary } = summary
+    days.push(daySummary)
   }
 
   const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)

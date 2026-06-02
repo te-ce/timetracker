@@ -29,8 +29,8 @@ describe('classifyDay', () => {
     expect(classify({ dayType: 'Absence', isoDate: '2026-05-12' }).status).toBe('leave')
   })
 
-  it('returns tracked for past work days with balanced entries', () => {
-    expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).status).toBe('tracked')
+  it('returns complete for past work days with balanced entries', () => {
+    expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).status).toBe('complete')
   })
 
   it('returns needs-review for past work days with hours but unbalanced entries', () => {
@@ -55,35 +55,30 @@ describe('classifyDay', () => {
     expect(classify({ isoDate: '2026-05-20' }).status).toBe('future')
   })
 
-  it('returns tracked for future days that already have hours', () => {
+  it('returns complete for future days that already have hours', () => {
     expect(classify({ isoDate: '2026-05-20', workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).status).toBe(
-      'tracked',
+      'complete',
     )
   })
 
-  it('returns needs-review when auto category covers remaining but day is not confirmed', () => {
+  it('returns needs-review when auto category covers remaining but entries are not balanced', () => {
     expect(classify({ workedHours: 8, manualTotal: 4, hasAutoCategory: true }).status).toBe('needs-review')
   })
 
-  it('returns confirmed when day is explicitly confirmed', () => {
-    expect(classify({ workedHours: 8, manualTotal: 4, isConfirmed: true }).status).toBe('confirmed')
-  })
-
-  it('returns confirmed even when entries are balanced, if day is confirmed', () => {
+  it('isConfirmed does not affect status — confirmation is an overlay on DaySummary', () => {
+    expect(classify({ workedHours: 8, manualTotal: 4, isConfirmed: true }).status).toBe('needs-review')
     expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true, isConfirmed: true }).status).toBe(
-      'confirmed',
+      'complete',
     )
   })
 
   describe('displayStatus', () => {
     it('resolves today to underlying work status', () => {
       expect(classify({ isoDate: today, workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).displayStatus).toBe(
-        'tracked',
+        'complete',
       )
       expect(classify({ isoDate: today }).displayStatus).toBe('untracked')
-      expect(classify({ isoDate: today, workedHours: 8, manualTotal: 4, isConfirmed: true }).displayStatus).toBe(
-        'confirmed',
-      )
+      expect(classify({ isoDate: today, workedHours: 8, manualTotal: 4 }).displayStatus).toBe('needs-review')
     })
 
     it('future resolves displayStatus to untracked', () => {

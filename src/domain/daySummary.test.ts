@@ -50,7 +50,7 @@ describe('buildMonthSummaries', () => {
     }
     const result = buildMonthSummaries(2026, 5, { monthData, today })
     expect(result.days[0]!.isEntriesBalanced).toBe(true)
-    expect(result.days[0]!.dayStatus).toBe('tracked')
+    expect(result.days[0]!.dayStatus).toBe('complete')
   })
 
   it('marks needs-review when entries do not match worked hours', () => {
@@ -126,5 +126,29 @@ describe('buildMonthSummaries', () => {
     }
     const result = buildMonthSummaries(2026, 5, { monthData, today })
     expect(result.days[18]!.dayStatus).toBe('today')
+  })
+
+  it('surfaces isConfirmed from raw day data', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        entries: [{ id: '1', category: 'QA', hours: 3 }],
+        windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
+        confirmed: true,
+      },
+    }
+    const result = buildMonthSummaries(2026, 5, { monthData, today })
+    expect(result.days[0]!.isConfirmed).toBe(true)
+    expect(result.days[0]!.dayStatus).toBe('needs-review')
+  })
+
+  it('isConfirmed is false when day is not confirmed', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        entries: [{ id: '1', category: 'QA', hours: 8 }],
+        windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
+      },
+    }
+    const result = buildMonthSummaries(2026, 5, { monthData, today })
+    expect(result.days[0]!.isConfirmed).toBe(false)
   })
 })

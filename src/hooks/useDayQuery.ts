@@ -15,8 +15,9 @@ const FUTURE_SUMMARY: DaySummary = {
   entryTotal: 0,
   isEntriesBalanced: false,
   hasAutoCategory: false,
+  isConfirmed: false,
   dayStatus: 'future',
-  displayStatus: 'future',
+  displayStatus: 'untracked',
   statusReason: '',
 }
 
