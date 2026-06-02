@@ -2,7 +2,7 @@ import type { DayType } from './dayType'
 import type { DayStatus } from './dayStatus'
 import type { MonthData, Day } from '../repositories/types'
 import { classifyDay } from './dayStatus'
-import { classifyDay as classifyDayType } from './dayType'
+import { classifyDayType } from './dayType'
 import { calculateWorkedHours } from './worktime'
 import { toLocalIso } from './dateUtils'
 

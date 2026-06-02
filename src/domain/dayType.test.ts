@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { classifyDay, isWorkPeriodExpected, getAutoBooking } from './dayType'
+import { classifyDayType, isWorkPeriodExpected, getAutoBooking } from './dayType'
 import type { DayType } from './dayType'
 
 // 2024-01-13 = Saturday, 2024-01-14 = Sunday, 2024-01-15 = Monday
@@ -7,27 +7,27 @@ const SAT = new Date('2024-01-13')
 const SUN = new Date('2024-01-14')
 const MON = new Date('2024-01-15')
 
-describe('classifyDay', () => {
+describe('classifyDayType', () => {
   it('classifies Saturday as Weekend', () => {
-    expect(classifyDay(SAT)).toBe('Weekend')
+    expect(classifyDayType(SAT)).toBe('Weekend')
   })
 
   it('classifies Sunday as Weekend', () => {
-    expect(classifyDay(SUN)).toBe('Weekend')
+    expect(classifyDayType(SUN)).toBe('Weekend')
   })
 
   it('classifies a weekday as WorkDay', () => {
-    expect(classifyDay(MON)).toBe('WorkDay')
+    expect(classifyDayType(MON)).toBe('WorkDay')
   })
 
   it('classifies a weekday as PublicHoliday when in holiday set', () => {
     const holidays = new Set(['2024-01-15'])
-    expect(classifyDay(MON, holidays)).toBe('PublicHoliday')
+    expect(classifyDayType(MON, holidays)).toBe('PublicHoliday')
   })
 
   it('still classifies weekend even if in holiday set', () => {
     const holidays = new Set(['2024-01-13'])
-    expect(classifyDay(SAT, holidays)).toBe('Weekend')
+    expect(classifyDayType(SAT, holidays)).toBe('Weekend')
   })
 })
 

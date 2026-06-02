@@ -11,7 +11,7 @@ export type AutoBooking = { category: '_LEAVE'; hours: number }
 
 const LEAVE_TYPES = new Set<DayType>(['Vacation', 'SickDay', 'Absence'])
 
-export function classifyDay(date: Date, holidayDates?: Set<string>): DayType {
+export function classifyDayType(date: Date, holidayDates?: Set<string>): DayType {
   const dow = date.getDay()
   if (dow === 0 || dow === 6) return 'Weekend'
   if (holidayDates) {
