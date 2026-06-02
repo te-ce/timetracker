@@ -38,7 +38,7 @@ export function WorkedHoursCell({ date, workedHours, windows, repository, classN
   const modalRef = useRef<HTMLDivElement>(null)
 
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
-  const { save: addMutation, remove: removeMutation } = useWorkPeriodMutations(repository)
+  const { remove: removeMutation, saveWithAbsorbed } = useWorkPeriodMutations(repository)
 
   useEffect(() => {
     if (!open) return
@@ -62,8 +62,7 @@ export function WorkedHoursCell({ date, workedHours, windows, repository, classN
     if (!draftStart) return
     const incoming: WorkPeriod = { id: crypto.randomUUID(), start: draftStart, end: draftEnd || null }
     const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    addMutation.mutate({ date, window: merged })
-    absorbed.forEach((id) => removeMutation.mutate({ date, id }))
+    saveWithAbsorbed.mutate({ date, window: merged, absorbed })
     setDraftStart('')
     setDraftEnd('')
   }
@@ -80,8 +79,7 @@ export function WorkedHoursCell({ date, workedHours, windows, repository, classN
     if (!existing) return
     const incoming: WorkPeriod = { ...existing, start: editStart, end: editEnd || null }
     const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    addMutation.mutate({ date, window: merged })
-    absorbed.forEach((id) => removeMutation.mutate({ date, id }))
+    saveWithAbsorbed.mutate({ date, window: merged, absorbed })
     setEditingId(null)
   }
 
