@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { WorkPeriod, MonthRepository } from '../repositories/types'
 import { invalidateMonth } from './queryKeys'
+import { upsertWindow, removeWindow } from '../domain/dayUpdaters'
 
 export function useWorkPeriodMutations(repository: MonthRepository) {
   const queryClient = useQueryClient()
@@ -11,27 +12,21 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
 
   const save = useMutation({
     mutationFn: ({ date, window }: { date: string; window: WorkPeriod }) =>
-      repository.updateDay(date, (day) => {
-        const filtered = day.windows.filter((w) => w.id !== window.id)
-        return { ...day, windows: [...filtered, window] }
-      }),
+      repository.updateDay(date, (day) => upsertWindow(day, window)),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
   const remove = useMutation({
     mutationFn: ({ date, id }: { date: string; id: string }) =>
-      repository.updateDay(date, (day) => ({
-        ...day,
-        windows: day.windows.filter((w) => w.id !== id),
-      })),
+      repository.updateDay(date, (day) => removeWindow(day, id)),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
   const saveWithAbsorbed = useMutation({
     mutationFn: ({ date, window, absorbed }: { date: string; window: WorkPeriod; absorbed: string[] }) =>
       repository.updateDay(date, (day) => {
-        const filtered = day.windows.filter((w) => w.id !== window.id && !absorbed.includes(w.id))
-        return { ...day, windows: [...filtered, window] }
+        const withoutAbsorbed = { ...day, windows: day.windows.filter((w) => !absorbed.includes(w.id)) }
+        return upsertWindow(withoutAbsorbed, window)
       }),
     onSuccess: (_, { date }) => invalidate(date),
   })
