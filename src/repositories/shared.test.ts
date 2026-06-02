@@ -5,7 +5,7 @@ vi.mock('../auth/msalInstance', () => ({
   msalInstance: { getAllAccounts: () => [], acquireTokenSilent: vi.fn() },
 }))
 
-import { resetAllRepositories, configRepo, monthRepo, sprintExportRepo } from './shared'
+import { resetAllRepositories, configRepo } from './shared'
 
 describe('resetAllRepositories', () => {
   it('clears configRepo cache so next read goes to adapter', async () => {

@@ -47,7 +47,7 @@ function buildDaySummary(
   dayData: Day | undefined,
   globalAutoCategory: string | null,
   today: string,
-): DaySummary & { isWorkDay: boolean } {
+): DaySummary {
   const { windows, entries, dayTypeOverride, autoCategory, isConfirmed } = unpackDay(dayData, globalAutoCategory)
   const workedHours = calculateWorkedHours(windows)
   const entryTotal = entries.reduce((sum, e) => sum + e.hours, 0)
@@ -59,7 +59,7 @@ function buildDaySummary(
     dayType, workedHours, manualTotal: entryTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, isoDate: iso, today,
   })
 
-  return { date: iso, dayType, workedHours, entryTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, dayStatus, displayStatus, statusReason, isWorkDay: dayType === 'WorkDay' }
+  return { date: iso, dayType, workedHours, entryTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, dayStatus, displayStatus, statusReason }
 }
 
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
@@ -74,10 +74,9 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     const date = new Date(year, month - 1, d)
     const iso = toLocalIso(date)
     const summary = buildDaySummary(iso, date, monthData[iso], globalAutoCategory, today)
-    if (summary.isWorkDay) workDayCount++
+    if (summary.dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(summary.workedHours)
-    const { isWorkDay: _isWorkDay, ...daySummary } = summary
-    days.push(daySummary)
+    days.push(summary)
   }
 
   const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)

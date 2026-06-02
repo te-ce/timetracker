@@ -19,7 +19,6 @@ import type { MonthGridRow } from '../domain/monthGrid'
 import type { DotPopoverState } from './DotPopoverPanel'
 import type { NotePopoverState } from './NotePopoverPanel'
 import { STATUS_DOT, STATUS_ROW_BG } from '../domain/statusColors'
-import type { DisplayStatus } from '../domain/statusColors'
 import { StatusLegend } from './StatusLegend'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
