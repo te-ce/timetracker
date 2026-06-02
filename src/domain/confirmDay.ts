@@ -17,17 +17,19 @@ export async function confirmDay(
     : new Map<string, string>()
   const resolvedAuto = resolveAutoCategory(date, dayOverrides, globalAutoCategory)
   await repository.updateDay(date, (day) => {
-    let updatedEntries = [...day.entries]
-    if (resolvedAuto && autoHours > 0) {
-      const existing = updatedEntries.find((e) => e.category === resolvedAuto)
-      updatedEntries = updatedEntries.filter((e) => e.category !== resolvedAuto || e.id === existing?.id)
-      const autoEntry = {
-        id: existing?.id ?? crypto.randomUUID(),
-        category: resolvedAuto,
-        hours: (existing?.hours ?? 0) + autoHours,
-      }
-      updatedEntries = [...updatedEntries.filter((e) => e.id !== autoEntry.id), autoEntry]
-    }
-    return { ...day, entries: updatedEntries, confirmed: true }
+    const withoutAuto = resolvedAuto
+      ? day.entries.filter((e) => e.category !== resolvedAuto)
+      : day.entries
+    const autoEntry =
+      resolvedAuto && autoHours > 0
+        ? [
+            {
+              id: day.entries.find((e) => e.category === resolvedAuto)?.id ?? crypto.randomUUID(),
+              category: resolvedAuto,
+              hours: autoHours,
+            },
+          ]
+        : []
+    return { ...day, entries: [...withoutAuto, ...autoEntry], confirmed: true }
   })
 }
