@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, Fragment } from 'react'
+import { useState, useRef, Fragment, useCallback } from 'react'
+import { useCloseOnOutsideClickOrEscape } from '../hooks/useCloseOnOutsideClickOrEscape'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { MonthRepository, WorkLocation } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
@@ -50,6 +51,24 @@ function saveDayTypeInRepo(repository: MonthRepository, date: string, value: str
   return Promise.resolve()
 }
 
+function classifyRow(
+  row: MonthGridRow,
+  autoCategory: string | null,
+  confirmedDays: Set<string>,
+  today: string,
+) {
+  const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
+  return classifyDay({
+    dayType: row.dayType,
+    workedHours: row.workedHours,
+    manualTotal,
+    isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
+    hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
+    isConfirmed: confirmedDays.has(row.date),
+    isoDate: row.date,
+    today,
+  })
+}
 
 interface Props {
   year: number
@@ -149,34 +168,10 @@ export function MonthGrid({
 
   const todayIso = toLocalIso(new Date())
 
-  useEffect(() => {
-    if (!dotPopover) return
-    function handleClick(e: MouseEvent) {
-      if (popoverRef.current && e.target instanceof Node && !popoverRef.current.contains(e.target)) {
-        setDotPopover(null)
-      }
-    }
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setDotPopover(null)
-    }
-    document.addEventListener('mousedown', handleClick)
-    document.addEventListener('keydown', handleKey)
-    return () => {
-      document.removeEventListener('mousedown', handleClick)
-      document.removeEventListener('keydown', handleKey)
-    }
-  }, [dotPopover])
-
-  useEffect(() => {
-    if (!notePopover) return
-    function handleClick(e: MouseEvent) {
-      if (notePopoverRef.current && e.target instanceof Node && !notePopoverRef.current.contains(e.target)) {
-        setNotePopover(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [notePopover])
+  const closeDotPopover = useCallback(() => setDotPopover(null), [])
+  const closeNotePopover = useCallback(() => setNotePopover(null), [])
+  useCloseOnOutsideClickOrEscape(!!dotPopover, popoverRef, closeDotPopover, { escapeKey: true })
+  useCloseOnOutsideClickOrEscape(!!notePopover, notePopoverRef, closeNotePopover)
 
   const { data: monthData = {} } = useQuery({
     queryKey: QUERY_KEYS.month(year, month),
@@ -276,23 +271,6 @@ export function MonthGrid({
     return val ? String(parseFloat(val.toFixed(2))) : ''
   }
 
-  function classifyRow(row: MonthGridRow) {
-    const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
-    return classifyDay({
-      dayType: row.dayType,
-      workedHours: row.workedHours,
-      manualTotal,
-      isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
-      hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
-      isConfirmed: confirmedDays.has(row.date),
-      isoDate: row.date,
-      today: todayIso,
-    })
-  }
-
-  function getDisplayStatus(row: MonthGridRow): DisplayStatus {
-    return classifyRow(row).displayStatus
-  }
 
   function cycleLocation(date: string) {
     const effective: WorkLocation = workLocations.get(date) ?? defaultWorkLocation ?? 'Remote'
@@ -303,7 +281,7 @@ export function MonthGrid({
   function handleDotClick(e: React.MouseEvent<HTMLButtonElement>, row: MonthGridRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')
-    const { displayStatus, reason } = classifyRow(row)
+    const { displayStatus, reason } = classifyRow(row, autoCategory, confirmedDays, todayIso)
     setDotPopover({
       date: row.date,
       currentDayType,
@@ -425,7 +403,7 @@ export function MonthGrid({
               const groupRows = group.rows.map((row) => {
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const isToday = row.date === todayIso
-                const displayStatus = getDisplayStatus(row)
+                const displayStatus = classifyRow(row, autoCategory, confirmedDays, todayIso).displayStatus
                 const bgPair = isToday ? TODAY_ROW_BG : STATUS_ROW_BG[displayStatus]
                 const rowBg = bgPair[globalRowIdx % 2]
                 const loc = resolveWorkLocation(workLocations, row.date, defaultWorkLocation)
