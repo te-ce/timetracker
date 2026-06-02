@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { materializeAutoFillRules } from './autoFillRules'
+import { parseLocalDate, toLocalIso } from './dateUtils'
 import type { AutoFillRule } from './autoFillRules'
 import type { DayType } from './dayType'
 
@@ -107,6 +108,55 @@ describe('materializeAutoFillRules', () => {
 
     // May 4 (week 0), May 18 (week 2) — May 11 skipped (odd week)
     expect(entries.map((e) => e.date)).toEqual(['2026-05-04', '2026-05-18'])
+  })
+
+  it('uses local calendar weekday for weekend detection, not UTC day', () => {
+    // '2026-05-18' is Monday locally. new Date('2026-05-18') parses as UTC midnight,
+    // so in UTC+ timezones getUTCDay() still gives Monday but getDay() gives Sunday.
+    // We verify via parseLocalDate that the implementation uses local dates.
+    const monday = parseLocalDate('2026-05-18')
+    expect(monday.getDay()).toBe(1) // Monday — same weekday the rule engine must use
+    expect(toLocalIso(monday)).toBe('2026-05-18') // round-trip stable
+
+    const rule: AutoFillRule = {
+      id: 'r1',
+      category: 'QA',
+      hours: 1,
+      pattern: { type: 'everyWorkday' },
+      materializedDates: new Set(),
+    }
+
+    // A single day range on a Monday must produce exactly one entry
+    const entries = materializeAutoFillRules({
+      rules: [rule],
+      fromDate: '2026-05-18',
+      toDate: '2026-05-18',
+      dayTypes: new Map(),
+    })
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.date).toBe('2026-05-18')
+  })
+
+  it('uses local calendar weekday for weekly pattern matching', () => {
+    // Anchor Monday May 4, every 2 weeks. Verify only Mon every-other-week matches.
+    const rule: AutoFillRule = {
+      id: 'r2',
+      category: 'Sync',
+      hours: 1,
+      pattern: { type: 'weekly', days: [1], intervalWeeks: 2, anchorDate: '2026-05-04' },
+      materializedDates: new Set(),
+    }
+    const entries = materializeAutoFillRules({
+      rules: [rule],
+      fromDate: '2026-05-04',
+      toDate: '2026-05-18',
+      dayTypes: new Map(),
+    })
+    // May 4 (week 0) and May 18 (week 2) — both Mondays by local calendar
+    expect(entries.map((e) => e.date)).toEqual(['2026-05-04', '2026-05-18'])
+    entries.forEach((e) => {
+      expect(parseLocalDate(e.date).getDay()).toBe(1) // all Mondays
+    })
   })
 
   it('generates unique IDs for each materialized entry', () => {

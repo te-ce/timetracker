@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toLocalIso } from './dateUtils'
+import { toLocalIso, parseLocalDate } from './dateUtils'
 
 describe('toLocalIso', () => {
   it('formats a date as YYYY-MM-DD using local timezone', () => {
@@ -36,5 +36,31 @@ describe('toLocalIso', () => {
 
   it('handles leap year Feb 29', () => {
     expect(toLocalIso(new Date(2024, 1, 29))).toBe('2024-02-29')
+  })
+})
+
+describe('parseLocalDate', () => {
+  it('parses YYYY-MM-DD as local calendar date', () => {
+    const d = parseLocalDate('2026-05-18')
+    expect(d.getFullYear()).toBe(2026)
+    expect(d.getMonth()).toBe(4)
+    expect(d.getDate()).toBe(18)
+  })
+
+  it('round-trips with toLocalIso', () => {
+    expect(toLocalIso(parseLocalDate('2026-05-18'))).toBe('2026-05-18')
+    expect(toLocalIso(parseLocalDate('2024-02-29'))).toBe('2024-02-29')
+    expect(toLocalIso(parseLocalDate('2026-01-01'))).toBe('2026-01-01')
+  })
+
+  it('returns Monday for 2026-05-18 regardless of UTC offset', () => {
+    // new Date('2026-05-18') parses as UTC midnight — in UTC+X getDay() returns Sunday
+    // parseLocalDate must always return the local weekday for the calendar date
+    expect(parseLocalDate('2026-05-18').getDay()).toBe(1) // Monday
+  })
+
+  it('handles first and last day of month', () => {
+    expect(toLocalIso(parseLocalDate('2026-01-31'))).toBe('2026-01-31')
+    expect(toLocalIso(parseLocalDate('2026-12-01'))).toBe('2026-12-01')
   })
 })

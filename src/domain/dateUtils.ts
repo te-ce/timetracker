@@ -5,3 +5,9 @@ export function toLocalIso(date: Date): string {
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
+
+/** Parse a YYYY-MM-DD string as a local-timezone Date (not UTC midnight). */
+export function parseLocalDate(iso: string): Date {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}

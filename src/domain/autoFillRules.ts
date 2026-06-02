@@ -1,5 +1,6 @@
 import type { DatedTimeEntry } from '../repositories/types'
 import type { DayType } from './dayType'
+import { parseLocalDate, toLocalIso } from './dateUtils'
 
 export type AutoFillPattern =
   | { type: 'everyWorkday' }
@@ -24,27 +25,30 @@ export interface MaterializeInput {
 const MS_PER_DAY = 86_400_000
 
 function addDays(iso: string, days: number): string {
-  const d = new Date(iso)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
+  const d = parseLocalDate(iso)
+  d.setDate(d.getDate() + days)
+  return toLocalIso(d)
 }
 
 function isWorkDay(date: string, dayTypes: Map<string, DayType>): boolean {
   const explicit = dayTypes.get(date)
   if (explicit) return explicit === 'WorkDay'
-  const dow = new Date(date).getUTCDay()
+  const dow = parseLocalDate(date).getDay()
   return dow !== 0 && dow !== 6
 }
 
 function matchesPattern(date: string, pattern: AutoFillPattern): boolean {
   if (pattern.type === 'everyWorkday') return true
 
-  const dow = new Date(date).getUTCDay()
+  const dow = parseLocalDate(date).getDay()
   if (!pattern.days.includes(dow)) return false
 
-  const anchor = new Date(pattern.anchorDate).getTime()
-  const current = new Date(date).getTime()
-  const weeksDiff = Math.floor((current - anchor) / (7 * MS_PER_DAY))
+  // Use UTC date-counting for week diff to avoid DST skew
+  const [ay, am, ad] = pattern.anchorDate.split('-').map(Number)
+  const [cy, cm, cd] = date.split('-').map(Number)
+  const anchorDays = Math.floor(Date.UTC(ay, am - 1, ad) / MS_PER_DAY)
+  const currentDays = Math.floor(Date.UTC(cy, cm - 1, cd) / MS_PER_DAY)
+  const weeksDiff = Math.floor((currentDays - anchorDays) / 7)
   return weeksDiff % pattern.intervalWeeks === 0
 }
 
