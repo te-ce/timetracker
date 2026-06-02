@@ -1,5 +1,5 @@
 import { calculateWorkedHours } from './worktime'
-import { resolveAutoCategory } from './autoCategoryOverride'
+import { resolveAutoCategory } from './autoCategory'
 import type { WorkPeriod, TimeEntry, MonthRepository } from '../repositories/types'
 
 export async function confirmDay(
@@ -11,13 +11,10 @@ export async function confirmDay(
   repository: MonthRepository,
 ): Promise<void> {
   const autoHours = Math.max(0, calculateWorkedHours(windows) - entries.reduce((s, e) => s + e.hours, 0))
-  const resolvedAuto = resolveAutoCategory({
-    date,
-    globalDefault: globalAutoCategory,
-    dayOverrides: autoCategoryOverride
-      ? new Map<string, string>([[date, autoCategoryOverride]])
-      : new Map<string, string>(),
-  })
+  const dayOverrides = autoCategoryOverride
+    ? new Map<string, string>([[date, autoCategoryOverride]])
+    : new Map<string, string>()
+  const resolvedAuto = resolveAutoCategory(date, dayOverrides, globalAutoCategory)
   await repository.updateDay(date, (day) => {
     let updatedEntries = [...day.entries]
     if (resolvedAuto && autoHours > 0) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateAutoCategory } from './autoCategory'
+import { calculateAutoCategory, resolveAutoCategory } from './autoCategory'
 import type { TimeEntry } from '../repositories/types'
 
 const makeEntry = (hours: number): TimeEntry => ({
@@ -43,5 +43,27 @@ describe('calculateAutoCategory', () => {
     const result = calculateAutoCategory(0, [makeEntry(1)])
     expect(result.hours).toBe(0)
     expect(result.isOverbooked).toBe(true)
+  })
+})
+
+describe('resolveAutoCategory', () => {
+  it('returns global default when no per-day override exists', () => {
+    expect(resolveAutoCategory('2026-05-19', new Map(), 'Coremedia')).toBe('Coremedia')
+  })
+
+  it('returns per-day override when one exists for that date', () => {
+    expect(resolveAutoCategory('2026-05-19', new Map([['2026-05-19', 'QA']]), 'Coremedia')).toBe('QA')
+  })
+
+  it('returns null when global default is null and no override', () => {
+    expect(resolveAutoCategory('2026-05-19', new Map(), null)).toBeNull()
+  })
+
+  it('override takes precedence even when global is null', () => {
+    expect(resolveAutoCategory('2026-05-19', new Map([['2026-05-19', 'Infra']]), null)).toBe('Infra')
+  })
+
+  it('does not return override for different date', () => {
+    expect(resolveAutoCategory('2026-05-20', new Map([['2026-05-19', 'QA']]), 'Coremedia')).toBe('Coremedia')
   })
 })
