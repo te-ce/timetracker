@@ -6,43 +6,9 @@ import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
 import { useRepositories } from '../repositories/RepositoryContext'
 import { getAllCategories } from '../domain/categories'
-import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../services/workbookService'
 import { useAuthStore } from '../stores/authStore'
-import { getAccessToken } from '../auth/msalInstance'
-import { isLocalFolderMode } from '../auth/bootstrapConfig'
 import { QUERY_KEYS } from '../hooks/queryKeys'
-import type { AppConfig } from '../repositories/types'
-import type { WorkbookService } from '../services/workbookService'
-
-const localFolder = isLocalFolderMode()
-
-function hasCategoryMappings(config: AppConfig | undefined): boolean {
-  const mapping = config ? config.categoryMapping : undefined
-  return Object.keys(mapping ?? {}).length > 0
-}
-
-function isLocalFolderExportReady(config: AppConfig | undefined): boolean {
-  if (!config) return false
-  return !!config.localExcelFile && !!config.targetSheet && hasCategoryMappings(config)
-}
-
-function isCloudExportReady(config: AppConfig | undefined, isAuthenticated: boolean): boolean {
-  if (!config) return false
-  return !!config.sharepointUrl && !!config.targetSheet && hasCategoryMappings(config) && isAuthenticated
-}
-
-function isExportReady(config: AppConfig | undefined, isAuthenticated: boolean): boolean {
-  return localFolder ? isLocalFolderExportReady(config) : isCloudExportReady(config, isAuthenticated)
-}
-
-function buildExportService(config: AppConfig, isAuthenticated: boolean): WorkbookService {
-  if (localFolder) {
-    if (!config.localExcelFile) throw new Error('No local Excel file selected.')
-    return new LocalFolderWorkbookService(config.localExcelFile)
-  }
-  if (!config.sharepointUrl || !isAuthenticated) throw new Error('SharePoint URL or auth missing.')
-  return new GraphApiWorkbookService(config.sharepointUrl, getAccessToken)
-}
+import { createWorkbookService, isExportReady } from '../services/workbookFactory'
 
 export function SprintView() {
   const { configRepo, monthRepo, sprintExportRepo } = useRepositories()
@@ -98,7 +64,7 @@ export function SprintView() {
 
   async function handleExport(): Promise<void> {
     if (!config?.targetSheet) throw new Error('No target sheet selected.')
-    const service = buildExportService(config, isAuthenticated)
+    const service = createWorkbookService(config, isAuthenticated)
     await service.writeSprintData(config.targetSheet, config.categoryMapping ?? {}, hoursPerCategory)
     await markExportedMutation.mutateAsync()
   }
