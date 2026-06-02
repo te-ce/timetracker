@@ -13,6 +13,50 @@ describe('CloudConfigRepository', () => {
     expect(config.customCategories).toEqual([])
   })
 
+  it('returned config is isolated — mutating it does not corrupt cached state', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudConfigRepository(adapter)
+    await repo.save({
+      sollstunden: 8,
+      autoCategory: null,
+      federalState: null,
+      sprintLengthDays: 10,
+      sprintStartDate: null,
+      customCategories: ['A'],
+      categoryMapping: { A: 'mapped-A' },
+    })
+
+    const first = await repo.get()
+    first.customCategories.push('mutated')
+    first.categoryMapping!['injected'] = 'bad'
+
+    const second = await repo.get()
+    expect(second.customCategories).toEqual(['A'])
+    expect(second.categoryMapping).toEqual({ A: 'mapped-A' })
+  })
+
+  it('save is isolated — mutating config after save does not corrupt stored state', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudConfigRepository(adapter)
+    const config = {
+      sollstunden: 8,
+      autoCategory: null,
+      federalState: null,
+      sprintLengthDays: 10,
+      sprintStartDate: null,
+      customCategories: ['A'],
+      categoryMapping: { A: 'original' },
+    }
+    await repo.save(config)
+
+    config.customCategories.push('mutated')
+    config.categoryMapping!['injected'] = 'bad'
+
+    const stored = await repo.get()
+    expect(stored.customCategories).toEqual(['A'])
+    expect(stored.categoryMapping).toEqual({ A: 'original' })
+  })
+
   it('persists and retrieves config', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudConfigRepository(adapter)

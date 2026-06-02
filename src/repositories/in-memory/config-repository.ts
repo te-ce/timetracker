@@ -16,16 +16,15 @@ export class InMemoryConfigRepository implements ConfigRepository {
   private config: AppConfig
 
   constructor(initialConfig: AppConfig = defaultAppConfig) {
-    this.config = { ...initialConfig }
+    this.config = structuredClone(initialConfig)
   }
 
   get(): Promise<AppConfig> {
-    return Promise.resolve({ ...this.config })
+    return Promise.resolve(structuredClone(this.config))
   }
 
   save(config: AppConfig): Promise<void> {
-    this.config = { ...config }
-
+    this.config = structuredClone(config)
     return Promise.resolve()
   }
 }

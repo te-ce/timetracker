@@ -13,14 +13,14 @@ export class CloudConfigRepository implements ConfigRepository {
   }
 
   async get(): Promise<AppConfig> {
-    if (this.cache) return { ...this.cache }
+    if (this.cache) return structuredClone(this.cache)
     const data = await this.adapter.get<AppConfig>(KEY)
-    this.cache = data ?? { ...DEFAULT_APP_CONFIG }
-    return { ...this.cache }
+    this.cache = data ?? structuredClone(DEFAULT_APP_CONFIG)
+    return structuredClone(this.cache)
   }
 
   async save(config: AppConfig): Promise<void> {
-    this.cache = { ...config }
+    this.cache = structuredClone(config)
     await this.adapter.put(KEY, config)
   }
 
