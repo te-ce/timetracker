@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from '../domain/sprint'
-import type { SprintConfig } from '../domain/sprint'
+import type { SprintConfig, Sprint } from '../domain/sprint'
 import { SprintReportPanel } from '../components/SprintReportPanel'
 import { SprintConfigPanel } from '../components/SprintConfigPanel'
 import { useRepositories } from '../repositories/RepositoryContext'
@@ -9,28 +9,51 @@ import { getAllCategories } from '../domain/categories'
 import { useAuthStore } from '../stores/authStore'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { createWorkbookService, isExportReady } from '../services/workbookFactory'
+import { toLocalIso } from '../domain/dateUtils'
+import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
+import type { AppConfig } from '../repositories/types'
 
-export function SprintView() {
-  const { configRepo, monthRepo, sprintExportRepo } = useRepositories()
-  const queryClient = useQueryClient()
-  const [sprintIndex, setSprintIndex] = useState<number | null>(null)
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+interface SprintState {
+  sprintConfig: SprintConfig
+  sprint: Sprint
+}
 
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => configRepo.get(),
-  })
-
+function resolveSprintState(
+  config: AppConfig | undefined,
+  sprintIndex: number | null,
+  today: string,
+): SprintState | null {
+  const startDate = config?.sprintStartDate ?? null
+  if (!startDate) return null
   const sprintConfig: SprintConfig = {
-    startDate: config ? (config.sprintStartDate ?? '2024-01-01') : '2024-01-01',
-    lengthDays: config ? config.sprintLengthDays : 14,
+    startDate,
+    lengthDays: config?.sprintLengthDays ?? DEFAULT_APP_CONFIG.sprintLengthDays,
   }
+  const currentIndex = getSprintForDate(today, sprintConfig).index
+  const activeIndex = sprintIndex !== null ? sprintIndex : currentIndex
+  return { sprintConfig, sprint: getSprintBoundaries(activeIndex, sprintConfig) }
+}
 
-  const today = new Date().toISOString().slice(0, 10)
-  const currentSprint = getSprintForDate(today, sprintConfig)
-  const activeIndex = sprintIndex !== null ? sprintIndex : currentSprint.index
+interface SprintContentProps {
+  config: AppConfig
+  sprintConfig: SprintConfig
+  sprintIndex: number | null
+  onSprintIndexChange: (index: number | null) => void
+  sprint: Sprint
+  isAuthenticated: boolean
+}
 
-  const sprint = getSprintBoundaries(activeIndex, sprintConfig)
+function SprintContent({
+  config,
+  sprintConfig,
+  sprintIndex,
+  onSprintIndexChange,
+  sprint,
+  isAuthenticated,
+}: SprintContentProps) {
+  const { monthRepo, sprintExportRepo } = useRepositories()
+  const queryClient = useQueryClient()
+  const activeIndex = sprint.index
 
   const { data: entries = [] } = useQuery({
     queryKey: QUERY_KEYS.sprintEntries(activeIndex, sprintConfig.startDate, sprintConfig.lengthDays),
@@ -38,8 +61,7 @@ export function SprintView() {
   })
 
   const hoursPerCategory = aggregateSprintHours(entries, sprint)
-  const customCategories = config ? config.customCategories : []
-  const allCategories = getAllCategories(customCategories, config?.categoryOrder)
+  const allCategories = getAllCategories(config.customCategories, config.categoryOrder)
 
   const { data: sprintExport } = useQuery({
     queryKey: QUERY_KEYS.sprintExportByIndex(activeIndex),
@@ -51,7 +73,7 @@ export function SprintView() {
       sprintExportRepo.save({
         sprintIndex: activeIndex,
         status: 'exported',
-        exportedAt: new Date().toISOString().slice(0, 10),
+        exportedAt: toLocalIso(new Date()),
       }),
     onSuccess: () =>
       void queryClient.invalidateQueries({
@@ -63,17 +85,17 @@ export function SprintView() {
   const exportReady = isExportReady(config, isAuthenticated)
 
   async function handleExport(): Promise<void> {
-    if (!config?.targetSheet) throw new Error('No target sheet selected.')
+    if (!config.targetSheet) throw new Error('No target sheet selected.')
     const service = createWorkbookService(config, isAuthenticated)
     await service.writeSprintData(config.targetSheet, config.categoryMapping ?? {}, hoursPerCategory)
     await markExportedMutation.mutateAsync()
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <>
       <div className="flex items-center">
         <button
-          onClick={() => setSprintIndex(activeIndex - 1)}
+          onClick={() => onSprintIndexChange(activeIndex - 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
           ← Prev
@@ -86,7 +108,7 @@ export function SprintView() {
             </span>
           </h2>
           <button
-            onClick={() => setSprintIndex(null)}
+            onClick={() => onSprintIndexChange(null)}
             className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${sprintIndex === null ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}
             aria-disabled={sprintIndex === null}
           >
@@ -94,19 +116,12 @@ export function SprintView() {
           </button>
         </div>
         <button
-          onClick={() => setSprintIndex(activeIndex + 1)}
+          onClick={() => onSprintIndexChange(activeIndex + 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
           Next →
         </button>
       </div>
-      <SprintConfigPanel
-        repository={configRepo}
-        onConfigChanged={() => {
-          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
-          setSprintIndex(null)
-        }}
-      />
       <SprintReportPanel
         hoursPerCategory={hoursPerCategory}
         allCategories={allCategories}
@@ -114,6 +129,42 @@ export function SprintView() {
         exportReady={exportReady}
         onExport={handleExport}
       />
+    </>
+  )
+}
+
+export function SprintView() {
+  const { configRepo } = useRepositories()
+  const queryClient = useQueryClient()
+  const [sprintIndex, setSprintIndex] = useState<number | null>(null)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  const { data: config } = useQuery({
+    queryKey: QUERY_KEYS.config,
+    queryFn: () => configRepo.get(),
+  })
+
+  const sprintState = resolveSprintState(config, sprintIndex, toLocalIso(new Date()))
+
+  return (
+    <div className="flex flex-col gap-6">
+      <SprintConfigPanel
+        repository={configRepo}
+        onConfigChanged={() => {
+          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+          setSprintIndex(null)
+        }}
+      />
+      {sprintState && config && (
+        <SprintContent
+          config={config}
+          sprintConfig={sprintState.sprintConfig}
+          sprintIndex={sprintIndex}
+          onSprintIndexChange={setSprintIndex}
+          sprint={sprintState.sprint}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
     </div>
   )
 }

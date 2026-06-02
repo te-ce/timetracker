@@ -73,7 +73,7 @@ interface Props {
   year: number
   month: number
   repository: MonthRepository
-  autoCategory: string
+  autoCategory: string | null
   customCategories?: string[]
   categoryOrder?: string[]
   dayTypes?: Map<string, DayType>

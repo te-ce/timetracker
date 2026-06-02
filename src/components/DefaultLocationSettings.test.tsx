@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { DefaultLocationSettings } from './DefaultLocationSettings'
 import { InMemoryConfigRepository } from '../repositories/in-memory'
-import { defaultAppConfig } from '../repositories/in-memory/config-repository'
+import { DEFAULT_APP_CONFIG as defaultAppConfig } from '../domain/appConfigDefaults'
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

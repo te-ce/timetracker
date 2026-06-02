@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { LaunchAtLoginSettings } from './LaunchAtLoginSettings'
 import { InMemoryConfigRepository } from '../repositories/in-memory/config-repository'
-import { defaultAppConfig } from '../repositories/in-memory/config-repository'
+import { DEFAULT_APP_CONFIG as defaultAppConfig } from '../domain/appConfigDefaults'
 import type { AppConfig } from '../repositories/types'
 
 const mockAutolaunch = { get: vi.fn(), set: vi.fn() }

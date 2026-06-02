@@ -1,21 +1,10 @@
 import type { AppConfig, ConfigRepository } from '../types'
-
-export const defaultAppConfig: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 10,
-  sprintStartDate: null,
-  customCategories: [],
-  sharepointUrl: null,
-  targetSheet: null,
-  categoryMapping: {},
-}
+import { DEFAULT_APP_CONFIG } from '../../domain/appConfigDefaults'
 
 export class InMemoryConfigRepository implements ConfigRepository {
   private config: AppConfig
 
-  constructor(initialConfig: AppConfig = defaultAppConfig) {
+  constructor(initialConfig: AppConfig = DEFAULT_APP_CONFIG) {
     this.config = structuredClone(initialConfig)
   }
 

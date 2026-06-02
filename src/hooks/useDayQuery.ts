@@ -3,6 +3,7 @@ import { useRepositories } from '../repositories/RepositoryContext'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries, type DaySummary } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
+import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
 import type { AppConfig, WorkLocation, Day } from '../repositories/types'
 
@@ -36,8 +37,8 @@ function extractDayFields(dayData: Day | undefined) {
 
 function resolveConfigDefaults(config: AppConfig | undefined) {
   return {
-    sollstunden: config?.sollstunden ?? 8,
-    defaultWorkLocation: config?.defaultWorkLocation ?? 'Remote',
+    sollstunden: config?.sollstunden ?? DEFAULT_APP_CONFIG.sollstunden,
+    defaultWorkLocation: (config?.defaultWorkLocation ?? 'Remote') as WorkLocation,
     globalAutoCategory: config?.autoCategory ?? null,
   }
 }

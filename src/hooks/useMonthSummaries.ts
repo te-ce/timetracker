@@ -3,6 +3,7 @@ import { useRepositories } from '../repositories/RepositoryContext'
 import { buildMonthSummaries } from '../domain/daySummary'
 import { calculateOvertimeToDate } from '../domain/monthStats'
 import { toLocalIso } from '../domain/dateUtils'
+import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
 import type { DayTypeOverride, MonthData, WorkLocation } from '../repositories/types'
 
@@ -41,7 +42,7 @@ export function useMonthSummaries(year: number, month: number) {
     queryFn: () => monthRepo.getMonth(year, month),
   })
 
-  const sollstunden = config?.sollstunden ?? 8
+  const sollstunden = config?.sollstunden ?? DEFAULT_APP_CONFIG.sollstunden
 
   const summaries = buildMonthSummaries(year, month, {
     monthData,

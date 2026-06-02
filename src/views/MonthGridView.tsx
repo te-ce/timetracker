@@ -2,40 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../repositories/RepositoryContext'
-import type { ConfigRepository, AppConfig, WorkLocation } from '../repositories/types'
+import type { ConfigRepository } from '../repositories/types'
 import { renameCategoryAcrossAllMonths } from '../domain/categoryOps'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthSummaries } from '../hooks/useMonthSummaries'
-
-interface GridConfig {
-  autoCategory: string
-  customCategories: string[]
-  sprintStartDate: string
-  sprintLengthDays: number
-  defaultWorkLocation: WorkLocation | null
-}
-
-function resolveGridConfig(config: AppConfig | undefined): GridConfig {
-  if (!config) {
-    return {
-      autoCategory: '_COREMEDIA',
-      customCategories: [],
-      sprintStartDate: '2024-01-01',
-      sprintLengthDays: 14,
-      defaultWorkLocation: null,
-    }
-  }
-  return {
-    autoCategory: config.autoCategory ?? '_COREMEDIA',
-    customCategories: config.customCategories,
-    sprintStartDate: config.sprintStartDate ?? '2024-01-01',
-    sprintLengthDays: config.sprintLengthDays,
-    defaultWorkLocation: config.defaultWorkLocation ?? null,
-  }
-}
+import { resolveGridConfig } from './gridConfig'
 
 function shiftMonth(year: number, month: number, delta: -1 | 1): { year: number; month: number } {
   if (delta === -1) return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 }
