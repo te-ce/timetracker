@@ -113,6 +113,45 @@ describe('undoStore', () => {
     })
   })
 
+  describe('undo failure safety', () => {
+    it('does not move command to future when undo throws', async () => {
+      const cmd = {
+        description: 'failing',
+        undo: vi.fn().mockRejectedValue(new Error('network error')),
+        redo: vi.fn(),
+      }
+      getStore().push(cmd)
+
+      await expect(getStore().undo()).rejects.toThrow('network error')
+
+      const { past, future, canUndo, canRedo } = getStore()
+      expect(past).toHaveLength(1)
+      expect(past[0]).toBe(cmd)
+      expect(future).toHaveLength(0)
+      expect(canUndo).toBe(true)
+      expect(canRedo).toBe(false)
+    })
+
+    it('does not move command to past when redo throws', async () => {
+      const cmd = {
+        description: 'failing',
+        undo: vi.fn(),
+        redo: vi.fn().mockRejectedValue(new Error('network error')),
+      }
+      getStore().push(cmd)
+      await getStore().undo()
+
+      await expect(getStore().redo()).rejects.toThrow('network error')
+
+      const { past, future, canUndo, canRedo } = getStore()
+      expect(past).toHaveLength(0)
+      expect(future).toHaveLength(1)
+      expect(future[0]).toBe(cmd)
+      expect(canUndo).toBe(false)
+      expect(canRedo).toBe(true)
+    })
+  })
+
   describe('undo / redo round-trip', () => {
     it('full undo then redo sequence restores state correctly', async () => {
       const log: string[] = []

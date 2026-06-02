@@ -36,6 +36,7 @@ export const useUndoStore = create<UndoState>()((set, get) => ({
     if (past.length === 0) return
     const cmd = past[past.length - 1]
     if (!cmd) return
+    await cmd.undo()
     set((s) => {
       const next = s.past.slice(0, -1)
       const future: UndoCommand[] = [cmd, ...s.future]
@@ -46,7 +47,6 @@ export const useUndoStore = create<UndoState>()((set, get) => ({
         canRedo: true,
       }
     })
-    await cmd.undo()
   },
 
   async redo() {
@@ -54,6 +54,7 @@ export const useUndoStore = create<UndoState>()((set, get) => ({
     if (future.length === 0) return
     const cmd = future[0]
     if (!cmd) return
+    await cmd.redo()
     set((s) => {
       const next = s.future.slice(1)
       const newPast: UndoCommand[] = [...s.past, cmd]
@@ -64,6 +65,5 @@ export const useUndoStore = create<UndoState>()((set, get) => ({
         canRedo: next.length > 0,
       }
     })
-    await cmd.redo()
   },
 }))
