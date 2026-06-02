@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
-import { useMonthQuery } from '../hooks/useMonthQuery'
+import { useMonthSummaries } from '../hooks/useMonthSummaries'
 import { useRepositories } from '../repositories/RepositoryContext'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { DayStatus } from '../domain/dayStatus'
@@ -36,8 +36,12 @@ export function MonthView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  const { summaries, overtimeToDate, officeDays, officePercent, trackedWorkDays, sollstunden, dayNotes } =
-    useMonthQuery(year, month)
+  const { summaries, overtimeToDate, workLocations, sollstunden, dayNotes } =
+    useMonthSummaries(year, month)
+
+  const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
+  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
+  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
 
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayStatusReasonMap: Record<string, string> = {}

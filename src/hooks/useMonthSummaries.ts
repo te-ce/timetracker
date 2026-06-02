@@ -27,7 +27,7 @@ function extractMonthMaps(monthData: MonthData): MonthMaps {
   return { dayTypeOverrides, workLocations, confirmedDays, dayNotes }
 }
 
-export function useMonthQuery(year: number, month: number) {
+export function useMonthSummaries(year: number, month: number) {
   const { monthRepo, configRepo } = useRepositories()
   const todayIso = toLocalIso(new Date())
 
@@ -58,10 +58,6 @@ export function useMonthQuery(year: number, month: number) {
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
 
-  const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
-  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
-  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
-
   return {
     config,
     summaries,
@@ -70,9 +66,6 @@ export function useMonthQuery(year: number, month: number) {
     confirmedDays,
     dayNotes,
     overtimeToDate,
-    trackedWorkDays,
-    officeDays,
-    officePercent,
     sollstunden,
     todayIso,
   }

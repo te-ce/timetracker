@@ -8,7 +8,7 @@ import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { QUERY_KEYS } from '../hooks/queryKeys'
-import { useMonthQuery } from '../hooks/useMonthQuery'
+import { useMonthSummaries } from '../hooks/useMonthSummaries'
 
 interface GridConfig {
   autoCategory: string
@@ -95,8 +95,12 @@ export function MonthGridView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  const { config, dayTypeOverrides, workLocations, confirmedDays, dayNotes, overtimeToDate, trackedWorkDays, officeDays, officePercent, sollstunden } =
-    useMonthQuery(year, month)
+  const { config, summaries, dayTypeOverrides, workLocations, confirmedDays, dayNotes, overtimeToDate, sollstunden } =
+    useMonthSummaries(year, month)
+
+  const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
+  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
+  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
