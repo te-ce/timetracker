@@ -27,7 +27,10 @@ const ACTION_LABELS: Record<InAppShortcutAction, string> = {
   toggleLegend: 'Toggle legend',
 }
 
-const IN_APP_ACTIONS = Object.keys(ACTION_LABELS) as InAppShortcutAction[]
+const IN_APP_ACTIONS: InAppShortcutAction[] = [
+  'monthView', 'gridView', 'dayView', 'sprintView',
+  'today', 'prevDay', 'nextDay', 'undo', 'redo', 'toggleLegend',
+]
 
 function KeyCaptureField({
   currentKey,
