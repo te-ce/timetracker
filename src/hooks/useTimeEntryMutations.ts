@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { TimeEntry, MonthRepository } from '../repositories/types'
-import { QUERY_KEYS } from './queryKeys'
+import { invalidateMonth } from './queryKeys'
 import { useUndoStore } from '../stores/undoStore'
 
 export function useTimeEntryMutations(repository: MonthRepository) {
@@ -8,9 +8,7 @@ export function useTimeEntryMutations(repository: MonthRepository) {
   const push = useUndoStore((s) => s.push)
 
   function invalidate(date: string) {
-    const year = parseInt(date.slice(0, 4))
-    const month = parseInt(date.slice(5, 7))
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
+    invalidateMonth(queryClient, date)
   }
 
   const save = useMutation({

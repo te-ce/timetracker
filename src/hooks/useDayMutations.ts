@@ -1,13 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { confirmDay } from '../domain/confirmDay'
 import type { WorkPeriod, TimeEntry, MonthRepository, WorkLocation } from '../repositories/types'
-import { QUERY_KEYS } from './queryKeys'
-
-function invalidateMonth(queryClient: ReturnType<typeof useQueryClient>, date: string) {
-  const year = parseInt(date.slice(0, 4))
-  const month = parseInt(date.slice(5, 7))
-  void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
-}
+import { invalidateMonth } from './queryKeys'
 
 interface UseDayMutationsInput {
   date: string

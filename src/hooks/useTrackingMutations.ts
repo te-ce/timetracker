@@ -1,17 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { MonthRepository, TimeTrackingRepository, TimeEntry } from '../repositories/types'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
-import { QUERY_KEYS } from './queryKeys'
+import { QUERY_KEYS, invalidateMonth } from './queryKeys'
 
 function nowHHMM(): string {
   const d = new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
-function invalidateMonth(queryClient: ReturnType<typeof useQueryClient>, date: string) {
-  const year = parseInt(date.slice(0, 4))
-  const month = parseInt(date.slice(5, 7))
-  void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
 }
 
 async function saveStoppedEntry(

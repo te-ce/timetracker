@@ -1,3 +1,11 @@
+import type { QueryClient } from '@tanstack/react-query'
+
+export function invalidateMonth(client: QueryClient, date: string): void {
+  const year = parseInt(date.slice(0, 4))
+  const month = parseInt(date.slice(5, 7))
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
+}
+
 export const QUERY_KEYS = {
   config: ['config'] as const,
 
