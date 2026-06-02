@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../repositories/RepositoryContext'
-import type { ConfigRepository, MonthRepository } from '../repositories/types'
+import type { ConfigRepository, AppConfig, WorkLocation } from '../repositories/types'
+import { renameCategoryAcrossAllMonths } from '../domain/categoryOps'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthQuery } from '../hooks/useMonthQuery'
-import type { AppConfig, WorkLocation } from '../repositories/types'
 
 interface GridConfig {
   autoCategory: string
@@ -52,30 +52,6 @@ async function saveAutoCategory(configRepo: ConfigRepository, category: string):
   await configRepo.save({ ...cfg, autoCategory: category })
 }
 
-async function renameCategory(
-  configRepo: ConfigRepository,
-  monthRepo: MonthRepository,
-  year: number,
-  month: number,
-  oldName: string,
-  newName: string,
-): Promise<void> {
-  const cfg = await configRepo.get()
-  const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
-  const categoryOrder = cfg.categoryOrder ? cfg.categoryOrder : []
-  const newOrder = categoryOrder.map((c) => (c === oldName ? newName : c))
-  await configRepo.save({ ...cfg, customCategories: newCustomCategories, categoryOrder: newOrder })
-  await monthRepo.updateDay(`${year}-${String(month).padStart(2, '0')}-01`, (day) => day)
-  const data = await monthRepo.getMonth(year, month)
-  for (const [date, day] of Object.entries(data)) {
-    if (day.entries.some((e) => e.category === oldName)) {
-      await monthRepo.updateDay(date, (d) => ({
-        ...d,
-        entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
-      }))
-    }
-  }
-}
 
 export function MonthGridView() {
   const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
@@ -102,10 +78,10 @@ export function MonthGridView() {
 
   const categoryRenameMutation = useMutation({
     mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
-      renameCategory(configRepo, monthRepo, year, month, oldName, newName),
+      renameCategoryAcrossAllMonths(oldName, newName, configRepo, monthRepo),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
     },
   })
 
