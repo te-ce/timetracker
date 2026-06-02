@@ -1,3 +1,5 @@
+import { calculateAutoCategory } from '../domain/autoCategory'
+
 interface Props {
   autoCategory: string | null
   workedHours: number
@@ -7,9 +9,7 @@ interface Props {
 export function AutoCategoryRow({ autoCategory, workedHours, manualTotal }: Props) {
   if (!autoCategory) return null
 
-  const remaining = workedHours - manualTotal
-  const hours = Math.max(0, remaining)
-  const isOverbooked = remaining < 0
+  const { hours, isOverbooked } = calculateAutoCategory(workedHours, manualTotal)
 
   return (
     <div

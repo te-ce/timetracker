@@ -4,6 +4,7 @@ import type { MonthData, Day } from '../repositories/types'
 import { classifyDay } from './dayStatus'
 import { classifyDayType } from './dayType'
 import { calculateWorkedHours } from './worktime'
+import { calculateAutoCategory } from './autoCategory'
 import { toLocalIso } from './dateUtils'
 
 export interface DaySummary {
@@ -52,7 +53,8 @@ function buildDaySummary(
   const workedHours = calculateWorkedHours(windows)
   const entryTotal = entries.reduce((sum, e) => sum + e.hours, 0)
   const dayType: DayType = dayTypeOverride ?? classifyDayType(date)
-  const hasAutoCategory = !!autoCategory && entryTotal <= workedHours
+  const { isOverbooked } = calculateAutoCategory(workedHours, entryTotal)
+  const hasAutoCategory = !!autoCategory && !isOverbooked
   const isEntriesBalanced = workedHours > 0 && Math.abs(workedHours - entryTotal) < 0.01
 
   const { status: dayStatus, displayStatus, reason: statusReason } = classifyDay({
