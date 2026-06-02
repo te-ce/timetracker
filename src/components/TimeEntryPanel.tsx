@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type {
   TimeEntry,
   MonthRepository,
@@ -7,9 +6,8 @@ import type {
 } from '../repositories/types'
 import type { ActiveTracking } from '../repositories/types'
 import { getAllCategories } from '../domain/categories'
-import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
-import { QUERY_KEYS } from '../hooks/queryKeys'
+import { useTrackingMutations } from '../hooks/useTrackingMutations'
 
 interface Props {
   date: string
@@ -409,104 +407,8 @@ export function TimeEntryPanel({
 
   void tick
 
-  const queryClient = useQueryClient()
   const { save: saveMutation, remove: deleteMutation } = useTimeEntryMutations(repository)
-
-  function nowHHMM(): string {
-    const d = new Date()
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  }
-
-  async function openWorkPeriod(trackingDate: string): Promise<void> {
-    const year = parseInt(trackingDate.slice(0, 4))
-    const month = parseInt(trackingDate.slice(5, 7))
-    const monthData = await repository.getMonth(year, month)
-    const dayWindows = monthData[trackingDate]?.windows ?? []
-    if (dayWindows.some((w) => w.end === null)) return
-    await repository.updateDay(trackingDate, (day) => ({
-      ...day,
-      windows: [...day.windows, { id: crypto.randomUUID(), start: nowHHMM(), end: null }],
-    }))
-  }
-
-  async function closeLatestOpenWorkPeriod(trackingDate: string): Promise<void> {
-    const year = parseInt(trackingDate.slice(0, 4))
-    const month = parseInt(trackingDate.slice(5, 7))
-    const monthData = await repository.getMonth(year, month)
-    const dayWindows = monthData[trackingDate]?.windows ?? []
-    const open = dayWindows.filter((w) => w.end === null)
-    if (open.length === 0) return
-    const latest = open.reduce((a, b) => (a.start > b.start ? a : b))
-    const closed = { ...latest, end: nowHHMM() }
-    const { merged, absorbed } = mergeAdjacentInto(dayWindows, closed)
-    await repository.updateDay(trackingDate, (day) => ({
-      ...day,
-      windows: [
-        ...day.windows.filter((w) => w.id !== merged.id && !absorbed.includes(w.id)),
-        merged,
-      ],
-    }))
-  }
-
-  function invalidateTrackingDate(trackingDate: string) {
-    const year = parseInt(trackingDate.slice(0, 4))
-    const month = parseInt(trackingDate.slice(5, 7))
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
-  }
-
-  const startTrackingMutation = useMutation({
-    mutationFn: async (category: string) => {
-      const stopped = await timeTrackingRepository.stop()
-      if (stopped && stopped.hours > 0) {
-        const stoppedYear = parseInt(stopped.date.slice(0, 4))
-        const stoppedMonth = parseInt(stopped.date.slice(5, 7))
-        const stoppedMonthData = await repository.getMonth(stoppedYear, stoppedMonth)
-        const existing = stoppedMonthData[stopped.date]?.entries.find((e) => e.category === stopped.category)
-        await repository.updateDay(stopped.date, (day) => {
-          const filtered = day.entries.filter((e) => e.category !== stopped.category || e.id === existing?.id)
-          const updated: TimeEntry = {
-            id: existing?.id ?? crypto.randomUUID(),
-            category: stopped.category,
-            hours: Math.round(((existing?.hours ?? 0) + stopped.hours) * 100) / 100,
-          }
-          return { ...day, entries: [...filtered.filter((e) => e.id !== updated.id), updated] }
-        })
-        invalidateTrackingDate(stopped.date)
-      }
-      await timeTrackingRepository.start(date, category)
-      await openWorkPeriod(date)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
-      invalidateTrackingDate(date)
-    },
-  })
-
-  const stopTrackingMutation = useMutation({
-    mutationFn: async () => {
-      const active = await timeTrackingRepository.getActive()
-      const stopped = await timeTrackingRepository.stop()
-      if (stopped && stopped.hours > 0) {
-        const stoppedYear = parseInt(stopped.date.slice(0, 4))
-        const stoppedMonth = parseInt(stopped.date.slice(5, 7))
-        const stoppedMonthData = await repository.getMonth(stoppedYear, stoppedMonth)
-        const existing = stoppedMonthData[stopped.date]?.entries.find((e) => e.category === stopped.category)
-        await repository.updateDay(stopped.date, (day) => {
-          const updated: TimeEntry = {
-            id: existing?.id ?? crypto.randomUUID(),
-            category: stopped.category,
-            hours: Math.round(((existing?.hours ?? 0) + stopped.hours) * 100) / 100,
-          }
-          return { ...day, entries: [...day.entries.filter((e) => e.id !== updated.id), updated] }
-        })
-        invalidateTrackingDate(stopped.date)
-      }
-      if (active) await closeLatestOpenWorkPeriod(active.date)
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
-    },
-  })
+  const trackingMutations = useTrackingMutations(date, repository, timeTrackingRepository)
 
   function handleSave(category: string) {
     const raw = draft[category] ?? ''
@@ -609,8 +511,8 @@ export function TimeEntryPanel({
               deleteMutation.mutate({ date, entry })
               setDraft((d) => ({ ...d, [category]: undefined }))
             }}
-            onStopTracking={() => stopTrackingMutation.mutate()}
-            onStartTracking={(cat) => startTrackingMutation.mutate(cat)}
+            onStopTracking={() => trackingMutations.stop.mutate()}
+            onStartTracking={(cat) => trackingMutations.start.mutate(cat)}
           />
         ))}
       </ul>
