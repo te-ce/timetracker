@@ -1,3 +1,10 @@
+export interface ColumnDragHandlers {
+  onDragStart: (idx: number) => void
+  onDragOver: (e: React.DragEvent, idx: number) => void
+  onDrop: (idx: number, allCats: string[]) => void
+  onDragEnd: () => void
+}
+
 export interface CategoryColumnHeaderProps {
   cat: string
   catIdx: number
@@ -9,10 +16,7 @@ export interface CategoryColumnHeaderProps {
   onCategoryReorder?: (order: string[]) => void
   onCategoryRename?: (oldName: string, newName: string) => void
   onAutoCategoryChange?: (category: string) => void
-  onDragStart: (idx: number) => void
-  onDragOver: (e: React.DragEvent, idx: number) => void
-  onDrop: (idx: number, allCats: string[]) => void
-  onDragEnd: () => void
+  dragHandlers: ColumnDragHandlers
   allCategories: string[]
   onEditValueChange: (v: string) => void
   onCommitRename: (cat: string) => void
@@ -36,7 +40,7 @@ function buildColTitle(cat: string, autoCategory: string, categoryDescriptions?:
   return [categoryDescriptions?.[cat], onCategoryRename ? 'Double-click to rename' : undefined].filter(Boolean).join('\n\n') || cat
 }
 
-export function CategoryColumnHeader({ cat, catIdx, autoCategory, editingCat, editValue, colDragOverIdx, categoryDescriptions, onCategoryReorder, onCategoryRename, onAutoCategoryChange, onDragStart, onDragOver, onDrop, onDragEnd, allCategories, onEditValueChange, onCommitRename, onSetEditingCat }: CategoryColumnHeaderProps) {
+export function CategoryColumnHeader({ cat, catIdx, autoCategory, editingCat, editValue, colDragOverIdx, categoryDescriptions, onCategoryReorder, onCategoryRename, onAutoCategoryChange, dragHandlers, allCategories, onEditValueChange, onCommitRename, onSetEditingCat }: CategoryColumnHeaderProps) {
   const isAuto = cat === autoCategory
   const dragClass = onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''
   const dragOverClass = colDragOverIdx === catIdx ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''
@@ -44,10 +48,10 @@ export function CategoryColumnHeader({ cat, catIdx, autoCategory, editingCat, ed
   return (
     <th
       draggable={editingCat !== cat && !!onCategoryReorder}
-      onDragStart={() => onDragStart(catIdx)}
-      onDragOver={(e) => onDragOver(e, catIdx)}
-      onDrop={() => onDrop(catIdx, allCategories)}
-      onDragEnd={onDragEnd}
+      onDragStart={() => dragHandlers.onDragStart(catIdx)}
+      onDragOver={(e) => dragHandlers.onDragOver(e, catIdx)}
+      onDrop={() => dragHandlers.onDrop(catIdx, allCategories)}
+      onDragEnd={dragHandlers.onDragEnd}
       className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
       role="columnheader"
       title={buildColTitle(cat, autoCategory, categoryDescriptions, onCategoryRename)}

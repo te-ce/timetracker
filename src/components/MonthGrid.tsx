@@ -8,7 +8,7 @@ import { buildMonthGrid } from '../domain/monthGrid'
 import { getAllCategories } from '../domain/categories'
 import { computeSprintGroups } from '../domain/sprintGroups'
 import { WorkedHoursCell } from './WorkedHoursCell'
-import { CategoryColumnHeader } from './CategoryColumnHeader'
+import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
 import { DotPopoverPanel } from './DotPopoverPanel'
 import { NotePopoverPanel } from './NotePopoverPanel'
 import { useTimeEntryMutations } from '../hooks/useTimeEntryMutations'
@@ -351,6 +351,13 @@ export function MonthGrid({
     setColDragOverIdx(null)
   }
 
+  const colDragHandlers: ColumnDragHandlers = {
+    onDragStart: handleColDragStart,
+    onDragOver: handleColDragOver,
+    onDrop: handleColDrop,
+    onDragEnd: handleColDragEnd,
+  }
+
   function commitRename(oldName: string) {
     const newName = editValue.trim()
     setEditingCat(null)
@@ -397,10 +404,7 @@ export function MonthGrid({
                   onCategoryReorder={onCategoryReorder}
                   onCategoryRename={onCategoryRename}
                   onAutoCategoryChange={onAutoCategoryChange}
-                  onDragStart={handleColDragStart}
-                  onDragOver={handleColDragOver}
-                  onDrop={handleColDrop}
-                  onDragEnd={handleColDragEnd}
+                  dragHandlers={colDragHandlers}
                   allCategories={allCategories}
                   onEditValueChange={setEditValue}
                   onCommitRename={commitRename}

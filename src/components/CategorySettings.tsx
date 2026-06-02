@@ -134,27 +134,24 @@ interface CategorySettingsRowProps {
   taskId: string
   isAutoMatch: boolean
   dragOverIdx: number | null
-  editingIdx: number | null
-  editValue: string
-  editingDescIdx: number | null
-  editDescValue: string
   categoryDescription: string | undefined
   excelRows: ExcelRow[]
   onDragStart: (idx: number) => void
   onDragOver: (e: React.DragEvent, idx: number) => void
   onDrop: (idx: number) => void
   onDragEnd: () => void
-  onRename: (idx: number) => void
-  onSaveDesc: (idx: number) => void
+  onRename: (idx: number, newName: string) => void
+  onSaveDesc: (idx: number, newDesc: string) => void
   onMappingChange: (cat: string, taskId: string) => void
   onRemove: (idx: number) => void
-  setEditingIdx: (idx: number | null) => void
-  setEditValue: (v: string) => void
-  setEditingDescIdx: (idx: number | null) => void
-  setEditDescValue: (v: string) => void
 }
 
-function CategorySettingsRow({ cat, idx, isCustom, taskId, isAutoMatch, dragOverIdx, editingIdx, editValue, editingDescIdx, editDescValue, categoryDescription, excelRows, onDragStart, onDragOver, onDrop, onDragEnd, onRename, onSaveDesc, onMappingChange, onRemove, setEditingIdx, setEditValue, setEditingDescIdx, setEditDescValue }: CategorySettingsRowProps) {
+function CategorySettingsRow({ cat, idx, isCustom, taskId, isAutoMatch, dragOverIdx, categoryDescription, excelRows, onDragStart, onDragOver, onDrop, onDragEnd, onRename, onSaveDesc, onMappingChange, onRemove }: CategorySettingsRowProps) {
+  const [editingName, setEditingName] = useState(false)
+  const [nameValue, setNameValue] = useState('')
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [descValue, setDescValue] = useState('')
+
   const dragOverClass = dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : ''
   const nameClass = `truncate cursor-pointer ${isCustom ? 'text-indigo-700 dark:text-indigo-300' : ''}`
   const nameTitle = isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'
@@ -169,40 +166,40 @@ function CategorySettingsRow({ cat, idx, isCustom, taskId, isAutoMatch, dragOver
     >
       <span className="text-gray-300 dark:text-gray-600 select-none shrink-0" aria-hidden>⠿</span>
       <div className="w-36 shrink-0 flex flex-col gap-0.5 min-w-0">
-        {editingIdx === idx ? (
+        {editingName ? (
           <input
             aria-label={`Rename ${cat}`}
             ref={(el) => { el?.focus() }}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={() => onRename(idx)}
+            value={nameValue}
+            onChange={(e) => setNameValue(e.target.value)}
+            onBlur={() => { onRename(idx, nameValue); setEditingName(false) }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onRename(idx)
-              if (e.key === 'Escape') setEditingIdx(null)
+              if (e.key === 'Enter') { onRename(idx, nameValue); setEditingName(false) }
+              if (e.key === 'Escape') setEditingName(false)
             }}
             className="rounded border px-2 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           />
         ) : (
-          <span className={nameClass} onDoubleClick={() => { setEditingIdx(idx); setEditValue(cat) }} title={nameTitle}>
+          <span className={nameClass} onDoubleClick={() => { setEditingName(true); setNameValue(cat) }} title={nameTitle}>
             {cat}
           </span>
         )}
-        {editingDescIdx === idx ? (
+        {editingDesc ? (
           <input
             aria-label={`Description for ${cat}`}
             ref={(el) => { el?.focus() }}
-            value={editDescValue}
-            onChange={(e) => setEditDescValue(e.target.value)}
-            onBlur={() => onSaveDesc(idx)}
+            value={descValue}
+            onChange={(e) => setDescValue(e.target.value)}
+            onBlur={() => { onSaveDesc(idx, descValue); setEditingDesc(false) }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onSaveDesc(idx)
-              if (e.key === 'Escape') setEditingDescIdx(null)
+              if (e.key === 'Enter') { onSaveDesc(idx, descValue); setEditingDesc(false) }
+              if (e.key === 'Escape') setEditingDesc(false)
             }}
             placeholder="Add description…"
             className="rounded border px-1.5 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           />
         ) : (
-          <button type="button" aria-label={`Edit description for ${cat}`} className="truncate text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" onClick={() => { setEditingDescIdx(idx); setEditDescValue(categoryDescription ?? '') }} title="Click to edit description">
+          <button type="button" aria-label={`Edit description for ${cat}`} className="truncate text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" onClick={() => { setEditingDesc(true); setDescValue(categoryDescription ?? '') }} title="Click to edit description">
             {categoryDescription ?? <em>add description</em>}
           </button>
         )}
@@ -247,10 +244,6 @@ export function CategorySettings({ repository }: Props) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const [newCategory, setNewCategory] = useState('')
-  const [editingIdx, setEditingIdx] = useState<number | null>(null)
-  const [editValue, setEditValue] = useState('')
-  const [editingDescIdx, setEditingDescIdx] = useState<number | null>(null)
-  const [editDescValue, setEditDescValue] = useState('')
   const dragIdx = useRef<number | null>(null)
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
@@ -330,18 +323,14 @@ export function CategorySettings({ repository }: Props) {
     categoryMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })
   }
 
-  function handleRename(idx: number) {
-    const trimmed = editValue.trim()
+  function handleRename(idx: number, newName: string) {
+    const trimmed = newName.trim()
     const oldName = categories[idx]
-    if (!trimmed || !oldName || trimmed === oldName || categories.includes(trimmed)) {
-      setEditingIdx(null)
-      return
-    }
+    if (!trimmed || !oldName || trimmed === oldName || categories.includes(trimmed)) return
     const newOrder = categories.map((c, i) => (i === idx ? trimmed : c))
     const newCustom = customCategories.map((c) => (c === oldName ? trimmed : c))
     if (!customCategories.includes(oldName)) newCustom.push(trimmed)
     categoryMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })
-    setEditingIdx(null)
   }
 
   function handleDragStart(idx: number) { dragIdx.current = idx }
@@ -366,15 +355,14 @@ export function CategorySettings({ repository }: Props) {
 
   function handleDragEnd() { dragIdx.current = null; setDragOverIdx(null) }
 
-  function handleSaveDesc(idx: number) {
+  function handleSaveDesc(idx: number, newDesc: string) {
     const cat = categories[idx]
-    if (!cat || !config) { setEditingDescIdx(null); return }
-    const trimmed = editDescValue.trim()
+    if (!cat) return
+    const trimmed = newDesc.trim()
     const descs = { ...(config.categoryDescriptions ?? {}) }
     if (trimmed) descs[cat] = trimmed
     else delete descs[cat]
     categoryMutation.mutate({ categoryDescriptions: descs })
-    setEditingDescIdx(null)
   }
 
   function handleResetToImportOrder() {
@@ -478,10 +466,6 @@ export function CategorySettings({ repository }: Props) {
             taskId={activeMapping[cat] ?? ''}
             isAutoMatch={autoMatched.has(cat)}
             dragOverIdx={dragOverIdx}
-            editingIdx={editingIdx}
-            editValue={editValue}
-            editingDescIdx={editingDescIdx}
-            editDescValue={editDescValue}
             categoryDescription={config.categoryDescriptions?.[cat]}
             excelRows={excelRows}
             onDragStart={handleDragStart}
@@ -492,10 +476,6 @@ export function CategorySettings({ repository }: Props) {
             onSaveDesc={handleSaveDesc}
             onMappingChange={handleMappingChange}
             onRemove={handleRemove}
-            setEditingIdx={setEditingIdx}
-            setEditValue={setEditValue}
-            setEditingDescIdx={setEditingDescIdx}
-            setEditDescValue={setEditDescValue}
           />
         ))}
       </ul>
