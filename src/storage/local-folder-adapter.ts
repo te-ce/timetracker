@@ -38,6 +38,7 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
       const fileHandle = await parent.getFileHandle(filename)
       const file = await fileHandle.getFile()
       const data: unknown = JSON.parse(await file.text())
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return data as T
     } catch (e) {
       if (e instanceof DOMException && e.name === 'NotFoundError') return null

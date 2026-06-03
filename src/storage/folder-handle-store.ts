@@ -6,7 +6,9 @@ const EXCEL_HANDLE_KEY = 'excel-folder'
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1)
-    req.onupgradeneeded = () => { req.result.createObjectStore(STORE_NAME) }
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore(STORE_NAME)
+    }
     req.onsuccess = () => resolve(req.result)
     req.onerror = () => reject(new Error('Failed to open IndexedDB'))
   })
@@ -19,6 +21,7 @@ async function getHandleByKey(key: string): Promise<FileSystemDirectoryHandle | 
     const req = tx.objectStore(STORE_NAME).get(key)
     req.onsuccess = () => {
       const handle: unknown = req.result
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       resolve((handle as FileSystemDirectoryHandle | undefined) ?? null)
     }
     req.onerror = () => reject(new Error(`Failed to load handle: ${key}`))

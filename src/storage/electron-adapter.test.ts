@@ -5,6 +5,7 @@ function makeStub() {
   const store = new Map<string, unknown>()
   return {
     get: <T>(key: string): Promise<T | null> =>
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       Promise.resolve(store.has(key) ? (store.get(key) as T) : null),
     put: <T>(key: string, data: T): Promise<void> => {
       store.set(key, data)
@@ -20,7 +21,7 @@ function makeStub() {
 
 beforeEach(() => {
   const stub = makeStub()
-  ;(window as Window).electronAPI = {
+  window.electronAPI = {
     autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
     tray: {
       sync: () => {},

@@ -15,10 +15,7 @@ export interface ExcelRow {
  * Graph API /shares endpoint.
  */
 export function encodeSharesUrl(sharePointUrl: string): string {
-  const encoded = btoa(`u=${sharePointUrl}`)
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '')
+  const encoded = btoa(`u=${sharePointUrl}`).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
   return `u!${encoded}`
 }
 
@@ -33,6 +30,7 @@ export async function listSheets(sharePointUrl: string, token: string): Promise<
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error(`listSheets failed: ${res.status} ${res.statusText}`)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const json = (await res.json()) as { value: { name: string }[] }
   return json.value.map((ws) => ws.name)
 }
@@ -42,17 +40,13 @@ export async function listSheets(sharePointUrl: string, token: string): Promise<
  * Expects columns: Task ID | Effort | Description
  * Returns all rows that have a non-empty Task ID in column A.
  */
-export async function listRows(
-  sharePointUrl: string,
-  sheet: string,
-  token: string,
-): Promise<ExcelRow[]> {
+export async function listRows(sharePointUrl: string, sheet: string, token: string): Promise<ExcelRow[]> {
   const encodedSheet = encodeURIComponent(sheet)
-  const res = await fetch(
-    `${workbookBase(sharePointUrl)}/worksheets/${encodedSheet}/usedRange(valuesOnly=true)`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
+  const res = await fetch(`${workbookBase(sharePointUrl)}/worksheets/${encodedSheet}/usedRange(valuesOnly=true)`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
   if (!res.ok) throw new Error(`listRows failed: ${res.status} ${res.statusText}`)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const json = (await res.json()) as { values: unknown[][] }
   return json.values
     .filter((row) => typeof row[0] === 'string' && row[0].trim() !== '')
@@ -87,11 +81,11 @@ export async function writeSprintData(
   })
 
   // Determine the actual starting row of the used range
-  const rangeRes = await fetch(
-    `${base}/worksheets/${encodedSheet}/usedRange(valuesOnly=true)`,
-    { headers: { Authorization: `Bearer ${token}` } },
-  )
+  const rangeRes = await fetch(`${base}/worksheets/${encodedSheet}/usedRange(valuesOnly=true)`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
   if (!rangeRes.ok) throw new Error(`writeSprintData range fetch failed: ${rangeRes.status}`)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const rangeJson = (await rangeRes.json()) as { address: string }
   // address looks like "Sheet1!A1:C20" — extract starting row number
   const addressMatch = /!.*?(\d+):/.exec(rangeJson.address)

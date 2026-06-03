@@ -9,12 +9,7 @@ export interface BootstrapConfig {
 
 function isBootstrapConfig(val: unknown): val is BootstrapConfig {
   if (typeof val !== 'object' || val === null) return false
-  return (
-    'clientId' in val &&
-    'tenantId' in val &&
-    typeof (val as { clientId: unknown }).clientId === 'string' &&
-    typeof (val as { tenantId: unknown }).tenantId === 'string'
-  )
+  return 'clientId' in val && 'tenantId' in val && typeof val.clientId === 'string' && typeof val.tenantId === 'string'
 }
 
 export function readBootstrapConfig(): BootstrapConfig | null {

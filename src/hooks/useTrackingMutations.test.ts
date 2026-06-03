@@ -58,6 +58,7 @@ class ControlledTrackingRepository implements TimeTrackingRepository {
 const date = '2026-05-20'
 
 function makeRepo(initial: Record<string, unknown> = {}) {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return new InMemoryMonthRepository({ '2026-05': initial as Record<string, import('../repositories/types').Day> })
 }
 

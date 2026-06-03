@@ -18,6 +18,7 @@ const mockClearExcelHandle = vi.mocked(folderHandleStore.clearExcelHandle)
 const mockVerifyPermission = vi.mocked(folderHandleStore.verifyPermission)
 
 function makeHandle(name: string): FileSystemDirectoryHandle {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return { name } as FileSystemDirectoryHandle
 }
 
@@ -84,7 +85,9 @@ describe('LocalExcelFolderSettings', () => {
 
     it('shows "picking…" text while the picker is open', async () => {
       let resolve!: (h: FileSystemDirectoryHandle) => void
-      const pending = new Promise<FileSystemDirectoryHandle>((res) => { resolve = res })
+      const pending = new Promise<FileSystemDirectoryHandle>((res) => {
+        resolve = res
+      })
       vi.stubGlobal('showDirectoryPicker', vi.fn().mockReturnValue(pending))
 
       render(<LocalExcelFolderSettings />)

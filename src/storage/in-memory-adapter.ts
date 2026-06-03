@@ -7,6 +7,7 @@ export class InMemoryStorageAdapter implements StorageAdapter {
     const raw = this.store.get(key)
     if (raw === undefined) return Promise.resolve(null)
     const data: unknown = JSON.parse(raw)
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return Promise.resolve(data as T)
   }
 

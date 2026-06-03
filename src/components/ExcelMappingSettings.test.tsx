@@ -36,6 +36,7 @@ import { isLocalFolderMode } from '../auth/bootstrapConfig'
 import * as workbookServiceMod from '../services/workbookService'
 
 function resolvedListRows() {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return (workbookServiceMod as unknown as { __listRows: ReturnType<typeof vi.fn> }).__listRows
 }
 
@@ -100,7 +101,8 @@ describe('ExcelMappingSettings', () => {
     const select = await screen.findByLabelText(/map _COREMEDIA to task id/i)
     expect(select).toBeInTheDocument()
     // Each category row renders the same option list; verify within one select
-    const options = Array.from((select as HTMLSelectElement).options).map((o) => o.value)
+    if (!(select instanceof HTMLSelectElement)) throw new Error('Expected HTMLSelectElement')
+    const options = Array.from(select.options).map((o) => o.value)
     expect(options).toContain('TASK-001')
   })
 

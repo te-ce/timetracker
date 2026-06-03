@@ -85,6 +85,7 @@ export async function writeLocalSprintData(
   }
   const writable = await fileHandle.createWritable()
   const data: unknown = rawOutput
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   await writable.write(data as ArrayBuffer)
   await writable.close()
 }

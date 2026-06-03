@@ -7,6 +7,7 @@ function createMockAdapter(): StorageAdapter & { data: Record<string, unknown> }
   return {
     data,
     get<T>(key: string): Promise<T | null> {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return Promise.resolve((data[key] ?? null) as T | null)
     },
     put<T>(key: string, value: T): Promise<void> {

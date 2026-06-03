@@ -24,6 +24,10 @@ const NAV_ITEMS: { label: string; icon: string; to: string }[] = [
   { label: 'Settings', icon: '⚙️', to: '/settings' },
 ]
 
+function isDaySearch(search: unknown): search is { date: string } {
+  return typeof search === 'object' && search !== null && 'date' in search && typeof search.date === 'string'
+}
+
 function SyncIndicator() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
@@ -59,12 +63,28 @@ function ThemeToggle() {
       className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
     >
       {theme === 'dark' ? (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.894 6.166a.75.75 0 0 0-1.06-1.06l-1.591 1.59a.75.75 0 1 0 1.06 1.061l1.591-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5H21a.75.75 0 0 1 .75.75ZM17.834 18.894a.75.75 0 0 0 1.06-1.06l-1.59-1.591a.75.75 0 1 0-1.061 1.06l1.59 1.591ZM12 18a.75.75 0 0 1 .75.75V21a.75.75 0 0 1-1.5 0v-2.25A.75.75 0 0 1 12 18ZM7.166 17.834a.75.75 0 0 0-1.06 1.06l1.59 1.591a.75.75 0 1 0 1.061-1.06l-1.59-1.591ZM6 12a.75.75 0 0 1-.75.75H3a.75.75 0 0 1 0-1.5h2.25A.75.75 0 0 1 6 12ZM6.166 6.106a.75.75 0 0 0 1.06 1.06l1.591-1.59a.75.75 0 1 0-1.06-1.061L6.166 6.106Z" />
         </svg>
       ) : (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z" clipRule="evenodd" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.7-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z"
+            clipRule="evenodd"
+          />
         </svg>
       )}
     </button>
@@ -82,7 +102,17 @@ function UndoButton() {
         title="Undo (Ctrl+Z)"
         className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M3 7v6h6" />
           <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
         </svg>
@@ -94,7 +124,17 @@ function UndoButton() {
         title="Redo (Ctrl+Shift+Z)"
         className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M21 7v6h-6" />
           <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
         </svg>
@@ -136,9 +176,10 @@ function App() {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      const target = e.target as Element & { isContentEditable?: boolean }
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return
-      if (target.isContentEditable) return
+      if (e.target instanceof HTMLElement) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return
+        if (e.target.isContentEditable) return
+      }
 
       const ctrl = e.ctrlKey || e.metaKey
       const shift = e.shiftKey
@@ -158,8 +199,7 @@ function App() {
       }
 
       function navigateDayOffset(loc: typeof router.state.location, delta: number) {
-        const search = loc.search as { date?: string }
-        const current = search.date !== undefined ? search.date : toLocalIso(new Date())
+        const current = isDaySearch(loc.search) ? loc.search.date : toLocalIso(new Date())
         const d = new Date(current)
         d.setDate(d.getDate() + delta)
         void navigate({ to: '/day', search: { date: toLocalIso(d) } })
@@ -171,11 +211,18 @@ function App() {
         const now = new Date()
         const defaultMonthSearch = { year: now.getFullYear(), month: now.getMonth() + 1 }
         function goTodayOrHome() {
-          if (path === '/day') { void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } }) }
-          else { void navigate({ to: '/', search: defaultMonthSearch }) }
+          if (path === '/day') {
+            void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
+          } else {
+            void navigate({ to: '/', search: defaultMonthSearch })
+          }
         }
-        function goPrevDay() { if (path === '/day') navigateDayOffset(loc, -1) }
-        function goNextDay() { if (path === '/day') navigateDayOffset(loc, 1) }
+        function goPrevDay() {
+          if (path === '/day') navigateDayOffset(loc, -1)
+        }
+        function goNextDay() {
+          if (path === '/day') navigateDayOffset(loc, 1)
+        }
         if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
           void navigate({ to: '/', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'gridView', e.key, ctrl, shift)) {
@@ -195,7 +242,10 @@ function App() {
         }
       }
 
-      if (ctrl) { handleCtrlShortcuts(); return }
+      if (ctrl) {
+        handleCtrlShortcuts()
+        return
+      }
       handleNavShortcuts()
     },
     [navigate, router, undo, redo, hotkeyConfig],
@@ -208,7 +258,10 @@ function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
-      <nav className="flex items-center gap-1 border-b border-gray-200 bg-white px-4 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800" aria-label="Main navigation">
+      <nav
+        className="flex items-center gap-1 border-b border-gray-200 bg-white px-4 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+        aria-label="Main navigation"
+      >
         <span className="mr-6 text-lg font-bold tracking-tight">Timetracker</span>
         {NAV_ITEMS.map((item) => (
           <Link
@@ -242,7 +295,17 @@ function App() {
               title="Keyboard shortcuts (?)"
               className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <rect x="2" y="4" width="20" height="16" rx="2" />
                 <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
               </svg>

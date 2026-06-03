@@ -44,6 +44,7 @@ describe('OneDriveStorageAdapter', () => {
       globalThis.fetch = fetchSpy
       const adapter = new OneDriveStorageAdapter(makeToken('my-secret'))
       await adapter.get('config')
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const [, opts] = fetchSpy.mock.calls[0] as [string, { headers: Record<string, string> }]
       expect(opts.headers['Authorization']).toBe('Bearer my-secret')
     })
@@ -86,6 +87,7 @@ describe('OneDriveStorageAdapter', () => {
       globalThis.fetch = fetchSpy
       const adapter = new OneDriveStorageAdapter(makeToken('tok'))
       await adapter.put('x', {})
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const [, opts] = fetchSpy.mock.calls[0] as [string, { headers: Record<string, string> }]
       expect(opts.headers['Authorization']).toBe('Bearer tok')
     })

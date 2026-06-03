@@ -58,6 +58,7 @@ describe('SetupWizard', () => {
 
   it('calls saveHandle, setLocalFolderMode, and reloads on successful folder pick', async () => {
     const user = userEvent.setup()
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const handle = { name: 'MyFolder' } as FileSystemDirectoryHandle
     vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(handle))
     const reloadSpy = vi.fn()

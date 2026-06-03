@@ -63,9 +63,7 @@ describe('AutoCategoryPicker', () => {
     )
     const select = await screen.findByLabelText(/auto category/i)
     await userEvent.selectOptions(select, '_SUPPORT')
-    await waitFor(() =>
-      expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ autoCategory: '_SUPPORT' })),
-    )
+    await waitFor(() => expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ autoCategory: '_SUPPORT' })))
   })
 
   it('calls save with null when None is selected', async () => {
@@ -81,15 +79,14 @@ describe('AutoCategoryPicker', () => {
     )
     const select = await screen.findByLabelText(/auto category/i)
     await userEvent.selectOptions(select, '')
-    await waitFor(() =>
-      expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ autoCategory: null })),
-    )
+    await waitFor(() => expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({ autoCategory: null })))
   })
 
   it('lists custom categories in the dropdown', async () => {
     setup({ ...defaultAppConfig, customCategories: ['ProjectAlpha'] })
     const select = await screen.findByLabelText(/auto category/i)
-    const options = Array.from((select as HTMLSelectElement).options).map((o) => o.value)
+    if (!(select instanceof HTMLSelectElement)) throw new Error('Expected select element')
+    const options = Array.from(select.options).map((o) => o.value)
     expect(options).toContain('ProjectAlpha')
   })
 })

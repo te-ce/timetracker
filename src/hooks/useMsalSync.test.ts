@@ -38,15 +38,23 @@ beforeEach(() => {
 
 describe('useMsalSync', () => {
   it('sets isAuthenticated to false when no accounts are present', () => {
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    mockUseMsal.mockReturnValue({
+      accounts: [],
+      instance: {} as unknown as never,
+      inProgress: 'none',
+    } as unknown as ReturnType<typeof useMsal>)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
   })
 
   it('sets isAuthenticated to true when an account is present', () => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ homeAccountId: 'user1', username: 'user@example.com' } as unknown as never],
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       instance: {} as unknown as never,
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
@@ -61,16 +69,26 @@ describe('useMsalSync', () => {
     queryClient.invalidateQueries = invalidateQueries
 
     // Start unauthenticated
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
-    const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
-
-    // Sign in
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      accounts: [{ homeAccountId: 'user1' } as unknown as never],
+      accounts: [],
       instance: {} as unknown as never,
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
-    act(() => { rerender() })
+    const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
+
+    // Sign in
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    mockUseMsal.mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      accounts: [{ homeAccountId: 'user1' } as unknown as never],
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      instance: {} as unknown as never,
+      inProgress: 'none',
+    } as unknown as ReturnType<typeof useMsal>)
+    act(() => {
+      rerender()
+    })
 
     expect(mockResetAllRepositories).toHaveBeenCalled()
     expect(invalidateQueries).toHaveBeenCalled()
@@ -82,8 +100,11 @@ describe('useMsalSync', () => {
     queryClient.invalidateQueries = invalidateQueries
 
     // Start authenticated
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ homeAccountId: 'user1' } as unknown as never],
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       instance: {} as unknown as never,
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
@@ -93,36 +114,58 @@ describe('useMsalSync', () => {
     invalidateQueries.mockClear()
 
     // Sign out
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
-    act(() => { rerender() })
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    mockUseMsal.mockReturnValue({
+      accounts: [],
+      instance: {} as unknown as never,
+      inProgress: 'none',
+    } as unknown as ReturnType<typeof useMsal>)
+    act(() => {
+      rerender()
+    })
 
     expect(mockResetAllRepositories).toHaveBeenCalled()
     expect(invalidateQueries).toHaveBeenCalled()
   })
 
   it('does not reset repositories when auth state stays false', () => {
-    mockUseMsal.mockReturnValue({ accounts: [], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    mockUseMsal.mockReturnValue({
+      accounts: [],
+      instance: {} as unknown as never,
+      inProgress: 'none',
+    } as unknown as ReturnType<typeof useMsal>)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
 
     // Stay unauthenticated
-    act(() => { rerender() })
+    act(() => {
+      rerender()
+    })
 
     expect(mockResetAllRepositories).not.toHaveBeenCalled()
   })
 
   it('does not reset repositories when auth state stays true', () => {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const account = { homeAccountId: 'user1' } as unknown as never
-    mockUseMsal.mockReturnValue({ accounts: [account], instance: {} as unknown as never, inProgress: 'none' } as unknown as ReturnType<typeof useMsal>)
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    mockUseMsal.mockReturnValue({
+      accounts: [account],
+      instance: {} as unknown as never,
+      inProgress: 'none',
+    } as unknown as ReturnType<typeof useMsal>)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
 
     // Stay authenticated
-    act(() => { rerender() })
+    act(() => {
+      rerender()
+    })
 
     expect(mockResetAllRepositories).not.toHaveBeenCalled()
   })

@@ -90,9 +90,11 @@ function makeRow(col1: string | null, col2: string | null, col3: string | null):
 }
 
 function makeDirWithEntries(names: string[]): FileSystemDirectoryHandle {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
     entries() {
       return (function* () {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         for (const name of names) yield [name, {}] as [string, object]
       })()
     },
@@ -100,6 +102,7 @@ function makeDirWithEntries(names: string[]): FileSystemDirectoryHandle {
 }
 
 function makeReadonlyFileHandle(): FileSystemFileHandle {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
     getFile: () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) }),
   } as unknown as FileSystemFileHandle
@@ -107,6 +110,7 @@ function makeReadonlyFileHandle(): FileSystemFileHandle {
 
 function makeWritableFileHandle(): { handle: FileSystemFileHandle; didWrite: () => boolean } {
   let wrote = false
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const handle: FileSystemFileHandle = {
     getFile: () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) }),
     createWritable: () =>
@@ -122,6 +126,7 @@ function makeWritableFileHandle(): { handle: FileSystemFileHandle; didWrite: () 
 }
 
 function makeDirWithFile(filename: string, fileHandle: FileSystemFileHandle): FileSystemDirectoryHandle {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
     getFileHandle: (name: string) => {
       if (name === filename) return Promise.resolve(fileHandle)

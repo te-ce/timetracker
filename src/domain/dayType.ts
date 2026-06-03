@@ -2,9 +2,9 @@ export type DayType = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'Si
 
 import type { DayTypeOverride } from '../repositories/types'
 
-const DAY_TYPE_OVERRIDES = ['PublicHoliday', 'Vacation', 'SickDay', 'Absence'] as const
+const DAY_TYPE_OVERRIDES: readonly string[] = ['PublicHoliday', 'Vacation', 'SickDay', 'Absence']
 export function isDayTypeOverride(v: string): v is DayTypeOverride {
-  return (DAY_TYPE_OVERRIDES as readonly string[]).includes(v)
+  return DAY_TYPE_OVERRIDES.includes(v)
 }
 
 export type AutoBooking = { category: '_LEAVE'; hours: number }

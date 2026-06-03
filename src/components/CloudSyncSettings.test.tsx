@@ -30,6 +30,7 @@ const mockInstance = {
 beforeEach(() => {
   vi.clearAllMocks()
   useAuthStore.setState({ isAuthenticated: false })
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   mockUseMsal.mockReturnValue({
     instance: mockInstance,
     accounts: [],
@@ -46,9 +47,11 @@ describe('CloudSyncSettings', () => {
 
   it('shows synced state and account name when authenticated', () => {
     useAuthStore.setState({ isAuthenticated: true })
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      instance: mockInstance,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
+      instance: mockInstance,
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
     render(<CloudSyncSettings />)
@@ -91,9 +94,11 @@ describe('CloudSyncSettings', () => {
 
   it('calls instance.logoutPopup when Sign out is clicked', async () => {
     useAuthStore.setState({ isAuthenticated: true })
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      instance: mockInstance,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
+      instance: mockInstance,
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
     mockInstance.logoutPopup.mockResolvedValue(undefined)
@@ -104,8 +109,10 @@ describe('CloudSyncSettings', () => {
 
   it('handles logoutPopup rejection gracefully', async () => {
     useAuthStore.setState({ isAuthenticated: true })
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
       instance: mockInstance,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
@@ -117,8 +124,10 @@ describe('CloudSyncSettings', () => {
 
   it('calls clearBootstrapConfig when Change Azure AD configuration is clicked while authenticated', async () => {
     useAuthStore.setState({ isAuthenticated: true })
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
       instance: mockInstance,
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)

@@ -18,8 +18,15 @@ describe('getAccessToken', () => {
   })
 
   it('returns the access token from acquireTokenSilent when authenticated', async () => {
-    const fakeAccount = { username: 'user@corp.com', homeAccountId: 'abc', environment: 'login.microsoftonline.com', tenantId: 'tenant', localAccountId: 'local' }
+    const fakeAccount = {
+      username: 'user@corp.com',
+      homeAccountId: 'abc',
+      environment: 'login.microsoftonline.com',
+      tenantId: 'tenant',
+      localAccountId: 'local',
+    }
     vi.spyOn(msalModule.msalInstance!, 'getAllAccounts').mockReturnValue([fakeAccount])
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     vi.spyOn(msalModule.msalInstance!, 'acquireTokenSilent').mockResolvedValue({
       accessToken: 'mock-token-123',
     } as unknown as AuthenticationResult)
@@ -29,16 +36,21 @@ describe('getAccessToken', () => {
   })
 
   it('passes the first account and graphScopes to acquireTokenSilent', async () => {
-    const fakeAccount = { username: 'user@corp.com', homeAccountId: 'abc', environment: 'login.microsoftonline.com', tenantId: 'tenant', localAccountId: 'local' }
+    const fakeAccount = {
+      username: 'user@corp.com',
+      homeAccountId: 'abc',
+      environment: 'login.microsoftonline.com',
+      tenantId: 'tenant',
+      localAccountId: 'local',
+    }
     vi.spyOn(msalModule.msalInstance!, 'getAllAccounts').mockReturnValue([fakeAccount])
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const silentSpy = vi.spyOn(msalModule.msalInstance!, 'acquireTokenSilent').mockResolvedValue({
       accessToken: 'tok',
     } as unknown as AuthenticationResult)
 
     await msalModule.getAccessToken()
 
-    expect(silentSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ account: fakeAccount }),
-    )
+    expect(silentSpy).toHaveBeenCalledWith(expect.objectContaining({ account: fakeAccount }))
   })
 })

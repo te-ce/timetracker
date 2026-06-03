@@ -29,12 +29,12 @@ describe('crossedGoal', () => {
 
 describe('dispatchGoalNotification', () => {
   beforeEach(() => {
-    delete (window as Window).electronAPI
+    delete window.electronAPI
   })
 
   it('calls electronAPI.notify.goalReached() in Electron context', () => {
     const goalReached = vi.fn()
-    ;(window as Window).electronAPI = {
+    window.electronAPI = {
       autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
       tray: { sync: () => {}, onSetCategory: () => {}, offSetCategory: () => {} },
       hotkey: { onToggle: () => {}, offToggle: () => {}, setGlobal: vi.fn().mockResolvedValue(undefined) },
