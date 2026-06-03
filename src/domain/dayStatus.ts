@@ -1,14 +1,6 @@
 import type { DayType } from './dayType'
 
-export type DayStatus =
-  | 'non-working'
-  | 'leave'
-  | 'future'
-  | 'today'
-  | 'complete'
-  | 'needs-review'
-  | 'untracked'
-
+export type DayStatus = 'non-working' | 'leave' | 'future' | 'today' | 'complete' | 'needs-review' | 'untracked'
 
 export interface ClassifyDayInput {
   dayType: DayType
@@ -51,9 +43,8 @@ function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory
 
 function classifyLeaveDay(dayType: DayType): DayClassification | null {
   if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') {
-    const reason = dayType === 'Vacation' ? 'Marked as vacation'
-      : dayType === 'SickDay' ? 'Marked as sick day'
-      : 'Marked as absence'
+    const reason =
+      dayType === 'Vacation' ? 'Marked as vacation' : dayType === 'SickDay' ? 'Marked as sick day' : 'Marked as absence'
     return { status: 'leave', displayStatus: 'leave', reason }
   }
   return null
@@ -108,7 +99,7 @@ export function classifyDay({
         reason: `${workedHours.toFixed(1)} h logged ahead of schedule`,
       }
     }
-    return { status: 'future', displayStatus: 'untracked', reason: 'Future work day — no hours yet' }
+    return { status: 'future', displayStatus: 'future', reason: 'Future work day — no hours yet' }
   }
 
   const isToday = isoDate === today

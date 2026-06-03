@@ -81,8 +81,8 @@ describe('classifyDay', () => {
       expect(classify({ isoDate: today, workedHours: 8, manualTotal: 4 }).displayStatus).toBe('needs-review')
     })
 
-    it('future resolves displayStatus to untracked', () => {
-      expect(classify({ isoDate: '2026-05-20' }).displayStatus).toBe('untracked')
+    it('future resolves displayStatus to future', () => {
+      expect(classify({ isoDate: '2026-05-20' }).displayStatus).toBe('future')
     })
   })
 
