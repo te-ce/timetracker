@@ -38,7 +38,7 @@ function extractDayFields(dayData: Day | undefined) {
 function resolveConfigDefaults(config: AppConfig | undefined) {
   return {
     sollstunden: config?.sollstunden ?? DEFAULT_APP_CONFIG.sollstunden,
-    defaultWorkLocation: (config?.defaultWorkLocation ?? 'Remote') as WorkLocation,
+    defaultWorkLocation: config?.defaultWorkLocation ?? 'Remote',
     globalAutoCategory: config?.autoCategory ?? null,
   }
 }

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { confirmDay } from '../domain/confirmDay'
+import { buildConfirmedDay } from '../domain/confirmDay'
 import type { WorkPeriod, TimeEntry, MonthRepository, WorkLocation } from '../repositories/types'
 import { invalidateMonth } from './queryKeys'
 
@@ -26,7 +26,9 @@ export function useDayMutations({
 
   const confirm = useMutation({
     mutationFn: () =>
-      confirmDay(date, windows, entries, autoCategoryOverride, globalAutoCategory, repository),
+      repository.updateDay(date, (day) =>
+        buildConfirmedDay(windows, entries, autoCategoryOverride, globalAutoCategory, day),
+      ),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 

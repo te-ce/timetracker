@@ -50,7 +50,7 @@ describe('CloudConfigRepository', () => {
     await repo.save(config)
 
     config.customCategories.push('mutated')
-    config.categoryMapping!['injected'] = 'bad'
+    config.categoryMapping['injected'] = 'bad'
 
     const stored = await repo.get()
     expect(stored.customCategories).toEqual(['A'])
