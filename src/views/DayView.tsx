@@ -3,7 +3,7 @@ import { DayNoteEditor } from './DayNoteEditor'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../repositories/RepositoryContext'
-import { WorkPeriodPanel, type PanelVariant } from '../components/WorkPeriodPanel'
+import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -21,12 +21,6 @@ function formatDate(iso: string): string {
     month: 'long',
     year: 'numeric',
   })
-}
-
-const VARIANT_LABELS: Record<PanelVariant, string> = {
-  A: 'Compact',
-  B: 'Cards',
-  C: 'Timeline',
 }
 
 interface DayActionsProps {
@@ -79,24 +73,6 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
       >
         Reset all
       </button>
-    </div>
-  )
-}
-
-function VariantSwitcher({ variant, onChange }: { variant: PanelVariant; onChange: (v: PanelVariant) => void }) {
-  return (
-    <div className="flex items-center gap-1 rounded-lg border dark:border-gray-700 p-0.5">
-      {(['A', 'B', 'C'] as PanelVariant[]).map((v) => (
-        <button
-          key={v}
-          onClick={() => onChange(v)}
-          className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${variant === v ? 'bg-indigo-600 dark:bg-indigo-500 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-          aria-label={`Switch to ${VARIANT_LABELS[v]} view`}
-          title={VARIANT_LABELS[v]}
-        >
-          {v}
-        </button>
-      ))}
     </div>
   )
 }
@@ -180,7 +156,6 @@ export function DayView() {
 
   const { displayStatus: badgeStatus, reason: statusReason } = dayClassification
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  const [variant, setVariant] = useState<PanelVariant>('A')
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
@@ -237,12 +212,6 @@ export function DayView() {
       />
 
       <section aria-label="Work periods">
-        {/* Variant switcher */}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Work periods</h3>
-          <VariantSwitcher variant={variant} onChange={setVariant} />
-        </div>
-
         <WorkPeriodPanel
           date={selectedDate}
           windows={windows}
@@ -250,7 +219,6 @@ export function DayView() {
           autoCategory={autoCategory ?? autoCategoryOverride}
           customCategories={customCategories}
           categoryOrder={categoryOrder}
-          variant={variant}
         />
       </section>
 
