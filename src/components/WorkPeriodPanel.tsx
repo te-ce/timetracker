@@ -117,6 +117,7 @@ function SliceRow({ sl, periodId, date, categories, mutations }: SliceRowProps) 
             if (e.key === 'Escape') setEditing(false)
           }}
           aria-label="Slice hours"
+          ref={(el) => el?.focus()}
           className="text-xs rounded border px-2 py-0.5 w-20 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
         />
         <button
@@ -154,7 +155,7 @@ function SliceRow({ sl, periodId, date, categories, mutations }: SliceRowProps) 
       </button>
       <button
         onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: sl.id })}
-        className="ml-auto text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 text-base leading-none opacity-0 group-hover/slice:opacity-100 transition-opacity"
+        className="ml-auto text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 text-base leading-none"
         aria-label={`Remove ${sl.category} slice`}
       >
         ×
@@ -373,6 +374,7 @@ function CardHeader({
                 if (e.key === 'Escape') setEditingTime(false)
               }}
               aria-label="Edit start time"
+              ref={(el) => el?.focus()}
               className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             />
             <span className="text-gray-400 text-sm">–</span>

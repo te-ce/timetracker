@@ -65,7 +65,12 @@ function PeriodRow({
   return (
     <li className="relative flex items-center justify-between rounded-lg border dark:border-gray-700 px-3 py-2 text-sm">
       {isEditing ? (
-        <>
+        <div
+          className="flex items-center justify-between w-full"
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) onEditSave()
+          }}
+        >
           <div className="flex items-center gap-1.5 flex-wrap">
             <input
               type="time"
@@ -73,6 +78,7 @@ function PeriodRow({
               value={editStart}
               onChange={(e) => onEditStartChange(e.target.value)}
               onKeyDown={handleKeyDown}
+              ref={(el) => el?.focus()}
               className="rounded border px-1.5 py-0.5 text-sm w-24 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             />
             <button
@@ -115,7 +121,7 @@ function PeriodRow({
               Cancel
             </button>
           </div>
-        </>
+        </div>
       ) : (
         <>
           <button
@@ -196,18 +202,18 @@ export function WorkPeriodEditor({ date, windows, repository }: Props) {
   }
 
   function handleEditSave() {
-    if (!editingId || !editStart) return
-    const existing = windows.find((w) => w.id === editingId)
-    if (!existing) return
-    const incoming: WorkPeriod = {
-      category: UNCATEGORIZED_CATEGORY,
-      slices: [],
-      ...existing,
-      start: editStart,
-      end: editEnd || null,
+    const existing = editingId ? windows.find((w) => w.id === editingId) : null
+    if (existing && editStart) {
+      const incoming: WorkPeriod = {
+        category: UNCATEGORIZED_CATEGORY,
+        slices: [],
+        ...existing,
+        start: editStart,
+        end: editEnd || null,
+      }
+      const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
+      saveWithAbsorbed.mutate({ date, window: merged, absorbed })
     }
-    const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    saveWithAbsorbed.mutate({ date, window: merged, absorbed })
     setEditingId(null)
   }
 
