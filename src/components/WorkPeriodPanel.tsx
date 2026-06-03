@@ -51,14 +51,13 @@ interface CategoryPickerProps {
 }
 
 function CategoryPicker({ value, categories, onChange, compact }: CategoryPickerProps) {
-  const isUncategorized = value === UNCATEGORIZED_CATEGORY
   const selectClass = compact
     ? 'text-xs rounded border px-1 py-0.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[10rem]'
     : 'text-sm rounded-lg border px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 flex-1'
 
   return (
     <select aria-label="Category" value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
-      <option value={UNCATEGORIZED_CATEGORY}>{isUncategorized ? '— uncat —' : UNCATEGORIZED_CATEGORY}</option>
+      <option value={UNCATEGORIZED_CATEGORY}>Uncategorized</option>
       {categories.map((c) => (
         <option key={c} value={c}>
           {c}
@@ -101,7 +100,12 @@ function SliceRow({ sl, periodId, date, categories, mutations }: SliceRowProps) 
 
   if (editing) {
     return (
-      <div className="flex items-center gap-2 text-sm py-0.5">
+      <div
+        className="flex items-center gap-2 text-sm py-0.5"
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) commitEdit()
+        }}
+      >
         <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
         <CategoryPicker value={editCategory} categories={categories} onChange={setEditCategory} compact />
         <input
@@ -349,7 +353,12 @@ function CardHeader({
     <div className={`flex items-center justify-between px-4 py-3 ${headerBg}`}>
       <div className="flex items-center gap-3 min-w-0">
         {editingTime ? (
-          <div className="flex items-center gap-1">
+          <div
+            className="flex items-center gap-1"
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) saveTime()
+            }}
+          >
             <input
               type="time"
               value={editStart}
