@@ -16,16 +16,19 @@ export const STATUS_DOT: Record<DisplayStatus, string> = {
   complete: 'bg-emerald-500',
   'needs-review': 'bg-yellow-400',
   untracked: 'bg-blue-300',
-  future: 'bg-gray-300',
-  'non-working': 'bg-gray-300',
+  future: 'bg-gray-200',
+  'non-working': 'bg-gray-400',
   leave: 'bg-purple-400',
 }
 
 // Full-cell background + text (calendar day cells)
 export const STATUS_CELL: Record<DayStatus, string> = {
-  complete: 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60',
-  'needs-review': 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50',
-  untracked: 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50',
+  complete:
+    'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:hover:bg-emerald-900/60',
+  'needs-review':
+    'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-900/50',
+  untracked:
+    'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50',
   future: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
   today: 'bg-white text-gray-900 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700',
   'non-working': 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500',

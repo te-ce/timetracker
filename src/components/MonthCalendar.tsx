@@ -42,7 +42,15 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days
 }
 
-export function MonthCalendar({ year, month, onSelectDate, onMonthChange, dayStatusMap = {}, dayStatusReasonMap = {}, dayNoteMap = {} }: Props) {
+export function MonthCalendar({
+  year,
+  month,
+  onSelectDate,
+  onMonthChange,
+  dayStatusMap = {},
+  dayStatusReasonMap = {},
+  dayNoteMap = {},
+}: Props) {
   const days = getDaysInMonth(year, month)
   const now = new Date()
   const todayIso = toLocalIso(now)
@@ -125,7 +133,7 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
                 onClick={() => onSelectDate(iso)}
                 aria-label={label}
                 aria-current={isToday ? 'date' : undefined}
-                className={`relative w-full rounded-lg px-2 py-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors`}
+                className={`relative w-full rounded-lg px-2 py-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
               >
                 {date.getDate()}
                 {isToday && (
@@ -145,7 +153,11 @@ export function MonthCalendar({ year, month, onSelectDate, onMonthChange, daySta
                       </>
                     )}
                     {note && (
-                      <p className={`whitespace-pre-wrap text-gray-200 ${reason ? 'mt-1.5 border-t border-gray-600 pt-1.5' : ''}`}>{note}</p>
+                      <p
+                        className={`whitespace-pre-wrap text-gray-200 ${reason ? 'mt-1.5 border-t border-gray-600 pt-1.5' : ''}`}
+                      >
+                        {note}
+                      </p>
                     )}
                   </div>
                 </div>
