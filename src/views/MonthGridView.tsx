@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../repositories/RepositoryContext'
 import type { ConfigRepository } from '../repositories/types'
-import { renameCategoryAcrossAllMonths } from '../hooks/categoryOps'
+import { renameCategoryAcrossAllMonths } from '../domain/categoryMutations'
 import { MonthGrid } from '../components/MonthGrid'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -25,7 +25,6 @@ async function saveAutoCategory(configRepo: ConfigRepository, category: string):
   const cfg = await configRepo.get()
   await configRepo.save({ ...cfg, autoCategory: category })
 }
-
 
 export function MonthGridView() {
   const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
@@ -105,7 +104,10 @@ export function MonthGridView() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center">
-        <button onClick={prevMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
+        <button
+          onClick={prevMonth}
+          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
+        >
           ← Prev
         </button>
         <div className="flex flex-1 items-center justify-center gap-2">
@@ -130,7 +132,10 @@ export function MonthGridView() {
           >
             Reset all
           </button>
-          <button onClick={nextMonth} className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
+          <button
+            onClick={nextMonth}
+            className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
+          >
             Next →
           </button>
         </div>
