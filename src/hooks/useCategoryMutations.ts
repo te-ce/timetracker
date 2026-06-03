@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { AppConfig, MonthRepository } from '../repositories/types'
 import type { CloudConfigRepository } from '../repositories/cloud/config-repository'
-import { renameCategoryAcrossAllMonths } from '../domain/categoryOps'
+import { renameCategoryAcrossAllMonths } from './categoryOps'
 import { QUERY_KEYS } from './queryKeys'
 
 export function useCategoryMutations(
