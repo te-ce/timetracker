@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { WorkPeriod, MonthRepository } from '../repositories/types'
+import type { WorkPeriod, WorkPeriodSlice, MonthRepository } from '../repositories/types'
 import { invalidateMonth } from './queryKeys'
-import { upsertWindow, removeWindow } from '../domain/dayUpdaters'
+import { upsertWindow, removeWindow, updatePeriodCategory, upsertSlice, removeSlice } from '../domain/dayUpdaters'
 
 export function useWorkPeriodMutations(repository: MonthRepository) {
   const queryClient = useQueryClient()
@@ -31,5 +31,23 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     onSuccess: (_, { date }) => invalidate(date),
   })
 
-  return { save, remove, saveWithAbsorbed }
+  const setPeriodCategory = useMutation({
+    mutationFn: ({ date, periodId, category }: { date: string; periodId: string; category: string }) =>
+      repository.updateDay(date, (day) => updatePeriodCategory(day, periodId, category)),
+    onSuccess: (_, { date }) => invalidate(date),
+  })
+
+  const addSlice = useMutation({
+    mutationFn: ({ date, periodId, slice }: { date: string; periodId: string; slice: WorkPeriodSlice }) =>
+      repository.updateDay(date, (day) => upsertSlice(day, periodId, slice)),
+    onSuccess: (_, { date }) => invalidate(date),
+  })
+
+  const deleteSlice = useMutation({
+    mutationFn: ({ date, periodId, sliceId }: { date: string; periodId: string; sliceId: string }) =>
+      repository.updateDay(date, (day) => removeSlice(day, periodId, sliceId)),
+    onSuccess: (_, { date }) => invalidate(date),
+  })
+
+  return { save, remove, saveWithAbsorbed, setPeriodCategory, addSlice, deleteSlice }
 }

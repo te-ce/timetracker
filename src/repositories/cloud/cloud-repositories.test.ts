@@ -89,11 +89,11 @@ describe('CloudMonthRepository', () => {
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', (day) => ({
       ...day,
-      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
     }))
     const data = await repo.getMonth(2026, 5)
-    expect(data['2026-05-15']?.entries).toHaveLength(1)
-    expect(data['2026-05-15']?.entries[0]?.hours).toBe(6)
+    expect(data['2026-05-15']?.windows).toHaveLength(1)
+    expect(data['2026-05-15']?.windows[0]?.category).toBe('_COREMEDIA')
   })
 
   it('updateDay removes day when empty', async () => {
@@ -101,12 +101,9 @@ describe('CloudMonthRepository', () => {
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', (day) => ({
       ...day,
-      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
     }))
-    await repo.updateDay('2026-05-15', (day) => ({
-      ...day,
-      entries: [],
-    }))
+    await repo.updateDay('2026-05-15', (day) => ({ ...day, windows: [] }))
     const data = await repo.getMonth(2026, 5)
     expect(data['2026-05-15']).toBeUndefined()
   })
@@ -115,8 +112,7 @@ describe('CloudMonthRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', () => ({
-      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
-      windows: [],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
     }))
     await repo.deleteMonth(2026, 5)
     const data = await repo.getMonth(2026, 5)
@@ -127,32 +123,28 @@ describe('CloudMonthRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', () => ({
-      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
-      windows: [],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
     }))
     await repo.updateDay('2026-06-01', () => ({
-      entries: [{ id: 'e2', category: '_SUPPORT', hours: 4 }],
-      windows: [],
+      windows: [{ id: 'w2', start: '09:00', end: '13:00', category: '_SUPPORT', slices: [] }],
     }))
     const months = await repo.getAllMonths()
     expect(months).toContain('2026-05')
     expect(months).toContain('2026-06')
   })
 
-  it('findEntriesByDateRange returns dated entries across months', async () => {
+  it('findEntriesByDateRange returns dated entries derived from periods', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', () => ({
-      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 6 }],
-      windows: [],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
     }))
     await repo.updateDay('2026-06-01', () => ({
-      entries: [{ id: 'e2', category: '_SUPPORT', hours: 4 }],
-      windows: [],
+      windows: [{ id: 'w2', start: '09:00', end: '13:00', category: '_SUPPORT', slices: [] }],
     }))
     const results = await repo.findEntriesByDateRange('2026-05-01', '2026-06-30')
     expect(results).toHaveLength(2)
-    const e1 = results.find((e) => e.id === 'e1')
+    const e1 = results.find((e) => e.category === '_COREMEDIA')
     expect(e1?.date).toBe('2026-05-15')
     expect(e1?.hours).toBe(6)
   })
@@ -161,16 +153,15 @@ describe('CloudMonthRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-10', () => ({
-      entries: [{ id: 'e1', category: '_COREMEDIA', hours: 2 }],
-      windows: [],
+      windows: [{ id: 'w1', start: '09:00', end: '11:00', category: '_COREMEDIA', slices: [] }],
     }))
     await repo.updateDay('2026-05-20', () => ({
-      entries: [{ id: 'e2', category: '_COREMEDIA', hours: 3 }],
-      windows: [],
+      windows: [{ id: 'w2', start: '09:00', end: '12:00', category: '_COREMEDIA', slices: [] }],
     }))
     const results = await repo.findEntriesByDateRange('2026-05-15', '2026-05-31')
     expect(results).toHaveLength(1)
-    expect(results[0]?.id).toBe('e2')
+    expect(results[0]?.category).toBe('_COREMEDIA')
+    expect(results[0]?.hours).toBe(3)
   })
 })
 

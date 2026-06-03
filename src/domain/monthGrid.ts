@@ -1,6 +1,7 @@
 import type { DayType } from './dayType'
 import type { Day, MonthData } from '../repositories/types'
 import { calculateWorkedHours } from './worktime'
+import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from './periodCategories'
 
 export interface MonthGridRow {
   date: string
@@ -30,23 +31,31 @@ function classifyWeekday(year: number, month: number, day: number): DayType {
   return dow === 0 || dow === 6 ? 'Weekend' : 'WorkDay'
 }
 
-function aggregateEntries(dayData: Day | undefined): { entries: Record<string, number>; manualTotal: number } {
-  const entries: Record<string, number> = {}
-  let manualTotal = 0
-  for (const e of dayData?.entries ?? []) {
-    entries[e.category] = (entries[e.category] ?? 0) + e.hours
-    manualTotal += e.hours
-  }
-  return { entries, manualTotal }
-}
-
-function buildDayRow(date: string, day: number, year: number, month: number, dayData: Day | undefined, dayTypes: Map<string, DayType>): MonthGridRow {
+function buildDayRow(
+  date: string,
+  day: number,
+  year: number,
+  month: number,
+  dayData: Day | undefined,
+  dayTypes: Map<string, DayType>,
+): MonthGridRow {
   const workedHours = calculateWorkedHours(dayData?.windows ?? [])
-  const { entries, manualTotal } = aggregateEntries(dayData)
-  const autoCategoryHours = Math.max(0, workedHours - manualTotal)
-  const hasUnaccountedHours = workedHours > 0 && (manualTotal + autoCategoryHours) < workedHours
+  const categoryHours = calculateCategoryHours(dayData?.windows ?? [])
+  const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
+  const entries: Record<string, number> = Object.fromEntries(
+    Object.entries(categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY),
+  )
+  const hasUnaccountedHours = uncategorizedHours > 0.001
   const dayType = dayData?.dayTypeOverride ?? dayTypes.get(date) ?? classifyWeekday(year, month, day)
-  return { date, dayType, workedHours, entries, autoCategoryHours, autoCategoryOverride: null, hasUnaccountedHours }
+  return {
+    date,
+    dayType,
+    workedHours,
+    entries,
+    autoCategoryHours: uncategorizedHours,
+    autoCategoryOverride: null,
+    hasUnaccountedHours,
+  }
 }
 
 export function buildMonthGrid(input: MonthGridInput): MonthGridRow[] {

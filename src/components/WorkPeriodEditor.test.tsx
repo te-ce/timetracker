@@ -8,6 +8,10 @@ import { WorkPeriodEditor } from './WorkPeriodEditor'
 import type { WorkPeriod, MonthData, MonthRepository } from '../repositories/types'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 
+function w(id: string, start: string, end: string | null, category = '_COREMEDIA'): WorkPeriod {
+  return { id, start, end, category, slices: [] }
+}
+
 const DATE = '2024-01-15'
 const YEAR = 2024
 const MONTH = 1
@@ -23,7 +27,7 @@ function TestPanel({ repo }: { repo: MonthRepository }) {
 
 function setup(initialWindows: WorkPeriod[] = []) {
   const repo = new InMemoryMonthRepository(
-    initialWindows.length > 0 ? { '2024-01': { [DATE]: { entries: [], windows: initialWindows } } } : {},
+    initialWindows.length > 0 ? { '2024-01': { [DATE]: { windows: initialWindows } } } : {},
   )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -77,7 +81,7 @@ describe('WorkPeriodEditor', () => {
   })
 
   it('clicking a window shows edit inputs with current values', async () => {
-    setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+    setup([w('w1', '09:00', '17:00')])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
     expect(screen.getByDisplayValue('09:00')).toBeInTheDocument()
@@ -85,7 +89,7 @@ describe('WorkPeriodEditor', () => {
   })
 
   it('editing a window updates the stored time', async () => {
-    const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+    const { repo } = setup([w('w1', '09:00', '17:00')])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
 
@@ -100,7 +104,7 @@ describe('WorkPeriodEditor', () => {
   })
 
   it('pressing Escape cancels editing without saving', async () => {
-    setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+    setup([w('w1', '09:00', '17:00')])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
 
@@ -133,7 +137,7 @@ describe('WorkPeriodEditor', () => {
   })
 
   it('displays an open WorkPeriod as "HH:MM–…"', async () => {
-    setup([{ id: 'w1', start: '09:00', end: null }])
+    setup([w('w1', '09:00', null)])
     expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
   })
 
@@ -150,7 +154,7 @@ describe('WorkPeriodEditor', () => {
   })
 
   it('edit form saves with no end, storing end: null', async () => {
-    const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+    const { repo } = setup([w('w1', '09:00', '17:00')])
     await screen.findByText('09:00 – 17:00')
     await userEvent.click(screen.getByText('09:00 – 17:00'))
 
@@ -167,7 +171,7 @@ describe('WorkPeriodEditor', () => {
 
   describe('edit form keyboard shortcuts', () => {
     it('pressing Enter in the edit start input saves the period', async () => {
-      const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+      const { repo } = setup([w('w1', '09:00', '17:00')])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -182,7 +186,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('pressing Enter in the edit end input saves the period', async () => {
-      const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+      const { repo } = setup([w('w1', '09:00', '17:00')])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -197,7 +201,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('pressing Escape in the edit end input cancels editing', async () => {
-      setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+      setup([w('w1', '09:00', '17:00')])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -211,7 +215,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('Cancel button in edit form returns to view mode', async () => {
-      setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+      setup([w('w1', '09:00', '17:00')])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
@@ -225,7 +229,7 @@ describe('WorkPeriodEditor', () => {
 
   describe('remove button', () => {
     it('Remove button deletes the period from the repository', async () => {
-      const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
+      const { repo } = setup([w('w1', '09:00', '17:00')])
       await screen.findByText('09:00 – 17:00')
       await userEvent.click(screen.getByRole('button', { name: /remove/i }))
 
@@ -238,10 +242,7 @@ describe('WorkPeriodEditor', () => {
 
   describe('merge button', () => {
     it('shows merge button between two adjacent periods', async () => {
-      setup([
-        { id: 'w1', start: '09:00', end: '13:00' },
-        { id: 'w2', start: '14:00', end: '18:00' },
-      ])
+      setup([w('w1', '09:00', '13:00'), w('w2', '14:00', '18:00')])
 
       await screen.findByText('09:00 – 13:00')
       const mergeBtn = screen.getByRole('button', { name: /merge 09:00–13:00 with 14:00–18:00/i })
@@ -249,10 +250,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('merge button merges two periods into one spanning both', async () => {
-      const { repo } = setup([
-        { id: 'w1', start: '09:00', end: '13:00' },
-        { id: 'w2', start: '14:00', end: '18:00' },
-      ])
+      const { repo } = setup([w('w1', '09:00', '13:00'), w('w2', '14:00', '18:00')])
 
       await screen.findByText('09:00 – 13:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
@@ -266,20 +264,14 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('does not show merge button when a period has no end', async () => {
-      setup([
-        { id: 'w1', start: '09:00', end: null },
-        { id: 'w2', start: '14:00', end: '18:00' },
-      ])
+      setup([w('w1', '09:00', null), w('w2', '14:00', '18:00')])
 
       await screen.findByText('09:00 – …')
       expect(screen.queryByRole('button', { name: /merge/i })).not.toBeInTheDocument()
     })
 
     it('does not show merge button for the last period in the list', async () => {
-      setup([
-        { id: 'w1', start: '09:00', end: '13:00' },
-        { id: 'w2', start: '14:00', end: '18:00' },
-      ])
+      setup([w('w1', '09:00', '13:00'), w('w2', '14:00', '18:00')])
 
       await screen.findByText('14:00 – 18:00')
       const mergeBtns = screen.getAllByRole('button', { name: /merge/i })
@@ -287,10 +279,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('merge picks the later end time when first period ends after second', async () => {
-      const { repo } = setup([
-        { id: 'w1', start: '09:00', end: '19:00' },
-        { id: 'w2', start: '14:00', end: '17:00' },
-      ])
+      const { repo } = setup([w('w1', '09:00', '19:00'), w('w2', '14:00', '17:00')])
 
       await screen.findByText('09:00 – 19:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
@@ -313,7 +302,7 @@ describe('WorkPeriodEditor', () => {
       const storage = new InMemoryStorageAdapter()
       if (initialWindows.length > 0) {
         // InMemoryStorageAdapter.put is synchronous — map is populated before render
-        void storage.put('months/2024-01.json', { [DATE]: { entries: [], windows: initialWindows } })
+        void storage.put('months/2024-01.json', { [DATE]: { windows: initialWindows } })
       }
       const repo = new CloudMonthRepository(storage)
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -334,7 +323,7 @@ describe('WorkPeriodEditor', () => {
     }
 
     it('merges into exactly one period when new start matches existing end', async () => {
-      const { repo } = setupCloud([{ id: 'w1', start: '09:00', end: '10:00' }])
+      const { repo } = setupCloud([w('w1', '09:00', '10:00')])
       await screen.findByText('09:00 – 10:00')
       await addWindow('10:00', '11:00')
 
@@ -347,10 +336,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('merges a three-period chain into exactly one period', async () => {
-      const { repo } = setupCloud([
-        { id: 'w1', start: '08:00', end: '09:00' },
-        { id: 'w2', start: '10:00', end: '11:00' },
-      ])
+      const { repo } = setupCloud([w('w1', '08:00', '09:00'), w('w2', '10:00', '11:00')])
       await screen.findByText('08:00 – 09:00')
       await addWindow('09:00', '10:00')
 
@@ -363,10 +349,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('manual merge button produces exactly one period', async () => {
-      const { repo } = setupCloud([
-        { id: 'w1', start: '09:00', end: '13:00' },
-        { id: 'w2', start: '14:00', end: '18:00' },
-      ])
+      const { repo } = setupCloud([w('w1', '09:00', '13:00'), w('w2', '14:00', '18:00')])
       await screen.findByText('09:00 – 13:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
 
@@ -381,7 +364,7 @@ describe('WorkPeriodEditor', () => {
 
   describe('auto-merge on add', () => {
     it('merges into one period when new start matches existing end', async () => {
-      const { repo } = setup([{ id: 'w1', start: '09:00', end: '10:00' }])
+      const { repo } = setup([w('w1', '09:00', '10:00')])
       await screen.findByText('09:00 – 10:00')
       await addWindow('10:00', '11:00')
 
@@ -394,7 +377,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('merges into one period when new end matches existing start', async () => {
-      const { repo } = setup([{ id: 'w1', start: '11:00', end: '12:00' }])
+      const { repo } = setup([w('w1', '11:00', '12:00')])
       await screen.findByText('11:00 – 12:00')
       await addWindow('10:00', '11:00')
 
@@ -407,10 +390,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('chains three adjacent periods into one', async () => {
-      const { repo } = setup([
-        { id: 'w1', start: '08:00', end: '09:00' },
-        { id: 'w2', start: '10:00', end: '11:00' },
-      ])
+      const { repo } = setup([w('w1', '08:00', '09:00'), w('w2', '10:00', '11:00')])
       await screen.findByText('08:00 – 09:00')
       await addWindow('09:00', '10:00')
 
@@ -423,7 +403,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('does not merge when there is a gap', async () => {
-      const { repo } = setup([{ id: 'w1', start: '09:00', end: '10:00' }])
+      const { repo } = setup([w('w1', '09:00', '10:00')])
       await screen.findByText('09:00 – 10:00')
       await addWindow('10:30', '11:30')
 
@@ -471,7 +451,7 @@ describe('WorkPeriodEditor', () => {
 
   describe('open period pre-fill', () => {
     it('prefills start input from open period and disables it', async () => {
-      setup([{ id: 'w1', start: '09:00', end: null }])
+      setup([w('w1', '09:00', null)])
       await screen.findByRole('button', { name: /edit period 09:00/i })
       const startInput = screen.getByLabelText<HTMLInputElement>(/^start$/i)
       expect(startInput.value).toBe('09:00')
@@ -479,20 +459,20 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('hides the start Now button when an open period exists', async () => {
-      setup([{ id: 'w1', start: '09:00', end: null }])
+      setup([w('w1', '09:00', null)])
       await screen.findByRole('button', { name: /edit period 09:00/i })
       const nowButtons = screen.getAllByRole('button', { name: /^now$/i })
       expect(nowButtons).toHaveLength(1)
     })
 
     it('Add button is enabled when open period exists (start is prefilled)', async () => {
-      setup([{ id: 'w1', start: '09:00', end: null }])
+      setup([w('w1', '09:00', null)])
       await screen.findByRole('button', { name: /edit period 09:00/i })
       expect(screen.getByRole('button', { name: /add/i })).not.toBeDisabled()
     })
 
     it('closing an open period removes it and saves with the given end', async () => {
-      const { repo } = setup([{ id: 'w1', start: '09:00', end: null }])
+      const { repo } = setup([w('w1', '09:00', null)])
       await screen.findByRole('button', { name: /edit period 09:00/i })
       await userEvent.type(screen.getByLabelText(/^end$/i), '17:00')
       await userEvent.click(screen.getByRole('button', { name: /add/i }))
@@ -505,10 +485,7 @@ describe('WorkPeriodEditor', () => {
     })
 
     it('closing an open period also merges with adjacent periods', async () => {
-      const { repo } = setup([
-        { id: 'w1', start: '09:00', end: null },
-        { id: 'w2', start: '17:00', end: '18:00' },
-      ])
+      const { repo } = setup([w('w1', '09:00', null), w('w2', '17:00', '18:00')])
       await screen.findByRole('button', { name: /edit period 09:00/i })
       await userEvent.type(screen.getByLabelText(/^end$/i), '17:00')
       await userEvent.click(screen.getByRole('button', { name: /add/i }))

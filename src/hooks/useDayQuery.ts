@@ -5,19 +5,19 @@ import { buildMonthSummaries, type DaySummary } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
 import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
-import type { AppConfig, WorkLocation, WorkPeriod, TimeEntry, DayTypeOverride, Day } from '../repositories/types'
+import { calculateTotalCategorizedHours } from '../domain/periodCategories'
+import type { AppConfig, WorkLocation, WorkPeriod, DayTypeOverride, Day } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
 import type { DayStatus } from '../domain/dayStatus'
 
 // Raw day data: values read directly from stored Day
 // Config-derived: computed from AppConfig with defaults applied
-// Computed stats: derived from WorkWindows, TimeEntries, and month summaries
+// Computed stats: derived from WorkWindows and month summaries
 export interface DayQueryResult {
   config: AppConfig | undefined
   todayIso: string
 
   windows: WorkPeriod[]
-  entries: TimeEntry[]
   workLocation: WorkLocation | null
   autoCategoryOverride: string | null
   dayTypeOverride: DayTypeOverride | undefined
@@ -38,7 +38,7 @@ export interface DayQueryResult {
   dayClassification: { displayStatus: Exclude<DayStatus, 'today'>; reason: string }
 }
 
-const EMPTY_DAY: Day = { entries: [], windows: [] }
+const EMPTY_DAY: Day = { windows: [] }
 
 const FUTURE_SUMMARY: DaySummary = {
   date: '',
@@ -57,7 +57,6 @@ function extractDayFields(dayData: Day | undefined) {
   const day = dayData ?? EMPTY_DAY
   return {
     windows: day.windows,
-    entries: day.entries,
     workLocation: day.location ?? null,
     autoCategoryOverride: day.autoCategoryOverride ?? null,
     dayTypeOverride: day.dayTypeOverride,
@@ -97,7 +96,14 @@ function resolveDayExtras(
   const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
   const autoCategory = dayData?.autoCategoryOverride ?? globalAutoCategory
   const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, monthDates, todayIso, sollstunden)
-  return { sollstunden, effectiveLocation, defaultWorkLocation, autoCategory, overtimeToDate, ...fromDaySummary(daySummary) }
+  return {
+    sollstunden,
+    effectiveLocation,
+    defaultWorkLocation,
+    autoCategory,
+    overtimeToDate,
+    ...fromDaySummary(daySummary),
+  }
 }
 
 export function useDayQuery(date: string): DayQueryResult {
@@ -124,7 +130,16 @@ export function useDayQuery(date: string): DayQueryResult {
 
   const dayData = monthData[date]
   const daySummary = monthDays.find((d) => d.date === date) ?? FUTURE_SUMMARY
-  const extras = resolveDayExtras(dayData, config, daySummary, workedHoursPerDay, monthDays.map((d) => d.date), todayIso)
+  const extras = resolveDayExtras(
+    dayData,
+    config,
+    daySummary,
+    workedHoursPerDay,
+    monthDays.map((d) => d.date),
+    todayIso,
+  )
 
-  return { config, ...extractDayFields(dayData), todayIso, ...extras }
+  const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])
+
+  return { config, ...extractDayFields(dayData), todayIso, ...extras, manualTotal }
 }

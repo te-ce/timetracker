@@ -9,7 +9,7 @@ const DATE = '2024-01-15'
 
 function setup(override?: DayTypeOverride) {
   const repo = new InMemoryMonthRepository(
-    override ? { '2024-01': { [DATE]: { entries: [], windows: [], dayTypeOverride: override } } } : {},
+    override ? { '2024-01': { [DATE]: { windows: [], dayTypeOverride: override } } } : {},
   )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(

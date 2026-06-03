@@ -1,34 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { buildConfirmedDay } from '../domain/confirmDay'
-import type { WorkPeriod, TimeEntry, MonthRepository, WorkLocation } from '../repositories/types'
+import type { WorkPeriod, MonthRepository, WorkLocation } from '../repositories/types'
 import { invalidateMonth } from './queryKeys'
 
 interface UseDayMutationsInput {
   date: string
   windows: WorkPeriod[]
-  entries: TimeEntry[]
-  autoCategoryOverride: string | null
-  globalAutoCategory: string | null
   effectiveLocation: WorkLocation
   repository: MonthRepository
 }
 
-export function useDayMutations({
-  date,
-  windows,
-  entries,
-  autoCategoryOverride,
-  globalAutoCategory,
-  effectiveLocation,
-  repository,
-}: UseDayMutationsInput) {
+export function useDayMutations({ date, effectiveLocation, repository }: UseDayMutationsInput) {
   const queryClient = useQueryClient()
 
   const confirm = useMutation({
-    mutationFn: () =>
-      repository.updateDay(date, (day) =>
-        buildConfirmedDay(windows, entries, autoCategoryOverride, globalAutoCategory, day),
-      ),
+    mutationFn: () => repository.updateDay(date, (day) => ({ ...day, confirmed: true })),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 
@@ -56,7 +41,7 @@ export function useDayMutations({
   })
 
   const resetDay = useMutation({
-    mutationFn: () => repository.updateDay(date, () => ({ entries: [], windows: [] })),
+    mutationFn: () => repository.updateDay(date, () => ({ windows: [] })),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 

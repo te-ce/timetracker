@@ -23,7 +23,15 @@ export const DEFAULT_CATEGORIES: Category[] = [
   '_TESTWATCH',
 ]
 
+export const UNCATEGORIZED_CATEGORY = '_UNCATEGORIZED'
+
 export interface TimeEntry {
+  id: string
+  category: string
+  hours: number
+}
+
+export interface WorkPeriodSlice {
   id: string
   category: string
   hours: number
@@ -33,6 +41,8 @@ export interface WorkPeriod {
   id: string
   start: string
   end: string | null
+  category: string
+  slices: WorkPeriodSlice[]
 }
 
 export type WorkLocation = 'Office' | 'Remote'
@@ -40,7 +50,6 @@ export type WorkLocation = 'Office' | 'Remote'
 export type DayTypeOverride = 'PublicHoliday' | 'Vacation' | 'SickDay' | 'Absence'
 
 export interface Day {
-  entries: TimeEntry[]
   windows: WorkPeriod[]
   location?: WorkLocation
   confirmed?: boolean

@@ -1,4 +1,5 @@
 import type { Day, DatedTimeEntry, MonthData, MonthRepository } from '../types'
+import { calculateCategoryHours } from '../../domain/periodCategories'
 
 function monthKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`
@@ -6,7 +7,6 @@ function monthKey(year: number, month: number): string {
 
 function isDayEmpty(day: Day): boolean {
   return (
-    day.entries.length === 0 &&
     day.windows.length === 0 &&
     day.location === undefined &&
     !day.confirmed &&
@@ -32,7 +32,7 @@ export class InMemoryMonthRepository implements MonthRepository {
   updateDay(date: string, updater: (current: Day) => Day): Promise<void> {
     const ym = date.slice(0, 7)
     const data = structuredClone(this.months.get(ym) ?? {})
-    const current = data[date] ?? { entries: [], windows: [] }
+    const current = data[date] ?? { windows: [] }
     const updated = updater(current)
     if (isDayEmpty(updated)) {
       delete data[date]
@@ -53,8 +53,9 @@ export class InMemoryMonthRepository implements MonthRepository {
     for (const [, data] of this.months) {
       for (const [date, day] of Object.entries(data)) {
         if (date >= from && date <= to) {
-          for (const entry of day.entries) {
-            result.push({ ...entry, date })
+          const categoryHours = calculateCategoryHours(day.windows)
+          for (const [category, hours] of Object.entries(categoryHours)) {
+            result.push({ id: `${date}-${category}`, category, hours, date })
           }
         }
       }
@@ -65,5 +66,4 @@ export class InMemoryMonthRepository implements MonthRepository {
   getAllMonths(): Promise<string[]> {
     return Promise.resolve([...this.months.keys()].sort())
   }
-
 }

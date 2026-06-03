@@ -1,6 +1,7 @@
 import type { StorageAdapter } from '../../storage/adapter'
 import type { Day, DatedTimeEntry, MonthData, MonthRepository } from '../types'
 import { JsonRecordStore } from './json-store'
+import { calculateCategoryHours } from '../../domain/periodCategories'
 
 function monthKey(year: number, month: number): string {
   return `months/${year}-${String(month).padStart(2, '0')}.json`
@@ -12,7 +13,6 @@ function yearMonth(date: string): string {
 
 function isDayEmpty(day: Day): boolean {
   return (
-    day.entries.length === 0 &&
     day.windows.length === 0 &&
     day.location === undefined &&
     !day.confirmed &&
@@ -48,7 +48,7 @@ export class CloudMonthRepository implements MonthRepository {
     const year = parseInt(date.slice(0, 4))
     const month = parseInt(date.slice(5, 7))
     const store = this.getStore(year, month)
-    const current = (await store.get(date)) ?? { entries: [], windows: [] }
+    const current = (await store.get(date)) ?? { windows: [] }
     const updated = updater(current)
     if (isDayEmpty(updated)) {
       await store.remove(date)
@@ -78,8 +78,9 @@ export class CloudMonthRepository implements MonthRepository {
       const data = await this.getMonth(year, month)
       for (const [date, day] of Object.entries(data)) {
         if (date >= from && date <= to) {
-          for (const entry of day.entries) {
-            result.push({ ...entry, date })
+          const categoryHours = calculateCategoryHours(day.windows)
+          for (const [category, hours] of Object.entries(categoryHours)) {
+            result.push({ id: `${date}-${category}`, category, hours, date })
           }
         }
       }

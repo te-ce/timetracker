@@ -10,14 +10,10 @@ export async function renameCategoryAcrossAllMonths(
   const newCustomCategories = cfg.customCategories.map((c) => (c === oldName ? newName : c))
   const newOrder = (cfg.categoryOrder ?? []).map((c) => (c === oldName ? newName : c))
   const newDescriptions = cfg.categoryDescriptions
-    ? Object.fromEntries(
-        Object.entries(cfg.categoryDescriptions).map(([k, v]) => [k === oldName ? newName : k, v]),
-      )
+    ? Object.fromEntries(Object.entries(cfg.categoryDescriptions).map(([k, v]) => [k === oldName ? newName : k, v]))
     : undefined
   const newMapping = cfg.categoryMapping
-    ? Object.fromEntries(
-        Object.entries(cfg.categoryMapping).map(([k, v]) => [k === oldName ? newName : k, v]),
-      )
+    ? Object.fromEntries(Object.entries(cfg.categoryMapping).map(([k, v]) => [k === oldName ? newName : k, v]))
     : undefined
   await configRepo.save({
     ...cfg,
@@ -32,10 +28,17 @@ export async function renameCategoryAcrossAllMonths(
     const month = parseInt(ym.slice(5, 7))
     const data = await monthRepo.getMonth(year, month)
     for (const [date, day] of Object.entries(data)) {
-      if (day.entries.some((e) => e.category === oldName)) {
+      const needsRename = day.windows.some(
+        (w) => w.category === oldName || w.slices.some((s) => s.category === oldName),
+      )
+      if (needsRename) {
         await monthRepo.updateDay(date, (d) => ({
           ...d,
-          entries: d.entries.map((e) => (e.category === oldName ? { ...e, category: newName } : e)),
+          windows: d.windows.map((w) => ({
+            ...w,
+            category: w.category === oldName ? newName : w.category,
+            slices: w.slices.map((s) => (s.category === oldName ? { ...s, category: newName } : s)),
+          })),
         }))
       }
     }

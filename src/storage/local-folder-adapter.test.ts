@@ -20,8 +20,14 @@ function makeMemoryFs() {
       createWritable: () => {
         let buf = ''
         return Promise.resolve({
-          write: (chunk: string) => { buf += chunk; return Promise.resolve() },
-          close: () => { files.set(fullPath, buf); return Promise.resolve() },
+          write: (chunk: string) => {
+            buf += chunk
+            return Promise.resolve()
+          },
+          close: () => {
+            files.set(fullPath, buf)
+            return Promise.resolve()
+          },
         })
       },
       isSameEntry: () => Promise.resolve(false),
@@ -35,7 +41,8 @@ function makeMemoryFs() {
       kind: 'directory',
       name: prefix.split('/').pop() ?? '',
       getDirectoryHandle: (name: string, opts?: { create?: boolean }) => {
-        if (name.includes('/')) return Promise.reject(new TypeError(`getDirectoryHandle does not accept paths: ${name}`))
+        if (name.includes('/'))
+          return Promise.reject(new TypeError(`getDirectoryHandle does not accept paths: ${name}`))
         const path = prefix ? `${prefix}/${name}` : name
         const exists = [...files.keys()].some((k) => k.startsWith(path + '/') || k === path)
         if (!exists && !opts?.create) {
@@ -112,7 +119,7 @@ describe('LocalFolderStorageAdapter', () => {
 
     it('stores and retrieves a value under a nested key', async () => {
       const adapter = new LocalFolderStorageAdapter()
-      const data = { '2026-06-01': { entries: [], windows: [] } }
+      const data = { '2026-06-01': { windows: [] } }
       await adapter.put('months/2026-06.json', data)
       expect(await adapter.get('months/2026-06.json')).toEqual(data)
     })

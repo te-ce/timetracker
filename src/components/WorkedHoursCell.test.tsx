@@ -11,7 +11,7 @@ const MONTH = 1
 
 function setup(initialWindows: WorkPeriod[] = [], workedHours = 8) {
   const repo = new InMemoryMonthRepository(
-    initialWindows.length > 0 ? { '2024-01': { [DATE]: { entries: [], windows: initialWindows } } } : {},
+    initialWindows.length > 0 ? { '2024-01': { [DATE]: { windows: initialWindows } } } : {},
   )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(

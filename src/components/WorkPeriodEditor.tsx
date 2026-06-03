@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { WorkPeriod, MonthRepository } from '../repositories/types'
+import { UNCATEGORIZED_CATEGORY } from '../repositories/types'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
 
@@ -173,7 +174,13 @@ export function WorkPeriodEditor({ date, windows, repository }: Props) {
 
   function handleAdd() {
     if (!effectiveStart) return
-    const incoming: WorkPeriod = { id: crypto.randomUUID(), start: effectiveStart, end: draftEnd || null }
+    const incoming: WorkPeriod = {
+      id: crypto.randomUUID(),
+      start: effectiveStart,
+      end: draftEnd || null,
+      category: UNCATEGORIZED_CATEGORY,
+      slices: [],
+    }
     const windowsForMerge = openPeriod ? windows.filter((w) => w.id !== openPeriod.id) : windows
     const { merged, absorbed } = mergeAdjacentInto(windowsForMerge, incoming)
     const allAbsorbed = openPeriod ? [...absorbed, openPeriod.id] : absorbed
@@ -192,7 +199,13 @@ export function WorkPeriodEditor({ date, windows, repository }: Props) {
     if (!editingId || !editStart) return
     const existing = windows.find((w) => w.id === editingId)
     if (!existing) return
-    const incoming: WorkPeriod = { ...existing, start: editStart, end: editEnd || null }
+    const incoming: WorkPeriod = {
+      category: UNCATEGORIZED_CATEGORY,
+      slices: [],
+      ...existing,
+      start: editStart,
+      end: editEnd || null,
+    }
     const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
     saveWithAbsorbed.mutate({ date, window: merged, absorbed })
     setEditingId(null)

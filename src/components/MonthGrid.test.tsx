@@ -1,29 +1,33 @@
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryMonthRepository } from '../repositories/in-memory'
 import { MonthGrid } from './MonthGrid'
-import { DEFAULT_CATEGORIES } from '../repositories/types'
-import type { MonthData } from '../repositories/types'
+import { DEFAULT_CATEGORIES, UNCATEGORIZED_CATEGORY } from '../repositories/types'
+import type { MonthData, WorkPeriod } from '../repositories/types'
 
-function setup(opts: {
-  monthData?: MonthData
-  autoCategory?: string
-  confirmedDays?: Set<string>
-  dayTypes?: Map<string, import('../domain/dayType').DayType>
-  workLocations?: Map<string, import('../repositories/types').WorkLocation>
-  defaultWorkLocation?: import('../repositories/types').WorkLocation | null
-  onCategoryReorder?: (order: string[]) => void
-  onCategoryRename?: (oldName: string, newName: string) => void
-  onAutoCategoryChange?: (category: string) => void
-  onSelectDate?: (isoDate: string) => void
-  sprintStartDate?: string | null
-  sprintLengthDays?: number
-  customCategories?: string[]
-} = {}) {
-  const repo = new InMemoryMonthRepository(
-    opts.monthData ? { '2026-05': opts.monthData } : {},
-  )
+function w(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
+  return { id, start, end, category, slices: [] }
+}
+
+function setup(
+  opts: {
+    monthData?: MonthData
+    autoCategory?: string
+    confirmedDays?: Set<string>
+    dayTypes?: Map<string, import('../domain/dayType').DayType>
+    workLocations?: Map<string, import('../repositories/types').WorkLocation>
+    defaultWorkLocation?: import('../repositories/types').WorkLocation | null
+    onCategoryReorder?: (order: string[]) => void
+    onCategoryRename?: (oldName: string, newName: string) => void
+    onAutoCategoryChange?: (category: string) => void
+    onSelectDate?: (isoDate: string) => void
+    sprintStartDate?: string | null
+    sprintLengthDays?: number
+    customCategories?: string[]
+  } = {},
+) {
+  const repo = new InMemoryMonthRepository(opts.monthData ? { '2026-05': opts.monthData } : {})
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
   render(
@@ -70,11 +74,7 @@ describe('MonthGrid', () => {
     setup({
       monthData: {
         '2026-05-01': {
-          entries: [],
-          windows: [
-            { id: 'w1', start: '09:00', end: '12:00' },
-            { id: 'w2', start: '13:00', end: '17:00' },
-          ],
+          windows: [w('w1', '09:00', '12:00'), w('w2', '13:00', '17:00')],
         },
       },
     })
@@ -85,41 +85,25 @@ describe('MonthGrid', () => {
     })
   })
 
-  it('saves entry when user types value and blurs cell', async () => {
-    const { repo } = setup({
-      monthData: {
-        '2026-05-01': {
-          entries: [],
-          windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
-        },
-      },
-    })
-
-    const row = await screen.findByRole('row', { name: /2026-05-01/ })
-    const cell = within(row).getByLabelText('Hours for _SUPPORT on 2026-05-01')
-    await userEvent.type(cell, '3')
-    await userEvent.tab()
-
-    await waitFor(async () => {
-      const data = await repo.getMonth(2026, 5)
-      const entry = data['2026-05-01']?.entries.find((e) => e.category === '_SUPPORT')
-      expect(entry?.hours).toBe(3)
-    })
-  })
-
-  it('shows auto-category hours in the category column', async () => {
+  it('shows auto-category (uncategorized) hours in the auto-category column', async () => {
     setup({
       monthData: {
         '2026-05-01': {
-          entries: [{ id: '1', category: '_SUPPORT', hours: 3 }],
-          windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
+          windows: [
+            {
+              ...w('w1', '09:00', '17:00', UNCATEGORIZED_CATEGORY),
+              slices: [{ id: 's1', category: '_SUPPORT', hours: 3 }],
+            },
+          ],
         },
       },
     })
 
     const row = await screen.findByRole('row', { name: /2026-05-01/ })
+    // 8h worked, 3h _SUPPORT, 5h uncategorized → appears in _COREMEDIA (auto-category) column
     await waitFor(() => {
-      expect(within(row).getByTestId('auto-category')).toHaveTextContent('5')
+      const coremediaCell = within(row).getAllByTitle('Edit hours in Day view')[2]
+      expect(coremediaCell).toHaveTextContent('5')
     })
   })
 
@@ -134,15 +118,10 @@ describe('MonthGrid', () => {
     setup({
       monthData: {
         '2026-05-01': {
-          entries: [],
-          windows: [
-            { id: 'w1', start: '09:00', end: '12:00' },
-            { id: 'w2', start: '13:00', end: '17:00' },
-          ],
+          windows: [w('w1', '09:00', '12:00'), w('w2', '13:00', '17:00')],
         },
         '2026-05-02': {
-          entries: [],
-          windows: [{ id: 'w3', start: '08:00', end: '12:00' }],
+          windows: [w('w3', '08:00', '12:00')],
         },
       },
     })
@@ -158,13 +137,7 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid
-            year={2026}
-            month={5}
-            repository={repo}
-            autoCategory="_COREMEDIA"
-            onCategoryRename={onRename}
-          />
+          <MonthGrid year={2026} month={5} repository={repo} autoCategory="_COREMEDIA" onCategoryRename={onRename} />
         </QueryClientProvider>,
       )
       return { repo }
@@ -217,108 +190,11 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid
-            year={2026}
-            month={5}
-            repository={repo}
-            autoCategory="_COREMEDIA"
-            onCategoryReorder={vi.fn()}
-          />
+          <MonthGrid year={2026} month={5} repository={repo} autoCategory="_COREMEDIA" onCategoryReorder={vi.fn()} />
         </QueryClientProvider>,
       )
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
       expect(header).toHaveAttribute('draggable', 'true')
-    })
-  })
-
-  describe('inline editing', () => {
-    it('pressing Enter in a cell blurs and saves the value', async () => {
-      const { repo } = setup({
-        monthData: {
-          '2026-05-01': {
-            entries: [],
-            windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
-          },
-        },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-01/ })
-      const cell = within(row).getByLabelText('Hours for _SUPPORT on 2026-05-01')
-      await userEvent.type(cell, '2{Enter}')
-
-      await waitFor(async () => {
-        const data = await repo.getMonth(2026, 5)
-        const entry = data['2026-05-01']?.entries.find((e) => e.category === '_SUPPORT')
-        expect(entry?.hours).toBe(2)
-      })
-    })
-
-    it('entering 0 via fireEvent deletes an existing entry', async () => {
-      const { repo } = setup({
-        monthData: {
-          '2026-05-01': {
-            entries: [{ id: 'e1', category: '_SUPPORT', hours: 3 }],
-            windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
-          },
-        },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-01/ })
-      const cell = within(row).getByLabelText('Hours for _SUPPORT on 2026-05-01')
-      fireEvent.change(cell, { target: { value: '0' } })
-      fireEvent.blur(cell)
-
-      await waitFor(async () => {
-        const data = await repo.getMonth(2026, 5)
-        const entry = data['2026-05-01']?.entries.find((e) => e.category === '_SUPPORT')
-        expect(entry).toBeUndefined()
-      })
-    })
-
-    it('clearing a cell deletes an existing entry', async () => {
-      const { repo } = setup({
-        monthData: {
-          '2026-05-01': {
-            entries: [{ id: 'e1', category: '_SUPPORT', hours: 3 }],
-            windows: [],
-          },
-        },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-01/ })
-      const cell = within(row).getByLabelText('Hours for _SUPPORT on 2026-05-01')
-      await waitFor(() => expect(cell).toHaveValue(3))
-      fireEvent.change(cell, { target: { value: '' } })
-      fireEvent.blur(cell)
-
-      await waitFor(async () => {
-        const data = await repo.getMonth(2026, 5)
-        const entry = data['2026-05-01']?.entries.find((e) => e.category === '_SUPPORT')
-        expect(entry).toBeUndefined()
-      })
-    })
-
-    it('updates existing entry rather than creating a new one', async () => {
-      const { repo } = setup({
-        monthData: {
-          '2026-05-01': {
-            entries: [{ id: 'e1', category: '_SUPPORT', hours: 3 }],
-            windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
-          },
-        },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-01/ })
-      const cell = within(row).getByLabelText('Hours for _SUPPORT on 2026-05-01')
-      fireEvent.change(cell, { target: { value: '5' } })
-      fireEvent.blur(cell)
-
-      await waitFor(async () => {
-        const data = await repo.getMonth(2026, 5)
-        const supportEntries = data['2026-05-01']?.entries.filter((e) => e.category === '_SUPPORT') ?? []
-        expect(supportEntries).toHaveLength(1)
-        expect(supportEntries[0]!.hours).toBe(5)
-      })
     })
   })
 
@@ -327,8 +203,7 @@ describe('MonthGrid', () => {
       const { repo } = setup({
         monthData: {
           '2026-05-04': {
-            entries: [],
-            windows: [{ id: 'w1', start: '09:00', end: '17:00' }],
+            windows: [w('w1', '09:00', '17:00')],
           },
         },
       })
@@ -347,7 +222,7 @@ describe('MonthGrid', () => {
       const { repo } = setup({
         confirmedDays: new Set(['2026-05-04']),
         monthData: {
-          '2026-05-04': { entries: [], windows: [], confirmed: true },
+          '2026-05-04': { windows: [], confirmed: true },
         },
       })
 
@@ -420,7 +295,7 @@ describe('MonthGrid', () => {
       const { repo } = setup({
         dayTypes: new Map([['2026-05-04', 'Vacation']]),
         monthData: {
-          '2026-05-04': { entries: [], windows: [], dayTypeOverride: 'Vacation' },
+          '2026-05-04': { windows: [], dayTypeOverride: 'Vacation' },
         },
       })
 
@@ -486,7 +361,7 @@ describe('MonthGrid', () => {
     it('cycling again from Office goes back to Remote', async () => {
       const { repo } = setup({
         workLocations: new Map([['2026-05-04', 'Office']]),
-        monthData: { '2026-05-04': { entries: [], windows: [], location: 'Office' } },
+        monthData: { '2026-05-04': { windows: [], location: 'Office' } },
       })
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
@@ -558,15 +433,12 @@ describe('MonthGrid', () => {
     })
   })
 
-  describe('confirmed day shows read-only cells', () => {
-    it('confirmed day does not render an editable input for its cells', async () => {
+  describe('cells are read-only (edit in day view)', () => {
+    it('cells show period-derived hours as read-only spans', async () => {
       setup({
-        confirmedDays: new Set(['2026-05-04']),
         monthData: {
           '2026-05-04': {
-            entries: [{ id: 'e1', category: '_SUPPORT', hours: 3 }],
-            windows: [],
-            confirmed: true,
+            windows: [w('w1', '09:00', '12:00', '_SUPPORT')],
           },
         },
       })

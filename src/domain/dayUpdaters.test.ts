@@ -1,68 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { upsertEntry, removeEntry, upsertWindow, removeWindow } from './dayUpdaters'
-import type { Day, TimeEntry, WorkPeriod } from '../repositories/types'
+import { upsertWindow, removeWindow, updatePeriodCategory, upsertSlice, removeSlice } from './dayUpdaters'
+import type { Day, WorkPeriod, WorkPeriodSlice } from '../repositories/types'
 
 function emptyDay(): Day {
-  return { entries: [], windows: [] }
+  return { windows: [] }
 }
 
-function entry(id: string, hours: number): TimeEntry {
-  return { id, category: 'QA', hours }
+function win(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
+  return { id, start, end, category, slices: [] }
 }
 
-function win(id: string, start: string, end: string): WorkPeriod {
-  return { id, start, end }
+function slice(id: string, category: string, hours: number): WorkPeriodSlice {
+  return { id, category, hours }
 }
-
-describe('upsertEntry', () => {
-  it('adds entry when none with that id exists', () => {
-    const day = emptyDay()
-    const result = upsertEntry(day, entry('e1', 3))
-    expect(result.entries).toHaveLength(1)
-    expect(result.entries[0]?.id).toBe('e1')
-  })
-
-  it('replaces entry with same id', () => {
-    const day = { ...emptyDay(), entries: [entry('e1', 3)] }
-    const result = upsertEntry(day, { id: 'e1', category: 'QA', hours: 5 })
-    expect(result.entries).toHaveLength(1)
-    expect(result.entries[0]?.hours).toBe(5)
-  })
-
-  it('preserves other entries', () => {
-    const day = { ...emptyDay(), entries: [entry('e1', 3), entry('e2', 2)] }
-    const result = upsertEntry(day, { id: 'e1', category: 'QA', hours: 5 })
-    expect(result.entries).toHaveLength(2)
-    expect(result.entries.find((e) => e.id === 'e2')?.hours).toBe(2)
-  })
-
-  it('does not mutate the input day', () => {
-    const day = { ...emptyDay(), entries: [entry('e1', 3)] }
-    upsertEntry(day, { id: 'e1', category: 'QA', hours: 5 })
-    expect(day.entries[0]?.hours).toBe(3)
-  })
-})
-
-describe('removeEntry', () => {
-  it('removes entry with matching id', () => {
-    const day = { ...emptyDay(), entries: [entry('e1', 3), entry('e2', 2)] }
-    const result = removeEntry(day, 'e1')
-    expect(result.entries).toHaveLength(1)
-    expect(result.entries[0]?.id).toBe('e2')
-  })
-
-  it('is a no-op when id does not exist', () => {
-    const day = { ...emptyDay(), entries: [entry('e1', 3)] }
-    const result = removeEntry(day, 'missing')
-    expect(result.entries).toHaveLength(1)
-  })
-
-  it('does not mutate the input day', () => {
-    const day = { ...emptyDay(), entries: [entry('e1', 3)] }
-    removeEntry(day, 'e1')
-    expect(day.entries).toHaveLength(1)
-  })
-})
 
 describe('upsertWindow', () => {
   it('adds window when none with that id exists', () => {
@@ -99,5 +49,50 @@ describe('removeWindow', () => {
     const day = { ...emptyDay(), windows: [win('w1', '08:00', '12:00')] }
     const result = removeWindow(day, 'missing')
     expect(result.windows).toHaveLength(1)
+  })
+})
+
+describe('updatePeriodCategory', () => {
+  it('updates the category of the matching period', () => {
+    const day = { ...emptyDay(), windows: [win('w1', '08:00', '12:00', '_COREMEDIA')] }
+    const result = updatePeriodCategory(day, 'w1', '_RELEASE')
+    expect(result.windows[0]?.category).toBe('_RELEASE')
+  })
+
+  it('leaves other periods unchanged', () => {
+    const day = { ...emptyDay(), windows: [win('w1', '08:00', '12:00'), win('w2', '13:00', '17:00')] }
+    const result = updatePeriodCategory(day, 'w1', '_SUPPORT')
+    expect(result.windows.find((w) => w.id === 'w2')?.category).toBe('_COREMEDIA')
+  })
+})
+
+describe('upsertSlice', () => {
+  it('adds a slice to the matching period', () => {
+    const day = { ...emptyDay(), windows: [win('w1', '08:00', '12:00')] }
+    const result = upsertSlice(day, 'w1', slice('s1', '_SUPPORT', 1))
+    expect(result.windows[0]?.slices).toHaveLength(1)
+    expect(result.windows[0]?.slices[0]?.category).toBe('_SUPPORT')
+  })
+
+  it('replaces a slice with the same id', () => {
+    const dayWithSlice = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '08:00', '12:00'), slices: [slice('s1', '_SUPPORT', 1)] }],
+    }
+    const result = upsertSlice(dayWithSlice, 'w1', slice('s1', '_SUPPORT', 2))
+    expect(result.windows[0]?.slices).toHaveLength(1)
+    expect(result.windows[0]?.slices[0]?.hours).toBe(2)
+  })
+})
+
+describe('removeSlice', () => {
+  it('removes a slice by id', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '08:00', '12:00'), slices: [slice('s1', '_SUPPORT', 1), slice('s2', '_GUILDS', 2)] }],
+    }
+    const result = removeSlice(day, 'w1', 's1')
+    expect(result.windows[0]?.slices).toHaveLength(1)
+    expect(result.windows[0]?.slices[0]?.id).toBe('s2')
   })
 })
