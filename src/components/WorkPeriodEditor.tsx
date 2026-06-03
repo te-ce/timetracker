@@ -168,11 +168,16 @@ export function WorkPeriodEditor({ date, windows, repository }: Props) {
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
   const { remove: removeMutation, saveWithAbsorbed } = useWorkPeriodMutations(repository)
 
+  const openPeriod = windows.find((w) => w.end === null) ?? null
+  const effectiveStart = openPeriod?.start ?? draftStart
+
   function handleAdd() {
-    if (!draftStart) return
-    const incoming: WorkPeriod = { id: crypto.randomUUID(), start: draftStart, end: draftEnd || null }
-    const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
-    saveWithAbsorbed.mutate({ date, window: merged, absorbed })
+    if (!effectiveStart) return
+    const incoming: WorkPeriod = { id: crypto.randomUUID(), start: effectiveStart, end: draftEnd || null }
+    const windowsForMerge = openPeriod ? windows.filter((w) => w.id !== openPeriod.id) : windows
+    const { merged, absorbed } = mergeAdjacentInto(windowsForMerge, incoming)
+    const allAbsorbed = openPeriod ? [...absorbed, openPeriod.id] : absorbed
+    saveWithAbsorbed.mutate({ date, window: merged, absorbed: allAbsorbed })
     setDraftStart('')
     setDraftEnd('')
   }
@@ -235,20 +240,23 @@ export function WorkPeriodEditor({ date, windows, repository }: Props) {
           <input
             id={`wpe-start-${date}`}
             type="time"
-            value={draftStart}
+            value={effectiveStart}
+            disabled={!!openPeriod}
             onChange={(e) => setDraftStart(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleAdd()
             }}
-            className="flex-1 rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
+            className="flex-1 rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          <button
-            type="button"
-            onClick={() => setDraftStart(nowHHMM())}
-            className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 shrink-0"
-          >
-            Now
-          </button>
+          {!openPeriod && (
+            <button
+              type="button"
+              onClick={() => setDraftStart(nowHHMM())}
+              className="rounded-lg border px-2 py-1.5 text-xs text-gray-500 dark:text-gray-400 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 shrink-0"
+            >
+              Now
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <label
@@ -277,7 +285,7 @@ export function WorkPeriodEditor({ date, windows, repository }: Props) {
         </div>
         <button
           onClick={handleAdd}
-          disabled={!draftStart}
+          disabled={!effectiveStart}
           className="w-full rounded-lg bg-indigo-600 dark:bg-indigo-500 py-2 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-40"
         >
           Add period
