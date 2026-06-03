@@ -183,7 +183,12 @@ function SliceForm({ categories, onAdd, onCancel }: SliceFormProps) {
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div
+      className="flex items-center gap-2 flex-wrap"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
+      }}
+    >
       <CategoryPicker value={category} categories={categories} onChange={setCategory} compact />
       <input
         type="text"
