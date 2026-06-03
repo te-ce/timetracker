@@ -10,25 +10,23 @@ import type { AppConfig, WorkLocation, WorkPeriod, DayTypeOverride, Day } from '
 import type { DayType } from '../domain/dayType'
 import type { DayStatus } from '../domain/dayStatus'
 
-// Raw day data: values read directly from stored Day
-// Config-derived: computed from AppConfig with defaults applied
-// Computed stats: derived from WorkWindows and month summaries
-export interface DayQueryResult {
-  config: AppConfig | undefined
-  todayIso: string
-
+export interface DayRawData {
   windows: WorkPeriod[]
   workLocation: WorkLocation | null
   autoCategoryOverride: string | null
   dayTypeOverride: DayTypeOverride | undefined
   isConfirmed: boolean
   dayNote: string | null
+}
 
+export interface DayConfigContext {
   sollstunden: number
   defaultWorkLocation: WorkLocation
   effectiveLocation: WorkLocation
   autoCategory: string | null
+}
 
+export interface DayComputedStats {
   workedHours: number
   manualTotal: number
   overtimeToDate: OvertimeToDate
@@ -36,6 +34,11 @@ export interface DayQueryResult {
   isEntriesBalanced: boolean
   hasAutoCategory: boolean
   dayClassification: { displayStatus: Exclude<DayStatus, 'today'>; reason: string }
+}
+
+export interface DayQueryResult extends DayRawData, DayConfigContext, DayComputedStats {
+  config: AppConfig | undefined
+  todayIso: string
 }
 
 const EMPTY_DAY: Day = { windows: [] }
@@ -49,11 +52,11 @@ const FUTURE_SUMMARY: DaySummary = {
   hasAutoCategory: false,
   isConfirmed: false,
   dayStatus: 'future',
-  displayStatus: 'untracked',
+  displayStatus: 'future',
   statusReason: '',
 }
 
-function extractDayFields(dayData: Day | undefined) {
+function extractDayFields(dayData: Day | undefined): DayRawData {
   const day = dayData ?? EMPTY_DAY
   return {
     windows: day.windows,
@@ -73,7 +76,7 @@ function resolveConfigDefaults(config: AppConfig | undefined) {
   }
 }
 
-function fromDaySummary(s: DaySummary) {
+function fromDaySummary(s: DaySummary): DayComputedStats {
   return {
     dayClassification: { displayStatus: s.displayStatus, reason: s.statusReason },
     workedHours: s.workedHours,
@@ -91,7 +94,7 @@ function resolveDayExtras(
   workedHoursPerDay: number[],
   monthDates: string[],
   todayIso: string,
-) {
+): DayConfigContext & DayComputedStats {
   const { sollstunden, defaultWorkLocation, globalAutoCategory } = resolveConfigDefaults(config)
   const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
   const autoCategory = dayData?.autoCategoryOverride ?? globalAutoCategory
