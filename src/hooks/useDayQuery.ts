@@ -1,11 +1,42 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../repositories/RepositoryContext'
-import { calculateOvertimeToDate } from '../domain/monthStats'
+import { calculateOvertimeToDate, type OvertimeToDate } from '../domain/monthStats'
 import { buildMonthSummaries, type DaySummary } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
 import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
-import type { AppConfig, WorkLocation, Day } from '../repositories/types'
+import type { AppConfig, WorkLocation, WorkPeriod, TimeEntry, DayTypeOverride, Day } from '../repositories/types'
+import type { DayType } from '../domain/dayType'
+import type { DayStatus } from '../domain/dayStatus'
+
+// Raw day data: values read directly from stored Day
+// Config-derived: computed from AppConfig with defaults applied
+// Computed stats: derived from WorkWindows, TimeEntries, and month summaries
+export interface DayQueryResult {
+  config: AppConfig | undefined
+  todayIso: string
+
+  windows: WorkPeriod[]
+  entries: TimeEntry[]
+  workLocation: WorkLocation | null
+  autoCategoryOverride: string | null
+  dayTypeOverride: DayTypeOverride | undefined
+  isConfirmed: boolean
+  dayNote: string | null
+
+  sollstunden: number
+  defaultWorkLocation: WorkLocation
+  effectiveLocation: WorkLocation
+  autoCategory: string | null
+
+  workedHours: number
+  manualTotal: number
+  overtimeToDate: OvertimeToDate
+  selectedDayType: DayType
+  isEntriesBalanced: boolean
+  hasAutoCategory: boolean
+  dayClassification: { displayStatus: Exclude<DayStatus, 'today'>; reason: string }
+}
 
 const EMPTY_DAY: Day = { entries: [], windows: [] }
 
@@ -69,7 +100,7 @@ function resolveDayExtras(
   return { sollstunden, effectiveLocation, defaultWorkLocation, autoCategory, overtimeToDate, ...fromDaySummary(daySummary) }
 }
 
-export function useDayQuery(date: string) {
+export function useDayQuery(date: string): DayQueryResult {
   const { monthRepo, configRepo } = useRepositories()
   const todayIso = toLocalIso(new Date())
   const selectedYear = parseInt(date.slice(0, 4))
