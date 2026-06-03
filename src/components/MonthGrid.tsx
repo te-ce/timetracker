@@ -317,7 +317,7 @@ export function MonthGrid({
                   key={cat}
                   cat={cat}
                   catIdx={catIdx}
-                  autoCategory={autoCategory}
+                  autoCategory={autoCategory ?? ''}
                   editingCat={editingCat}
                   editValue={editValue}
                   colDragOverIdx={colDragOverIdx}

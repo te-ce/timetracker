@@ -4,9 +4,10 @@ import type { WorkPeriod } from '../repositories/types'
 
 const makeWindow = (start: string, end: string | null): WorkPeriod => ({
   id: '1',
-  
   start,
   end,
+  category: '',
+  slices: [],
 })
 
 describe('calculateWorkedHours', () => {

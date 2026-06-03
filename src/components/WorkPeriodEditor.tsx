@@ -205,8 +205,6 @@ export function WorkPeriodEditor({ date, windows, repository }: Props) {
     const existing = editingId ? windows.find((w) => w.id === editingId) : null
     if (existing && editStart) {
       const incoming: WorkPeriod = {
-        category: UNCATEGORIZED_CATEGORY,
-        slices: [],
         ...existing,
         start: editStart,
         end: editEnd || null,

@@ -116,13 +116,13 @@ function CategoryMappingSaveRow({ isDirty, isPending, isError, isSaved, onSave }
             Save mapping
           </button>
           {isError && (
-            <p role="alert" className="text-xs text-red-600 dark:text-red-400">Failed to save.</p>
+            <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+              Failed to save.
+            </p>
           )}
         </div>
       )}
-      {isSaved && !isDirty && (
-        <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>
-      )}
+      {isSaved && !isDirty && <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>}
     </>
   )
 }
@@ -146,7 +146,24 @@ interface CategorySettingsRowProps {
   onRemove: (idx: number) => void
 }
 
-function CategorySettingsRow({ cat, idx, isCustom, taskId, isAutoMatch, dragOverIdx, categoryDescription, excelRows, onDragStart, onDragOver, onDrop, onDragEnd, onRename, onSaveDesc, onMappingChange, onRemove }: CategorySettingsRowProps) {
+function CategorySettingsRow({
+  cat,
+  idx,
+  isCustom,
+  taskId,
+  isAutoMatch,
+  dragOverIdx,
+  categoryDescription,
+  excelRows,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  onRename,
+  onSaveDesc,
+  onMappingChange,
+  onRemove,
+}: CategorySettingsRowProps) {
   const [editingName, setEditingName] = useState(false)
   const [nameValue, setNameValue] = useState('')
   const [editingDesc, setEditingDesc] = useState(false)
@@ -164,70 +181,137 @@ function CategorySettingsRow({ cat, idx, isCustom, taskId, isAutoMatch, dragOver
       onDragEnd={onDragEnd}
       className={`flex items-center gap-2 rounded border bg-white dark:bg-gray-800 dark:border-gray-700 px-3 py-1.5 text-sm cursor-grab active:cursor-grabbing ${dragOverClass}`}
     >
-      <span className="text-gray-300 dark:text-gray-600 select-none shrink-0" aria-hidden>⠿</span>
+      <span className="text-gray-300 dark:text-gray-600 select-none shrink-0" aria-hidden>
+        ⠿
+      </span>
       <div className="w-36 shrink-0 flex flex-col gap-0.5 min-w-0">
         {editingName ? (
           <input
             aria-label={`Rename ${cat}`}
-            ref={(el) => { el?.focus() }}
+            ref={(el) => {
+              el?.focus()
+            }}
             value={nameValue}
             onChange={(e) => setNameValue(e.target.value)}
-            onBlur={() => { onRename(idx, nameValue); setEditingName(false) }}
+            onBlur={() => {
+              onRename(idx, nameValue)
+              setEditingName(false)
+            }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') { onRename(idx, nameValue); setEditingName(false) }
+              if (e.key === 'Enter') {
+                onRename(idx, nameValue)
+                setEditingName(false)
+              }
               if (e.key === 'Escape') setEditingName(false)
             }}
             className="rounded border px-2 py-0.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           />
         ) : (
-          <span className={nameClass} onDoubleClick={() => { setEditingName(true); setNameValue(cat) }} title={nameTitle}>
+          <span
+            className={nameClass}
+            onDoubleClick={() => {
+              setEditingName(true)
+              setNameValue(cat)
+            }}
+            title={nameTitle}
+          >
             {cat}
           </span>
         )}
         {editingDesc ? (
           <input
             aria-label={`Description for ${cat}`}
-            ref={(el) => { el?.focus() }}
+            ref={(el) => {
+              el?.focus()
+            }}
             value={descValue}
             onChange={(e) => setDescValue(e.target.value)}
-            onBlur={() => { onSaveDesc(idx, descValue); setEditingDesc(false) }}
+            onBlur={() => {
+              onSaveDesc(idx, descValue)
+              setEditingDesc(false)
+            }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') { onSaveDesc(idx, descValue); setEditingDesc(false) }
+              if (e.key === 'Enter') {
+                onSaveDesc(idx, descValue)
+                setEditingDesc(false)
+              }
               if (e.key === 'Escape') setEditingDesc(false)
             }}
             placeholder="Add description…"
             className="rounded border px-1.5 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           />
         ) : (
-          <button type="button" aria-label={`Edit description for ${cat}`} className="truncate text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" onClick={() => { setEditingDesc(true); setDescValue(categoryDescription ?? '') }} title="Click to edit description">
+          <button
+            type="button"
+            aria-label={`Edit description for ${cat}`}
+            className="truncate text-left text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+            onClick={() => {
+              setEditingDesc(true)
+              setDescValue(categoryDescription ?? '')
+            }}
+            title="Click to edit description"
+          >
             {categoryDescription ?? <em>add description</em>}
           </button>
         )}
       </div>
-      <span className="w-4 shrink-0 text-center text-xs text-gray-300 dark:text-gray-600" aria-hidden>→</span>
+      <span className="w-4 shrink-0 text-center text-xs text-gray-300 dark:text-gray-600" aria-hidden>
+        →
+      </span>
       <div className="flex flex-1 items-center gap-1 min-w-0">
         {excelRows.length > 0 ? (
           <>
-            {isAutoMatch && <span className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400" title="Auto-matched — please verify">auto</span>}
-            <select aria-label={`Excel mapping for ${cat}`} value={taskId} onChange={(e) => onMappingChange(cat, e.target.value)} className="flex-1 rounded border px-2 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 min-w-0">
+            {isAutoMatch && (
+              <span
+                className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400"
+                title="Auto-matched — please verify"
+              >
+                auto
+              </span>
+            )}
+            <select
+              aria-label={`Excel mapping for ${cat}`}
+              value={taskId}
+              onChange={(e) => onMappingChange(cat, e.target.value)}
+              className="flex-1 rounded border px-2 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 min-w-0"
+            >
               <option value="">— not mapped —</option>
               {excelRows.map((row) => (
-                <option key={row.taskId} value={row.taskId}>{row.taskId}{row.description ? ` — ${row.description}` : ''}</option>
+                <option key={row.taskId} value={row.taskId}>
+                  {row.taskId}
+                  {row.description ? ` — ${row.description}` : ''}
+                </option>
               ))}
             </select>
           </>
         ) : taskId ? (
-          <span className="rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 font-mono text-xs text-gray-600 dark:text-gray-400 truncate" title={taskId}>{taskId}</span>
+          <span
+            className="rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 font-mono text-xs text-gray-600 dark:text-gray-400 truncate"
+            title={taskId}
+          >
+            {taskId}
+          </span>
         ) : (
           <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
         )}
       </div>
-      <button aria-label={`Remove ${cat}`} onClick={() => onRemove(idx)} className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium">✕</button>
+      <button
+        aria-label={`Remove ${cat}`}
+        onClick={() => onRemove(idx)}
+        className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium"
+      >
+        ✕
+      </button>
     </li>
   )
 }
 
-function resolveMappingHint(url: string | null | undefined, file: string | null | undefined, sheet: string | null | undefined, auth: boolean): string {
+function resolveMappingHint(
+  url: string | null | undefined,
+  file: string | null | undefined,
+  sheet: string | null | undefined,
+  auth: boolean,
+): string {
   return getMappingHint(url ?? undefined, file, sheet ?? undefined, auth)
 }
 
@@ -260,8 +344,12 @@ export function CategorySettings({ repository }: Props) {
   })
 
   const categoryMutation = useMutation({
-    mutationFn: (updates: { customCategories?: string[]; categoryOrder?: string[]; categoryDescriptions?: Record<string, string>; categoryImportOrder?: string[] }) =>
-      repository.save({ ...config!, ...updates }),
+    mutationFn: (updates: {
+      customCategories?: string[]
+      categoryOrder?: string[]
+      categoryDescriptions?: Record<string, string>
+      categoryImportOrder?: string[]
+    }) => repository.save({ ...config!, ...updates }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
   })
 
@@ -333,7 +421,9 @@ export function CategorySettings({ repository }: Props) {
     categoryMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })
   }
 
-  function handleDragStart(idx: number) { dragIdx.current = idx }
+  function handleDragStart(idx: number) {
+    dragIdx.current = idx
+  }
 
   function handleDragOver(e: React.DragEvent, idx: number) {
     e.preventDefault()
@@ -342,7 +432,11 @@ export function CategorySettings({ repository }: Props) {
 
   function handleDrop(idx: number) {
     const from = dragIdx.current
-    if (from === null || from === idx) { dragIdx.current = null; setDragOverIdx(null); return }
+    if (from === null || from === idx) {
+      dragIdx.current = null
+      setDragOverIdx(null)
+      return
+    }
     const newOrder = [...categories]
     const spliced = newOrder.splice(from, 1)
     const moved = spliced[0]
@@ -353,9 +447,13 @@ export function CategorySettings({ repository }: Props) {
     setDragOverIdx(null)
   }
 
-  function handleDragEnd() { dragIdx.current = null; setDragOverIdx(null) }
+  function handleDragEnd() {
+    dragIdx.current = null
+    setDragOverIdx(null)
+  }
 
   function handleSaveDesc(idx: number, newDesc: string) {
+    if (!config) return
     const cat = categories[idx]
     if (!cat) return
     const trimmed = newDesc.trim()
@@ -390,7 +488,11 @@ export function CategorySettings({ repository }: Props) {
   }
 
   function handleMappingChange(category: string, taskId: string) {
-    setAutoMatched((prev) => { const s = new Set(prev); s.delete(category); return s })
+    setAutoMatched((prev) => {
+      const s = new Set(prev)
+      s.delete(category)
+      return s
+    })
     setLocalMapping((prev) => ({ ...(prev ?? savedMapping), [category]: taskId }))
   }
 
@@ -430,11 +532,7 @@ export function CategorySettings({ repository }: Props) {
               Reset to Excel order
             </button>
           )}
-          {showMappingHint && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">
-              {mappingHint}
-            </span>
-          )}
+          {showMappingHint && <span className="text-xs text-gray-400 dark:text-gray-500">{mappingHint}</span>}
           <button
             onClick={() => void handleLoadRows()}
             disabled={!excelReady || loadingRows}
@@ -445,13 +543,19 @@ export function CategorySettings({ repository }: Props) {
         </div>
       </div>
 
-      {loadError && <p role="alert" className="text-xs text-red-600 dark:text-red-400">{loadError}</p>}
+      {loadError && (
+        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+          {loadError}
+        </p>
+      )}
 
       {/* Column headers */}
       <div className="flex items-center gap-2 px-3 text-xs font-medium text-gray-400 dark:text-gray-500">
         <span className="w-4 shrink-0" aria-hidden />
         <span className="w-36 shrink-0">Category</span>
-        <span className="w-4 shrink-0 text-center" aria-hidden>→</span>
+        <span className="w-4 shrink-0 text-center" aria-hidden>
+          →
+        </span>
         <span className="flex-1">Excel row</span>
       </div>
 
@@ -480,10 +584,7 @@ export function CategorySettings({ repository }: Props) {
         ))}
       </ul>
 
-      <UnmappedCategoryRowsSection
-        unmappedRows={unmappedRows}
-        onAddAsCategory={handleAddAsCategory}
-      />
+      <UnmappedCategoryRowsSection unmappedRows={unmappedRows} onAddAsCategory={handleAddAsCategory} />
 
       <CategoryMappingSaveRow
         isDirty={isDirty}
@@ -500,7 +601,9 @@ export function CategorySettings({ repository }: Props) {
           type="text"
           value={newCategory}
           onChange={(e) => setNewCategory(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleAdd()
+          }}
           placeholder="New category name"
           className="flex-1 rounded border px-3 py-1.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
         />
@@ -513,8 +616,7 @@ export function CategorySettings({ repository }: Props) {
       </div>
 
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        Drag to reorder. Double-click to rename.{' '}
-        {mappingFooterText(savedMapping, excelRows.length > 0)}
+        Drag to reorder. Double-click to rename. {mappingFooterText(savedMapping, excelRows.length > 0)}
       </p>
     </div>
   )

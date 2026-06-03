@@ -18,9 +18,12 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
     return key.endsWith('.json') ? key : `${key}.json`
   }
 
-  private async resolveParent(key: string, create: boolean): Promise<{ parent: FileSystemDirectoryHandle; filename: string }> {
+  private async resolveParent(
+    key: string,
+    create: boolean,
+  ): Promise<{ parent: FileSystemDirectoryHandle; filename: string }> {
     const parts = this.toFilename(key).split('/')
-    const filename = parts[parts.length - 1]
+    const filename = parts.at(-1) ?? ''
     const dirs = parts.slice(0, -1)
     let dir = await this.getDir()
     for (const name of dirs) {

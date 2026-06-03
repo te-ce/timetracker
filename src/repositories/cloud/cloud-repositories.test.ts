@@ -1,3 +1,4 @@
+import type { AppConfig } from '../types'
 import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
@@ -38,19 +39,20 @@ describe('CloudConfigRepository', () => {
   it('save is isolated — mutating config after save does not corrupt stored state', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudConfigRepository(adapter)
-    const config = {
+    const categoryMapping: Record<string, string> = { A: 'original' }
+    const config: AppConfig = {
       sollstunden: 8,
       autoCategory: null,
       federalState: null,
       sprintLengthDays: 10,
       sprintStartDate: null,
       customCategories: ['A'],
-      categoryMapping: { A: 'original' },
+      categoryMapping,
     }
     await repo.save(config)
 
     config.customCategories.push('mutated')
-    config.categoryMapping['injected'] = 'bad'
+    categoryMapping['injected'] = 'bad'
 
     const stored = await repo.get()
     expect(stored.customCategories).toEqual(['A'])

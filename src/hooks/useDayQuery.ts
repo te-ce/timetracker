@@ -76,7 +76,7 @@ function resolveConfigDefaults(config: AppConfig | undefined) {
   }
 }
 
-function fromDaySummary(s: DaySummary): DayComputedStats {
+function fromDaySummary(s: DaySummary): Omit<DayComputedStats, 'overtimeToDate'> {
   return {
     dayClassification: { displayStatus: s.displayStatus, reason: s.statusReason },
     workedHours: s.workedHours,

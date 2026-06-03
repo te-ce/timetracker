@@ -21,12 +21,12 @@ function makeWrapper(queryClient: QueryClient) {
 const date = '2026-05-25'
 
 function period(id: string, start: string, end: string | null): WorkPeriod {
-  return { id, start, end }
+  return { id, start, end, category: '', slices: [] }
 }
 
 function makeRepo(windows: WorkPeriod[] = []) {
   return new InMemoryMonthRepository({
-    '2026-05': { [date]: { entries: [], windows } },
+    '2026-05': { [date]: { windows } },
   })
 }
 

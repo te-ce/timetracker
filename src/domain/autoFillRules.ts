@@ -44,10 +44,10 @@ function matchesPattern(date: string, pattern: AutoFillPattern): boolean {
   if (!pattern.days.includes(dow)) return false
 
   // Use UTC date-counting for week diff to avoid DST skew
-  const [ay, am, ad] = pattern.anchorDate.split('-').map(Number)
-  const [cy, cm, cd] = date.split('-').map(Number)
-  const anchorDays = Math.floor(Date.UTC(ay, am - 1, ad) / MS_PER_DAY)
-  const currentDays = Math.floor(Date.UTC(cy, cm - 1, cd) / MS_PER_DAY)
+  const ap = pattern.anchorDate.split('-')
+  const cp = date.split('-')
+  const anchorDays = Math.floor(Date.UTC(Number(ap[0]), Number(ap[1]) - 1, Number(ap[2])) / MS_PER_DAY)
+  const currentDays = Math.floor(Date.UTC(Number(cp[0]), Number(cp[1]) - 1, Number(cp[2])) / MS_PER_DAY)
   const weeksDiff = Math.floor((currentDays - anchorDays) / 7)
   return weeksDiff % pattern.intervalWeeks === 0
 }

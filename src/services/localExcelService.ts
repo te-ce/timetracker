@@ -84,6 +84,7 @@ export async function writeLocalSprintData(
     throw new Error('writeBuffer returned unexpected type')
   }
   const writable = await fileHandle.createWritable()
-  await writable.write(rawOutput)
+  const data: unknown = rawOutput
+  await writable.write(data as ArrayBuffer)
   await writable.close()
 }
