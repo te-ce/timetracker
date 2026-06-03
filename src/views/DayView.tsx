@@ -3,7 +3,7 @@ import { DayNoteEditor } from './DayNoteEditor'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../repositories/RepositoryContext'
-import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
+import { WorkPeriodEditor } from '../components/WorkPeriodEditor'
 import { TimeEntryPanel } from '../components/TimeEntryPanel'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { DayTypePicker } from '../components/DayTypePicker'
@@ -123,11 +123,7 @@ export function DayView() {
 
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <DayTypePicker
-            date={selectedDate}
-            override={dayTypeOverride}
-            repository={monthRepo}
-          />
+          <DayTypePicker date={selectedDate} override={dayTypeOverride} repository={monthRepo} />
           <button
             onClick={() => dayMutations.toggleLocation.mutate()}
             className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
@@ -185,7 +181,9 @@ export function DayView() {
         activeTrackingStartedAt={activeTracking?.startedAt}
       />
 
-      <WorkPeriodPanel date={selectedDate} windows={windows} repository={monthRepo} />
+      <section aria-label="Work windows">
+        <WorkPeriodEditor date={selectedDate} windows={windows} repository={monthRepo} />
+      </section>
 
       <TimeEntryPanel
         date={selectedDate}
@@ -203,8 +201,7 @@ export function DayView() {
           onCategoryReorder: (order) => categoryMutations.reorderCategories.mutate(order),
           onCategoryDescriptionChange: (category, description) =>
             categoryMutations.setCategoryDescription.mutate({ category, description }),
-          onCategoryRename: (oldName, newName) =>
-            categoryMutations.renameCategory.mutate({ oldName, newName }),
+          onCategoryRename: (oldName, newName) => categoryMutations.renameCategory.mutate({ oldName, newName }),
         }}
       />
 

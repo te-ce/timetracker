@@ -4,7 +4,7 @@ import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-quer
 import { InMemoryMonthRepository } from '../repositories/in-memory'
 import { CloudMonthRepository } from '../repositories/cloud/month-repository'
 import { InMemoryStorageAdapter } from '../storage/in-memory-adapter'
-import { WorkPeriodPanel } from './WorkPeriodPanel'
+import { WorkPeriodEditor } from './WorkPeriodEditor'
 import type { WorkPeriod, MonthData, MonthRepository } from '../repositories/types'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 
@@ -18,14 +18,12 @@ function TestPanel({ repo }: { repo: MonthRepository }) {
     queryFn: () => repo.getMonth(YEAR, MONTH),
   })
   const windows = monthData[DATE]?.windows ?? []
-  return <WorkPeriodPanel date={DATE} windows={windows} repository={repo} />
+  return <WorkPeriodEditor date={DATE} windows={windows} repository={repo} />
 }
 
 function setup(initialWindows: WorkPeriod[] = []) {
   const repo = new InMemoryMonthRepository(
-    initialWindows.length > 0
-      ? { '2024-01': { [DATE]: { entries: [], windows: initialWindows } } }
-      : {},
+    initialWindows.length > 0 ? { '2024-01': { [DATE]: { entries: [], windows: initialWindows } } } : {},
   )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
@@ -47,84 +45,84 @@ async function getWindows(repo: InMemoryMonthRepository): Promise<WorkPeriod[]> 
   return data[DATE]?.windows ?? []
 }
 
-describe('WorkPeriodPanel', () => {
+describe('WorkPeriodEditor', () => {
   it('shows an empty state message when no WorkPeriods exist', async () => {
     setup()
-    expect(await screen.findByText(/no work periods/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no periods recorded yet/i)).toBeInTheDocument()
   })
 
   it('does not show Restarbeitszeit when no WorkPeriods exist', async () => {
     setup()
-    await screen.findByText(/no work periods/i)
+    await screen.findByText(/no periods recorded yet/i)
     expect(screen.queryByLabelText(/restarbeitszeit/i)).not.toBeInTheDocument()
   })
 
   it('shows the window in the list after the user adds it', async () => {
     setup()
-    await screen.findByText(/no work periods/i)
+    await screen.findByText(/no periods recorded yet/i)
     await addWindow('09:00', '17:00')
-    await screen.findByText('09:00 – 17:00')
+    await screen.findByText('09:00–17:00')
     await userEvent.click(screen.getByRole('button', { name: /remove/i }))
-    expect(await screen.findByText(/no work periods/i)).toBeInTheDocument()
+    expect(await screen.findByText(/no periods recorded yet/i)).toBeInTheDocument()
   })
 
   it('hides Restarbeitszeit again when the last WorkPeriod is removed', async () => {
     setup()
-    await screen.findByText(/no work periods/i)
+    await screen.findByText(/no periods recorded yet/i)
     await addWindow('09:00', '17:00')
-    await screen.findByText('09:00 – 17:00')
+    await screen.findByText('09:00–17:00')
     await userEvent.click(screen.getByRole('button', { name: /remove/i }))
-    await screen.findByText(/no work periods/i)
+    await screen.findByText(/no periods recorded yet/i)
     expect(screen.queryByLabelText(/restarbeitszeit/i)).not.toBeInTheDocument()
   })
 
   it('clicking a window shows edit inputs with current values', async () => {
     setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-    await screen.findByText('09:00 – 17:00')
-    await userEvent.click(screen.getByText('09:00 – 17:00'))
+    await screen.findByText('09:00–17:00')
+    await userEvent.click(screen.getByText('09:00–17:00'))
     expect(screen.getByDisplayValue('09:00')).toBeInTheDocument()
     expect(screen.getByDisplayValue('17:00')).toBeInTheDocument()
   })
 
   it('editing a window updates the stored time', async () => {
     const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-    await screen.findByText('09:00 – 17:00')
-    await userEvent.click(screen.getByText('09:00 – 17:00'))
+    await screen.findByText('09:00–17:00')
+    await userEvent.click(screen.getByText('09:00–17:00'))
 
     const startInput = screen.getByDisplayValue('09:00')
     await userEvent.clear(startInput)
     await userEvent.type(startInput, '08:00')
     await userEvent.click(screen.getByRole('button', { name: /save/i }))
 
-    expect(await screen.findByText('08:00 – 17:00')).toBeInTheDocument()
+    expect(await screen.findByText('08:00–17:00')).toBeInTheDocument()
     const saved = await getWindows(repo)
     expect(saved[0]!.start).toBe('08:00')
   })
 
   it('pressing Escape cancels editing without saving', async () => {
     setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-    await screen.findByText('09:00 – 17:00')
-    await userEvent.click(screen.getByText('09:00 – 17:00'))
+    await screen.findByText('09:00–17:00')
+    await userEvent.click(screen.getByText('09:00–17:00'))
 
     const startInput = screen.getByDisplayValue('09:00')
     await userEvent.clear(startInput)
     await userEvent.type(startInput, '07:00')
     await userEvent.keyboard('{Escape}')
 
-    expect(screen.getByText('09:00 – 17:00')).toBeInTheDocument()
+    expect(screen.getByText('09:00–17:00')).toBeInTheDocument()
     expect(screen.queryByDisplayValue('07:00')).not.toBeInTheDocument()
   })
 
   it('Add button is enabled when only start is set (no end required)', async () => {
     setup()
-    await screen.findByText(/no work periods/i)
+    await screen.findByText(/no periods recorded yet/i)
     await userEvent.type(screen.getByLabelText(/start/i), '09:00')
     expect(screen.getByRole('button', { name: /add/i })).not.toBeDisabled()
   })
 
   it('saves an open WorkPeriod when Add is clicked with only a start time', async () => {
     const { repo } = setup()
-    await screen.findByText(/no work periods/i)
+    await screen.findByText(/no periods recorded yet/i)
     await userEvent.type(screen.getByLabelText(/start/i), '09:00')
     await userEvent.click(screen.getByRole('button', { name: /add/i }))
     await waitFor(async () => {
@@ -134,14 +132,14 @@ describe('WorkPeriodPanel', () => {
     })
   })
 
-  it('displays an open WorkPeriod as "HH:MM – …"', async () => {
+  it('displays an open WorkPeriod as "HH:MM–…"', async () => {
     setup([{ id: 'w1', start: '09:00', end: null }])
-    expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
+    expect(await screen.findByText('09:00–…')).toBeInTheDocument()
   })
 
   it('"Now" buttons fill start and end fields with current HH:MM', async () => {
     setup()
-    await screen.findByText(/no work periods/i)
+    await screen.findByText(/no periods recorded yet/i)
     const nowButtons = screen.getAllByRole('button', { name: /now/i })
     await userEvent.click(nowButtons[0]!)
     const startInput = screen.getByLabelText<HTMLInputElement>(/start/i)
@@ -153,8 +151,8 @@ describe('WorkPeriodPanel', () => {
 
   it('edit form saves with no end, storing end: null', async () => {
     const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-    await screen.findByText('09:00 – 17:00')
-    await userEvent.click(screen.getByText('09:00 – 17:00'))
+    await screen.findByText('09:00–17:00')
+    await userEvent.click(screen.getByText('09:00–17:00'))
 
     const endInput = screen.getByDisplayValue('17:00')
     await userEvent.clear(endInput)
@@ -164,13 +162,13 @@ describe('WorkPeriodPanel', () => {
       const windows = await getWindows(repo)
       expect(windows[0]!.end).toBeNull()
     })
-    expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
+    expect(await screen.findByText('09:00–…')).toBeInTheDocument()
   })
 
   describe('edit form keyboard shortcuts', () => {
     it('pressing Enter in the edit start input saves the period', async () => {
       const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-      await screen.findByText('09:00 – 17:00')
+      await screen.findByText('09:00–17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
       const startInput = screen.getByLabelText('Edit start time')
@@ -185,7 +183,7 @@ describe('WorkPeriodPanel', () => {
 
     it('pressing Enter in the edit end input saves the period', async () => {
       const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-      await screen.findByText('09:00 – 17:00')
+      await screen.findByText('09:00–17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
       const endInput = screen.getByLabelText('Edit end time')
@@ -200,7 +198,7 @@ describe('WorkPeriodPanel', () => {
 
     it('pressing Escape in the edit end input cancels editing', async () => {
       setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-      await screen.findByText('09:00 – 17:00')
+      await screen.findByText('09:00–17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
       const endInput = screen.getByLabelText('Edit end time')
@@ -208,19 +206,19 @@ describe('WorkPeriodPanel', () => {
       await userEvent.type(endInput, '20:00')
       await userEvent.keyboard('{Escape}')
 
-      expect(screen.getByText('09:00 – 17:00')).toBeInTheDocument()
+      expect(screen.getByText('09:00–17:00')).toBeInTheDocument()
       expect(screen.queryByDisplayValue('20:00')).not.toBeInTheDocument()
     })
 
     it('Cancel button in edit form returns to view mode', async () => {
       setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-      await screen.findByText('09:00 – 17:00')
+      await screen.findByText('09:00–17:00')
       await userEvent.click(screen.getByRole('button', { name: /edit period/i }))
 
       expect(screen.getByLabelText('Edit start time')).toBeInTheDocument()
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
 
-      expect(screen.getByText('09:00 – 17:00')).toBeInTheDocument()
+      expect(screen.getByText('09:00–17:00')).toBeInTheDocument()
       expect(screen.queryByLabelText('Edit start time')).not.toBeInTheDocument()
     })
   })
@@ -228,7 +226,7 @@ describe('WorkPeriodPanel', () => {
   describe('remove button', () => {
     it('Remove button deletes the period from the repository', async () => {
       const { repo } = setup([{ id: 'w1', start: '09:00', end: '17:00' }])
-      await screen.findByText('09:00 – 17:00')
+      await screen.findByText('09:00–17:00')
       await userEvent.click(screen.getByRole('button', { name: /remove/i }))
 
       await waitFor(async () => {
@@ -245,7 +243,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
-      await screen.findByText('09:00 – 13:00')
+      await screen.findByText('09:00–13:00')
       const mergeBtn = screen.getByRole('button', { name: /merge 09:00–13:00 with 14:00–18:00/i })
       expect(mergeBtn).toBeInTheDocument()
     })
@@ -256,7 +254,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
-      await screen.findByText('09:00 – 13:00')
+      await screen.findByText('09:00–13:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
 
       await waitFor(async () => {
@@ -273,7 +271,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
-      await screen.findByText('09:00 – …')
+      await screen.findByText('09:00–…')
       expect(screen.queryByRole('button', { name: /merge/i })).not.toBeInTheDocument()
     })
 
@@ -283,7 +281,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w2', start: '14:00', end: '18:00' },
       ])
 
-      await screen.findByText('14:00 – 18:00')
+      await screen.findByText('14:00–18:00')
       const mergeBtns = screen.getAllByRole('button', { name: /merge/i })
       expect(mergeBtns).toHaveLength(1)
     })
@@ -294,7 +292,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w2', start: '14:00', end: '17:00' },
       ])
 
-      await screen.findByText('09:00 – 19:00')
+      await screen.findByText('09:00–19:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
 
       await waitFor(async () => {
@@ -325,15 +323,19 @@ describe('WorkPeriodPanel', () => {
           queryFn: () => repo.getMonth(YEAR, MONTH),
         })
         const windows = monthData[DATE]?.windows ?? []
-        return <WorkPeriodPanel date={DATE} windows={windows} repository={repo} />
+        return <WorkPeriodEditor date={DATE} windows={windows} repository={repo} />
       }
-      render(<QueryClientProvider client={queryClient}><TestPanelCloud /></QueryClientProvider>)
+      render(
+        <QueryClientProvider client={queryClient}>
+          <TestPanelCloud />
+        </QueryClientProvider>,
+      )
       return { repo }
     }
 
     it('merges into exactly one period when new start matches existing end', async () => {
       const { repo } = setupCloud([{ id: 'w1', start: '09:00', end: '10:00' }])
-      await screen.findByText('09:00 – 10:00')
+      await screen.findByText('09:00–10:00')
       await addWindow('10:00', '11:00')
 
       await waitFor(async () => {
@@ -349,7 +351,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w1', start: '08:00', end: '09:00' },
         { id: 'w2', start: '10:00', end: '11:00' },
       ])
-      await screen.findByText('08:00 – 09:00')
+      await screen.findByText('08:00–09:00')
       await addWindow('09:00', '10:00')
 
       await waitFor(async () => {
@@ -365,7 +367,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w1', start: '09:00', end: '13:00' },
         { id: 'w2', start: '14:00', end: '18:00' },
       ])
-      await screen.findByText('09:00 – 13:00')
+      await screen.findByText('09:00–13:00')
       await userEvent.click(screen.getByRole('button', { name: /merge/i }))
 
       await waitFor(async () => {
@@ -380,7 +382,7 @@ describe('WorkPeriodPanel', () => {
   describe('auto-merge on add', () => {
     it('merges into one period when new start matches existing end', async () => {
       const { repo } = setup([{ id: 'w1', start: '09:00', end: '10:00' }])
-      await screen.findByText('09:00 – 10:00')
+      await screen.findByText('09:00–10:00')
       await addWindow('10:00', '11:00')
 
       await waitFor(async () => {
@@ -393,7 +395,7 @@ describe('WorkPeriodPanel', () => {
 
     it('merges into one period when new end matches existing start', async () => {
       const { repo } = setup([{ id: 'w1', start: '11:00', end: '12:00' }])
-      await screen.findByText('11:00 – 12:00')
+      await screen.findByText('11:00–12:00')
       await addWindow('10:00', '11:00')
 
       await waitFor(async () => {
@@ -409,7 +411,7 @@ describe('WorkPeriodPanel', () => {
         { id: 'w1', start: '08:00', end: '09:00' },
         { id: 'w2', start: '10:00', end: '11:00' },
       ])
-      await screen.findByText('08:00 – 09:00')
+      await screen.findByText('08:00–09:00')
       await addWindow('09:00', '10:00')
 
       await waitFor(async () => {
@@ -422,7 +424,7 @@ describe('WorkPeriodPanel', () => {
 
     it('does not merge when there is a gap', async () => {
       const { repo } = setup([{ id: 'w1', start: '09:00', end: '10:00' }])
-      await screen.findByText('09:00 – 10:00')
+      await screen.findByText('09:00–10:00')
       await addWindow('10:30', '11:30')
 
       await waitFor(async () => {
@@ -435,7 +437,7 @@ describe('WorkPeriodPanel', () => {
   describe('add via Enter key', () => {
     it('pressing Enter in the start input submits the form', async () => {
       const { repo } = setup()
-      await screen.findByText(/no work periods/i)
+      await screen.findByText(/no periods recorded yet/i)
       const startInput = screen.getByLabelText(/start/i)
       await userEvent.type(startInput, '09:00{Enter}')
 
@@ -448,7 +450,7 @@ describe('WorkPeriodPanel', () => {
 
     it('pressing Enter in the end input submits the form', async () => {
       const { repo } = setup()
-      await screen.findByText(/no work periods/i)
+      await screen.findByText(/no periods recorded yet/i)
       await userEvent.type(screen.getByLabelText(/start/i), '09:00')
       await userEvent.type(screen.getByLabelText(/end/i), '17:00{Enter}')
 
@@ -462,7 +464,7 @@ describe('WorkPeriodPanel', () => {
 
     it('Add button is disabled when start is empty', async () => {
       setup()
-      await screen.findByText(/no work periods/i)
+      await screen.findByText(/no periods recorded yet/i)
       expect(screen.getByRole('button', { name: /add/i })).toBeDisabled()
     })
   })
