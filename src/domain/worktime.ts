@@ -23,6 +23,13 @@ export function calculateWorkedHours(windows: WorkPeriod[], now?: string): numbe
   }, 0)
 }
 
+export function calcSliceHours(startedAt: string, stoppedAt: string): number {
+  const startMins = parseMinutes(startedAt)
+  let endMins = parseMinutes(stoppedAt)
+  if (endMins < startMins) endMins += 24 * 60
+  return (endMins - startMins) / 60
+}
+
 export function calculateRestarbeitszeit(sollstunden: number, workedHours: number): Restarbeitszeit {
   const value = sollstunden - workedHours
   return { value, isOvertime: value < 0 }

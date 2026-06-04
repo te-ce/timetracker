@@ -38,6 +38,16 @@ function periodWithSlice(
   }
 }
 
+function periodWithLiveSlice(id: string, start: string, sliceCategory: string, sliceStartedAt: string): WorkPeriod {
+  return {
+    id,
+    start,
+    end: null,
+    category: sliceCategory,
+    slices: [{ id: 'sl-live', category: sliceCategory, hours: 0, startedAt: sliceStartedAt }],
+  }
+}
+
 function TestPanel({
   repo,
   autoCategory = null,
@@ -89,9 +99,9 @@ async function getWindows(repo: InMemoryMonthRepository): Promise<WorkPeriod[]> 
 }
 
 async function addPeriod(start: string, end?: string) {
-  await userEvent.type(screen.getByLabelText(/^start$/i), start)
+  if (start) await userEvent.type(screen.getByLabelText(/^start$/i), start)
   if (end) await userEvent.type(screen.getByLabelText(/^end$/i), end)
-  await userEvent.click(screen.getByRole('button', { name: /add period/i }))
+  await userEvent.click(screen.getByRole('button', { name: end ? /add period/i : /start tracking/i }))
 }
 
 describe('WorkPeriodPanel', () => {
@@ -131,7 +141,7 @@ describe('WorkPeriodPanel', () => {
     async function setupWithPeriod() {
       const { repo } = setup([period('a', '09:00', '11:00')])
       await screen.findByRole('button', { name: /edit period/i })
-      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
       return { repo }
     }
 
@@ -261,44 +271,147 @@ describe('WorkPeriodPanel', () => {
         expect(saved[0]?.end).toBe('17:00')
       })
     })
+  })
 
-    it('Now buttons fill start and end fields', async () => {
-      setup()
+  describe('add period form', () => {
+    it('Start tracking creates a live period with end null', async () => {
+      const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
-      const nowButtons = screen.getAllByRole('button', { name: /^now$/i })
-      await userEvent.click(nowButtons[0]!)
-      const startInput = screen.getByLabelText<HTMLInputElement>(/^start$/i)
-      expect(startInput.value).toMatch(/^\d{2}:\d{2}$/)
-      await userEvent.click(nowButtons[1]!)
-      const endInput = screen.getByLabelText<HTMLInputElement>(/^end$/i)
-      expect(endInput.value).toMatch(/^\d{2}:\d{2}$/)
+      await userEvent.type(screen.getByLabelText(/^start$/i), '09:00')
+      await userEvent.click(screen.getByRole('button', { name: /start tracking/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.start).toBe('09:00')
+        expect(saved[0]?.end).toBeNull()
+      })
+    })
+
+    it('Start tracking button is disabled when an open period already exists', async () => {
+      setup([period('a', '09:00', null)])
+      await screen.findByRole('button', { name: /stop tracking/i })
+      expect(screen.getByRole('button', { name: /start tracking/i })).toBeDisabled()
+    })
+
+    it('Add period button is enabled even when an open period exists', async () => {
+      const { repo } = setup([period('a', '09:00', null)])
+      await screen.findByRole('button', { name: /stop tracking/i })
+      await userEvent.type(screen.getByLabelText(/^start$/i), '07:00')
+      await userEvent.type(screen.getByLabelText(/^end$/i), '08:00')
+      await userEvent.click(screen.getByRole('button', { name: /add period/i }))
+      await waitFor(async () => {
+        expect(await getWindows(repo)).toHaveLength(2)
+      })
     })
   })
 
-  describe('open period', () => {
-    it('prefills start input from open period and disables it', async () => {
+  describe('running period — Stop tracking', () => {
+    it('shows Stop button on running period', async () => {
       setup([period('a', '09:00', null)])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      const startInput = screen.getByLabelText<HTMLInputElement>(/^start$/i)
-      expect(startInput.value).toBe('09:00')
-      expect(startInput).toBeDisabled()
+      expect(await screen.findByRole('button', { name: /stop tracking/i })).toBeInTheDocument()
     })
 
-    it('hides start Now button when open period exists', async () => {
-      setup([period('a', '09:00', null)])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      expect(screen.getAllByRole('button', { name: /^now$/i })).toHaveLength(1)
-    })
-
-    it('closing an open period saves with given end time', async () => {
+    it('Stop button sets period end time in repository', async () => {
       const { repo } = setup([period('a', '09:00', null)])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      await userEvent.type(screen.getByLabelText(/^end$/i), '17:00')
-      await userEvent.click(screen.getByRole('button', { name: /add period/i }))
+      await screen.findByRole('button', { name: /stop tracking/i })
+      await userEvent.click(screen.getByRole('button', { name: /stop tracking/i }))
+      const stopInput = screen.getByLabelText(/period ended at/i)
+      await userEvent.clear(stopInput)
+      await userEvent.type(stopInput, '17:00')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.start).toBe('09:00')
         expect(saved[0]?.end).toBe('17:00')
+      })
+    })
+
+    it('Stop rejects time not after period start', async () => {
+      setup([period('a', '10:00', null)])
+      await screen.findByRole('button', { name: /stop tracking/i })
+      await userEvent.click(screen.getByRole('button', { name: /stop tracking/i }))
+      const stopInput = screen.getByLabelText(/period ended at/i)
+      await userEvent.clear(stopInput)
+      await userEvent.type(stopInput, '09:00')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      expect(await screen.findByText(/must be after/i)).toBeInTheDocument()
+    })
+
+    it('no Stop button on closed period', async () => {
+      setup([period('a', '09:00', '17:00')])
+      await screen.findByRole('button', { name: /edit period/i })
+      expect(screen.queryByRole('button', { name: /stop tracking/i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('live slice tracking', () => {
+    it('shows Start slice button on running period', async () => {
+      setup([period('a', '09:00', null)])
+      expect(await screen.findByRole('button', { name: /\+ start slice/i })).toBeInTheDocument()
+    })
+
+    it('does not show Start slice button on closed period', async () => {
+      setup([period('a', '09:00', '17:00')])
+      await screen.findByRole('button', { name: /edit period/i })
+      expect(screen.queryByRole('button', { name: /\+ start slice/i })).not.toBeInTheDocument()
+    })
+
+    it('Start slice persists a live slice in the repository', async () => {
+      const { repo } = setup([period('a', '09:00', null)])
+      await screen.findByRole('button', { name: /\+ start slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /\+ start slice/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^start$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.slices).toHaveLength(1)
+        expect(saved[0]?.slices[0]?.startedAt).toBeDefined()
+        expect(saved[0]?.slices[0]?.hours).toBe(0)
+      })
+    })
+
+    it('shows live slice banner with Stop slice button', async () => {
+      setup([periodWithLiveSlice('a', '09:00', 'Work', '09:30')])
+      expect(await screen.findByRole('button', { name: /stop slice/i })).toBeInTheDocument()
+    })
+
+    it('Stop slice saves computed hours and removes startedAt', async () => {
+      const { repo } = setup([periodWithLiveSlice('a', '09:00', 'Work', '09:00')])
+      await screen.findByRole('button', { name: /stop slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /stop slice/i }))
+      const stopInput = screen.getByLabelText(/slice stopped at/i)
+      await userEvent.clear(stopInput)
+      await userEvent.type(stopInput, '10:30')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.slices[0]?.hours).toBe(1.5)
+        expect(saved[0]?.slices[0]?.startedAt).toBeUndefined()
+      })
+    })
+
+    it('Stop slice rejects time not after slice start', async () => {
+      setup([periodWithLiveSlice('a', '09:00', 'Work', '10:00')])
+      await screen.findByRole('button', { name: /stop slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /stop slice/i }))
+      const stopInput = screen.getByLabelText(/slice stopped at/i)
+      await userEvent.clear(stopInput)
+      await userEvent.type(stopInput, '09:00')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      expect(await screen.findByText(/must be after/i)).toBeInTheDocument()
+    })
+
+    it('Stop all (from period header) stops live slice and sets period end', async () => {
+      const { repo } = setup([periodWithLiveSlice('a', '09:00', 'Work', '09:00')])
+      await screen.findByRole('button', { name: /stop tracking/i })
+      await userEvent.click(screen.getByRole('button', { name: /stop tracking/i }))
+      const stopInput = screen.getByLabelText(/period ended at/i)
+      await userEvent.clear(stopInput)
+      await userEvent.type(stopInput, '11:00')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.end).toBe('11:00')
+        expect(saved[0]?.slices[0]?.hours).toBe(2)
+        expect(saved[0]?.slices[0]?.startedAt).toBeUndefined()
       })
     })
   })
@@ -367,8 +480,8 @@ describe('WorkPeriodPanel', () => {
 
     it('includes description in category dropdown options', async () => {
       setup([period('a', '09:00', '11:00')], null, descriptions)
-      await screen.findByRole('button', { name: /split this period/i })
-      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await screen.findByRole('button', { name: /\+ add slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
       const selects = screen.getAllByRole<HTMLSelectElement>('combobox', { name: /category/i })
       const allOptions = selects.flatMap((s) => Array.from(s.options).map((o) => o.text))
       expect(allOptions).toContain('Work — Deep work sessions')
@@ -377,8 +490,8 @@ describe('WorkPeriodPanel', () => {
 
     it('does not append separator when category has no description', async () => {
       setup([period('a', '09:00', '11:00')], null, { Work: 'Deep work sessions' })
-      await screen.findByRole('button', { name: /split this period/i })
-      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await screen.findByRole('button', { name: /\+ add slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
       const selects = screen.getAllByRole<HTMLSelectElement>('combobox', { name: /category/i })
       const allOptions = selects.flatMap((s) => Array.from(s.options).map((o) => ({ value: o.value, text: o.text })))
       const meetingOption = allOptions.find((o) => o.value === 'Meeting')
@@ -400,8 +513,8 @@ describe('WorkPeriodPanel', () => {
 
     it('adds a slice with a note and persists it', async () => {
       const { repo } = setup([period('a', '09:00', '11:00')])
-      await screen.findByRole('button', { name: /split this period/i })
-      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await screen.findByRole('button', { name: /\+ add slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
       await userEvent.type(screen.getByLabelText(/slice duration/i), '1.5')
       await userEvent.type(screen.getByLabelText(/slice note/i), 'Reviewed PRs')
       await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
@@ -413,8 +526,8 @@ describe('WorkPeriodPanel', () => {
 
     it('adds a slice without note when note field is empty', async () => {
       const { repo } = setup([period('a', '09:00', '11:00')])
-      await screen.findByRole('button', { name: /split this period/i })
-      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await screen.findByRole('button', { name: /\+ add slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
       await userEvent.type(screen.getByLabelText(/slice duration/i), '1')
       await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
       await waitFor(async () => {
