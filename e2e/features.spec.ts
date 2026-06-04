@@ -145,6 +145,18 @@ test.describe('month calendar navigation', () => {
     await expect(page).toHaveURL(/\/day\?date=2026-05-25/)
     await expect(page.getByRole('region', { name: 'Work periods' })).toBeVisible()
   })
+
+  test("today's date cell has orange ring indicator", async ({ page }) => {
+    const d = new Date()
+    const year = d.getFullYear()
+    const month = d.getMonth() + 1
+
+    await page.goto(`/?year=${year}&month=${month}`)
+
+    const todayCell = page.locator('[aria-current="date"]')
+    await expect(todayCell).toBeVisible()
+    await expect(todayCell).toHaveClass(/ring-orange-400/)
+  })
 })
 
 // ─── Test 6: Sprint view renders without crashing ────────────────────────────

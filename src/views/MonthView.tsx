@@ -36,8 +36,7 @@ export function MonthView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  const { summaries, overtimeToDate, workLocations, sollstunden, dayNotes } =
-    useMonthSummaries(year, month)
+  const { summaries, overtimeToDate, workLocations, sollstunden, dayNotes } = useMonthSummaries(year, month)
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
@@ -46,7 +45,7 @@ export function MonthView() {
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayStatusReasonMap: Record<string, string> = {}
   for (const day of summaries.days) {
-    dayStatusMap[day.date] = day.displayStatus
+    dayStatusMap[day.date] = day.dayStatus
     dayStatusReasonMap[day.date] = day.statusReason
   }
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
