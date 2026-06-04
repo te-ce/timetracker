@@ -941,7 +941,7 @@ function CardHeader({
               className="group/time flex items-center gap-1.5 font-mono text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400"
               aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
             >
-              {w.start} – {w.end ?? '…'}
+              {w.start} – {w.end ?? '--:--'}
               <svg
                 className="h-3 w-3 text-gray-400 group-hover/time:text-indigo-500 shrink-0"
                 viewBox="0 0 24 24"

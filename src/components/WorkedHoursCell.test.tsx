@@ -186,10 +186,10 @@ describe('WorkedHoursCell', () => {
   })
 
   describe('open period (no end)', () => {
-    it('displays open period as "HH:MM–…"', async () => {
+    it('displays open period as "HH:MM – --:--"', async () => {
       setup([makeWindow('w1', '09:00', null)], 0)
       await userEvent.click(screen.getByTestId('worked-hours'))
-      expect(await screen.findByText('09:00 – …')).toBeInTheDocument()
+      expect(await screen.findByText('09:00 – --:--')).toBeInTheDocument()
     })
   })
 
