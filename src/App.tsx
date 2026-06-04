@@ -131,7 +131,7 @@ function SyncIndicator() {
       <span
         className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
         aria-label="Local only mode"
-        title="Microsoft not configured — local only"
+        data-tooltip="Microsoft not configured — local only"
       >
         <span aria-hidden="true">💾</span>
         <span>Local</span>
@@ -143,7 +143,7 @@ function SyncIndicator() {
     <span
       className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
       aria-label={isAuthenticated ? 'OneDrive sync active' : 'Offline mode'}
-      title={isAuthenticated ? 'Synced with OneDrive' : 'Offline — sign in to sync'}
+      data-tooltip={isAuthenticated ? 'Synced with OneDrive' : 'Offline — sign in to sync'}
     >
       <span aria-hidden="true">{isAuthenticated ? '☁️' : '💾'}</span>
       <span>{isAuthenticated ? 'OneDrive' : 'Offline'}</span>
@@ -196,7 +196,7 @@ function UndoButton() {
         onClick={() => void undo()}
         disabled={!canUndo}
         aria-label="Undo"
-        title="Undo (Ctrl+Z)"
+        data-tooltip="Undo (Ctrl+Z)"
         className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
       >
         <svg
@@ -218,7 +218,7 @@ function UndoButton() {
         onClick={() => void redo()}
         disabled={!canRedo}
         aria-label="Redo"
-        title="Redo (Ctrl+Shift+Z)"
+        data-tooltip="Redo (Ctrl+Shift+Z)"
         className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
       >
         <svg
@@ -248,7 +248,7 @@ function RemainingHoursBadge() {
   return (
     <span
       className="hidden sm:inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400"
-      title={`${label} remaining today`}
+      data-tooltip={`${label} remaining today`}
     >
       {label} left
     </span>
@@ -261,7 +261,7 @@ function TimeFormatToggle() {
     <button
       onClick={toggleFormat}
       aria-label={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
-      title={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
+      data-tooltip={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
       className="rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs font-medium tabular-nums text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
     >
       {format === 'decimal' ? 'Dec.' : 'HH:MM'}
@@ -372,7 +372,7 @@ function App() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <nav
-        className="flex items-center gap-1 border-b border-gray-200 bg-white px-4 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+        className="sticky top-0 z-50 flex items-center gap-1 border-b border-gray-200 bg-white px-4 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800"
         aria-label="Main navigation"
       >
         <span className="mr-6 text-lg font-bold tracking-tight">Timetracker</span>
@@ -406,7 +406,7 @@ function App() {
             <button
               onClick={() => setLegendOpen((v) => !v)}
               aria-label="Keyboard shortcuts"
-              title="Keyboard shortcuts (?)"
+              data-tooltip="Keyboard shortcuts (?)"
               className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
               <svg
