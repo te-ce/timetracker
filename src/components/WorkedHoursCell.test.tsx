@@ -9,8 +9,10 @@ const DATE = '2024-01-15'
 const YEAR = 2024
 const MONTH = 1
 
+const CATEGORIES = ['Dev', 'Meeting']
+
 function makeWindow(id: string, start: string, end: string | null): WorkPeriod {
-  return { id, start, end, category: '', slices: [] }
+  return { id, start, end, category: '_UNCATEGORIZED', slices: [] }
 }
 
 function setup(initialWindows: WorkPeriod[] = [], workedHours = 8) {
@@ -23,7 +25,14 @@ function setup(initialWindows: WorkPeriod[] = [], workedHours = 8) {
       <table>
         <tbody>
           <tr>
-            <WorkedHoursCell date={DATE} workedHours={workedHours} windows={initialWindows} repository={repo} />
+            <WorkedHoursCell
+              date={DATE}
+              workedHours={workedHours}
+              windows={initialWindows}
+              repository={repo}
+              autoCategory={null}
+              customCategories={CATEGORIES}
+            />
           </tr>
         </tbody>
       </table>
@@ -212,6 +221,35 @@ describe('WorkedHoursCell', () => {
       await userEvent.keyboard('{Escape}')
       await waitFor(() => {
         expect(screen.queryByLabelText(/start/i)).not.toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('slice editing', () => {
+    it('shows existing slices when a period has slices', async () => {
+      const windowWithSlice: WorkPeriod = {
+        id: 'w1',
+        start: '09:00',
+        end: '17:00',
+        category: '_UNCATEGORIZED',
+        slices: [{ id: 's1', category: 'Meeting', hours: 2 }],
+      }
+      setup([windowWithSlice])
+      await userEvent.click(screen.getByText('8'))
+      expect(await screen.findByRole('button', { name: /edit Meeting slice/i })).toBeInTheDocument()
+    })
+
+    it('user can add a slice to an existing period', async () => {
+      const { repo } = setup([makeWindow('w1', '09:00', '17:00')])
+      await userEvent.click(screen.getByText('8'))
+      await screen.findByRole('button', { name: /split this period/i })
+      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await userEvent.type(screen.getByLabelText(/slice duration/i), '2')
+      await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
+      await waitFor(async () => {
+        const data = await repo.getMonth(YEAR, MONTH)
+        expect(data[DATE]?.windows[0]?.slices).toHaveLength(1)
+        expect(data[DATE]?.windows[0]?.slices[0]?.hours).toBe(2)
       })
     })
   })

@@ -390,6 +390,9 @@ export function MonthGrid({
                       workedHours={parseFloat(row.workedHours.toFixed(2))}
                       windows={monthData[row.date]?.windows ?? []}
                       repository={repository}
+                      autoCategory={autoCategory}
+                      customCategories={customCategories}
+                      categoryOrder={categoryOrder}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}`}
                     />
                     <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">

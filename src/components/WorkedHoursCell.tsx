@@ -1,17 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { WorkPeriod, MonthRepository } from '../repositories/types'
-import { WorkPeriodEditor } from './WorkPeriodEditor'
+import { WorkPeriodPanel } from './WorkPeriodPanel'
 
 interface Props {
   date: string
   workedHours: number
   windows: WorkPeriod[]
   repository: MonthRepository
+  autoCategory: string | null
+  customCategories?: string[]
+  categoryOrder?: string[]
   className?: string
 }
 
-export function WorkedHoursCell({ date, workedHours, windows, repository, className = '' }: Props) {
+export function WorkedHoursCell({
+  date,
+  workedHours,
+  windows,
+  repository,
+  autoCategory,
+  customCategories,
+  categoryOrder,
+  className = '',
+}: Props) {
   const [open, setOpen] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -76,7 +88,14 @@ export function WorkedHoursCell({ date, workedHours, windows, repository, classN
               </button>
             </div>
             <div className="px-5 py-4">
-              <WorkPeriodEditor date={date} windows={windows} repository={repository} />
+              <WorkPeriodPanel
+                date={date}
+                windows={windows}
+                repository={repository}
+                autoCategory={autoCategory}
+                customCategories={customCategories}
+                categoryOrder={categoryOrder}
+              />
             </div>
           </div>
         </>,
