@@ -311,6 +311,7 @@ function AddPeriodForm({ windows, defaultCategory, categories, onAdd }: AddPerio
     onAdd({ id: crypto.randomUUID(), start: effectiveStart, end: draftEnd || null, category, slices: [] })
     setDraftStart('')
     setDraftEnd('')
+    setCategory(defaultCategory)
   }
 
   return (
