@@ -433,6 +433,88 @@ describe('WorkPeriodPanel', () => {
     })
   })
 
+  describe('timed slice editing', () => {
+    function periodWithTimedSlice(
+      id: string,
+      start: string,
+      end: string,
+      sliceCategory: string,
+      sliceStart: string,
+      sliceEnd: string,
+    ): WorkPeriod {
+      const hours =
+        (new Date(`2000-01-01T${sliceEnd}`).getTime() - new Date(`2000-01-01T${sliceStart}`).getTime()) / 3_600_000
+      return {
+        id,
+        start,
+        end,
+        category: sliceCategory,
+        slices: [{ id: 'sl-timed', category: sliceCategory, hours, startedAt: sliceStart, stoppedAt: sliceEnd }],
+      }
+    }
+
+    it('clicking a timed slice shows start and end time inputs', async () => {
+      setup([periodWithTimedSlice('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
+      await screen.findByRole('button', { name: /edit Work slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit Work slice/i }))
+      expect(screen.getByLabelText(/slice start time/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/slice end time/i)).toBeInTheDocument()
+    })
+
+    it('editing end time and saving recomputes hours and preserves start/end', async () => {
+      const { repo } = setup([periodWithTimedSlice('a', '09:00', '17:00', 'Work', '09:00', '10:00')])
+      await screen.findByRole('button', { name: /edit Work slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit Work slice/i }))
+      const endInput = screen.getByLabelText(/slice end time/i)
+      await userEvent.clear(endInput)
+      await userEvent.type(endInput, '11:30')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.slices[0]?.hours).toBeCloseTo(2.5)
+        expect(saved[0]?.slices[0]?.startedAt).toBe('09:00')
+        expect(saved[0]?.slices[0]?.stoppedAt).toBe('11:30')
+      })
+    })
+
+    it('"use decimal" converts timed slice to decimal on save', async () => {
+      const { repo } = setup([periodWithTimedSlice('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
+      await screen.findByRole('button', { name: /edit Work slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit Work slice/i }))
+      await userEvent.click(screen.getByRole('button', { name: /use decimal/i }))
+      expect(screen.queryByLabelText(/slice start time/i)).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.slices[0]?.startedAt).toBeUndefined()
+        expect(saved[0]?.slices[0]?.stoppedAt).toBeUndefined()
+        expect(saved[0]?.slices[0]?.hours).toBeCloseTo(2)
+      })
+    })
+  })
+
+  describe('live slice category editing', () => {
+    it('clicking the live slice category name shows a category picker', async () => {
+      setup([periodWithLiveSlice('a', '09:00', 'Work', '09:30')])
+      await screen.findByRole('button', { name: /stop slice/i })
+      const banner = screen.getByTestId('live-slice-banner')
+      await userEvent.click(screen.getByRole('button', { name: /^Work$/i }))
+      expect(banner.querySelector('select')).toBeInTheDocument()
+    })
+
+    it('selecting a new category from the picker saves it immediately', async () => {
+      const { repo } = setup([periodWithLiveSlice('a', '09:00', 'Work', '09:30')])
+      await screen.findByRole('button', { name: /stop slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /^Work$/i }))
+      const banner = screen.getByTestId('live-slice-banner')
+      await userEvent.selectOptions(banner.querySelector('select')!, 'Meeting')
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.slices[0]?.category).toBe('Meeting')
+      })
+    })
+  })
+
   describe('auto-merge on add', () => {
     it('merges into one period when new start matches existing end', async () => {
       const { repo } = setup([period('a', '09:00', '10:00')])

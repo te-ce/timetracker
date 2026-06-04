@@ -257,7 +257,7 @@ function LiveSliceBanner({
   }
 
   return (
-    <div className="flex flex-col gap-1 mb-2 pb-2 border-b dark:border-gray-700">
+    <div data-testid="live-slice-banner" className="flex flex-col gap-1 mb-2 pb-2 border-b dark:border-gray-700">
       <div className="flex items-start gap-2 text-sm">
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0 mt-[3px]" />
         <span className="flex-1 leading-tight">
