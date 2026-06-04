@@ -1,17 +1,30 @@
 import { describe, it, expect } from 'vitest'
-import { upsertWindow, removeWindow, updatePeriodCategory, upsertSlice, removeSlice } from './dayUpdaters'
+import {
+  upsertWindow,
+  removeWindow,
+  updatePeriodCategory,
+  upsertSlice,
+  removeSlice,
+  startLiveSlice,
+  stopLiveSlice,
+  stopPeriod,
+} from './dayUpdaters'
 import type { Day, WorkPeriod, WorkPeriodSlice } from '../repositories/types'
 
 function emptyDay(): Day {
   return { windows: [] }
 }
 
-function win(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
+function win(id: string, start: string, end: string | null, category = '_COREMEDIA'): WorkPeriod {
   return { id, start, end, category, slices: [] }
 }
 
 function slice(id: string, category: string, hours: number): WorkPeriodSlice {
   return { id, category, hours }
+}
+
+function liveSlice(id: string, category: string, startedAt: string): WorkPeriodSlice {
+  return { id, category, hours: 0, startedAt }
 }
 
 describe('upsertWindow', () => {
@@ -94,5 +107,124 @@ describe('removeSlice', () => {
     const result = removeSlice(day, 'w1', 's1')
     expect(result.windows[0]?.slices).toHaveLength(1)
     expect(result.windows[0]?.slices[0]?.id).toBe('s2')
+  })
+})
+
+describe('startLiveSlice', () => {
+  it('adds a live slice to the matching period', () => {
+    const day = { ...emptyDay(), windows: [win('w1', '09:00', null)] }
+    const incoming = liveSlice('s1', '_SUPPORT', '09:30')
+    const result = startLiveSlice(day, 'w1', incoming)
+    expect(result.windows[0]?.slices).toHaveLength(1)
+    expect(result.windows[0]?.slices[0]?.startedAt).toBe('09:30')
+    expect(result.windows[0]?.slices[0]?.hours).toBe(0)
+  })
+
+  it('auto-stops any existing live slice using the new slice startedAt', () => {
+    const existingLive = liveSlice('s1', '_SUPPORT', '09:00')
+    const day = { ...emptyDay(), windows: [{ ...win('w1', '09:00', null), slices: [existingLive] }] }
+    const incoming = liveSlice('s2', '_RELEASE', '10:30')
+    const result = startLiveSlice(day, 'w1', incoming)
+    const slices = result.windows[0]?.slices ?? []
+    expect(slices).toHaveLength(2)
+    const stopped = slices.find((s) => s.id === 's1')
+    expect(stopped?.startedAt).toBeUndefined()
+    expect(stopped?.hours).toBe(1.5)
+    expect(slices.find((s) => s.id === 's2')?.startedAt).toBe('10:30')
+  })
+
+  it('does not touch other periods', () => {
+    const day = { ...emptyDay(), windows: [win('w1', '09:00', null), win('w2', '13:00', null)] }
+    const result = startLiveSlice(day, 'w1', liveSlice('s1', '_SUPPORT', '09:30'))
+    expect(result.windows.find((w) => w.id === 'w2')?.slices).toHaveLength(0)
+  })
+})
+
+describe('stopLiveSlice', () => {
+  it('fills hours and removes startedAt from the matching slice', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', null), slices: [liveSlice('s1', '_SUPPORT', '09:00')] }],
+    }
+    const result = stopLiveSlice(day, 'w1', 's1', '10:30')
+    const s = result.windows[0]?.slices[0]
+    expect(s?.hours).toBe(1.5)
+    expect(s?.startedAt).toBeUndefined()
+  })
+
+  it('computes exact minutes (e.g. 73 min = 73/60 h)', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', null), slices: [liveSlice('s1', '_SUPPORT', '09:00')] }],
+    }
+    const result = stopLiveSlice(day, 'w1', 's1', '10:13')
+    expect(result.windows[0]?.slices[0]?.hours).toBeCloseTo(73 / 60, 10)
+  })
+
+  it('does not modify non-live slices', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [
+        {
+          ...win('w1', '09:00', null),
+          slices: [slice('s1', '_GUILDS', 2), liveSlice('s2', '_SUPPORT', '09:00')],
+        },
+      ],
+    }
+    const result = stopLiveSlice(day, 'w1', 's2', '10:00')
+    const s1 = result.windows[0]?.slices.find((s) => s.id === 's1')
+    expect(s1?.hours).toBe(2)
+    expect(s1?.startedAt).toBeUndefined()
+  })
+
+  it('does not touch other periods', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [
+        { ...win('w1', '09:00', null), slices: [liveSlice('s1', '_SUPPORT', '09:00')] },
+        { ...win('w2', '13:00', null), slices: [liveSlice('s2', '_GUILDS', '13:00')] },
+      ],
+    }
+    const result = stopLiveSlice(day, 'w1', 's1', '10:00')
+    const s2 = result.windows.find((w) => w.id === 'w2')?.slices[0]
+    expect(s2?.startedAt).toBe('13:00')
+  })
+})
+
+describe('stopPeriod', () => {
+  it('sets period end to the given time', () => {
+    const day = { ...emptyDay(), windows: [win('w1', '09:00', null)] }
+    const result = stopPeriod(day, 'w1', '17:00')
+    expect(result.windows[0]?.end).toBe('17:00')
+  })
+
+  it('also stops the live slice when liveSliceId and stoppedAt are provided', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', null), slices: [liveSlice('s1', '_SUPPORT', '09:00')] }],
+    }
+    const result = stopPeriod(day, 'w1', '11:00', 's1', '11:00')
+    expect(result.windows[0]?.end).toBe('11:00')
+    expect(result.windows[0]?.slices[0]?.hours).toBe(2)
+    expect(result.windows[0]?.slices[0]?.startedAt).toBeUndefined()
+  })
+
+  it('only sets period end when no liveSliceId is given', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', null), slices: [slice('s1', '_GUILDS', 1)] }],
+    }
+    const result = stopPeriod(day, 'w1', '17:00')
+    expect(result.windows[0]?.end).toBe('17:00')
+    expect(result.windows[0]?.slices[0]?.hours).toBe(1)
+  })
+
+  it('does not touch other periods', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [win('w1', '09:00', null), win('w2', '13:00', null)],
+    }
+    const result = stopPeriod(day, 'w1', '12:00')
+    expect(result.windows.find((w) => w.id === 'w2')?.end).toBeNull()
   })
 })
