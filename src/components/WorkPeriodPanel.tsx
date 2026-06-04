@@ -84,7 +84,7 @@ interface CategoryPickerProps {
 function CategoryPicker({ value, categories, onChange, compact, categoryDescriptions }: CategoryPickerProps) {
   const selectClass = compact
     ? 'text-xs rounded border px-1 py-0.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[10rem]'
-    : 'text-sm rounded-lg border px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 flex-1'
+    : 'text-sm rounded-lg border px-2 py-1.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[8rem] max-w-[14rem]'
 
   return (
     <select aria-label="Category" value={value} onChange={(e) => onChange(e.target.value)} className={selectClass}>
@@ -238,8 +238,8 @@ function LiveSliceBanner({ slice, periodId, date, nowTime, mutations, categoryDe
 
   return (
     <div className="flex flex-col gap-1 mb-2 pb-2 border-b dark:border-gray-700">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
+      <div className="flex items-start gap-2 text-sm">
+        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0 mt-[3px]" />
         <span className="font-medium text-gray-700 dark:text-gray-300 flex-1 leading-tight">
           <span className="block">{slice.category}</span>
           {description && (
@@ -383,7 +383,7 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
         }}
       >
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[3px]" />
           <CategoryPicker
             value={editCategory}
             categories={categories}
@@ -438,7 +438,7 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
 
   return (
     <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-0.5 ${stripeBg}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-1" />
+      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[3px]" />
       <button
         onClick={beginEdit}
         className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight"
@@ -678,11 +678,11 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, onAdd }: AddPe
           aria-label="End"
           className="rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
         />
-        <CategoryPicker value={category} categories={categories} onChange={setCategory} compact />
+        <CategoryPicker value={category} categories={categories} onChange={setCategory} />
         <button
           onClick={handleAdd}
           disabled={!canSubmit}
-          className="rounded-md bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-40 whitespace-nowrap"
+          className="rounded-lg bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-40 whitespace-nowrap"
         >
           {isLive ? 'Start tracking' : 'Add period'}
         </button>
@@ -887,20 +887,15 @@ function RemainderRow({
   const labelClass = uncategorized ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'
   const description = uncategorized ? undefined : categoryDescriptions?.[category]
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-start mt-1.5 ${dotClass}`} />
+    <div className="flex items-start gap-2 text-sm">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-[3px] ${dotClass}`} />
       <span className={`font-medium leading-tight ${labelClass}`}>
         <span className="block">{uncategorized ? 'Uncategorized' : category}</span>
         {description && (
           <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{description}</span>
         )}
       </span>
-      <span className="text-gray-400 dark:text-gray-500 text-xs self-start mt-0.5">
-        {formatHours(remainder, timeFormat)}
-      </span>
-      <span className="ml-auto text-[10px] text-gray-300 dark:text-gray-600 uppercase tracking-wide self-start mt-0.5">
-        base
-      </span>
+      <span className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">{formatHours(remainder, timeFormat)}</span>
     </div>
   )
 }

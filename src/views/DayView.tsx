@@ -37,7 +37,7 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
       {badgeStatus !== 'future' && (
         <div className="group relative">
           <span
-            className={`cursor-help rounded px-2 py-1 text-xs font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
+            className={`cursor-help rounded-md px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
           >
             {STATUS_LABEL[badgeStatus]}
           </span>
@@ -65,9 +65,10 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
           Confirm
         </button>
       )}
+      <span className="w-px h-5 bg-gray-200 dark:bg-gray-700 self-center" aria-hidden="true" />
       <button
         onClick={onReset}
-        className="text-xs font-medium text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400"
+        className="rounded-md border border-red-200 dark:border-red-800 px-2 py-1.5 text-sm font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
         aria-label="Reset all data for this day"
       >
         Reset all

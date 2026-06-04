@@ -6,7 +6,12 @@ interface Props {
   onSkip: () => void
 }
 
-function detectBrowserSupport(ua: string): { isBrave: boolean; isOpera: boolean; isFirefox: boolean; isSafari: boolean } {
+function detectBrowserSupport(ua: string): {
+  isBrave: boolean
+  isOpera: boolean
+  isFirefox: boolean
+  isSafari: boolean
+} {
   return {
     isBrave: 'brave' in navigator,
     isOpera: ua.includes('OPR/') || ua.includes('Opera/'),
@@ -28,8 +33,7 @@ function getApiUnsupportedError(ua: string): string {
   }
   if (browser.isFirefox) {
     return (
-      'Firefox does not support the File System Access API. ' +
-      'Use Chrome, Edge, or Opera to use local folder sync.'
+      'Firefox does not support the File System Access API. ' + 'Use Chrome, Edge, or Opera to use local folder sync.'
     )
   }
   if (browser.isSafari) {
@@ -87,7 +91,8 @@ export function SetupWizard({ onSkip }: Props) {
       const detail = name ? `[${name}] ${msg}` : msg
       let hint = ''
       if (browser.isBrave) hint = ' — try disabling Brave Shields entirely for this site (lion icon → Shields down).'
-      else if (browser.isSafari) hint = ' — Safari has limited folder access support; try Chrome or Edge if this persists.'
+      else if (browser.isSafari)
+        hint = ' — Safari has limited folder access support; try Chrome or Edge if this persists.'
       setError(`${detail}${hint}`)
     } finally {
       setPickingFolder(false)
@@ -100,8 +105,8 @@ export function SetupWizard({ onSkip }: Props) {
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome to Timetracker</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            To enable cloud sync and SharePoint export, connect your Microsoft Azure AD app.
-            You can skip this and use the app in local-only mode.
+            To enable cloud sync and SharePoint export, connect your Microsoft Azure AD app. You can skip this and use
+            the app in local-only mode.
           </p>
         </div>
 
@@ -116,7 +121,7 @@ export function SetupWizard({ onSkip }: Props) {
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-indigo-500"
             />
           </div>
 
@@ -130,7 +135,7 @@ export function SetupWizard({ onSkip }: Props) {
               value={tenantId}
               onChange={(e) => setTenantId(e.target.value)}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-blue-400"
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-indigo-500"
             />
           </div>
 
@@ -142,7 +147,7 @@ export function SetupWizard({ onSkip }: Props) {
               href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-500 underline"
+              className="text-indigo-500 underline"
             >
               Azure Portal → App registrations
             </a>
@@ -153,7 +158,7 @@ export function SetupWizard({ onSkip }: Props) {
         <div className="flex flex-col gap-2">
           <button
             onClick={handleSave}
-            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white font-medium py-2 rounded-lg text-sm transition-colors"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white font-medium py-2 rounded-lg text-sm transition-colors"
           >
             Save &amp; Connect
           </button>
@@ -165,10 +170,9 @@ export function SetupWizard({ onSkip }: Props) {
             {pickingFolder ? 'Picking folder…' : 'Use Local Folder'}
           </button>
           <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-            Supported in Chrome, Edge &amp; Opera.{' '}
-            Brave needs{' '}
-            <code className="font-mono">brave://flags/#file-system-access-api</code> enabled.{' '}
-            Safari 17+ has partial support. Firefox is not supported.
+            Supported in Chrome, Edge &amp; Opera. Brave needs{' '}
+            <code className="font-mono">brave://flags/#file-system-access-api</code> enabled. Safari 17+ has partial
+            support. Firefox is not supported.
           </p>
           <button
             onClick={handleSkip}
