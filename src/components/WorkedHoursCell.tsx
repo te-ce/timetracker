@@ -11,6 +11,7 @@ interface Props {
   autoCategory: string | null
   customCategories?: string[]
   categoryOrder?: string[]
+  categoryDescriptions?: Record<string, string>
   className?: string
 }
 
@@ -22,6 +23,7 @@ export function WorkedHoursCell({
   autoCategory,
   customCategories,
   categoryOrder,
+  categoryDescriptions,
   className = '',
 }: Props) {
   const [open, setOpen] = useState(false)
@@ -95,6 +97,7 @@ export function WorkedHoursCell({
                 autoCategory={autoCategory}
                 customCategories={customCategories}
                 categoryOrder={categoryOrder}
+                categoryDescriptions={categoryDescriptions}
               />
             </div>
           </div>

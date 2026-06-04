@@ -21,14 +21,33 @@ function period(id: string, start: string, end: string | null, category = 'Work'
   return { id, start, end, category, slices: [] }
 }
 
+function periodWithSlice(
+  id: string,
+  start: string,
+  end: string,
+  sliceCategory: string,
+  hours: number,
+  note?: string,
+): WorkPeriod {
+  return {
+    id,
+    start,
+    end,
+    category: sliceCategory,
+    slices: [{ id: 'sl-1', category: sliceCategory, hours, note }],
+  }
+}
+
 function TestPanel({
   repo,
   autoCategory = null,
   customCategories = ['Work', 'Meeting'],
+  categoryDescriptions,
 }: {
   repo: MonthRepository
   autoCategory?: string | null
   customCategories?: string[]
+  categoryDescriptions?: Record<string, string>
 }) {
   const { data: monthData = {} } = useQuery<MonthData>({
     queryKey: QUERY_KEYS.month(YEAR, MONTH),
@@ -42,18 +61,23 @@ function TestPanel({
       repository={repo}
       autoCategory={autoCategory}
       customCategories={customCategories}
+      categoryDescriptions={categoryDescriptions}
     />
   )
 }
 
-function setup(initialWindows: WorkPeriod[] = [], autoCategory: string | null = null) {
+function setup(
+  initialWindows: WorkPeriod[] = [],
+  autoCategory: string | null = null,
+  categoryDescriptions?: Record<string, string>,
+) {
   const repo = new InMemoryMonthRepository(
     initialWindows.length > 0 ? { '2026-06': { [DATE]: { windows: initialWindows } } } : {},
   )
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
-      <TestPanel repo={repo} autoCategory={autoCategory} />
+      <TestPanel repo={repo} autoCategory={autoCategory} categoryDescriptions={categoryDescriptions} />
     </QueryClientProvider>,
   )
   return { repo }
@@ -323,6 +347,111 @@ describe('WorkPeriodPanel', () => {
       await waitFor(async () => {
         expect(await getWindows(repo)).toHaveLength(2)
       })
+    })
+  })
+
+  describe('category descriptions', () => {
+    const descriptions = { Work: 'Deep work sessions', Meeting: 'Sync meetings' }
+
+    it('shows category description below category name in slice row', async () => {
+      setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
+      const matches = await screen.findAllByText('Deep work sessions')
+      expect(matches.length).toBeGreaterThan(0)
+    })
+
+    it('does not show description when none configured', async () => {
+      setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1)])
+      await screen.findByText('Work')
+      expect(screen.queryByText('Deep work sessions')).not.toBeInTheDocument()
+    })
+
+    it('includes description in category dropdown options', async () => {
+      setup([period('a', '09:00', '11:00')], null, descriptions)
+      await screen.findByRole('button', { name: /split this period/i })
+      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      const selects = screen.getAllByRole<HTMLSelectElement>('combobox', { name: /category/i })
+      const allOptions = selects.flatMap((s) => Array.from(s.options).map((o) => o.text))
+      expect(allOptions).toContain('Work — Deep work sessions')
+      expect(allOptions).toContain('Meeting — Sync meetings')
+    })
+
+    it('does not append separator when category has no description', async () => {
+      setup([period('a', '09:00', '11:00')], null, { Work: 'Deep work sessions' })
+      await screen.findByRole('button', { name: /split this period/i })
+      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      const selects = screen.getAllByRole<HTMLSelectElement>('combobox', { name: /category/i })
+      const allOptions = selects.flatMap((s) => Array.from(s.options).map((o) => ({ value: o.value, text: o.text })))
+      const meetingOption = allOptions.find((o) => o.value === 'Meeting')
+      expect(meetingOption?.text).toBe('Meeting')
+    })
+  })
+
+  describe('slice notes', () => {
+    it('displays existing note below category name in italic', async () => {
+      setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1, 'Fixed login bug')])
+      expect(await screen.findByText('Fixed login bug')).toBeInTheDocument()
+    })
+
+    it('does not render note element when slice has no note', async () => {
+      setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1)])
+      await screen.findByText('Work')
+      expect(screen.queryByRole('note')).not.toBeInTheDocument()
+    })
+
+    it('adds a slice with a note and persists it', async () => {
+      const { repo } = setup([period('a', '09:00', '11:00')])
+      await screen.findByRole('button', { name: /split this period/i })
+      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await userEvent.type(screen.getByLabelText(/slice duration/i), '1.5')
+      await userEvent.type(screen.getByLabelText(/slice note/i), 'Reviewed PRs')
+      await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
+      await waitFor(async () => {
+        const data = await repo.getMonth(YEAR, MONTH)
+        expect(data[DATE]?.windows[0]?.slices[0]?.note).toBe('Reviewed PRs')
+      })
+    })
+
+    it('adds a slice without note when note field is empty', async () => {
+      const { repo } = setup([period('a', '09:00', '11:00')])
+      await screen.findByRole('button', { name: /split this period/i })
+      await userEvent.click(screen.getByRole('button', { name: /split this period/i }))
+      await userEvent.type(screen.getByLabelText(/slice duration/i), '1')
+      await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
+      await waitFor(async () => {
+        const data = await repo.getMonth(YEAR, MONTH)
+        expect(data[DATE]?.windows[0]?.slices[0]?.note).toBeUndefined()
+      })
+    })
+
+    it('editing a slice prefills note input with existing note', async () => {
+      setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1, 'Initial note')])
+      await screen.findByRole('button', { name: /edit Work slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit Work slice/i }))
+      expect(screen.getByLabelText<HTMLInputElement>(/slice note/i).value).toBe('Initial note')
+    })
+
+    it('editing a slice updates the note in the repository', async () => {
+      const { repo } = setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1, 'Old note')])
+      await screen.findByRole('button', { name: /edit Work slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit Work slice/i }))
+      const noteInput = screen.getByLabelText(/slice note/i)
+      await userEvent.clear(noteInput)
+      await userEvent.type(noteInput, 'New note')
+      await userEvent.click(screen.getByRole('button', { name: /save/i }))
+      await waitFor(async () => {
+        const data = await repo.getMonth(YEAR, MONTH)
+        expect(data[DATE]?.windows[0]?.slices[0]?.note).toBe('New note')
+      })
+    })
+
+    it('note input keeps focus while typing (no focus steal)', async () => {
+      setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1)])
+      await screen.findByRole('button', { name: /edit Work slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit Work slice/i }))
+      const noteInput = screen.getByLabelText(/slice note/i)
+      noteInput.focus()
+      await userEvent.type(noteInput, 'abc')
+      expect(document.activeElement).toBe(noteInput)
     })
   })
 

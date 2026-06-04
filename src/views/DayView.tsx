@@ -159,8 +159,7 @@ export function DayView() {
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
-  const customCategories = config?.customCategories ?? []
-  const categoryOrder = config?.categoryOrder
+  const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
 
   function prevDay() {
     const d = new Date(selectedDate)
@@ -219,6 +218,7 @@ export function DayView() {
           autoCategory={autoCategory ?? autoCategoryOverride}
           customCategories={customCategories}
           categoryOrder={categoryOrder}
+          categoryDescriptions={categoryDescriptions}
         />
       </section>
 

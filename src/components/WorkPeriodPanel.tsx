@@ -13,6 +13,7 @@ interface Props {
   autoCategory: string | null
   customCategories?: string[]
   categoryOrder?: string[]
+  categoryDescriptions?: Record<string, string>
 }
 
 function nowHHMM() {
@@ -48,9 +49,10 @@ interface CategoryPickerProps {
   categories: string[]
   onChange: (cat: string) => void
   compact?: boolean
+  categoryDescriptions?: Record<string, string>
 }
 
-function CategoryPicker({ value, categories, onChange, compact }: CategoryPickerProps) {
+function CategoryPicker({ value, categories, onChange, compact, categoryDescriptions }: CategoryPickerProps) {
   const selectClass = compact
     ? 'text-xs rounded border px-1 py-0.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[10rem]'
     : 'text-sm rounded-lg border px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 flex-1'
@@ -60,7 +62,7 @@ function CategoryPicker({ value, categories, onChange, compact }: CategoryPicker
       <option value={UNCATEGORIZED_CATEGORY}>Uncategorized</option>
       {categories.map((c) => (
         <option key={c} value={c}>
-          {c}
+          {categoryDescriptions?.[c] ? `${c} — ${categoryDescriptions[c]}` : c}
         </option>
       ))}
     </select>
@@ -75,12 +77,18 @@ interface SliceRowProps {
   date: string
   categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
+  categoryDescriptions?: Record<string, string>
 }
 
-function SliceRow({ sl, periodId, date, categories, mutations }: SliceRowProps) {
+function SliceRow({ sl, periodId, date, categories, mutations, categoryDescriptions }: SliceRowProps) {
   const [editing, setEditing] = useState(false)
   const [editCategory, setEditCategory] = useState(sl.category)
   const [editHours, setEditHours] = useState(String(sl.hours))
+  const [editNote, setEditNote] = useState(sl.note ?? '')
+  const hoursInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (editing) hoursInputRef.current?.focus()
+  }, [editing])
 
   function commitEdit() {
     const hours = parseDurationInput(editHours)
@@ -88,74 +96,106 @@ function SliceRow({ sl, periodId, date, categories, mutations }: SliceRowProps) 
       setEditing(false)
       return
     }
-    mutations.addSlice.mutate({ date, periodId, slice: { ...sl, category: editCategory, hours } })
+    const note = editNote.trim() || undefined
+    mutations.addSlice.mutate({ date, periodId, slice: { ...sl, category: editCategory, hours, note } })
     setEditing(false)
   }
 
   function beginEdit() {
     setEditCategory(sl.category)
     setEditHours(String(sl.hours))
+    setEditNote(sl.note ?? '')
     setEditing(true)
   }
 
   if (editing) {
     return (
       <div
-        className="flex items-center gap-2 text-sm py-0.5"
+        className="flex flex-col gap-1 text-sm py-0.5"
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) commitEdit()
         }}
       >
-        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
-        <CategoryPicker value={editCategory} categories={categories} onChange={setEditCategory} compact />
-        <input
-          type="text"
-          value={editHours}
-          onChange={(e) => setEditHours(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') commitEdit()
-            if (e.key === 'Escape') setEditing(false)
-          }}
-          aria-label="Slice hours"
-          ref={(el) => el?.focus()}
-          className="text-xs rounded border px-2 py-0.5 w-20 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
-        />
-        <button
-          onClick={commitEdit}
-          className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800"
-        >
-          Save
-        </button>
-        <button
-          onClick={() => setEditing(false)}
-          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-        >
-          Cancel
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
+          <CategoryPicker
+            value={editCategory}
+            categories={categories}
+            onChange={setEditCategory}
+            compact
+            categoryDescriptions={categoryDescriptions}
+          />
+          <input
+            type="text"
+            value={editHours}
+            onChange={(e) => setEditHours(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitEdit()
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            aria-label="Slice hours"
+            ref={hoursInputRef}
+            className="text-xs rounded border px-2 py-0.5 w-20 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          />
+          <button
+            onClick={commitEdit}
+            className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => setEditing(false)}
+            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            Cancel
+          </button>
+        </div>
+        <div className="flex items-center gap-2 pl-3.5">
+          <input
+            type="text"
+            value={editNote}
+            onChange={(e) => setEditNote(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitEdit()
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            placeholder="Note (optional)"
+            aria-label="Slice note"
+            className="text-xs rounded border px-2 py-0.5 flex-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 placeholder:text-gray-300 dark:placeholder:text-gray-600"
+          />
+        </div>
       </div>
     )
   }
 
+  const categoryDescription = categoryDescriptions?.[sl.category]
+
   return (
     <div className="flex items-center gap-2 text-sm group/slice">
-      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0" />
+      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-1" />
       <button
         onClick={beginEdit}
-        className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
+        className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight"
         aria-label={`Edit ${sl.category} slice`}
       >
-        {sl.category}
+        <span className="block">{sl.category}</span>
+        {categoryDescription && (
+          <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{categoryDescription}</span>
+        )}
+        {sl.note && (
+          <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 italic">{sl.note}</span>
+        )}
       </button>
       <button
         onClick={beginEdit}
-        className="text-gray-400 dark:text-gray-500 text-xs hover:text-indigo-600 dark:hover:text-indigo-400"
+        className="text-gray-400 dark:text-gray-500 text-xs hover:text-indigo-600 dark:hover:text-indigo-400 self-start mt-0.5"
         aria-label={`Edit ${sl.category} hours`}
       >
         {formatHours(sl.hours)}
       </button>
       <button
         onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: sl.id })}
-        className="ml-auto text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 text-base leading-none"
+        className="ml-auto text-gray-300 dark:text-gray-600 hover:text-red-500 dark:hover:text-red-400 text-base leading-none self-start"
         aria-label={`Remove ${sl.category} slice`}
       >
         ×
@@ -170,52 +210,79 @@ interface SliceFormProps {
   categories: string[]
   onAdd: (slice: WorkPeriodSlice) => void
   onCancel: () => void
+  categoryDescriptions?: Record<string, string>
 }
 
-function SliceForm({ categories, onAdd, onCancel }: SliceFormProps) {
+function SliceForm({ categories, onAdd, onCancel, categoryDescriptions }: SliceFormProps) {
   const [category, setCategory] = useState(categories[0] ?? UNCATEGORIZED_CATEGORY)
   const [durationRaw, setDurationRaw] = useState('')
+  const [note, setNote] = useState('')
+  const durationInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    durationInputRef.current?.focus()
+  }, [])
 
   function handleSubmit() {
     const hours = parseDurationInput(durationRaw)
     if (!hours || hours <= 0) return
-    onAdd({ id: crypto.randomUUID(), category, hours })
+    onAdd({ id: crypto.randomUUID(), category, hours, note: note.trim() || undefined })
     setDurationRaw('')
+    setNote('')
   }
 
   return (
     <div
-      className="flex items-center gap-2 flex-wrap"
+      className="flex flex-col gap-1"
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
       }}
     >
-      <CategoryPicker value={category} categories={categories} onChange={setCategory} compact />
+      <div className="flex items-center gap-2 flex-wrap">
+        <CategoryPicker
+          value={category}
+          categories={categories}
+          onChange={setCategory}
+          compact
+          categoryDescriptions={categoryDescriptions}
+        />
+        <input
+          type="text"
+          placeholder="1.5 or 1:30"
+          value={durationRaw}
+          onChange={(e) => setDurationRaw(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSubmit()
+            if (e.key === 'Escape') onCancel()
+          }}
+          aria-label="Slice duration"
+          ref={durationInputRef}
+          className="text-xs rounded border px-2 py-0.5 w-24 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        />
+        <button
+          onClick={handleSubmit}
+          className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
+        >
+          Add
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+        >
+          Cancel
+        </button>
+      </div>
       <input
         type="text"
-        placeholder="1.5 or 1:30"
-        value={durationRaw}
-        onChange={(e) => setDurationRaw(e.target.value)}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSubmit()
           if (e.key === 'Escape') onCancel()
         }}
-        aria-label="Slice duration"
-        ref={(el) => el?.focus()}
-        className="text-xs rounded border px-2 py-0.5 w-24 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        placeholder="Note (optional)"
+        aria-label="Slice note"
+        className="text-xs rounded border px-2 py-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 placeholder:text-gray-300 dark:placeholder:text-gray-600"
       />
-      <button
-        onClick={handleSubmit}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
-      >
-        Add
-      </button>
-      <button
-        onClick={onCancel}
-        className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-      >
-        Cancel
-      </button>
     </div>
   )
 }
@@ -317,6 +384,7 @@ interface PeriodCardProps {
   date: string
   categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
+  categoryDescriptions?: Record<string, string>
 }
 
 interface CardHeaderProps {
@@ -328,6 +396,7 @@ interface CardHeaderProps {
   uncategorized: boolean
   categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
+  categoryDescriptions?: Record<string, string>
 }
 
 function CardHeader({
@@ -339,6 +408,7 @@ function CardHeader({
   uncategorized,
   categories,
   mutations,
+  categoryDescriptions,
 }: CardHeaderProps) {
   const [editingTime, setEditingTime] = useState(false)
   const [editStart, setEditStart] = useState(w.start)
@@ -428,6 +498,7 @@ function CardHeader({
           categories={categories}
           onChange={(cat) => mutations.setPeriodCategory.mutate({ date, periodId: w.id, category: cat })}
           compact
+          categoryDescriptions={categoryDescriptions}
         />
         <button
           onClick={() => mutations.remove.mutate({ date, id: w.id })}
@@ -441,7 +512,38 @@ function CardHeader({
   )
 }
 
-function PeriodCard({ w, date, categories, mutations }: PeriodCardProps) {
+function RemainderRow({
+  remainder,
+  uncategorized,
+  category,
+  categoryDescriptions,
+}: {
+  remainder: number
+  uncategorized: boolean
+  category: string
+  categoryDescriptions?: Record<string, string>
+}) {
+  const dotClass = uncategorized ? 'bg-amber-400' : 'bg-emerald-400 dark:bg-emerald-500'
+  const labelClass = uncategorized ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'
+  const description = uncategorized ? undefined : categoryDescriptions?.[category]
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-start mt-1.5 ${dotClass}`} />
+      <span className={`font-medium leading-tight ${labelClass}`}>
+        <span className="block">{uncategorized ? 'Uncategorized' : category}</span>
+        {description && (
+          <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{description}</span>
+        )}
+      </span>
+      <span className="text-gray-400 dark:text-gray-500 text-xs self-start mt-0.5">{formatHours(remainder)}</span>
+      <span className="ml-auto text-[10px] text-gray-300 dark:text-gray-600 uppercase tracking-wide self-start mt-0.5">
+        base
+      </span>
+    </div>
+  )
+}
+
+function PeriodCard({ w, date, categories, mutations, categoryDescriptions }: PeriodCardProps) {
   const [addingSlice, setAddingSlice] = useState(false)
 
   const duration = periodDuration(w)
@@ -461,26 +563,29 @@ function PeriodCard({ w, date, categories, mutations }: PeriodCardProps) {
         uncategorized={uncategorized}
         categories={categories}
         mutations={mutations}
+        categoryDescriptions={categoryDescriptions}
       />
 
       <div className="px-4 py-3 flex flex-col gap-1.5">
         {w.slices.map((sl) => (
-          <SliceRow key={sl.id} sl={sl} periodId={w.id} date={date} categories={categories} mutations={mutations} />
+          <SliceRow
+            key={sl.id}
+            sl={sl}
+            periodId={w.id}
+            date={date}
+            categories={categories}
+            mutations={mutations}
+            categoryDescriptions={categoryDescriptions}
+          />
         ))}
 
         {remainder > 0.001 && (
-          <div className="flex items-center gap-2 text-sm">
-            <span
-              className={`w-1.5 h-1.5 rounded-full shrink-0 ${uncategorized ? 'bg-amber-400' : 'bg-emerald-400 dark:bg-emerald-500'}`}
-            />
-            <span
-              className={`font-medium ${uncategorized ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'}`}
-            >
-              {uncategorized ? 'Uncategorized' : w.category}
-            </span>
-            <span className="text-gray-400 dark:text-gray-500 text-xs">{formatHours(remainder)}</span>
-            <span className="ml-auto text-[10px] text-gray-300 dark:text-gray-600 uppercase tracking-wide">base</span>
-          </div>
+          <RemainderRow
+            remainder={remainder}
+            uncategorized={uncategorized}
+            category={w.category}
+            categoryDescriptions={categoryDescriptions}
+          />
         )}
 
         {overbooked && (
@@ -492,6 +597,7 @@ function PeriodCard({ w, date, categories, mutations }: PeriodCardProps) {
         {addingSlice ? (
           <SliceForm
             categories={categories}
+            categoryDescriptions={categoryDescriptions}
             onAdd={(sl) => {
               mutations.addSlice.mutate({ date, periodId: w.id, slice: sl })
               setAddingSlice(false)
@@ -520,6 +626,7 @@ export function WorkPeriodPanel({
   autoCategory,
   customCategories = [],
   categoryOrder,
+  categoryDescriptions,
 }: Props) {
   const mutations = useWorkPeriodMutations(repository)
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
@@ -539,7 +646,16 @@ export function WorkPeriodPanel({
       {sorted.length === 0 ? (
         <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-2">No periods recorded yet</p>
       ) : (
-        sorted.map((w) => <PeriodCard key={w.id} w={w} date={date} categories={categories} mutations={mutations} />)
+        sorted.map((w) => (
+          <PeriodCard
+            key={w.id}
+            w={w}
+            date={date}
+            categories={categories}
+            mutations={mutations}
+            categoryDescriptions={categoryDescriptions}
+          />
+        ))
       )}
       <AddPeriodForm windows={windows} defaultCategory={defaultCategory} categories={categories} onAdd={handleAdd} />
     </div>
