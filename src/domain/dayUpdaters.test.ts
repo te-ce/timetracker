@@ -144,7 +144,8 @@ describe('startLiveSlice', () => {
     const slices = result.windows[0]?.slices ?? []
     expect(slices).toHaveLength(2)
     const stopped = slices.find((s) => s.id === 's1')
-    expect(stopped?.startedAt).toBeUndefined()
+    expect(stopped?.startedAt).toBe('09:00')
+    expect(stopped?.stoppedAt).toBe('10:30')
     expect(stopped?.hours).toBe(1.5)
     expect(slices.find((s) => s.id === 's2')?.startedAt).toBe('10:30')
   })
@@ -157,7 +158,7 @@ describe('startLiveSlice', () => {
 })
 
 describe('stopLiveSlice', () => {
-  it('fills hours and removes startedAt from the matching slice', () => {
+  it('fills hours and sets stoppedAt on the matching slice', () => {
     const day = {
       ...emptyDay(),
       windows: [{ ...win('w1', '09:00', null), slices: [liveSlice('s1', '_SUPPORT', '09:00')] }],
@@ -165,7 +166,8 @@ describe('stopLiveSlice', () => {
     const result = stopLiveSlice(day, 'w1', 's1', '10:30')
     const s = result.windows[0]?.slices[0]
     expect(s?.hours).toBe(1.5)
-    expect(s?.startedAt).toBeUndefined()
+    expect(s?.startedAt).toBe('09:00')
+    expect(s?.stoppedAt).toBe('10:30')
   })
 
   it('computes exact minutes (e.g. 73 min = 73/60 h)', () => {
@@ -222,7 +224,8 @@ describe('stopPeriod', () => {
     const result = stopPeriod(day, 'w1', '11:00', 's1', '11:00')
     expect(result.windows[0]?.end).toBe('11:00')
     expect(result.windows[0]?.slices[0]?.hours).toBe(2)
-    expect(result.windows[0]?.slices[0]?.startedAt).toBeUndefined()
+    expect(result.windows[0]?.slices[0]?.startedAt).toBe('09:00')
+    expect(result.windows[0]?.slices[0]?.stoppedAt).toBe('11:00')
   })
 
   it('only sets period end when no liveSliceId is given', () => {

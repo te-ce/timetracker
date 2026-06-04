@@ -3,7 +3,7 @@ import type { WorkPeriod, WorkPeriodSlice, MonthRepository } from '../repositori
 import { UNCATEGORIZED_CATEGORY } from '../repositories/types'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
-import { calculateWorkedHours } from '../domain/worktime'
+import { calculateWorkedHours, calcSliceHours } from '../domain/worktime'
 import { getAllCategories } from '../domain/categories'
 import { useTimeFormatStore } from '../stores/timeFormatStore'
 import { formatHours } from '../domain/formatHours'
@@ -18,7 +18,8 @@ interface Props {
   categoryDescriptions?: Record<string, string>
 }
 
-type LiveSlice = WorkPeriodSlice & { startedAt: string }
+type LiveSlice = WorkPeriodSlice & { startedAt: string; stoppedAt?: undefined }
+type TimedSlice = WorkPeriodSlice & { startedAt: string; stoppedAt: string }
 
 function nowHHMM() {
   const d = new Date()
@@ -59,7 +60,11 @@ function elapsedDisplay(startedAt: string, nowTime: string): string {
 }
 
 function isLiveSlice(s: WorkPeriodSlice): s is LiveSlice {
-  return !!s.startedAt
+  return !!s.startedAt && !s.stoppedAt
+}
+
+function isTimedSlice(s: WorkPeriodSlice): s is TimedSlice {
+  return !!s.startedAt && !!s.stoppedAt
 }
 
 function useNow(): string {
@@ -343,104 +348,203 @@ interface SliceRowProps {
   categoryDescriptions?: Record<string, string>
 }
 
-function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDescriptions }: SliceRowProps) {
-  const [editing, setEditing] = useState(false)
+function resolveSliceEdit(
+  sl: WorkPeriodSlice,
+  category: string,
+  note: string | undefined,
+  start: string,
+  end: string,
+  hoursRaw: string,
+  submode: 'timed' | 'decimal',
+): { slice: WorkPeriodSlice; valid: boolean } {
+  if (submode === 'timed') {
+    const h = calcSliceHours(start, end)
+    if (!h || h <= 0) return { slice: sl, valid: false }
+    return { slice: { ...sl, category, hours: h, startedAt: start, stoppedAt: end, note }, valid: true }
+  }
+  const h = parseDurationInput(hoursRaw)
+  if (!h || h <= 0) return { slice: sl, valid: false }
+  return { slice: { ...sl, category, hours: h, startedAt: undefined, stoppedAt: undefined, note }, valid: true }
+}
+
+interface SliceEditFormProps {
+  sl: WorkPeriodSlice
+  periodId: string
+  date: string
+  categories: string[]
+  categoryDescriptions?: Record<string, string>
+  stripeBg: string
+  mutations: ReturnType<typeof useWorkPeriodMutations>
+  onDone: () => void
+}
+
+function SliceEditForm({
+  sl,
+  periodId,
+  date,
+  categories,
+  categoryDescriptions,
+  stripeBg,
+  mutations,
+  onDone,
+}: SliceEditFormProps) {
+  const timed = isTimedSlice(sl)
   const [editCategory, setEditCategory] = useState(sl.category)
   const [editHours, setEditHours] = useState(String(sl.hours))
   const [editNote, setEditNote] = useState(sl.note ?? '')
+  const [editStart, setEditStart] = useState(sl.startedAt ?? '')
+  const [editEnd, setEditEnd] = useState(sl.stoppedAt ?? '')
+  const [submode, setSubmode] = useState<'timed' | 'decimal'>(timed ? 'timed' : 'decimal')
   const hoursInputRef = useRef<HTMLInputElement>(null)
+  const endInputRef = useRef<HTMLInputElement>(null)
   const timeFormat = useTimeFormatStore((s) => s.format)
-  useEffect(() => {
-    if (editing) hoursInputRef.current?.focus()
-  }, [editing])
 
-  function commitEdit() {
-    const hours = parseDurationInput(editHours)
-    if (!hours || hours <= 0) {
-      setEditing(false)
+  useEffect(() => {
+    if (submode === 'timed') endInputRef.current?.focus()
+    else hoursInputRef.current?.focus()
+  }, [submode])
+
+  function commit() {
+    const { slice, valid } = resolveSliceEdit(
+      sl,
+      editCategory,
+      editNote.trim() || undefined,
+      editStart,
+      editEnd,
+      editHours,
+      submode,
+    )
+    if (!valid) {
+      onDone()
       return
     }
-    const note = editNote.trim() || undefined
-    mutations.addSlice.mutate({ date, periodId, slice: { ...sl, category: editCategory, hours, note } })
-    setEditing(false)
+    mutations.addSlice.mutate({ date, periodId, slice })
+    onDone()
   }
 
-  function beginEdit() {
-    setEditCategory(sl.category)
-    setEditHours(String(sl.hours))
-    setEditNote(sl.note ?? '')
-    setEditing(true)
+  function switchToDecimal() {
+    setEditHours(String(Math.round(calcSliceHours(editStart, editEnd) * 100) / 100))
+    setSubmode('decimal')
   }
 
-  const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
+  const inputClass =
+    'text-xs rounded border px-2 py-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
+  const kd = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') commit()
+    if (e.key === 'Escape') onDone()
+  }
 
-  if (editing) {
-    return (
-      <div
-        className={`flex flex-col gap-1 text-sm py-0.5 ${stripeBg}`}
-        onBlur={(e) => {
-          if (!e.currentTarget.contains(e.relatedTarget)) commitEdit()
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[3px]" />
-          <CategoryPicker
-            value={editCategory}
-            categories={categories}
-            onChange={setEditCategory}
-            compact
-            categoryDescriptions={categoryDescriptions}
-          />
+  return (
+    <div
+      className={`flex flex-col gap-1 text-sm py-0.5 ${stripeBg}`}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) commit()
+      }}
+    >
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[3px]" />
+        <CategoryPicker
+          value={editCategory}
+          categories={categories}
+          onChange={setEditCategory}
+          compact
+          categoryDescriptions={categoryDescriptions}
+        />
+        {timed && submode === 'timed' ? (
+          <>
+            <input
+              type="text"
+              value={editStart}
+              onChange={(e) => setEditStart(e.target.value)}
+              onKeyDown={kd}
+              aria-label="Slice start time"
+              className={`${inputClass} w-16`}
+            />
+            <span className="text-xs text-gray-400">–</span>
+            <input
+              type="text"
+              value={editEnd}
+              onChange={(e) => setEditEnd(e.target.value)}
+              onKeyDown={kd}
+              aria-label="Slice end time"
+              ref={endInputRef}
+              className={`${inputClass} w-16`}
+            />
+            <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
+              {formatHours(calcSliceHours(editStart, editEnd), timeFormat)}
+            </span>
+          </>
+        ) : (
           <input
             type="text"
             value={editHours}
             onChange={(e) => setEditHours(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitEdit()
-              if (e.key === 'Escape') setEditing(false)
-            }}
+            onKeyDown={kd}
             aria-label="Slice hours"
             ref={hoursInputRef}
-            className="text-xs rounded border px-2 py-0.5 w-20 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            className={`${inputClass} w-20`}
           />
-          <button
-            onClick={commitEdit}
-            className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => setEditing(false)}
-            className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            Cancel
-          </button>
-        </div>
-        <div className="flex items-center gap-2 pl-3.5">
-          <input
-            type="text"
-            value={editNote}
-            onChange={(e) => setEditNote(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') commitEdit()
-              if (e.key === 'Escape') setEditing(false)
-            }}
-            placeholder="Note (optional)"
-            aria-label="Slice note"
-            className="text-xs rounded border px-2 py-0.5 flex-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 placeholder:text-gray-300 dark:placeholder:text-gray-600"
-          />
-        </div>
+        )}
+        <button
+          onClick={commit}
+          className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800"
+        >
+          Save
+        </button>
+        <button onClick={onDone} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          Cancel
+        </button>
       </div>
+      <div className="flex items-center gap-2 pl-3.5">
+        <input
+          type="text"
+          value={editNote}
+          onChange={(e) => setEditNote(e.target.value)}
+          onKeyDown={kd}
+          placeholder="Note (optional)"
+          aria-label="Slice note"
+          className={`${inputClass} flex-1 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
+        />
+        {timed && submode === 'timed' && (
+          <button
+            onClick={switchToDecimal}
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 shrink-0"
+          >
+            use decimal
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDescriptions }: SliceRowProps) {
+  const [editing, setEditing] = useState(false)
+  const timed = isTimedSlice(sl)
+  const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
+  const timeFormat = useTimeFormatStore((s) => s.format)
+  const categoryDescription = categoryDescriptions?.[sl.category]
+
+  if (editing) {
+    return (
+      <SliceEditForm
+        sl={sl}
+        periodId={periodId}
+        date={date}
+        categories={categories}
+        categoryDescriptions={categoryDescriptions}
+        stripeBg={stripeBg}
+        mutations={mutations}
+        onDone={() => setEditing(false)}
+      />
     )
   }
-
-  const categoryDescription = categoryDescriptions?.[sl.category]
 
   return (
     <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-0.5 ${stripeBg}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[3px]" />
       <button
-        onClick={beginEdit}
+        onClick={() => setEditing(true)}
         className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight"
         aria-label={`Edit ${sl.category} slice`}
       >
@@ -453,11 +557,16 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
         )}
       </button>
       <button
-        onClick={beginEdit}
-        className="text-gray-400 dark:text-gray-500 text-xs hover:text-indigo-600 dark:hover:text-indigo-400 self-start mt-0.5"
+        onClick={() => setEditing(true)}
+        className="text-gray-400 dark:text-gray-500 text-xs hover:text-indigo-600 dark:hover:text-indigo-400 self-start mt-0.5 text-right"
         aria-label={`Edit ${sl.category} hours`}
       >
-        {formatHours(sl.hours, timeFormat)}
+        <span className="block">{formatHours(sl.hours, timeFormat)}</span>
+        {timed && (
+          <span className="block text-gray-300 dark:text-gray-600">
+            {sl.startedAt}–{sl.stoppedAt}
+          </span>
+        )}
       </button>
       <button
         onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: sl.id })}

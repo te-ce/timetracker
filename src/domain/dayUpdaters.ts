@@ -47,8 +47,8 @@ export function startLiveSlice(day: Day, periodId: string, newSlice: WorkPeriodS
     windows: day.windows.map((w) => {
       if (w.id !== periodId) return w
       const settled = w.slices.map((s) => {
-        if (!s.startedAt) return s
-        return { ...s, hours: calcSliceHours(s.startedAt, newSlice.startedAt), startedAt: undefined }
+        if (!s.startedAt || s.stoppedAt) return s
+        return { ...s, hours: calcSliceHours(s.startedAt, newSlice.startedAt), stoppedAt: newSlice.startedAt }
       })
       return { ...w, slices: [...settled, newSlice] }
     }),
@@ -64,7 +64,7 @@ export function stopLiveSlice(day: Day, periodId: string, sliceId: string, stopp
         ...w,
         slices: w.slices.map((s) => {
           if (s.id !== sliceId || !s.startedAt) return s
-          return { ...s, hours: calcSliceHours(s.startedAt, stoppedAt), startedAt: undefined }
+          return { ...s, hours: calcSliceHours(s.startedAt, stoppedAt), stoppedAt }
         }),
       }
     }),

@@ -36,6 +36,7 @@ export interface WorkPeriodSlice {
   category: string
   hours: number
   startedAt?: string
+  stoppedAt?: string
   note?: string
 }
 

@@ -388,7 +388,7 @@ describe('WorkPeriodPanel', () => {
       expect(await screen.findByRole('button', { name: /stop slice/i })).toBeInTheDocument()
     })
 
-    it('Stop slice saves computed hours and removes startedAt', async () => {
+    it('Stop slice saves computed hours and preserves start/end times', async () => {
       const { repo } = setup([periodWithLiveSlice('a', '09:00', 'Work', '09:00')])
       await screen.findByRole('button', { name: /stop slice/i })
       await userEvent.click(screen.getByRole('button', { name: /stop slice/i }))
@@ -399,7 +399,8 @@ describe('WorkPeriodPanel', () => {
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.slices[0]?.hours).toBe(1.5)
-        expect(saved[0]?.slices[0]?.startedAt).toBeUndefined()
+        expect(saved[0]?.slices[0]?.startedAt).toBe('09:00')
+        expect(saved[0]?.slices[0]?.stoppedAt).toBe('10:30')
       })
     })
 
@@ -426,7 +427,8 @@ describe('WorkPeriodPanel', () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.end).toBe('11:00')
         expect(saved[0]?.slices[0]?.hours).toBe(2)
-        expect(saved[0]?.slices[0]?.startedAt).toBeUndefined()
+        expect(saved[0]?.slices[0]?.startedAt).toBe('09:00')
+        expect(saved[0]?.slices[0]?.stoppedAt).toBe('11:00')
       })
     })
   })
