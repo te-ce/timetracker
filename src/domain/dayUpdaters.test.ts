@@ -96,6 +96,22 @@ describe('upsertSlice', () => {
     expect(result.windows[0]?.slices).toHaveLength(1)
     expect(result.windows[0]?.slices[0]?.hours).toBe(2)
   })
+
+  it('preserves slice order when updating an existing slice', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [
+        {
+          ...win('w1', '08:00', '12:00'),
+          slices: [slice('s1', '_SUPPORT', 1), slice('s2', '_GUILDS', 2), slice('s3', '_DEV', 3)],
+        },
+      ],
+    }
+    const result = upsertSlice(day, 'w1', slice('s2', '_GUILDS', 99))
+    const ids = result.windows[0]?.slices.map((s) => s.id)
+    expect(ids).toEqual(['s1', 's2', 's3'])
+    expect(result.windows[0]?.slices[1]?.hours).toBe(99)
+  })
 })
 
 describe('removeSlice', () => {

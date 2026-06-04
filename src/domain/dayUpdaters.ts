@@ -19,9 +19,16 @@ export function updatePeriodCategory(day: Day, periodId: string, category: strin
 export function upsertSlice(day: Day, periodId: string, slice: WorkPeriodSlice): Day {
   return {
     ...day,
-    windows: day.windows.map((w) =>
-      w.id === periodId ? { ...w, slices: [...w.slices.filter((s) => s.id !== slice.id), slice] } : w,
-    ),
+    windows: day.windows.map((w) => {
+      if (w.id !== periodId) return w
+      const idx = w.slices.findIndex((s) => s.id === slice.id)
+      if (idx >= 0) {
+        const slices = [...w.slices]
+        slices[idx] = slice
+        return { ...w, slices }
+      }
+      return { ...w, slices: [...w.slices, slice] }
+    }),
   }
 }
 
