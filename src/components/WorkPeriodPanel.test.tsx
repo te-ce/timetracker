@@ -156,7 +156,7 @@ describe('WorkPeriodPanel', () => {
     async function setupWithPeriod() {
       const { repo } = setup([period('a', '09:00', '11:00')])
       await screen.findByRole('button', { name: /edit period/i })
-      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
+      await userEvent.click(screen.getByRole('button', { name: /log time/i }))
       return { repo }
     }
 
@@ -361,19 +361,19 @@ describe('WorkPeriodPanel', () => {
   describe('live slice tracking', () => {
     it('shows Start slice button on running period', async () => {
       setup([period('a', '09:00', null)])
-      expect(await screen.findByRole('button', { name: /\+ start slice/i })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /live timer/i })).toBeInTheDocument()
     })
 
     it('does not show Start slice button on closed period', async () => {
       setup([period('a', '09:00', '17:00')])
       await screen.findByRole('button', { name: /edit period/i })
-      expect(screen.queryByRole('button', { name: /\+ start slice/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /live timer/i })).not.toBeInTheDocument()
     })
 
     it('Start slice persists a live slice in the repository', async () => {
       const { repo } = setup([period('a', '09:00', null)])
-      await screen.findByRole('button', { name: /\+ start slice/i })
-      await userEvent.click(screen.getByRole('button', { name: /\+ start slice/i }))
+      await screen.findByRole('button', { name: /live timer/i })
+      await userEvent.click(screen.getByRole('button', { name: /live timer/i }))
       await userEvent.click(screen.getByRole('button', { name: /^start$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -495,8 +495,8 @@ describe('WorkPeriodPanel', () => {
 
     it('includes description in category dropdown options', async () => {
       setup([period('a', '09:00', '11:00')], null, descriptions)
-      await screen.findByRole('button', { name: /\+ add slice/i })
-      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
+      await screen.findByRole('button', { name: /log time/i })
+      await userEvent.click(screen.getByRole('button', { name: /log time/i }))
       const selects = screen.getAllByRole<HTMLSelectElement>('combobox', { name: /category/i })
       const allOptions = selects.flatMap((s) => Array.from(s.options).map((o) => o.text))
       expect(allOptions).toContain('Work — Deep work sessions')
@@ -505,8 +505,8 @@ describe('WorkPeriodPanel', () => {
 
     it('does not append separator when category has no description', async () => {
       setup([period('a', '09:00', '11:00')], null, { Work: 'Deep work sessions' })
-      await screen.findByRole('button', { name: /\+ add slice/i })
-      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
+      await screen.findByRole('button', { name: /log time/i })
+      await userEvent.click(screen.getByRole('button', { name: /log time/i }))
       const selects = screen.getAllByRole<HTMLSelectElement>('combobox', { name: /category/i })
       const allOptions = selects.flatMap((s) => Array.from(s.options).map((o) => ({ value: o.value, text: o.text })))
       const meetingOption = allOptions.find((o) => o.value === 'Meeting')
@@ -528,8 +528,8 @@ describe('WorkPeriodPanel', () => {
 
     it('adds a slice with a note and persists it', async () => {
       const { repo } = setup([period('a', '09:00', '11:00')])
-      await screen.findByRole('button', { name: /\+ add slice/i })
-      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
+      await screen.findByRole('button', { name: /log time/i })
+      await userEvent.click(screen.getByRole('button', { name: /log time/i }))
       await userEvent.type(screen.getByLabelText(/slice duration/i), '1.5')
       await userEvent.type(screen.getByLabelText(/slice note/i), 'Reviewed PRs')
       await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
@@ -541,8 +541,8 @@ describe('WorkPeriodPanel', () => {
 
     it('adds a slice without note when note field is empty', async () => {
       const { repo } = setup([period('a', '09:00', '11:00')])
-      await screen.findByRole('button', { name: /\+ add slice/i })
-      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
+      await screen.findByRole('button', { name: /log time/i })
+      await userEvent.click(screen.getByRole('button', { name: /log time/i }))
       await userEvent.type(screen.getByLabelText(/slice duration/i), '1')
       await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
       await waitFor(async () => {

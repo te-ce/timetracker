@@ -204,9 +204,7 @@ export function DayView() {
       </div>
 
       <section aria-label="Work periods">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-          Work periods
-        </h3>
+        <h3 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>
         <WorkOverview
           date={selectedDate}
           windows={windows}

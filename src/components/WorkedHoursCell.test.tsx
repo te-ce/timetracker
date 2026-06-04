@@ -242,8 +242,8 @@ describe('WorkedHoursCell', () => {
     it('user can add a slice to an existing period', async () => {
       const { repo } = setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByRole('button', { name: /\+ add slice/i })
-      await userEvent.click(screen.getByRole('button', { name: /\+ add slice/i }))
+      await screen.findByRole('button', { name: /log time/i })
+      await userEvent.click(screen.getByRole('button', { name: /log time/i }))
       await userEvent.type(screen.getByLabelText(/slice duration/i), '2')
       await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
       await waitFor(async () => {

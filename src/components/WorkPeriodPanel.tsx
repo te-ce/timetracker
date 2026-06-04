@@ -614,7 +614,7 @@ function PeriodCardFooter({
           title="Start a live timer for a category within this period"
           className="text-xs text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
         >
-          + Start slice
+          ▶ Live timer
         </button>
       )}
       <button
@@ -622,7 +622,7 @@ function PeriodCardFooter({
         title="Record a completed time block within this period"
         className="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
       >
-        + Add slice
+        + Log time
       </button>
     </div>
   )
@@ -746,8 +746,9 @@ function CardHeader({
   const showStopButton = isRunning && !stoppingPeriod
 
   return (
-    <div className={`px-4 py-3 ${headerBg(overbooked, uncategorized, isRunning)}`}>
-      <div className="flex items-center justify-between">
+    <div className={headerBg(overbooked, uncategorized, isRunning)}>
+      {/* Row 1: time range + duration + status badges + delete */}
+      <div className="flex items-center justify-between px-4 py-2.5">
         <div className="flex items-center gap-3 min-w-0">
           {editingTime ? (
             <div
@@ -822,48 +823,53 @@ function CardHeader({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <CategoryPicker
-            value={w.category}
-            categories={categories}
-            onChange={(cat) => mutations.setPeriodCategory.mutate({ date, periodId: w.id, category: cat })}
-            compact
-            categoryDescriptions={categoryDescriptions}
-          />
-          {showStopButton && (
-            <button
-              onClick={() => setStoppingPeriod(true)}
-              aria-label="Stop tracking"
-              className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5"
-            >
-              Stop
-            </button>
-          )}
-          <button
-            onClick={() => mutations.remove.mutate({ date, id: w.id })}
-            className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none"
-            aria-label="Remove period"
-          >
-            ×
-          </button>
-        </div>
+        <button
+          onClick={() => mutations.remove.mutate({ date, id: w.id })}
+          className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none shrink-0"
+          aria-label="Remove period"
+        >
+          ×
+        </button>
       </div>
-      {stoppingPeriod && (
-        <StopPeriodForm
-          periodStart={w.start}
-          liveSlice={liveSlice}
-          onStop={(stopTime) => {
-            mutations.stopPeriod.mutate({
-              date,
-              periodId: w.id,
-              endTime: stopTime,
-              liveSliceId: liveSlice?.id,
-              stoppedAt: liveSlice ? stopTime : undefined,
-            })
-            setStoppingPeriod(false)
-          }}
-          onCancel={() => setStoppingPeriod(false)}
+
+      {/* Row 2: category + stop — visually subordinate strip */}
+      <div className="flex items-center justify-between px-4 py-1.5 border-t border-black/[0.06] dark:border-white/[0.06]">
+        <CategoryPicker
+          value={w.category}
+          categories={categories}
+          onChange={(cat) => mutations.setPeriodCategory.mutate({ date, periodId: w.id, category: cat })}
+          compact
+          categoryDescriptions={categoryDescriptions}
         />
+        {showStopButton && (
+          <button
+            onClick={() => setStoppingPeriod(true)}
+            aria-label="Stop tracking"
+            className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5"
+          >
+            Stop
+          </button>
+        )}
+      </div>
+
+      {stoppingPeriod && (
+        <div className="px-4 pb-3">
+          <StopPeriodForm
+            periodStart={w.start}
+            liveSlice={liveSlice}
+            onStop={(stopTime) => {
+              mutations.stopPeriod.mutate({
+                date,
+                periodId: w.id,
+                endTime: stopTime,
+                liveSliceId: liveSlice?.id,
+                stoppedAt: liveSlice ? stopTime : undefined,
+              })
+              setStoppingPeriod(false)
+            }}
+            onCancel={() => setStoppingPeriod(false)}
+          />
+        </div>
       )}
     </div>
   )
