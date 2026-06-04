@@ -572,20 +572,22 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
 
   return (
     <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-1.5 ${stripeBg}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[5px]" />
+      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 mt-[3px] self-start" />
       <button
         onClick={() => setEditing(true)}
         className="flex-1 font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight min-w-0"
         aria-label={`Edit ${sl.category} slice`}
       >
-        <span className="block">{sl.category}</span>
+        <span className="block">
+          {sl.category}
+          {timed && (
+            <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500 tabular-nums">
+              {sl.startedAt}–{sl.stoppedAt}
+            </span>
+          )}
+        </span>
         {categoryDescription && (
           <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{categoryDescription}</span>
-        )}
-        {timed && (
-          <span className="block text-xs font-normal text-gray-400 dark:text-gray-500 tabular-nums">
-            {sl.startedAt}–{sl.stoppedAt}
-          </span>
         )}
         {sl.note && (
           <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 italic">{sl.note}</span>
