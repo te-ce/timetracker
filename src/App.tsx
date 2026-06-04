@@ -1,5 +1,6 @@
 import './App.css'
 import { useState, useEffect, useCallback } from 'react'
+import type React from 'react'
 import { Link, Outlet, useRouterState, useNavigate, useRouter } from '@tanstack/react-router'
 import { useAuthStore } from './stores/authStore'
 import { useThemeStore } from './stores/themeStore'
@@ -18,12 +19,104 @@ import { defaultHotkeyConfig, matchesShortcut } from './domain/hotkeyConfig'
 import { QUERY_KEYS } from './hooks/queryKeys'
 import { useRepositories } from './repositories/RepositoryContext'
 
-const NAV_ITEMS: { label: string; icon: string; to: string }[] = [
-  { label: 'Month', icon: '📆', to: '/' },
-  { label: 'Grid', icon: '📊', to: '/grid' },
-  { label: 'Day', icon: '📅', to: '/day' },
-  { label: 'Sprint', icon: '⚡', to: '/sprint' },
-  { label: 'Settings', icon: '⚙️', to: '/settings' },
+function IconCalendar() {
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  )
+}
+
+function IconGrid() {
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  )
+}
+
+function IconDay() {
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+      <circle cx="12" cy="16" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
+function IconBolt() {
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+    </svg>
+  )
+}
+
+function IconSettings() {
+  return (
+    <svg
+      className="h-4 w-4"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+    </svg>
+  )
+}
+
+const NAV_ITEMS: { label: string; icon: React.ReactNode; to: string }[] = [
+  { label: 'Month', icon: <IconCalendar />, to: '/' },
+  { label: 'Grid', icon: <IconGrid />, to: '/grid' },
+  { label: 'Day', icon: <IconDay />, to: '/day' },
+  { label: 'Sprint', icon: <IconBolt />, to: '/sprint' },
+  { label: 'Settings', icon: <IconSettings />, to: '/settings' },
 ]
 
 function isDaySearch(search: unknown): search is { date: string } {
@@ -36,22 +129,24 @@ function SyncIndicator() {
   if (!msalInstance) {
     return (
       <span
-        className="text-sm text-gray-400 dark:text-gray-500 leading-none"
+        className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
         aria-label="Local only mode"
         title="Microsoft not configured — local only"
       >
-        💾
+        <span aria-hidden="true">💾</span>
+        <span>Local</span>
       </span>
     )
   }
 
   return (
     <span
-      className="text-sm text-gray-400 dark:text-gray-500 leading-none"
+      className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
       aria-label={isAuthenticated ? 'OneDrive sync active' : 'Offline mode'}
       title={isAuthenticated ? 'Synced with OneDrive' : 'Offline — sign in to sync'}
     >
-      {isAuthenticated ? '☁️' : '💾'}
+      <span aria-hidden="true">{isAuthenticated ? '☁️' : '💾'}</span>
+      <span>{isAuthenticated ? 'OneDrive' : 'Offline'}</span>
     </span>
   )
 }
@@ -167,9 +262,9 @@ function TimeFormatToggle() {
       onClick={toggleFormat}
       aria-label={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
       title={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
-      className="rounded-lg px-2 py-1 text-xs font-medium tabular-nums text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+      className="rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs font-medium tabular-nums text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
     >
-      {format === 'decimal' ? '4.5h' : '4:30'}
+      {format === 'decimal' ? 'Dec.' : 'HH:MM'}
     </button>
   )
 }
@@ -285,13 +380,13 @@ function App() {
           <Link
             key={item.label}
             to={item.to}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
               currentPath === item.to
                 ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
-                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
             }`}
           >
-            <span aria-hidden="true">{item.icon}</span>
+            {item.icon}
             {item.label}
           </Link>
         ))}

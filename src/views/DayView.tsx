@@ -51,7 +51,7 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
       {isConfirmed ? (
         <button
           onClick={onUnconfirm}
-          className="rounded border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+          className="rounded-md border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
           aria-label="Unconfirm day"
         >
           ✓ Confirmed
@@ -59,7 +59,7 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
       ) : (
         <button
           onClick={onConfirm}
-          className="rounded border px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
+          className="rounded-md border px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
           aria-label="Confirm day"
         >
           Confirm
@@ -67,7 +67,7 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
       )}
       <button
         onClick={onReset}
-        className="rounded border px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+        className="text-xs font-medium text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400"
         aria-label="Reset all data for this day"
       >
         Reset all
@@ -90,7 +90,7 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
     <div className="flex items-center gap-4">
       <button
         aria-label="Previous day"
-        className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
+        className="rounded-md border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         onClick={onPrev}
       >
         ← Prev
@@ -98,7 +98,7 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
       <div className="flex flex-1 items-center justify-center gap-2">
         <h2 className="text-xl font-semibold">{formatDate(selectedDate)}</h2>
         <button
-          className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isToday ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}
+          className={`rounded-md border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isToday ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}
           onClick={onToday}
           disabled={isToday}
           aria-label="Go to today"
@@ -108,7 +108,7 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
       </div>
       <button
         aria-label="Next day"
-        className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
+        className="rounded-md border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         onClick={onNext}
       >
         Next →
@@ -203,6 +203,9 @@ export function DayView() {
       </div>
 
       <section aria-label="Work periods">
+        <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          Work periods
+        </h3>
         <WorkOverview
           date={selectedDate}
           windows={windows}

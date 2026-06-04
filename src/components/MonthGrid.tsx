@@ -307,16 +307,22 @@ export function MonthGrid({
               </th>
               <th
                 className="sticky left-12 z-30 bg-white dark:bg-gray-800 px-1 py-1.5 w-5 border-b dark:border-gray-700"
-                title="Status"
-              ></th>
+                title="Day status — click to change day type"
+              >
+                <span className="sr-only">Status</span>
+              </th>
               <th
                 className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-right w-16 border-b dark:border-gray-700"
                 role="columnheader"
               >
                 Worked
               </th>
-              <th className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700">
-                📍
+              <th
+                className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700"
+                title="Work location — click to toggle Office / Remote"
+              >
+                <span aria-hidden="true">📍</span>
+                <span className="sr-only">Location</span>
               </th>
               <th className="w-px border-l border-b border-gray-300 dark:border-gray-600"></th>
               {allCategories.map((cat, catIdx) => (
@@ -339,14 +345,23 @@ export function MonthGrid({
                   onSetEditingCat={setEditingCat}
                 />
               ))}
-              <th className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200 dark:border-gray-700">
-                <span className="text-xs">✓</span>
+              <th
+                className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200 dark:border-gray-700"
+                title="Confirmed — click to confirm or unconfirm"
+              >
+                <span className="text-xs" aria-hidden="true">
+                  ✓
+                </span>
+                <span className="sr-only">Confirmed</span>
               </th>
               <th
                 className="px-1 py-1.5 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700"
-                title="Notes"
+                title="Day notes"
               >
-                <span className="text-xs">📝</span>
+                <span aria-hidden="true" className="text-xs">
+                  📝
+                </span>
+                <span className="sr-only">Notes</span>
               </th>
             </tr>
           </thead>
