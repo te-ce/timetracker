@@ -3,6 +3,8 @@ import { renderHook, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
+import { InteractionStatus, Logger, stubbedPublicClientApplication } from '@azure/msal-browser'
+import type { AccountInfo } from '@azure/msal-browser'
 
 vi.mock('@azure/msal-react', () => ({
   useMsal: vi.fn(),
@@ -25,6 +27,26 @@ import { useAuthStore } from '../stores/authStore'
 const mockUseMsal = vi.mocked(useMsal)
 const mockResetAllRepositories = vi.mocked(resetAllRepositories)
 
+const logger = new Logger({})
+
+const emptyAccounts: AccountInfo[] = []
+const noAccounts = {
+  accounts: emptyAccounts,
+  instance: stubbedPublicClientApplication,
+  inProgress: InteractionStatus.None,
+  logger,
+}
+
+function makeAccount(homeAccountId: string): AccountInfo {
+  return {
+    homeAccountId,
+    localAccountId: homeAccountId,
+    environment: 'login.microsoftonline.com',
+    tenantId: 'tenant-id',
+    username: 'user@example.com',
+  }
+}
+
 function makeWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: queryClient }, children)
@@ -38,26 +60,19 @@ beforeEach(() => {
 
 describe('useMsalSync', () => {
   it('sets isAuthenticated to false when no accounts are present', () => {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    mockUseMsal.mockReturnValue({
-      accounts: [],
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+    mockUseMsal.mockReturnValue(noAccounts)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
   })
 
   it('sets isAuthenticated to true when an account is present', () => {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      accounts: [{ homeAccountId: 'user1', username: 'user@example.com' } as unknown as never],
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+      accounts: [makeAccount('user1')],
+      instance: stubbedPublicClientApplication,
+      inProgress: InteractionStatus.None,
+      logger,
+    })
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
@@ -68,24 +83,15 @@ describe('useMsalSync', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     queryClient.invalidateQueries = invalidateQueries
 
-    // Start unauthenticated
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    mockUseMsal.mockReturnValue({
-      accounts: [],
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+    mockUseMsal.mockReturnValue(noAccounts)
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
-    // Sign in
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      accounts: [{ homeAccountId: 'user1' } as unknown as never],
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+      accounts: [makeAccount('user1')],
+      instance: stubbedPublicClientApplication,
+      inProgress: InteractionStatus.None,
+      logger,
+    })
     act(() => {
       rerender()
     })
@@ -99,27 +105,18 @@ describe('useMsalSync', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     queryClient.invalidateQueries = invalidateQueries
 
-    // Start authenticated
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      accounts: [{ homeAccountId: 'user1' } as unknown as never],
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+      accounts: [makeAccount('user1')],
+      instance: stubbedPublicClientApplication,
+      inProgress: InteractionStatus.None,
+      logger,
+    })
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
     invalidateQueries.mockClear()
 
-    // Sign out
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    mockUseMsal.mockReturnValue({
-      accounts: [],
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+    mockUseMsal.mockReturnValue(noAccounts)
     act(() => {
       rerender()
     })
@@ -129,18 +126,12 @@ describe('useMsalSync', () => {
   })
 
   it('does not reset repositories when auth state stays false', () => {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    mockUseMsal.mockReturnValue({
-      accounts: [],
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+    mockUseMsal.mockReturnValue(noAccounts)
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
 
-    // Stay unauthenticated
     act(() => {
       rerender()
     })
@@ -149,20 +140,18 @@ describe('useMsalSync', () => {
   })
 
   it('does not reset repositories when auth state stays true', () => {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const account = { homeAccountId: 'user1' } as unknown as never
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const account = makeAccount('user1')
     mockUseMsal.mockReturnValue({
       accounts: [account],
-      instance: {} as unknown as never,
-      inProgress: 'none',
-    } as unknown as ReturnType<typeof useMsal>)
+      instance: stubbedPublicClientApplication,
+      inProgress: InteractionStatus.None,
+      logger,
+    })
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
 
-    // Stay authenticated
     act(() => {
       rerender()
     })
