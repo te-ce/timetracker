@@ -97,43 +97,37 @@ export function OvertimeBar({
       aria-label={summary}
       className="rounded-lg border bg-gray-50 dark:bg-gray-900 dark:border-gray-700 px-4 py-3"
     >
-      <div className="flex items-center justify-between gap-6" aria-hidden="true">
-        {/* Left: inputs summary */}
-        <div className="flex flex-col gap-0.5 min-w-0">
-          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-medium text-gray-700 dark:text-gray-200 tabular-nums">{sollstunden}h</span>
-            <span>target</span>
-            <span className="text-gray-300 dark:text-gray-600">·</span>
-            <span className={`font-medium tabular-nums ${overtimeClass}`}>
-              {overtimeSign}
-              {formatHours(Math.abs(priorOvertime), timeFormat)}
-            </span>
-            <span>carry-over</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-medium text-gray-700 dark:text-gray-200 tabular-nums">
-              {formatHours(workedToday, timeFormat)}
-            </span>
-            <span>logged today</span>
-            {activeTrackingStartedAt && <TrackingBadge startedAt={activeTrackingStartedAt} />}
-          </div>
-          {officeStats && (
-            <div className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              <span aria-hidden="true">🏢</span>
-              <span>{officeStats.officePercent}% office</span>
-              <span className="text-gray-300 dark:text-gray-600">·</span>
-              <span>
-                {officeStats.officeDays}/{officeStats.totalWorkDays} days
-              </span>
-            </div>
-          )}
+      <div className="flex items-center justify-between gap-4">
+        <div
+          className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400"
+          aria-hidden="true"
+        >
+          <span className="font-medium text-gray-700 dark:text-gray-200">{sollstunden}h</span>
+          <span>target</span>
+          <span className="text-gray-300 dark:text-gray-600">{overtimeSign}</span>
+          <span className={`font-medium ${overtimeClass}`}>
+            {formatHours(Math.abs(priorOvertime), timeFormat)} {overtimeLabel}
+          </span>
+          <span className="text-gray-300 dark:text-gray-600">−</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">
+            {formatHours(workedToday, timeFormat)} worked
+          </span>
+          {activeTrackingStartedAt && <TrackingBadge startedAt={activeTrackingStartedAt} />}
         </div>
-
-        {/* Right: result */}
-        <div className="shrink-0 text-right">
-          <span className={`text-xl font-bold tabular-nums ${resultClass}`}>{remainingLabel}</span>
-        </div>
+        <span className={`text-lg font-bold tabular-nums shrink-0 ${resultClass}`} aria-hidden="true">
+          {remainingLabel}
+        </span>
       </div>
+      {officeStats && (
+        <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
+          <span aria-hidden="true">🏢</span>
+          <span>{officeStats.officePercent}% office</span>
+          <span className="text-gray-300 dark:text-gray-600">·</span>
+          <span>
+            {officeStats.officeDays}/{officeStats.totalWorkDays} days
+          </span>
+        </div>
+      )}
     </div>
   )
 }
