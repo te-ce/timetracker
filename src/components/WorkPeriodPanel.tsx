@@ -578,17 +578,20 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
         className="flex-1 font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight min-w-0"
         aria-label={`Edit ${sl.category} slice`}
       >
-        <span className="block">
+        <span className="block truncate" title={categoryDescription}>
           {sl.category}
+          {categoryDescription && (
+            <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">
+              {' '}
+              — {categoryDescription}
+            </span>
+          )}
           {timed && (
             <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500 tabular-nums">
               {sl.startedAt}–{sl.stoppedAt}
             </span>
           )}
         </span>
-        {categoryDescription && (
-          <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{categoryDescription}</span>
-        )}
         {sl.note && (
           <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 italic">{sl.note}</span>
         )}
