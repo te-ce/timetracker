@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WorkPeriodPanel } from './WorkPeriodPanel'
@@ -204,6 +204,16 @@ describe('WorkPeriodPanel', () => {
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
       expect(await screen.findByRole('button', { name: /edit period 09:00/i })).toBeInTheDocument()
       expect(screen.queryByLabelText('Edit start time')).not.toBeInTheDocument()
+    })
+
+    it('end time input keeps focus after value change triggers re-render', async () => {
+      setup([period('a', '09:00', '17:00')])
+      await screen.findByRole('button', { name: /edit period 09:00/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit period 09:00/i }))
+      const endInput = screen.getByLabelText('Edit end time')
+      endInput.focus()
+      fireEvent.change(endInput, { target: { value: '18:00' } })
+      expect(document.activeElement).toBe(endInput)
     })
   })
 

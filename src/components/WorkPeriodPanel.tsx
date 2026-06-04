@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { WorkPeriod, WorkPeriodSlice, MonthRepository } from '../repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../repositories/types'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
@@ -343,6 +343,10 @@ function CardHeader({
   const [editingTime, setEditingTime] = useState(false)
   const [editStart, setEditStart] = useState(w.start)
   const [editEnd, setEditEnd] = useState(w.end ?? '')
+  const startInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (editingTime) startInputRef.current?.focus()
+  }, [editingTime])
 
   function saveTime() {
     mutations.saveWithAbsorbed.mutate({ date, window: { ...w, start: editStart, end: editEnd || null }, absorbed: [] })
@@ -374,7 +378,7 @@ function CardHeader({
                 if (e.key === 'Escape') setEditingTime(false)
               }}
               aria-label="Edit start time"
-              ref={(el) => el?.focus()}
+              ref={startInputRef}
               className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
             />
             <span className="text-gray-400 text-sm">–</span>
