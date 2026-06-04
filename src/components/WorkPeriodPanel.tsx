@@ -232,23 +232,53 @@ interface LiveSliceBannerProps {
   periodId: string
   date: string
   nowTime: string
+  categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
   categoryDescriptions?: Record<string, string>
 }
 
-function LiveSliceBanner({ slice, periodId, date, nowTime, mutations, categoryDescriptions }: LiveSliceBannerProps) {
+function LiveSliceBanner({
+  slice,
+  periodId,
+  date,
+  nowTime,
+  categories,
+  mutations,
+  categoryDescriptions,
+}: LiveSliceBannerProps) {
   const [stopping, setStopping] = useState(false)
+  const [editingCategory, setEditingCategory] = useState(false)
   const elapsed = elapsedDisplay(slice.startedAt, nowTime)
   const description = categoryDescriptions?.[slice.category]
+
+  function changeCategory(cat: string) {
+    mutations.addSlice.mutate({ date, periodId, slice: { ...slice, category: cat } })
+    setEditingCategory(false)
+  }
 
   return (
     <div className="flex flex-col gap-1 mb-2 pb-2 border-b dark:border-gray-700">
       <div className="flex items-start gap-2 text-sm">
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0 mt-[3px]" />
-        <span className="font-medium text-gray-700 dark:text-gray-300 flex-1 leading-tight">
-          <span className="block">{slice.category}</span>
-          {description && (
-            <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{description}</span>
+        <span className="flex-1 leading-tight">
+          {editingCategory ? (
+            <CategoryPicker
+              value={slice.category}
+              categories={categories}
+              onChange={changeCategory}
+              compact
+              categoryDescriptions={categoryDescriptions}
+            />
+          ) : (
+            <button
+              onClick={() => setEditingCategory(true)}
+              className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
+            >
+              <span className="block">{slice.category}</span>
+              {description && (
+                <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{description}</span>
+              )}
+            </button>
           )}
         </span>
         <span className="font-mono text-sm text-green-600 dark:text-green-400 font-semibold tabular-nums">
@@ -1056,6 +1086,7 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
             periodId={w.id}
             date={date}
             nowTime={nowTime}
+            categories={categories}
             mutations={mutations}
             categoryDescriptions={categoryDescriptions}
           />
