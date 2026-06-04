@@ -1,6 +1,7 @@
 import { toLocalIso } from '../domain/dateUtils'
 import type { DayStatus } from '../domain/dayStatus'
-import { STATUS_CELL, STATUS_LABEL } from '../domain/statusColors'
+import { STATUS_CELL, STATUS_DOT, STATUS_LABEL, TODAY_DOT } from '../domain/statusColors'
+import type { DisplayStatus } from '../domain/statusColors'
 import { StatusLegend } from './StatusLegend'
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
   onSelectDate: (isoDate: string) => void
   onMonthChange?: (year: number, month: number) => void
   dayStatusMap?: Record<string, DayStatus>
+  dayDisplayStatusMap?: Record<string, DisplayStatus>
   dayStatusReasonMap?: Record<string, string>
   dayNoteMap?: Record<string, string>
 }
@@ -42,12 +44,20 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days
 }
 
+function buildDots(status: DayStatus, displayStatus: DisplayStatus | undefined): string[] {
+  if (status === 'today') {
+    return displayStatus ? [TODAY_DOT, STATUS_DOT[displayStatus]] : [TODAY_DOT]
+  }
+  return [STATUS_DOT[status]]
+}
+
 export function MonthCalendar({
   year,
   month,
   onSelectDate,
   onMonthChange,
   dayStatusMap = {},
+  dayDisplayStatusMap = {},
   dayStatusReasonMap = {},
   dayNoteMap = {},
 }: Props) {
@@ -127,21 +137,30 @@ export function MonthCalendar({
             month: 'long',
             year: 'numeric',
           })
+          const displayStatus = dayDisplayStatusMap[iso]
+          const dots = buildDots(status, displayStatus)
           return (
             <div key={date.getDate()} className="group relative">
               <button
                 onClick={() => onSelectDate(iso)}
                 aria-label={label}
                 aria-current={isToday ? 'date' : undefined}
-                className={`relative w-full rounded-lg px-2 py-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
+                className={`relative w-full rounded-lg px-2 pb-3 pt-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
               >
                 {date.getDate()}
-                {isToday && (
+                {displayStatus === 'confirmed' && (
                   <span
-                    className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-emerald-700"
+                    className="absolute top-0.5 right-1 text-[9px] font-bold leading-none text-emerald-600 dark:text-emerald-400"
                     aria-hidden="true"
-                  />
+                  >
+                    ✓
+                  </span>
                 )}
+                <span className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5" aria-hidden="true">
+                  {dots.map((cls, i) => (
+                    <span key={i} className={`h-1 w-1 rounded-full ${cls}`} />
+                  ))}
+                </span>
               </button>
               {(reason || note) && (
                 <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden w-max max-w-52 -translate-x-1/2 group-hover:block">

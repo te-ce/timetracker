@@ -8,6 +8,7 @@ import { useMonthSummaries } from '../hooks/useMonthSummaries'
 import { useRepositories } from '../repositories/RepositoryContext'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { DayStatus } from '../domain/dayStatus'
+import type { DisplayStatus } from '../domain/statusColors'
 
 export function MonthView() {
   const { monthRepo, timeTrackingRepo } = useRepositories()
@@ -43,9 +44,11 @@ export function MonthView() {
   const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
 
   const dayStatusMap: Record<string, DayStatus> = {}
+  const dayDisplayStatusMap: Record<string, DisplayStatus> = {}
   const dayStatusReasonMap: Record<string, string> = {}
   for (const day of summaries.days) {
     dayStatusMap[day.date] = day.dayStatus
+    dayDisplayStatusMap[day.date] = day.displayStatus
     dayStatusReasonMap[day.date] = day.statusReason
   }
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
@@ -58,6 +61,7 @@ export function MonthView() {
         onSelectDate={onSelectDate}
         onMonthChange={onMonthChange}
         dayStatusMap={dayStatusMap}
+        dayDisplayStatusMap={dayDisplayStatusMap}
         dayStatusReasonMap={dayStatusReasonMap}
         dayNoteMap={dayNoteMap}
       />

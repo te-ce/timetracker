@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { MonthCalendar } from './MonthCalendar'
 import type { DayStatus } from '../domain/dayStatus'
+import type { DisplayStatus } from '../domain/statusColors'
 
 describe('MonthCalendar', () => {
   it('renders all days of the given month', () => {
@@ -112,6 +113,162 @@ describe('MonthCalendar', () => {
     await userEvent.click(screen.getByRole('button', { name: /current month/i }))
     const now = new Date()
     expect(onMonthChange).toHaveBeenCalledWith(now.getFullYear(), now.getMonth())
+  })
+
+  describe('status dots', () => {
+    function dotsIn(button: HTMLElement) {
+      return button.querySelectorAll('span.rounded-full')
+    }
+
+    it('every day shows one dot for its status color', () => {
+      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'complete' }
+      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'complete' }
+      render(
+        <MonthCalendar
+          year={2024}
+          month={0}
+          onSelectDate={vi.fn()}
+          dayStatusMap={dayStatusMap}
+          dayDisplayStatusMap={dayDisplayStatusMap}
+        />,
+      )
+      const dots = dotsIn(screen.getByText('15'))
+      expect(dots).toHaveLength(1)
+      expect(dots[0].className).toContain('bg-emerald-500')
+    })
+
+    it('today shows two dots — orange then displayStatus color', () => {
+      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
+      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'untracked' }
+      render(
+        <MonthCalendar
+          year={2024}
+          month={0}
+          onSelectDate={vi.fn()}
+          dayStatusMap={dayStatusMap}
+          dayDisplayStatusMap={dayDisplayStatusMap}
+        />,
+      )
+      const dots = dotsIn(screen.getByText('15'))
+      expect(dots).toHaveLength(2)
+      expect(dots[0].className).toContain('bg-orange-400')
+      expect(dots[1].className).toContain('bg-blue-300')
+    })
+
+    it('today shows two dots when displayStatus is complete', () => {
+      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
+      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'complete' }
+      render(
+        <MonthCalendar
+          year={2024}
+          month={0}
+          onSelectDate={vi.fn()}
+          dayStatusMap={dayStatusMap}
+          dayDisplayStatusMap={dayDisplayStatusMap}
+        />,
+      )
+      const dots = dotsIn(screen.getByText('15'))
+      expect(dots).toHaveLength(2)
+      expect(dots[0].className).toContain('bg-orange-400')
+      expect(dots[1].className).toContain('bg-emerald-500')
+    })
+
+    it('days without a status map entry show a future dot', () => {
+      render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} />)
+      const dots = dotsIn(screen.getByText('10'))
+      expect(dots).toHaveLength(1)
+      expect(dots[0].className).toContain('bg-gray-200')
+    })
+
+    it('each status maps to its correct dot color', () => {
+      const cases: [DayStatus & DisplayStatus, string][] = [
+        ['confirmed', 'bg-emerald-500'],
+        ['complete', 'bg-emerald-500'],
+        ['needs-review', 'bg-yellow-400'],
+        ['leave', 'bg-purple-400'],
+        ['non-working', 'bg-gray-400'],
+        ['untracked', 'bg-blue-300'],
+      ]
+      for (const [status, expectedClass] of cases) {
+        const dayStatusMap: Record<string, DayStatus> = { '2024-01-10': status }
+        const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-10': status }
+        const { unmount } = render(
+          <MonthCalendar
+            year={2024}
+            month={0}
+            onSelectDate={vi.fn()}
+            dayStatusMap={dayStatusMap}
+            dayDisplayStatusMap={dayDisplayStatusMap}
+          />,
+        )
+        const dots = dotsIn(screen.getByText('10'))
+        expect(dots).toHaveLength(1)
+        expect(dots[0].className).toContain(expectedClass)
+        unmount()
+      }
+    })
+
+    it('confirmed day gets light emerald cell, checkmark overlay, and emerald dot', () => {
+      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'confirmed' }
+      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'confirmed' }
+      render(
+        <MonthCalendar
+          year={2024}
+          month={0}
+          onSelectDate={vi.fn()}
+          dayStatusMap={dayStatusMap}
+          dayDisplayStatusMap={dayDisplayStatusMap}
+        />,
+      )
+      const button = screen.getByText('15')
+      expect(button.className).toContain('bg-emerald-100')
+      expect(button.textContent).toContain('✓')
+      const dots = dotsIn(button)
+      expect(dots).toHaveLength(1)
+      expect(dots[0].className).toContain('bg-emerald-500')
+    })
+
+    it('today with confirmed displayStatus shows checkmark overlay', () => {
+      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
+      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'confirmed' }
+      render(
+        <MonthCalendar
+          year={2024}
+          month={0}
+          onSelectDate={vi.fn()}
+          dayStatusMap={dayStatusMap}
+          dayDisplayStatusMap={dayDisplayStatusMap}
+        />,
+      )
+      expect(screen.getByText('15').textContent).toContain('✓')
+    })
+
+    it('today without dayDisplayStatusMap shows only the orange dot', () => {
+      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
+      render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
+      const dots = dotsIn(screen.getByText('15'))
+      expect(dots).toHaveLength(1)
+      expect(dots[0].className).toContain('bg-orange-400')
+    })
+
+    it('non-confirmed displayStatus does not show checkmark', () => {
+      const statuses: DisplayStatus[] = ['complete', 'needs-review', 'untracked', 'future']
+      for (const displayStatus of statuses) {
+        const dayStatusMap: Record<string, DayStatus> = { '2024-01-10': displayStatus }
+        const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-10': displayStatus }
+        const { unmount } = render(
+          <MonthCalendar
+            year={2024}
+            month={0}
+            onSelectDate={vi.fn()}
+            dayStatusMap={dayStatusMap}
+            dayDisplayStatusMap={dayDisplayStatusMap}
+          />,
+        )
+        expect(screen.getByText('10').textContent).not.toContain('✓')
+        unmount()
+      }
+    })
   })
 
   it('shows a reason tooltip element when dayStatusReasonMap has entry', () => {
