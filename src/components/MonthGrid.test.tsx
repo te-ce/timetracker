@@ -67,7 +67,7 @@ describe('MonthGrid', () => {
 
     const rows = screen.getAllByRole('row')
     // header row + 31 data rows + 1 footer total row
-    expect(rows.length).toBe(33)
+    expect(rows.length).toBe(39)
   })
 
   it('displays workedHours computed from WorkPeriods', async () => {
@@ -459,11 +459,11 @@ describe('MonthGrid', () => {
       expect(screen.getByText('Sprint 1 Total')).toBeInTheDocument()
     })
 
-    it('does not render sprint headers when sprintStartDate is null', async () => {
+    it('renders sprint headers with default Jan 1 start when sprintStartDate is null', async () => {
       setup({ sprintStartDate: null })
 
       await screen.findByRole('row', { name: /2026-05-01/ })
-      expect(screen.queryByText(/Sprint \d/)).not.toBeInTheDocument()
+      expect(screen.queryAllByText(/Sprint \d/).length).toBeGreaterThan(0)
     })
 
     it('sprint total row shows correct worked hours from periods in that sprint', async () => {

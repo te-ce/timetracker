@@ -76,6 +76,10 @@ interface Props {
   onSelectDate?: (isoDate: string) => void
 }
 
+function resolveSprintStart(sprintStartDate: string | null, year: number): string {
+  return sprintStartDate ?? `${year}-01-01`
+}
+
 function resolveWorkLocation(
   workLocations: Map<string, WorkLocation>,
   date: string,
@@ -282,7 +286,7 @@ export function MonthGrid({
 
   const allCategories = getAllCategories(customCategories, categoryOrder)
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
-  const sprintGroups = computeSprintGroups(rows, sprintStartDate, sprintLengthDays)
+  const sprintGroups = computeSprintGroups(rows, resolveSprintStart(sprintStartDate, year), sprintLengthDays)
 
   // day + status + worked + location + separator + categories + confirm + note
   const colCount = allCategories.length + 7

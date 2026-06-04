@@ -23,8 +23,7 @@ function resolveSprintState(
   sprintIndex: number | null,
   today: string,
 ): SprintState | null {
-  const startDate = config?.sprintStartDate ?? null
-  if (!startDate) return null
+  const startDate = config?.sprintStartDate ?? `${new Date(today).getUTCFullYear()}-01-01`
   const sprintConfig: SprintConfig = {
     startDate,
     lengthDays: config?.sprintLengthDays ?? DEFAULT_APP_CONFIG.sprintLengthDays,
