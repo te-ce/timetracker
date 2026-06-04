@@ -96,12 +96,13 @@ describe('buildMonthSummaries', () => {
     expect(result.days[18]!.dayStatus).toBe('today')
   })
 
-  it('surfaces isConfirmed from raw day data', () => {
+  it('surfaces isConfirmed from raw day data and sets confirmed status', () => {
     const monthData: MonthData = {
       '2026-05-01': { windows: [win('w1', '09:00', '12:00', '_UNCATEGORIZED')], confirmed: true },
     }
     const result = buildMonthSummaries(2026, 5, { monthData, today })
     expect(result.days[0]!.isConfirmed).toBe(true)
-    expect(result.days[0]!.dayStatus).toBe('needs-review')
+    expect(result.days[0]!.dayStatus).toBe('confirmed')
+    expect(result.days[0]!.displayStatus).toBe('confirmed')
   })
 })

@@ -1,7 +1,7 @@
 import { STATUS_DOT, STATUS_LABEL } from '../domain/statusColors'
 import type { DisplayStatus } from '../domain/statusColors'
 
-const LEGEND_STATUSES: DisplayStatus[] = ['complete', 'needs-review', 'untracked', 'future', 'leave', 'non-working']
+const LEGEND_STATUSES: DisplayStatus[] = ['confirmed', 'needs-review', 'untracked', 'future', 'leave', 'non-working']
 
 export function StatusLegend({ className }: { className?: string }) {
   return (

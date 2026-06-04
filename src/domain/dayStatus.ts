@@ -1,6 +1,14 @@
 import type { DayType } from './dayType'
 
-export type DayStatus = 'non-working' | 'leave' | 'future' | 'today' | 'complete' | 'needs-review' | 'untracked'
+export type DayStatus =
+  | 'non-working'
+  | 'leave'
+  | 'future'
+  | 'today'
+  | 'confirmed'
+  | 'complete'
+  | 'needs-review'
+  | 'untracked'
 
 export interface ClassifyDayInput {
   dayType: DayType
@@ -63,11 +71,16 @@ function classifyTrackedDay(
   manualTotal: number,
   isEntriesBalanced: boolean,
   hasAutoCategory: boolean,
+  isConfirmed: boolean,
   isToday: boolean,
 ): DayClassification {
   const prefix = isToday ? 'Today — ' : ''
   const balance = balanceReason(workedHours, manualTotal, hasAutoCategory)
 
+  if (isConfirmed) {
+    const status: DayStatus = isToday ? 'today' : 'confirmed'
+    return { status, displayStatus: 'confirmed', reason: `${prefix}Confirmed — ${balance}` }
+  }
   if (isEntriesBalanced) {
     const status: DayStatus = isToday ? 'today' : 'complete'
     return { status, displayStatus: 'complete', reason: `${prefix}${balance}` }
@@ -82,6 +95,7 @@ export function classifyDay({
   manualTotal,
   isEntriesBalanced,
   hasAutoCategory,
+  isConfirmed,
   isoDate,
   today,
 }: ClassifyDayInput): DayClassification {
@@ -110,5 +124,5 @@ export function classifyDay({
     return { status, displayStatus: 'untracked', reason: `${prefix}No hours recorded` }
   }
 
-  return classifyTrackedDay(workedHours, manualTotal, isEntriesBalanced, hasAutoCategory, isToday)
+  return classifyTrackedDay(workedHours, manualTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, isToday)
 }
