@@ -577,8 +577,9 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
         onClick={() => setEditing(true)}
         className="flex-1 font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight min-w-0"
         aria-label={`Edit ${sl.category} slice`}
+        data-tooltip={categoryDescription}
       >
-        <span className="block truncate" title={categoryDescription}>
+        <span className="block truncate">
           {sl.category}
           {categoryDescription && (
             <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">
@@ -755,7 +756,7 @@ function PeriodCardFooter({
       {isRunning && (
         <button
           onClick={() => setStartingSlice(true)}
-          title="Start a live timer for a category within this period"
+          data-tooltip="Start a live timer for a category within this period"
           className="text-xs text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
         >
           ▶ Live timer
@@ -763,7 +764,7 @@ function PeriodCardFooter({
       )}
       <button
         onClick={() => setAddingSlice(true)}
-        title="Record a completed time block within this period"
+        data-tooltip="Record a completed time block within this period"
         className="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
       >
         + Log time

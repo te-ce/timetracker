@@ -136,7 +136,7 @@ export function CustomCategorySettings({ repository }: Props) {
                   setEditingIdx(idx)
                   setEditValue(cat)
                 }}
-                title="Double-click to rename"
+                data-tooltip="Double-click to rename"
               >
                 {cat}
               </span>
@@ -172,7 +172,9 @@ export function CustomCategorySettings({ repository }: Props) {
         </button>
       </div>
 
-      <p className="text-xs text-gray-500 dark:text-gray-400">Drag to reorder. Double-click to rename. Changes apply across all views.</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        Drag to reorder. Double-click to rename. Changes apply across all views.
+      </p>
     </div>
   )
 }

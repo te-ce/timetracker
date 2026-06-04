@@ -213,7 +213,7 @@ function CategorySettingsRow({
               setEditingName(true)
               setNameValue(cat)
             }}
-            title={nameTitle}
+            data-tooltip={nameTitle}
           >
             {cat}
           </span>
@@ -249,7 +249,7 @@ function CategorySettingsRow({
               setEditingDesc(true)
               setDescValue(categoryDescription ?? '')
             }}
-            title="Click to edit description"
+            data-tooltip="Click to edit description"
           >
             {categoryDescription ?? <em>add description</em>}
           </button>
@@ -264,7 +264,7 @@ function CategorySettingsRow({
             {isAutoMatch && (
               <span
                 className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400"
-                title="Auto-matched — please verify"
+                data-tooltip="Auto-matched — please verify"
               >
                 auto
               </span>
@@ -287,7 +287,7 @@ function CategorySettingsRow({
         ) : taskId ? (
           <span
             className="rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 font-mono text-xs text-gray-600 dark:text-gray-400 truncate"
-            title={taskId}
+            data-tooltip={taskId}
           >
             {taskId}
           </span>
@@ -527,7 +527,7 @@ export function CategorySettings({ repository }: Props) {
             <button
               onClick={handleResetToImportOrder}
               className="rounded border px-2.5 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
-              title="Reset sort order to the order categories appeared in Excel"
+              data-tooltip="Reset sort order to the order categories appeared in Excel"
             >
               Reset to Excel order
             </button>

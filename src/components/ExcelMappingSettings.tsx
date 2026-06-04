@@ -30,10 +30,7 @@ function resolveNotReadyHint(url: string | null | undefined, file: string | null
   return getNotReadyHint(url ?? undefined, file)
 }
 
-function getNotReadyHint(
-  sharepointUrl: string | undefined,
-  localExcelFile: string | undefined | null,
-): string {
+function getNotReadyHint(sharepointUrl: string | undefined, localExcelFile: string | undefined | null): string {
   if (localFolder) {
     return !localExcelFile ? 'Select an Excel file first' : 'Select a target sheet first'
   }
@@ -82,19 +79,30 @@ interface MappingRowProps {
   onMappingChange: (category: string, taskId: string) => void
 }
 
-function MappingRow({ category, isFixed, currentTaskId, isAutoMatched, excelRows, onClearAutoMatch, onMappingChange }: MappingRowProps) {
+function MappingRow({
+  category,
+  isFixed,
+  currentTaskId,
+  isAutoMatched,
+  excelRows,
+  onClearAutoMatch,
+  onMappingChange,
+}: MappingRowProps) {
   return (
     <li className="flex items-center gap-3">
       <span
         className={`w-40 truncate text-sm font-medium ${isFixed ? '' : 'text-indigo-700 dark:text-indigo-300'}`}
-        title={category}
+        data-tooltip={category}
       >
         {category}
         {!isFixed && <span className="ml-1 text-xs text-gray-400 dark:text-gray-500">(custom)</span>}
       </span>
       <div className="relative flex flex-1 items-center gap-1">
         {isAutoMatched && (
-          <span className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400" title="Auto-matched by name — please verify">
+          <span
+            className="shrink-0 rounded bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 text-xs text-amber-700 dark:text-amber-400"
+            data-tooltip="Auto-matched by name — please verify"
+          >
             auto
           </span>
         )}
@@ -110,7 +118,8 @@ function MappingRow({ category, isFixed, currentTaskId, isAutoMatched, excelRows
           <option value="">— skip —</option>
           {excelRows.map((row) => (
             <option key={row.taskId} value={row.taskId}>
-              {row.taskId}{row.description ? ` — ${row.description}` : ''}
+              {row.taskId}
+              {row.description ? ` — ${row.description}` : ''}
             </option>
           ))}
         </select>
@@ -171,11 +180,11 @@ function MappingSaveRow({ isDirty, isPending, isSuccess, isError, onSave }: Mapp
           Save mapping
         </button>
       )}
-      {isSuccess && !isDirty && (
-        <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>
-      )}
+      {isSuccess && !isDirty && <span className="text-xs text-green-700 dark:text-emerald-400">✓ Mapping saved</span>}
       {isError && (
-        <p role="alert" className="text-xs text-red-600">Failed to save mapping.</p>
+        <p role="alert" className="text-xs text-red-600">
+          Failed to save mapping.
+        </p>
       )}
     </div>
   )
@@ -211,9 +220,7 @@ export function ExcelMappingSettings({ repository }: Props) {
       const saved = config ? (config.categoryMapping ?? {}) : {}
       const allCats = getAllCategories(config ? config.customCategories : [], config ? config.categoryOrder : undefined)
       const merged = autoMatchCategories(allCats, rows, saved)
-      const newAutoMatched = new Set(
-        Object.keys(merged).filter((k) => !saved[k] && merged[k]),
-      )
+      const newAutoMatched = new Set(Object.keys(merged).filter((k) => !saved[k] && merged[k]))
       setAutoMatched(newAutoMatched)
       setLocalMapping(merged)
     } catch (err) {
@@ -223,7 +230,13 @@ export function ExcelMappingSettings({ repository }: Props) {
     }
   }
 
-  async function saveMappingFn({ mapping, newCustomCategories }: { mapping: Record<string, string>; newCustomCategories: string[] }) {
+  async function saveMappingFn({
+    mapping,
+    newCustomCategories,
+  }: {
+    mapping: Record<string, string>
+    newCustomCategories: string[]
+  }) {
     const current = await repository.get()
     const mergedCustom = [
       ...current.customCategories,
@@ -257,7 +270,11 @@ export function ExcelMappingSettings({ repository }: Props) {
   }
 
   function handleClearAutoMatch(category: string) {
-    setAutoMatched((prev) => { const s = new Set(prev); s.delete(category); return s })
+    setAutoMatched((prev) => {
+      const s = new Set(prev)
+      s.delete(category)
+      return s
+    })
   }
 
   function handleAddAsCategory(row: ExcelRow) {
@@ -297,15 +314,13 @@ export function ExcelMappingSettings({ repository }: Props) {
         >
           {loadButtonLabel}
         </button>
-        {showNotReadyHint && (
-          <span className="text-xs text-gray-400 dark:text-gray-500">
-            {notReadyHint}
-          </span>
-        )}
+        {showNotReadyHint && <span className="text-xs text-gray-400 dark:text-gray-500">{notReadyHint}</span>}
       </div>
 
       {loadError && (
-        <p role="alert" className="text-xs text-red-600">{loadError}</p>
+        <p role="alert" className="text-xs text-red-600">
+          {loadError}
+        </p>
       )}
 
       {excelRows.length > 0 && (
@@ -325,10 +340,7 @@ export function ExcelMappingSettings({ repository }: Props) {
             ))}
           </ul>
 
-          <UnmappedRowsSection
-            unmappedRows={unmappedRows}
-            onAddAsCategory={handleAddAsCategory}
-          />
+          <UnmappedRowsSection unmappedRows={unmappedRows} onAddAsCategory={handleAddAsCategory} />
 
           <MappingSaveRow
             isDirty={isDirty}
@@ -342,8 +354,7 @@ export function ExcelMappingSettings({ repository }: Props) {
 
       {showMappedHint && (
         <p className="text-xs text-gray-500 dark:text-gray-400">
-          {savedMappingCount} categories mapped.{' '}
-          Load from Excel to edit.
+          {savedMappingCount} categories mapped. Load from Excel to edit.
         </p>
       )}
     </section>

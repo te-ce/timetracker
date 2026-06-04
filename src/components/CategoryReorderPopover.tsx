@@ -76,7 +76,7 @@ export function CategoryReorderPopover({ repository }: Props) {
       <button
         onClick={() => setOpen((v) => !v)}
         className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-        title="Reorder categories"
+        data-tooltip="Reorder categories"
         aria-label="Reorder categories"
       >
         ⠿ Categories

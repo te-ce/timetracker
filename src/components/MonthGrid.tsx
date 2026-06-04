@@ -116,7 +116,7 @@ function ConfirmCell({ date, isNonWorkDay, isConfirmed, onConfirm, onUnconfirm }
         }
       }}
       aria-label={confirmLabel}
-      title={confirmTitle}
+      data-tooltip={confirmTitle}
     >
       {!isNonWorkDay && (
         <span
@@ -307,7 +307,7 @@ export function MonthGrid({
               </th>
               <th
                 className="sticky left-12 z-30 bg-white dark:bg-gray-800 px-1 py-1.5 w-5 border-b dark:border-gray-700"
-                title="Day status — click to change day type"
+                data-tooltip="Day status — click to change day type"
               >
                 <span className="sr-only">Status</span>
               </th>
@@ -319,7 +319,7 @@ export function MonthGrid({
               </th>
               <th
                 className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700"
-                title="Work location — click to toggle Office / Remote"
+                data-tooltip="Work location — click to toggle Office / Remote"
               >
                 <span aria-hidden="true">📍</span>
                 <span className="sr-only">Location</span>
@@ -347,7 +347,7 @@ export function MonthGrid({
               ))}
               <th
                 className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200 dark:border-gray-700"
-                title="Confirmed — click to confirm or unconfirm"
+                data-tooltip="Confirmed — click to confirm or unconfirm"
               >
                 <span className="text-xs" aria-hidden="true">
                   ✓
@@ -356,7 +356,7 @@ export function MonthGrid({
               </th>
               <th
                 className="px-1 py-1.5 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700"
-                title="Day notes"
+                data-tooltip="Day notes"
               >
                 <span aria-hidden="true" className="text-xs">
                   📝
@@ -386,13 +386,13 @@ export function MonthGrid({
                         <button
                           onClick={() => onSelectDate(row.date)}
                           className="font-mono text-xs text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none"
-                          title={`Open ${row.date}`}
+                          data-tooltip={`Open ${row.date}`}
                         >
                           {row.date.slice(8)}
                           <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
                         </button>
                       ) : (
-                        <span title={row.date}>
+                        <span data-tooltip={row.date}>
                           {row.date.slice(8)}
                           <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
                         </span>
@@ -423,7 +423,7 @@ export function MonthGrid({
                         onClick={() => cycleLocation(row.date)}
                         className="w-full h-full text-xs hover:bg-gray-100 dark:hover:bg-gray-700 py-1"
                         aria-label={`Location ${row.date}`}
-                        title={loc}
+                        data-tooltip={loc}
                       >
                         {locIcon}
                       </button>
@@ -436,7 +436,7 @@ export function MonthGrid({
                         <td key={cat} className="px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem]">
                           <span
                             className={`inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-600 dark:text-gray-300 ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
-                            title="Edit hours in Day view"
+                            data-tooltip="Edit hours in Day view"
                           >
                             {val}
                           </span>
@@ -464,7 +464,7 @@ export function MonthGrid({
                           }}
                           className="w-full py-1 text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
                           aria-label={`Note for ${row.date}`}
-                          title={dayNotes.get(row.date) ?? 'Add note'}
+                          data-tooltip={dayNotes.get(row.date) ?? 'Add note'}
                         >
                           <span className={dayNotes.has(row.date) ? 'opacity-100' : 'opacity-20'}>📝</span>
                         </button>

@@ -102,7 +102,7 @@ describe('MonthGrid', () => {
     const row = await screen.findByRole('row', { name: /2026-05-01/ })
     // 8h worked, 3h _SUPPORT, 5h uncategorized → appears in _COREMEDIA (auto-category) column
     await waitFor(() => {
-      const coremediaCell = within(row).getAllByTitle('Edit hours in Day view')[2]
+      const coremediaCell = row.querySelectorAll('[data-tooltip="Edit hours in Day view"]')[2]
       expect(coremediaCell).toHaveTextContent('5')
     })
   })
@@ -390,7 +390,7 @@ describe('MonthGrid', () => {
       setup({ onSelectDate })
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dayBtn = within(row).getByTitle('Open 2026-05-04')
+      const dayBtn = row.querySelector('[data-tooltip="Open 2026-05-04"]')
       expect(dayBtn).toBeInTheDocument()
     })
 
@@ -399,7 +399,7 @@ describe('MonthGrid', () => {
       setup({ onSelectDate })
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dayBtn = within(row).getByTitle('Open 2026-05-04')
+      const dayBtn = row.querySelector('[data-tooltip="Open 2026-05-04"]')
       await userEvent.click(dayBtn)
 
       expect(onSelectDate).toHaveBeenCalledWith('2026-05-04')
@@ -411,7 +411,7 @@ describe('MonthGrid', () => {
       setup({ onAutoCategoryChange: vi.fn() })
 
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      const setAutoBtn = within(header).getByTitle('Set "_SUPPORT" as auto category')
+      const setAutoBtn = header.querySelector(`[data-tooltip='Set "_SUPPORT" as auto category']`)
       expect(setAutoBtn).toBeInTheDocument()
     })
 
@@ -420,7 +420,7 @@ describe('MonthGrid', () => {
       setup({ onAutoCategoryChange })
 
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      const setAutoBtn = within(header).getByTitle('Set "_SUPPORT" as auto category')
+      const setAutoBtn = header.querySelector(`[data-tooltip='Set "_SUPPORT" as auto category']`)
       await userEvent.click(setAutoBtn)
 
       expect(onAutoCategoryChange).toHaveBeenCalledWith('_SUPPORT')
