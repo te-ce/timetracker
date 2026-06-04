@@ -465,5 +465,76 @@ describe('MonthGrid', () => {
       await screen.findByRole('row', { name: /2026-05-01/ })
       expect(screen.queryByText(/Sprint \d/)).not.toBeInTheDocument()
     })
+
+    it('sprint total row shows correct worked hours from periods in that sprint', async () => {
+      setup({
+        sprintStartDate: '2026-05-01',
+        sprintLengthDays: 14,
+        monthData: {
+          '2026-05-02': {
+            windows: [w('a', '09:00', '12:00'), w('b', '13:00', '17:00')],
+          },
+          '2026-05-05': {
+            windows: [w('c', '08:00', '10:30')],
+          },
+        },
+      })
+
+      // 3h + 4h + 2.5h = 9.5h
+      await waitFor(() => {
+        expect(screen.getByTestId('sprint-worked-Sprint 1')).toHaveTextContent('9.50')
+      })
+    })
+
+    it('sprint total row shows 0.00 for an empty sprint', async () => {
+      setup({
+        sprintStartDate: '2026-05-01',
+        sprintLengthDays: 14,
+      })
+
+      await waitFor(() => {
+        expect(screen.getByTestId('sprint-worked-Sprint 1')).toHaveTextContent('0.00')
+      })
+    })
+
+    it('sprint total row shows category hours for periods in that sprint', async () => {
+      setup({
+        sprintStartDate: '2026-05-01',
+        sprintLengthDays: 14,
+        monthData: {
+          '2026-05-03': {
+            windows: [w('s', '09:00', '11:00', '_SUPPORT')],
+          },
+        },
+      })
+
+      // _SUPPORT gets 2h; worked column also shows 2.00
+      await waitFor(() => {
+        expect(screen.getByTestId('sprint-worked-Sprint 1')).toHaveTextContent('2.00')
+      })
+      // Category breakdown: _SUPPORT should show 2.00
+      const s1Row = screen.getByText('Sprint 1 Total').closest('tr')!
+      expect(within(s1Row).getAllByText('2.00').length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('excludes entries from a different sprint in the total row', async () => {
+      setup({
+        sprintStartDate: '2026-05-01',
+        sprintLengthDays: 14,
+        monthData: {
+          '2026-05-02': {
+            windows: [w('in', '09:00', '12:00')], // Sprint 1: 3h
+          },
+          '2026-05-16': {
+            windows: [w('out', '09:00', '17:00')], // Sprint 2: 8h
+          },
+        },
+      })
+
+      await waitFor(() => {
+        expect(screen.getByTestId('sprint-worked-Sprint 1')).toHaveTextContent('3.00')
+        expect(screen.getByTestId('sprint-worked-Sprint 2')).toHaveTextContent('8.00')
+      })
+    })
   })
 })

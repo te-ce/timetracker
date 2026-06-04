@@ -11,7 +11,7 @@ import { InMemoryConfigRepository } from '../repositories/in-memory/config-repos
 import { InMemoryTimeTrackingRepository } from '../repositories/in-memory/time-tracking-repository'
 import { InMemorySprintExportRepository } from '../repositories/in-memory/sprint-export-repository'
 import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
-import type { AppConfig } from '../repositories/types'
+import type { AppConfig, MonthData } from '../repositories/types'
 
 vi.mock('../auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -27,10 +27,15 @@ vi.mock('../services/workbookFactory', () => ({
   isExportReady: vi.fn().mockReturnValue(false),
 }))
 
-function makeWrapper(config: AppConfig = DEFAULT_APP_CONFIG) {
+// Pin "today" to 2026-01-10 so Sprint 1 (Jan 5–18) is always the current sprint in data tests
+vi.mock('../domain/dateUtils', () => ({
+  toLocalIso: vi.fn().mockReturnValue('2026-01-10'),
+}))
+
+function makeWrapper(config: AppConfig = DEFAULT_APP_CONFIG, monthData: Record<string, MonthData> = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const repos = {
-    monthRepo: new InMemoryMonthRepository(),
+    monthRepo: new InMemoryMonthRepository(monthData),
     configRepo: new InMemoryConfigRepository(config),
     timeTrackingRepo: new InMemoryTimeTrackingRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
@@ -131,6 +136,64 @@ describe('SprintView', () => {
       await waitFor(() => {
         expect(screen.getByText(/sprint \d+/i).textContent).toBe(originalSprint)
       })
+    })
+  })
+
+  describe('sprint report data', () => {
+    // toLocalIso is mocked to return '2026-01-10', so Sprint 1 (Jan 5–18) is always current
+    const CONFIG: AppConfig = {
+      ...DEFAULT_APP_CONFIG,
+      sprintStartDate: '2026-01-05',
+      sprintLengthDays: 14,
+      customCategories: [],
+    }
+    const MONTH_DATA: Record<string, MonthData> = {
+      '2026-01': {
+        '2026-01-06': {
+          windows: [{ id: 'w1', start: '09:00', end: '12:00', category: '_COREMEDIA', slices: [] }],
+        },
+        '2026-01-07': {
+          windows: [{ id: 'w2', start: '08:00', end: '10:00', category: '_SUPPORT', slices: [] }],
+        },
+      },
+    }
+
+    it('shows category hours from entries within the sprint', async () => {
+      render(<SprintView />, { wrapper: makeWrapper(CONFIG, MONTH_DATA) })
+      await waitFor(() => expect(screen.getByText('3h')).toBeInTheDocument())
+      expect(screen.getByText('2h')).toBeInTheDocument()
+    })
+
+    it('shows correct sprint total', async () => {
+      render(<SprintView />, { wrapper: makeWrapper(CONFIG, MONTH_DATA) })
+      await waitFor(() => {
+        const totalEl = screen.getByText(/total:/i)
+        expect(totalEl.textContent).toMatch(/5h/)
+      })
+    })
+
+    it('excludes entries outside the sprint date range', async () => {
+      const withOutlier: Record<string, MonthData> = {
+        '2026-01': {
+          ...MONTH_DATA['2026-01'],
+          // Jan 19 is outside Sprint 1 (Jan 5–18)
+          '2026-01-19': {
+            windows: [{ id: 'w-out', start: '09:00', end: '17:00', category: '_LEAVE', slices: [] }],
+          },
+        },
+      }
+      render(<SprintView />, { wrapper: makeWrapper(CONFIG, withOutlier) })
+      await waitFor(() => {
+        const totalEl = screen.getByText(/total:/i)
+        expect(totalEl.textContent).toMatch(/5h/)
+      })
+    })
+
+    it('shows 0h total when sprint has no entries', async () => {
+      render(<SprintView />, { wrapper: makeWrapper(CONFIG) })
+      await waitFor(() => expect(screen.getByText(/total:/i)).toBeInTheDocument())
+      // Query resolves to empty — total stays 0h
+      expect(screen.getByText(/total:/i).textContent).toMatch(/0h/)
     })
   })
 })

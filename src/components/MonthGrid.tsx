@@ -471,7 +471,10 @@ export function MonthGrid({
                         {group.label} Total
                       </td>
                       <td className="sticky left-12 z-10 bg-indigo-50/40 dark:bg-indigo-900/20"></td>
-                      <td className="sticky left-[4.25rem] z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-right text-xs font-medium">
+                      <td
+                        className="sticky left-[4.25rem] z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-right text-xs font-medium"
+                        data-testid={`sprint-worked-${group.label}`}
+                      >
                         {sprintWorked.toFixed(2)}
                       </td>
                       <td></td>
