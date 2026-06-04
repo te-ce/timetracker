@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WorkPeriodEditorOverview } from './WorkPeriodEditorOverview'
+import { WorkOverview } from './WorkOverview'
 import { InMemoryMonthRepository } from '../repositories/in-memory'
 
 vi.mock('./OvertimeBar', () => ({
@@ -14,7 +14,7 @@ vi.mock('./WorkPeriodPanel', () => ({
   WorkPeriodPanel: ({ date }: { date: string }) => <div data-testid="work-period-panel" data-date={date} />,
 }))
 
-function setup(overrides: Partial<React.ComponentProps<typeof WorkPeriodEditorOverview>> = {}) {
+function setup(overrides: Partial<React.ComponentProps<typeof WorkOverview>> = {}) {
   const repo = new InMemoryMonthRepository({})
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const props = {
@@ -26,12 +26,12 @@ function setup(overrides: Partial<React.ComponentProps<typeof WorkPeriodEditorOv
   }
   render(
     <QueryClientProvider client={qc}>
-      <WorkPeriodEditorOverview {...props} />
+      <WorkOverview {...props} />
     </QueryClientProvider>,
   )
 }
 
-describe('WorkPeriodEditorOverview', () => {
+describe('WorkOverview', () => {
   it('always renders WorkPeriodPanel', () => {
     setup()
     expect(screen.getByTestId('work-period-panel')).toBeInTheDocument()

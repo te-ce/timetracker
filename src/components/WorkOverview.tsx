@@ -16,7 +16,7 @@ interface Props {
   activeTrackingStartedAt?: string | null
 }
 
-export function WorkPeriodEditorOverview({
+export function WorkOverview({
   date,
   windows,
   repository,

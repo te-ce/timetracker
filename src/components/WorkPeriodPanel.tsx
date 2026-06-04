@@ -335,6 +335,7 @@ function StartSliceForm({ categories, defaultCategory, onStart, onCancel, catego
 
 interface SliceRowProps {
   sl: WorkPeriodSlice
+  index: number
   periodId: string
   date: string
   categories: string[]
@@ -342,7 +343,7 @@ interface SliceRowProps {
   categoryDescriptions?: Record<string, string>
 }
 
-function SliceRow({ sl, periodId, date, categories, mutations, categoryDescriptions }: SliceRowProps) {
+function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDescriptions }: SliceRowProps) {
   const [editing, setEditing] = useState(false)
   const [editCategory, setEditCategory] = useState(sl.category)
   const [editHours, setEditHours] = useState(String(sl.hours))
@@ -371,10 +372,12 @@ function SliceRow({ sl, periodId, date, categories, mutations, categoryDescripti
     setEditing(true)
   }
 
+  const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
+
   if (editing) {
     return (
       <div
-        className="flex flex-col gap-1 text-sm py-0.5"
+        className={`flex flex-col gap-1 text-sm py-0.5 ${stripeBg}`}
         onBlur={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget)) commitEdit()
         }}
@@ -434,7 +437,7 @@ function SliceRow({ sl, periodId, date, categories, mutations, categoryDescripti
   const categoryDescription = categoryDescriptions?.[sl.category]
 
   return (
-    <div className="flex items-center gap-2 text-sm group/slice">
+    <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-0.5 ${stripeBg}`}>
       <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-1" />
       <button
         onClick={beginEdit}
@@ -939,10 +942,11 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
           />
         )}
 
-        {completedSlices.map((sl) => (
+        {completedSlices.map((sl, i) => (
           <SliceRow
             key={sl.id}
             sl={sl}
+            index={i}
             periodId={w.id}
             date={date}
             categories={categories}

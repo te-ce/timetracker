@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { WorkPeriod, MonthRepository } from '../repositories/types'
-import { WorkPeriodEditorOverview } from './WorkPeriodEditorOverview'
+import { WorkOverview } from './WorkOverview'
 import { useTimeFormatStore } from '../stores/timeFormatStore'
 import { formatHoursCompact } from '../domain/formatHours'
 
@@ -75,7 +75,7 @@ export function WorkedHoursCell({
           <div className="fixed inset-0 z-[100] bg-black/20" />
           <div
             ref={modalRef}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] w-full max-w-sm rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-xl"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] w-full max-w-lg rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-xl"
           >
             <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-3">
               <div>
@@ -92,8 +92,8 @@ export function WorkedHoursCell({
                 ×
               </button>
             </div>
-            <div className="px-5 py-4">
-              <WorkPeriodEditorOverview
+            <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">
+              <WorkOverview
                 date={date}
                 windows={windows}
                 repository={repository}

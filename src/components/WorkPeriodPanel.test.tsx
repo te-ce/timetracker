@@ -38,6 +38,21 @@ function periodWithSlice(
   }
 }
 
+function periodWithSlices(
+  id: string,
+  start: string,
+  end: string,
+  slices: { category: string; hours: number }[],
+): WorkPeriod {
+  return {
+    id,
+    start,
+    end,
+    category: slices[0]?.category ?? 'Work',
+    slices: slices.map((s, i) => ({ id: `sl-${i}`, category: s.category, hours: s.hours })),
+  }
+}
+
 function periodWithLiveSlice(id: string, start: string, sliceCategory: string, sliceStartedAt: string): WorkPeriod {
   return {
     id,
@@ -565,6 +580,39 @@ describe('WorkPeriodPanel', () => {
       noteInput.focus()
       await userEvent.type(noteInput, 'abc')
       expect(document.activeElement).toBe(noteInput)
+    })
+  })
+
+  describe('slice row alternating backgrounds', () => {
+    const STRIPE = 'bg-gray-50'
+
+    it('first slice row has no stripe background', async () => {
+      setup([periodWithSlices('a', '09:00', '11:00', [{ category: 'Work', hours: 1 }])])
+      const rows = await screen.findAllByTestId('slice-row')
+      expect(rows[0]?.className).not.toContain(STRIPE)
+    })
+
+    it('second slice row has stripe background', async () => {
+      setup([
+        periodWithSlices('a', '09:00', '11:00', [
+          { category: 'Work', hours: 1 },
+          { category: 'Meeting', hours: 0.5 },
+        ]),
+      ])
+      const rows = await screen.findAllByTestId('slice-row')
+      expect(rows[1]?.className).toContain(STRIPE)
+    })
+
+    it('third slice row has no stripe background', async () => {
+      setup([
+        periodWithSlices('a', '09:00', '11:00', [
+          { category: 'Work', hours: 1 },
+          { category: 'Meeting', hours: 0.5 },
+          { category: 'Work', hours: 0.5 },
+        ]),
+      ])
+      const rows = await screen.findAllByTestId('slice-row')
+      expect(rows[2]?.className).not.toContain(STRIPE)
     })
   })
 

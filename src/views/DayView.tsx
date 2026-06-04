@@ -3,7 +3,7 @@ import { DayNoteEditor } from './DayNoteEditor'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../repositories/RepositoryContext'
-import { WorkPeriodEditorOverview } from '../components/WorkPeriodEditorOverview'
+import { WorkOverview } from '../components/WorkOverview'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { toLocalIso } from '../domain/dateUtils'
@@ -203,7 +203,7 @@ export function DayView() {
       </div>
 
       <section aria-label="Work periods">
-        <WorkPeriodEditorOverview
+        <WorkOverview
           date={selectedDate}
           windows={windows}
           repository={monthRepo}
