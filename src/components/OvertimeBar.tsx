@@ -88,7 +88,7 @@ export function OvertimeBar({
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
   const trackingPart = activeTrackingStartedAt ? `, ${formatElapsed(activeTrackingStartedAt)} tracking` : ''
   const officeStats = getOfficeStats(officeDays, totalWorkDays, officePercent)
-  const summary = `${sollstunden}h target, ${formatHours(Math.abs(priorOvertime), timeFormat)} ${overtimeLabel} carry-over, ${formatHours(workedToday, timeFormat)} worked today${trackingPart} — ${remainingLabel}`
+  const summary = `${formatHours(sollstunden, timeFormat)} target, ${formatHours(Math.abs(priorOvertime), timeFormat)} ${overtimeLabel} carry-over, ${formatHours(workedToday, timeFormat)} worked today${trackingPart} — ${remainingLabel}`
   const resultClass = remaining <= 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'
 
   return (
@@ -102,7 +102,7 @@ export function OvertimeBar({
           className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400"
           aria-hidden="true"
         >
-          <span className="font-medium text-gray-700 dark:text-gray-200">{sollstunden}h</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">{formatHours(sollstunden, timeFormat)}</span>
           <span>target</span>
           <span className="text-gray-300 dark:text-gray-600">{overtimeSign}</span>
           <span className={`font-medium ${overtimeClass}`}>
