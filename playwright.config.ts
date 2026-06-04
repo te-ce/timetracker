@@ -12,7 +12,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev -- --host localhost --port 5173 --strictPort',
     url: 'http://localhost:5173',
-    reuseExistingServer: false,
+    reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
   projects: [
