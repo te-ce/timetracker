@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { WorkPeriod, MonthRepository } from '../repositories/types'
-import { WorkPeriodPanel } from './WorkPeriodPanel'
+import { WorkPeriodEditorOverview } from './WorkPeriodEditorOverview'
+import { useTimeFormatStore } from '../stores/timeFormatStore'
+import { formatHoursCompact } from '../domain/formatHours'
 
 interface Props {
   date: string
@@ -28,6 +30,7 @@ export function WorkedHoursCell({
 }: Props) {
   const [open, setOpen] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
+  const timeFormat = useTimeFormatStore((s) => s.format)
 
   const dateLabel = new Date(date + 'T12:00').toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -60,7 +63,7 @@ export function WorkedHoursCell({
         data-testid="worked-hours"
         onClick={() => setOpen(true)}
       >
-        {workedHours > 0 ? workedHours : ''}
+        {workedHours > 0 ? formatHoursCompact(workedHours, timeFormat) : ''}
       </td>
     )
   }
@@ -90,7 +93,7 @@ export function WorkedHoursCell({
               </button>
             </div>
             <div className="px-5 py-4">
-              <WorkPeriodPanel
+              <WorkPeriodEditorOverview
                 date={date}
                 windows={windows}
                 repository={repository}

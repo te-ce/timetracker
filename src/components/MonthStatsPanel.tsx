@@ -1,4 +1,6 @@
 import { calculateOvertimeToDate } from '../domain/monthStats'
+import { useTimeFormatStore } from '../stores/timeFormatStore'
+import { formatHours } from '../domain/formatHours'
 
 interface Props {
   workedHoursPerDay: number[]
@@ -12,16 +14,21 @@ export function MonthStatsPanel({ workedHoursPerDay, dates, sollstunden, overtim
   const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, today, sollstunden)
   const cumulativeOvertime = overtimeCarryOver + toDate.value
   const hoursNeededToday = Math.max(0, sollstunden - toDate.workedToday)
+  const timeFormat = useTimeFormatStore((s) => s.format)
 
   return (
     <section aria-label="Month statistics" className="grid grid-cols-2 gap-4">
       <StatCard
         label="Over/Undertime"
-        value={`${cumulativeOvertime >= 0 ? '+' : ''}${cumulativeOvertime.toFixed(2)}h`}
+        value={`${cumulativeOvertime >= 0 ? '+' : ''}${formatHours(cumulativeOvertime, timeFormat)}`}
         highlight={cumulativeOvertime !== 0}
         positive={cumulativeOvertime >= 0}
       />
-      <StatCard label="Needed today" value={`${hoursNeededToday.toFixed(2)}h`} highlight={hoursNeededToday > 0} />
+      <StatCard
+        label="Needed today"
+        value={formatHours(hoursNeededToday, timeFormat)}
+        highlight={hoursNeededToday > 0}
+      />
     </section>
   )
 }

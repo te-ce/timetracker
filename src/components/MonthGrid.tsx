@@ -18,6 +18,8 @@ import type { MonthGridRow } from '../domain/monthGrid'
 import type { DotPopoverState } from './DotPopoverPanel'
 import type { NotePopoverState } from './NotePopoverPanel'
 import { STATUS_DOT, STATUS_ROW_BG } from '../domain/statusColors'
+import { useTimeFormatStore } from '../stores/timeFormatStore'
+import { formatHoursCompact } from '../domain/formatHours'
 import { StatusLegend } from './StatusLegend'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
@@ -148,6 +150,7 @@ export function MonthGrid({
   onNoteChange,
   onSelectDate,
 }: Props) {
+  const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
   const [notePopover, setNotePopover] = useState<NotePopoverState | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -209,7 +212,7 @@ export function MonthGrid({
     const manual = row.entries[category] ?? 0
     const autoHours = category === autoCategory ? row.autoCategoryHours : 0
     const val = manual + autoHours
-    return val ? String(parseFloat(val.toFixed(2))) : ''
+    return val ? formatHoursCompact(val, timeFormat) : ''
   }
 
   function cycleLocation(date: string) {
@@ -479,7 +482,7 @@ export function MonthGrid({
                         className="sticky left-[4.25rem] z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-right text-xs font-medium"
                         data-testid={`sprint-worked-${group.label}`}
                       >
-                        {sprintWorked.toFixed(2)}
+                        {formatHoursCompact(sprintWorked, timeFormat)}
                       </td>
                       <td></td>
                       <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
@@ -494,7 +497,7 @@ export function MonthGrid({
                             key={cat}
                             className="px-1 py-0.5 text-right text-xs w-16 min-w-[4rem] max-w-[4rem] font-medium"
                           >
-                            {catTotal > 0 ? catTotal.toFixed(2) : ''}
+                            {catTotal > 0 ? formatHoursCompact(catTotal, timeFormat) : ''}
                           </td>
                         )
                       })}
@@ -514,7 +517,7 @@ export function MonthGrid({
                 className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1 text-right"
                 data-testid="total-worked"
               >
-                {totalWorked.toFixed(2)}
+                {formatHoursCompact(totalWorked, timeFormat)}
               </td>
               <td></td>
               <td className="w-px border-l border-gray-300 dark:border-gray-600"></td>
@@ -526,7 +529,7 @@ export function MonthGrid({
                 }, 0)
                 return (
                   <td key={cat} className="px-1 py-1 text-right text-xs w-16 min-w-[4rem] max-w-[4rem]">
-                    {catTotal > 0 ? catTotal.toFixed(2) : ''}
+                    {catTotal > 0 ? formatHoursCompact(catTotal, timeFormat) : ''}
                   </td>
                 )
               })}

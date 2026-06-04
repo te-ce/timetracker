@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTimeFormatStore, type TimeFormat } from '../stores/timeFormatStore'
+import { formatHours } from '../domain/formatHours'
 
 interface Props {
   sollstunden: number
@@ -11,10 +13,10 @@ interface Props {
   officePercent?: number
 }
 
-function formatRemaining(remaining: number): string {
-  if (remaining > 0) return `${remaining.toFixed(2)}h remaining`
+function formatRemaining(remaining: number, fmt: TimeFormat): string {
+  if (remaining > 0) return `${formatHours(remaining, fmt)} remaining`
   if (remaining === 0) return 'Done'
-  return `${Math.abs(remaining).toFixed(2)}h overtime today`
+  return `${formatHours(Math.abs(remaining), fmt)} overtime today`
 }
 
 function formatElapsed(startedAt: string): string {
@@ -33,7 +35,9 @@ function elapsedDecimalHours(startedAt: string): number {
 function TrackingBadge({ startedAt }: { startedAt: string }) {
   return (
     <>
-      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">−</span>
+      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
+        −
+      </span>
       <Link
         to="/day"
         search={{ date: startedAt.slice(0, 10) }}
@@ -46,7 +50,11 @@ function TrackingBadge({ startedAt }: { startedAt: string }) {
   )
 }
 
-interface OfficeStats { officeDays: number; totalWorkDays: number; officePercent: number }
+interface OfficeStats {
+  officeDays: number
+  totalWorkDays: number
+  officePercent: number
+}
 
 function getOfficeStats(officeDays?: number, totalWorkDays?: number, officePercent?: number): OfficeStats | null {
   if (officeDays === undefined || totalWorkDays === undefined || officePercent === undefined) return null
@@ -71,6 +79,7 @@ export function OvertimeBar({
   officePercent,
 }: Props) {
   const [, setTick] = useState(0)
+  const timeFormat = useTimeFormatStore((s) => s.format)
 
   useEffect(() => {
     if (!activeTrackingStartedAt) return
@@ -81,14 +90,14 @@ export function OvertimeBar({
   const trackingElapsed = activeTrackingStartedAt ? elapsedDecimalHours(activeTrackingStartedAt) : 0
   const hasOvertime = priorOvertime >= 0
   const remaining = sollstunden - priorOvertime - workedToday - trackingElapsed
-  const remainingLabel = formatRemaining(remaining)
+  const remainingLabel = formatRemaining(remaining, timeFormat)
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'
   const overtimeSign = hasOvertime ? '−' : '+'
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
   const remainingClass = remaining <= 0 ? 'text-green-700 dark:text-green-400' : ''
   const trackingPart = activeTrackingStartedAt ? `, ${formatElapsed(activeTrackingStartedAt)} tracking` : ''
   const officeStats = getOfficeStats(officeDays, totalWorkDays, officePercent)
-  const summary = `${sollstunden}h target, ${Math.abs(priorOvertime).toFixed(2)}h ${overtimeLabel} carry-over, ${workedToday.toFixed(2)}h worked today${trackingPart} — ${remainingLabel}`
+  const summary = `${sollstunden}h target, ${formatHours(Math.abs(priorOvertime), timeFormat)} ${overtimeLabel} carry-over, ${formatHours(workedToday, timeFormat)} worked today${trackingPart} — ${remainingLabel}`
 
   return (
     <div
@@ -96,16 +105,28 @@ export function OvertimeBar({
       aria-label={summary}
       className="flex items-center gap-1.5 rounded-lg border bg-gray-50 dark:bg-gray-900 dark:border-gray-700 px-4 py-2 text-sm"
     >
-      <span aria-hidden="true" className="font-medium">{sollstunden}h</span>
-      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">{overtimeSign}</span>
-      <span aria-hidden="true" className={`font-medium ${overtimeClass}`}>
-        {Math.abs(priorOvertime).toFixed(2)}h {overtimeLabel}
+      <span aria-hidden="true" className="font-medium">
+        {sollstunden}h
       </span>
-      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">−</span>
-      <span aria-hidden="true" className="font-medium">{workedToday.toFixed(2)}h worked</span>
+      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
+        {overtimeSign}
+      </span>
+      <span aria-hidden="true" className={`font-medium ${overtimeClass}`}>
+        {formatHours(Math.abs(priorOvertime), timeFormat)} {overtimeLabel}
+      </span>
+      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
+        −
+      </span>
+      <span aria-hidden="true" className="font-medium">
+        {formatHours(workedToday, timeFormat)} worked
+      </span>
       {activeTrackingStartedAt && <TrackingBadge startedAt={activeTrackingStartedAt} />}
-      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">=</span>
-      <span aria-hidden="true" className={`font-semibold ${remainingClass}`}>{remainingLabel}</span>
+      <span aria-hidden="true" className="text-gray-400 dark:text-gray-500">
+        =
+      </span>
+      <span aria-hidden="true" className={`font-semibold ${remainingClass}`}>
+        {remainingLabel}
+      </span>
       {officeStats && <OfficeBadge {...officeStats} />}
     </div>
   )

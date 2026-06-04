@@ -3,6 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link, Outlet, useRouterState, useNavigate, useRouter } from '@tanstack/react-router'
 import { useAuthStore } from './stores/authStore'
 import { useThemeStore } from './stores/themeStore'
+import { useTimeFormatStore } from './stores/timeFormatStore'
+import { formatHours } from './domain/formatHours'
 import { useUndoStore } from './stores/undoStore'
 import { useRemainingHours } from './hooks/useRemainingHours'
 import { useElectronTraySync } from './hooks/useElectronTraySync'
@@ -145,14 +147,30 @@ function UndoButton() {
 
 function RemainingHoursBadge() {
   const { remaining } = useRemainingHours()
+  const timeFormat = useTimeFormatStore((s) => s.format)
   if (remaining <= 0) return null
+  const label = formatHours(remaining, timeFormat)
   return (
     <span
       className="hidden sm:inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400"
-      title={`${remaining.toFixed(1)}h remaining today`}
+      title={`${label} remaining today`}
     >
-      {remaining.toFixed(1)}h left
+      {label} left
     </span>
+  )
+}
+
+function TimeFormatToggle() {
+  const { format, toggleFormat } = useTimeFormatStore()
+  return (
+    <button
+      onClick={toggleFormat}
+      aria-label={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
+      title={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
+      className="rounded-lg px-2 py-1 text-xs font-medium tabular-nums text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+    >
+      {format === 'decimal' ? '4.5h' : '4:30'}
+    </button>
   )
 }
 
@@ -288,6 +306,7 @@ function App() {
 
           {/* Action buttons */}
           <div className="flex items-center gap-0.5">
+            <TimeFormatToggle />
             <UndoButton />
             <button
               onClick={() => setLegendOpen((v) => !v)}
