@@ -160,15 +160,16 @@ describe('SprintView', () => {
 
     it('shows category hours from entries within the sprint', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG, MONTH_DATA) })
-      await waitFor(() => expect(screen.getByText('3h')).toBeInTheDocument())
-      expect(screen.getByText('2h')).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText('3:00')).toBeInTheDocument())
+      expect(screen.getByText('2:00')).toBeInTheDocument()
     })
 
     it('shows correct sprint total', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG, MONTH_DATA) })
       await waitFor(() => {
         const totalEl = screen.getByText(/total:/i)
-        expect(totalEl.textContent).toMatch(/5h/)
+        expect(totalEl.textContent).toMatch(/5:00/)
+        expect(totalEl.textContent).toMatch(/5\.00h/)
       })
     })
 
@@ -185,15 +186,16 @@ describe('SprintView', () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG, withOutlier) })
       await waitFor(() => {
         const totalEl = screen.getByText(/total:/i)
-        expect(totalEl.textContent).toMatch(/5h/)
+        expect(totalEl.textContent).toMatch(/5:00/)
+        expect(totalEl.textContent).toMatch(/5\.00h/)
       })
     })
 
-    it('shows 0h total when sprint has no entries', async () => {
+    it('shows 0:00 / 0.00h total when sprint has no entries', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG) })
       await waitFor(() => expect(screen.getByText(/total:/i)).toBeInTheDocument())
-      // Query resolves to empty — total stays 0h
-      expect(screen.getByText(/total:/i).textContent).toMatch(/0h/)
+      expect(screen.getByText(/total:/i).textContent).toMatch(/0:00/)
+      expect(screen.getByText(/total:/i).textContent).toMatch(/0\.00h/)
     })
   })
 })
