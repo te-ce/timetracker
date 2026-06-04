@@ -3,8 +3,7 @@ import { DayNoteEditor } from './DayNoteEditor'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../repositories/RepositoryContext'
-import { WorkPeriodPanel } from '../components/WorkPeriodPanel'
-import { OvertimeBar } from '../components/OvertimeBar'
+import { WorkPeriodEditorOverview } from '../components/WorkPeriodEditorOverview'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { toLocalIso } from '../domain/dateUtils'
@@ -203,15 +202,8 @@ export function DayView() {
         />
       </div>
 
-      <OvertimeBar
-        sollstunden={sollstunden}
-        priorOvertime={overtimeToDate.priorOvertime}
-        workedToday={overtimeToDate.workedToday}
-        activeTrackingStartedAt={activeTracking?.startedAt}
-      />
-
       <section aria-label="Work periods">
-        <WorkPeriodPanel
+        <WorkPeriodEditorOverview
           date={selectedDate}
           windows={windows}
           repository={monthRepo}
@@ -219,6 +211,10 @@ export function DayView() {
           customCategories={customCategories}
           categoryOrder={categoryOrder}
           categoryDescriptions={categoryDescriptions}
+          sollstunden={sollstunden}
+          priorOvertime={overtimeToDate.priorOvertime}
+          workedToday={overtimeToDate.workedToday}
+          activeTrackingStartedAt={activeTracking?.startedAt}
         />
       </section>
 

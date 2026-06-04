@@ -28,12 +28,8 @@ vi.mock('../hooks/useDayQuery', () => ({
   useDayQuery: vi.fn(),
 }))
 
-vi.mock('../components/WorkPeriodPanel', () => ({
-  WorkPeriodPanel: () => null,
-}))
-
-vi.mock('../components/OvertimeBar', () => ({
-  OvertimeBar: () => null,
+vi.mock('../components/WorkPeriodEditorOverview', () => ({
+  WorkPeriodEditorOverview: () => null,
 }))
 
 vi.mock('../components/DayTypePicker', () => ({
