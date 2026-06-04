@@ -571,16 +571,21 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
   }
 
   return (
-    <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-0.5 ${stripeBg}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[3px]" />
+    <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-1.5 ${stripeBg}`}>
+      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[5px]" />
       <button
         onClick={() => setEditing(true)}
-        className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight"
+        className="flex-1 font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight min-w-0"
         aria-label={`Edit ${sl.category} slice`}
       >
         <span className="block">{sl.category}</span>
         {categoryDescription && (
           <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{categoryDescription}</span>
+        )}
+        {timed && (
+          <span className="block text-xs font-normal text-gray-400 dark:text-gray-500 tabular-nums">
+            {sl.startedAt}–{sl.stoppedAt}
+          </span>
         )}
         {sl.note && (
           <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 italic">{sl.note}</span>
@@ -588,19 +593,14 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
       </button>
       <button
         onClick={() => setEditing(true)}
-        className="text-gray-400 dark:text-gray-500 text-xs hover:text-indigo-600 dark:hover:text-indigo-400 self-start mt-0.5 text-right"
+        className="text-gray-500 dark:text-gray-400 text-xs hover:text-indigo-600 dark:hover:text-indigo-400 self-start mt-0.5 tabular-nums shrink-0"
         aria-label={`Edit ${sl.category} hours`}
       >
-        <span className="block">{formatHours(sl.hours, timeFormat)}</span>
-        {timed && (
-          <span className="block text-gray-300 dark:text-gray-600">
-            {sl.startedAt}–{sl.stoppedAt}
-          </span>
-        )}
+        {formatHours(sl.hours, timeFormat)}
       </button>
       <button
         onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: sl.id })}
-        className="ml-auto text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none self-start"
+        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none self-start shrink-0"
         aria-label={`Remove ${sl.category} slice`}
       >
         ×
