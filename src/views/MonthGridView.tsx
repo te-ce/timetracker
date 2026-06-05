@@ -168,7 +168,7 @@ export function MonthGridView() {
         onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
         onNoteChange={(date, note) => noteMutation.mutate({ date, note })}
-        onSelectDate={(date) => void navigate({ to: '/day', search: { date } })}
+        onSelectDate={(date) => void navigate({ to: '/', search: { date } })}
       />
 
       {showResetConfirm && (

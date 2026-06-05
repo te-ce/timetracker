@@ -1,5 +1,5 @@
-import type { Day, WorkPeriod, WorkPeriodSlice } from '../repositories/types'
-import { calcSliceHours } from './worktime'
+import type { Day, WorkPeriod, WorkPeriodSubtask } from '../repositories/types'
+import { calcSubtaskHours } from './worktime'
 
 export function upsertWindow(day: Day, window: WorkPeriod): Day {
   return { ...day, windows: [...day.windows.filter((w) => w.id !== window.id), window] }
@@ -16,65 +16,75 @@ export function updatePeriodCategory(day: Day, periodId: string, category: strin
   }
 }
 
-export function upsertSlice(day: Day, periodId: string, slice: WorkPeriodSlice): Day {
+export function upsertSubtask(day: Day, periodId: string, subtask: WorkPeriodSubtask): Day {
   return {
     ...day,
     windows: day.windows.map((w) => {
       if (w.id !== periodId) return w
-      const idx = w.slices.findIndex((s) => s.id === slice.id)
+      const idx = w.subtasks.findIndex((s) => s.id === subtask.id)
       if (idx >= 0) {
-        const slices = [...w.slices]
-        slices[idx] = slice
-        return { ...w, slices }
+        const subtasks = [...w.subtasks]
+        subtasks[idx] = subtask
+        return { ...w, subtasks }
       }
-      return { ...w, slices: [...w.slices, slice] }
+      return { ...w, subtasks: [...w.subtasks, subtask] }
     }),
   }
 }
 
-export function removeSlice(day: Day, periodId: string, sliceId: string): Day {
+export function removeSubtask(day: Day, periodId: string, subtaskId: string): Day {
   return {
     ...day,
     windows: day.windows.map((w) =>
-      w.id === periodId ? { ...w, slices: w.slices.filter((s) => s.id !== sliceId) } : w,
+      w.id === periodId ? { ...w, subtasks: w.subtasks.filter((s) => s.id !== subtaskId) } : w,
     ),
   }
 }
 
-export function startLiveSlice(day: Day, periodId: string, newSlice: WorkPeriodSlice & { startedAt: string }): Day {
+export function startLiveSubtask(
+  day: Day,
+  periodId: string,
+  newSubtask: WorkPeriodSubtask & { startedAt: string },
+): Day {
   return {
     ...day,
     windows: day.windows.map((w) => {
       if (w.id !== periodId) return w
-      const settled = w.slices.map((s) => {
+      const settled = w.subtasks.map((s) => {
         if (!s.startedAt || s.stoppedAt) return s
-        return { ...s, hours: calcSliceHours(s.startedAt, newSlice.startedAt), stoppedAt: newSlice.startedAt }
+        return { ...s, hours: calcSubtaskHours(s.startedAt, newSubtask.startedAt), stoppedAt: newSubtask.startedAt }
       })
-      return { ...w, slices: [...settled, newSlice] }
+      return { ...w, subtasks: [...settled, newSubtask] }
     }),
   }
 }
 
-export function stopLiveSlice(day: Day, periodId: string, sliceId: string, stoppedAt: string): Day {
+export function stopLiveSubtask(day: Day, periodId: string, subtaskId: string, stoppedAt: string): Day {
   return {
     ...day,
     windows: day.windows.map((w) => {
       if (w.id !== periodId) return w
       return {
         ...w,
-        slices: w.slices.map((s) => {
-          if (s.id !== sliceId || !s.startedAt) return s
-          return { ...s, hours: calcSliceHours(s.startedAt, stoppedAt), stoppedAt }
+        subtasks: w.subtasks.map((s) => {
+          if (s.id !== subtaskId || !s.startedAt) return s
+          return { ...s, hours: calcSubtaskHours(s.startedAt, stoppedAt), stoppedAt }
         }),
       }
     }),
   }
 }
 
-export function stopPeriod(day: Day, periodId: string, endTime: string, liveSliceId?: string, stoppedAt?: string): Day {
-  const withSliceStopped = liveSliceId && stoppedAt ? stopLiveSlice(day, periodId, liveSliceId, stoppedAt) : day
+export function stopPeriod(
+  day: Day,
+  periodId: string,
+  endTime: string,
+  liveSubtaskId?: string,
+  stoppedAt?: string,
+): Day {
+  const withSubtaskStopped = liveSubtaskId && stoppedAt ? stopLiveSubtask(day, periodId, liveSubtaskId, stoppedAt) : day
   return {
-    ...withSliceStopped,
-    windows: withSliceStopped.windows.map((w) => (w.id === periodId ? { ...w, end: endTime } : w)),
+    ...withSubtaskStopped,
+    windows: withSubtaskStopped.windows.map((w) => (w.id === periodId ? { ...w, end: endTime } : w)),
   }
 }

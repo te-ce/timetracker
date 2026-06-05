@@ -31,7 +31,7 @@ export interface TimeEntry {
   hours: number
 }
 
-export interface WorkPeriodSlice {
+export interface WorkPeriodSubtask {
   id: string
   category: string
   hours: number
@@ -45,7 +45,7 @@ export interface WorkPeriod {
   start: string
   end: string | null
   category: string
-  slices: WorkPeriodSlice[]
+  subtasks: WorkPeriodSubtask[]
 }
 
 export type WorkLocation = 'Office' | 'Remote'

@@ -12,9 +12,9 @@ function period(
   start: string,
   end: string,
   category: string,
-  slices: WorkPeriod['slices'] = [],
+  subtasks: WorkPeriod['subtasks'] = [],
 ): WorkPeriod {
-  return { id, start, end, category, slices }
+  return { id, start, end, category, subtasks }
 }
 
 describe('calculateCategoryHours', () => {
@@ -84,7 +84,7 @@ describe('calculateCategoryHours', () => {
   })
 
   it('handles open window (null end) as zero duration', () => {
-    const w: WorkPeriod = { id: 'a', start: '09:00', end: null, category: '_COREMEDIA', slices: [] }
+    const w: WorkPeriod = { id: 'a', start: '09:00', end: null, category: '_COREMEDIA', subtasks: [] }
     const result = calculateCategoryHours([w])
     expect(result['_COREMEDIA']).toBeUndefined()
   })

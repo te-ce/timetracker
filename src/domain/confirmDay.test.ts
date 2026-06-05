@@ -13,7 +13,7 @@ describe('buildConfirmedDay', () => {
   })
 
   it('preserves existing windows', () => {
-    const input = day({ windows: [{ id: 'w1', start: '08:00', end: '16:00', category: '_COREMEDIA', slices: [] }] })
+    const input = day({ windows: [{ id: 'w1', start: '08:00', end: '16:00', category: '_COREMEDIA', subtasks: [] }] })
     const result = buildConfirmedDay(input)
     expect(result.windows).toHaveLength(1)
     expect(result.windows[0]?.id).toBe('w1')

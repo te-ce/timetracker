@@ -3,7 +3,7 @@ import { mergeAdjacentInto } from './workPeriodMerge'
 import type { WorkPeriod } from '../repositories/types'
 
 function period(id: string, start: string, end: string | null): WorkPeriod {
-  return { id, start, end, category: '_COREMEDIA', slices: [] }
+  return { id, start, end, category: '_COREMEDIA', subtasks: [] }
 }
 
 describe('mergeAdjacentInto', () => {

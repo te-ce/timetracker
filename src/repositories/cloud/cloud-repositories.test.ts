@@ -91,7 +91,7 @@ describe('CloudMonthRepository', () => {
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', (day) => ({
       ...day,
-      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', subtasks: [] }],
     }))
     const data = await repo.getMonth(2026, 5)
     expect(data['2026-05-15']?.windows).toHaveLength(1)
@@ -103,7 +103,7 @@ describe('CloudMonthRepository', () => {
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', (day) => ({
       ...day,
-      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', subtasks: [] }],
     }))
     await repo.updateDay('2026-05-15', (day) => ({ ...day, windows: [] }))
     const data = await repo.getMonth(2026, 5)
@@ -114,7 +114,7 @@ describe('CloudMonthRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', () => ({
-      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', subtasks: [] }],
     }))
     await repo.deleteMonth(2026, 5)
     const data = await repo.getMonth(2026, 5)
@@ -125,10 +125,10 @@ describe('CloudMonthRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', () => ({
-      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', subtasks: [] }],
     }))
     await repo.updateDay('2026-06-01', () => ({
-      windows: [{ id: 'w2', start: '09:00', end: '13:00', category: '_SUPPORT', slices: [] }],
+      windows: [{ id: 'w2', start: '09:00', end: '13:00', category: '_SUPPORT', subtasks: [] }],
     }))
     const months = await repo.getAllMonths()
     expect(months).toContain('2026-05')
@@ -139,10 +139,10 @@ describe('CloudMonthRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-15', () => ({
-      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', slices: [] }],
+      windows: [{ id: 'w1', start: '09:00', end: '15:00', category: '_COREMEDIA', subtasks: [] }],
     }))
     await repo.updateDay('2026-06-01', () => ({
-      windows: [{ id: 'w2', start: '09:00', end: '13:00', category: '_SUPPORT', slices: [] }],
+      windows: [{ id: 'w2', start: '09:00', end: '13:00', category: '_SUPPORT', subtasks: [] }],
     }))
     const results = await repo.findEntriesByDateRange('2026-05-01', '2026-06-30')
     expect(results).toHaveLength(2)
@@ -155,10 +155,10 @@ describe('CloudMonthRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)
     await repo.updateDay('2026-05-10', () => ({
-      windows: [{ id: 'w1', start: '09:00', end: '11:00', category: '_COREMEDIA', slices: [] }],
+      windows: [{ id: 'w1', start: '09:00', end: '11:00', category: '_COREMEDIA', subtasks: [] }],
     }))
     await repo.updateDay('2026-05-20', () => ({
-      windows: [{ id: 'w2', start: '09:00', end: '12:00', category: '_COREMEDIA', slices: [] }],
+      windows: [{ id: 'w2', start: '09:00', end: '12:00', category: '_COREMEDIA', subtasks: [] }],
     }))
     const results = await repo.findEntriesByDateRange('2026-05-15', '2026-05-31')
     expect(results).toHaveLength(1)

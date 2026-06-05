@@ -21,7 +21,7 @@ function makeWrapper(queryClient: QueryClient) {
 const date = '2026-05-25'
 
 function period(id: string, start: string, end: string | null): WorkPeriod {
-  return { id, start, end, category: '', slices: [] }
+  return { id, start, end, category: '', subtasks: [] }
 }
 
 function makeRepo(windows: WorkPeriod[] = []) {

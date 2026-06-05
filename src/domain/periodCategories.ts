@@ -8,10 +8,10 @@ export function calculateCategoryHours(windows: WorkPeriod[]): Record<string, nu
   const result: Record<string, number> = {}
   for (const w of windows) {
     const duration = calculateWorkedHours([w])
-    const slicedHours = w.slices.reduce((sum, s) => sum + s.hours, 0)
-    const remainder = Math.max(0, duration - slicedHours)
-    for (const slice of w.slices) {
-      result[slice.category] = (result[slice.category] ?? 0) + slice.hours
+    const subtaskedHours = w.subtasks.reduce((sum, s) => sum + s.hours, 0)
+    const remainder = Math.max(0, duration - subtaskedHours)
+    for (const subtask of w.subtasks) {
+      result[subtask.category] = (result[subtask.category] ?? 0) + subtask.hours
     }
     if (remainder > 0.001) {
       result[w.category] = (result[w.category] ?? 0) + remainder

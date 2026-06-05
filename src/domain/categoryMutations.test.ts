@@ -5,8 +5,8 @@ import { InMemoryMonthRepository } from '../repositories/in-memory/month-reposit
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import type { WorkPeriod } from '../repositories/types'
 
-function period(id: string, category: string, slices: WorkPeriod['slices'] = []): WorkPeriod {
-  return { id, start: '09:00', end: '10:00', category, slices }
+function period(id: string, category: string, subtasks: WorkPeriod['subtasks'] = []): WorkPeriod {
+  return { id, start: '09:00', end: '10:00', category, subtasks }
 }
 
 describe('renameCategoryAcrossAllMonths', () => {
@@ -126,7 +126,7 @@ describe('renameCategoryAcrossAllMonths', () => {
       await renameCategoryAcrossAllMonths('OldName', 'NewName', configRepo, monthRepo)
 
       const data = await monthRepo.getMonth(2026, 3)
-      expect(data['2026-03-01']?.windows[0]?.slices[0]?.category).toBe('NewName')
+      expect(data['2026-03-01']?.windows[0]?.subtasks[0]?.category).toBe('NewName')
     })
 
     it('leaves days without the old category untouched', async () => {
@@ -153,7 +153,7 @@ describe('renameCategoryAcrossAllMonths', () => {
       const data = await monthRepo.getMonth(2026, 5)
       const win = data['2026-05-10']?.windows[0]
       expect(win?.category).toBe('NewName')
-      expect(win?.slices[0]?.category).toBe('NewName')
+      expect(win?.subtasks[0]?.category).toBe('NewName')
     })
 
     it('handles months with no data without error', async () => {

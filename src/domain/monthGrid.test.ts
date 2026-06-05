@@ -3,7 +3,7 @@ import { buildMonthGrid } from './monthGrid'
 import type { MonthData, WorkPeriod } from '../repositories/types'
 
 function win(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
-  return { id, start, end, category, slices: [] }
+  return { id, start, end, category, subtasks: [] }
 }
 
 describe('buildMonthGrid', () => {
@@ -35,7 +35,7 @@ describe('buildMonthGrid', () => {
     const monthData: MonthData = {
       '2026-05-01': {
         windows: [
-          { ...win('1', '09:00', '11:00', 'QA'), slices: [{ id: 's1', category: 'Support', hours: 1.5 }] },
+          { ...win('1', '09:00', '11:00', 'QA'), subtasks: [{ id: 's1', category: 'Support', hours: 1.5 }] },
           win('3', '13:00', '14:00', 'QA'),
         ],
       },
@@ -57,7 +57,7 @@ describe('buildMonthGrid', () => {
     const monthData: MonthData = {
       '2026-05-01': {
         windows: [
-          { ...win('w1', '09:00', '17:00', '_UNCATEGORIZED'), slices: [{ id: 's1', category: 'QA', hours: 3 }] },
+          { ...win('w1', '09:00', '17:00', '_UNCATEGORIZED'), subtasks: [{ id: 's1', category: 'QA', hours: 3 }] },
         ],
       },
     }

@@ -12,7 +12,7 @@ const MONTH = 1
 const CATEGORIES = ['Dev', 'Meeting']
 
 function makeWindow(id: string, start: string, end: string | null): WorkPeriod {
-  return { id, start, end, category: '_UNCATEGORIZED', slices: [] }
+  return { id, start, end, category: '_UNCATEGORIZED', subtasks: [] }
 }
 
 function setup(initialWindows: WorkPeriod[] = [], workedHours = 8) {
@@ -225,31 +225,31 @@ describe('WorkedHoursCell', () => {
     })
   })
 
-  describe('slice editing', () => {
-    it('shows existing slices when a period has slices', async () => {
+  describe('subtask editing', () => {
+    it('shows existing subtasks when a period has subtasks', async () => {
       const windowWithSlice: WorkPeriod = {
         id: 'w1',
         start: '09:00',
         end: '17:00',
         category: '_UNCATEGORIZED',
-        slices: [{ id: 's1', category: 'Meeting', hours: 2 }],
+        subtasks: [{ id: 's1', category: 'Meeting', hours: 2 }],
       }
       setup([windowWithSlice])
       await userEvent.click(screen.getByText('8.00'))
-      expect(await screen.findByRole('button', { name: /edit Meeting slice/i })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /edit Meeting subtask/i })).toBeInTheDocument()
     })
 
-    it('user can add a slice to an existing period', async () => {
+    it('user can add a subtask to an existing period', async () => {
       const { repo } = setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByRole('button', { name: /log time/i })
-      await userEvent.click(screen.getByRole('button', { name: /log time/i }))
-      await userEvent.type(screen.getByLabelText(/slice duration/i), '2')
+      await screen.findByRole('button', { name: /log subtask/i })
+      await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+      await userEvent.type(screen.getByLabelText(/subtask duration/i), '2')
       await userEvent.click(screen.getByRole('button', { name: /^add$/i }))
       await waitFor(async () => {
         const data = await repo.getMonth(YEAR, MONTH)
-        expect(data[DATE]?.windows[0]?.slices).toHaveLength(1)
-        expect(data[DATE]?.windows[0]?.slices[0]?.hours).toBe(2)
+        expect(data[DATE]?.windows[0]?.subtasks).toHaveLength(1)
+        expect(data[DATE]?.windows[0]?.subtasks[0]?.hours).toBe(2)
       })
     })
   })

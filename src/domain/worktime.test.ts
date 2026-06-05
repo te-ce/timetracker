@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateWorkedHours, calculateRestarbeitszeit, calcSliceHours } from './worktime'
+import { calculateWorkedHours, calculateRestarbeitszeit, calcSubtaskHours } from './worktime'
 import type { WorkPeriod } from '../repositories/types'
 
 const makeWindow = (start: string, end: string | null): WorkPeriod => ({
@@ -7,7 +7,7 @@ const makeWindow = (start: string, end: string | null): WorkPeriod => ({
   start,
   end,
   category: '',
-  slices: [],
+  subtasks: [],
 })
 
 describe('calculateWorkedHours', () => {
@@ -52,21 +52,21 @@ describe('calculateWorkedHours', () => {
   })
 })
 
-describe('calcSliceHours', () => {
+describe('calcSubtaskHours', () => {
   it('computes exact decimal hours between two times', () => {
-    expect(calcSliceHours('09:00', '10:30')).toBe(1.5)
+    expect(calcSubtaskHours('09:00', '10:30')).toBe(1.5)
   })
 
   it('computes fractional minutes exactly (73 min = 73/60 h)', () => {
-    expect(calcSliceHours('09:00', '10:13')).toBeCloseTo(73 / 60, 10)
+    expect(calcSubtaskHours('09:00', '10:13')).toBeCloseTo(73 / 60, 10)
   })
 
   it('returns 0 when start and stop are the same', () => {
-    expect(calcSliceHours('09:00', '09:00')).toBe(0)
+    expect(calcSubtaskHours('09:00', '09:00')).toBe(0)
   })
 
   it('handles midnight crossing (23:00 → 01:00 = 2h)', () => {
-    expect(calcSliceHours('23:00', '01:00')).toBe(2)
+    expect(calcSubtaskHours('23:00', '01:00')).toBe(2)
   })
 })
 

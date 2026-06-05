@@ -7,7 +7,7 @@ import { DEFAULT_CATEGORIES, UNCATEGORIZED_CATEGORY } from '../repositories/type
 import type { MonthData, WorkPeriod } from '../repositories/types'
 
 function w(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
-  return { id, start, end, category, slices: [] }
+  return { id, start, end, category, subtasks: [] }
 }
 
 function setup(
@@ -92,7 +92,7 @@ describe('MonthGrid', () => {
           windows: [
             {
               ...w('w1', '09:00', '17:00', UNCATEGORIZED_CATEGORY),
-              slices: [{ id: 's1', category: '_SUPPORT', hours: 3 }],
+              subtasks: [{ id: 's1', category: '_SUPPORT', hours: 3 }],
             },
           ],
         },

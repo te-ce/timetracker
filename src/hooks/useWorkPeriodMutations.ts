@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { WorkPeriod, WorkPeriodSlice, MonthRepository } from '../repositories/types'
+import type { WorkPeriod, WorkPeriodSubtask, MonthRepository } from '../repositories/types'
 import { invalidateMonth } from './queryKeys'
 import {
   upsertWindow,
   removeWindow,
   updatePeriodCategory,
-  upsertSlice,
-  removeSlice,
-  startLiveSlice as doStartLiveSlice,
-  stopLiveSlice as doStopLiveSlice,
+  upsertSubtask,
+  removeSubtask,
+  startLiveSubtask as doStartLiveSubtask,
+  stopLiveSubtask as doStopLiveSubtask,
   stopPeriod as doStopPeriod,
 } from '../domain/dayUpdaters'
 
@@ -46,43 +46,43 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     onSuccess: (_, { date }) => invalidate(date),
   })
 
-  const addSlice = useMutation({
-    mutationFn: ({ date, periodId, slice }: { date: string; periodId: string; slice: WorkPeriodSlice }) =>
-      repository.updateDay(date, (day) => upsertSlice(day, periodId, slice)),
+  const addSubtask = useMutation({
+    mutationFn: ({ date, periodId, subtask }: { date: string; periodId: string; subtask: WorkPeriodSubtask }) =>
+      repository.updateDay(date, (day) => upsertSubtask(day, periodId, subtask)),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
-  const deleteSlice = useMutation({
-    mutationFn: ({ date, periodId, sliceId }: { date: string; periodId: string; sliceId: string }) =>
-      repository.updateDay(date, (day) => removeSlice(day, periodId, sliceId)),
+  const deleteSubtask = useMutation({
+    mutationFn: ({ date, periodId, subtaskId }: { date: string; periodId: string; subtaskId: string }) =>
+      repository.updateDay(date, (day) => removeSubtask(day, periodId, subtaskId)),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
-  const startLiveSlice = useMutation({
+  const startLiveSubtask = useMutation({
     mutationFn: ({
       date,
       periodId,
-      slice,
+      subtask,
     }: {
       date: string
       periodId: string
-      slice: WorkPeriodSlice & { startedAt: string }
-    }) => repository.updateDay(date, (day) => doStartLiveSlice(day, periodId, slice)),
+      subtask: WorkPeriodSubtask & { startedAt: string }
+    }) => repository.updateDay(date, (day) => doStartLiveSubtask(day, periodId, subtask)),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
-  const stopLiveSlice = useMutation({
+  const stopLiveSubtask = useMutation({
     mutationFn: ({
       date,
       periodId,
-      sliceId,
+      subtaskId,
       stoppedAt,
     }: {
       date: string
       periodId: string
-      sliceId: string
+      subtaskId: string
       stoppedAt: string
-    }) => repository.updateDay(date, (day) => doStopLiveSlice(day, periodId, sliceId, stoppedAt)),
+    }) => repository.updateDay(date, (day) => doStopLiveSubtask(day, periodId, subtaskId, stoppedAt)),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
@@ -91,15 +91,15 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       date,
       periodId,
       endTime,
-      liveSliceId,
+      liveSubtaskId,
       stoppedAt,
     }: {
       date: string
       periodId: string
       endTime: string
-      liveSliceId?: string
+      liveSubtaskId?: string
       stoppedAt?: string
-    }) => repository.updateDay(date, (day) => doStopPeriod(day, periodId, endTime, liveSliceId, stoppedAt)),
+    }) => repository.updateDay(date, (day) => doStopPeriod(day, periodId, endTime, liveSubtaskId, stoppedAt)),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
@@ -108,10 +108,10 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     remove,
     saveWithAbsorbed,
     setPeriodCategory,
-    addSlice,
-    deleteSlice,
-    startLiveSlice,
-    stopLiveSlice,
+    addSubtask,
+    deleteSubtask,
+    startLiveSubtask,
+    stopLiveSubtask,
     stopPeriod,
   }
 }

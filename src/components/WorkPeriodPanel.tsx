@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import type { WorkPeriod, WorkPeriodSlice, MonthRepository } from '../repositories/types'
+import type { WorkPeriod, WorkPeriodSubtask, MonthRepository } from '../repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../repositories/types'
 import { mergeAdjacentInto } from '../domain/workPeriodMerge'
 import { useWorkPeriodMutations } from '../hooks/useWorkPeriodMutations'
-import { calculateWorkedHours, calcSliceHours } from '../domain/worktime'
+import { calculateWorkedHours, calcSubtaskHours } from '../domain/worktime'
 import { getAllCategories } from '../domain/categories'
 import { useTimeFormatStore } from '../stores/timeFormatStore'
 import { formatHours } from '../domain/formatHours'
@@ -18,8 +18,8 @@ interface Props {
   categoryDescriptions?: Record<string, string>
 }
 
-type LiveSlice = WorkPeriodSlice & { startedAt: string; stoppedAt?: undefined }
-type TimedSlice = WorkPeriodSlice & { startedAt: string; stoppedAt: string }
+type LiveSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt?: undefined }
+type TimedSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt: string }
 
 function nowHHMM() {
   const d = new Date()
@@ -59,11 +59,11 @@ function elapsedDisplay(startedAt: string, nowTime: string): string {
   return `${h}h ${m}m`
 }
 
-function isLiveSlice(s: WorkPeriodSlice): s is LiveSlice {
+function isLiveSubtask(s: WorkPeriodSubtask): s is LiveSubtask {
   return !!s.startedAt && !s.stoppedAt
 }
 
-function isTimedSlice(s: WorkPeriodSlice): s is TimedSlice {
+function isTimedSubtask(s: WorkPeriodSubtask): s is TimedSubtask {
   return !!s.startedAt && !!s.stoppedAt
 }
 
@@ -103,15 +103,15 @@ function CategoryPicker({ value, categories, onChange, compact, categoryDescript
   )
 }
 
-// ─── Stop Slice Form ──────────────────────────────────────────────────────────
+// ─── Stop Subtask Form ──────────────────────────────────────────────────────────
 
-interface StopSliceFormProps {
-  sliceStartedAt: string
+interface StopSubtaskFormProps {
+  subtaskStartedAt: string
   onStop: (stoppedAt: string) => void
   onCancel: () => void
 }
 
-function StopSliceForm({ sliceStartedAt, onStop, onCancel }: StopSliceFormProps) {
+function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskFormProps) {
   const [stoppedAt, setStoppedAt] = useState(nowHHMM)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -121,7 +121,7 @@ function StopSliceForm({ sliceStartedAt, onStop, onCancel }: StopSliceFormProps)
   }, [])
 
   function handleStop() {
-    if (!stoppedAt || minutesFrom(stoppedAt) < minutesFrom(sliceStartedAt)) {
+    if (!stoppedAt || minutesFrom(stoppedAt) < minutesFrom(subtaskStartedAt)) {
       setError(true)
       return
     }
@@ -143,10 +143,10 @@ function StopSliceForm({ sliceStartedAt, onStop, onCancel }: StopSliceFormProps)
           if (e.key === 'Enter') handleStop()
           if (e.key === 'Escape') onCancel()
         }}
-        aria-label="Slice stopped at"
+        aria-label="Subtask stopped at"
         className={`rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
-      {error && <span className="text-xs text-red-600 dark:text-red-400">Must be at or after {sliceStartedAt}</span>}
+      {error && <span className="text-xs text-red-600 dark:text-red-400">Must be at or after {subtaskStartedAt}</span>}
       <button
         onClick={handleStop}
         className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
@@ -167,12 +167,12 @@ function StopSliceForm({ sliceStartedAt, onStop, onCancel }: StopSliceFormProps)
 
 interface StopPeriodFormProps {
   periodStart: string
-  liveSlice: LiveSlice | undefined
+  liveSubtask: LiveSubtask | undefined
   onStop: (stopTime: string) => void
   onCancel: () => void
 }
 
-function StopPeriodForm({ periodStart, liveSlice, onStop, onCancel }: StopPeriodFormProps) {
+function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeriodFormProps) {
   const [stopTime, setStopTime] = useState(nowHHMM)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -182,7 +182,7 @@ function StopPeriodForm({ periodStart, liveSlice, onStop, onCancel }: StopPeriod
   }, [])
 
   function handleStop() {
-    const baseTime = liveSlice && isAfter(liveSlice.startedAt, periodStart) ? liveSlice.startedAt : periodStart
+    const baseTime = liveSubtask && isAfter(liveSubtask.startedAt, periodStart) ? liveSubtask.startedAt : periodStart
     if (!stopTime || !isAfter(stopTime, baseTime)) {
       setError(true)
       return
@@ -225,10 +225,10 @@ function StopPeriodForm({ periodStart, liveSlice, onStop, onCancel }: StopPeriod
   )
 }
 
-// ─── Live Slice Banner ────────────────────────────────────────────────────────
+// ─── Live Subtask Banner ────────────────────────────────────────────────────────
 
-interface LiveSliceBannerProps {
-  slice: LiveSlice
+interface LiveSubtaskBannerProps {
+  subtask: LiveSubtask
   periodId: string
   date: string
   nowTime: string
@@ -237,33 +237,36 @@ interface LiveSliceBannerProps {
   categoryDescriptions?: Record<string, string>
 }
 
-function LiveSliceBanner({
-  slice,
+function LiveSubtaskBanner({
+  subtask,
   periodId,
   date,
   nowTime,
   categories,
   mutations,
   categoryDescriptions,
-}: LiveSliceBannerProps) {
+}: LiveSubtaskBannerProps) {
   const [stopping, setStopping] = useState(false)
   const [editingCategory, setEditingCategory] = useState(false)
-  const elapsed = elapsedDisplay(slice.startedAt, nowTime)
-  const description = categoryDescriptions?.[slice.category]
+  const elapsed = elapsedDisplay(subtask.startedAt, nowTime)
+  const description = categoryDescriptions?.[subtask.category]
 
   function changeCategory(cat: string) {
-    mutations.addSlice.mutate({ date, periodId, slice: { ...slice, category: cat } })
+    mutations.addSubtask.mutate({ date, periodId, subtask: { ...subtask, category: cat } })
     setEditingCategory(false)
   }
 
   return (
-    <div data-testid="live-slice-banner" className="flex flex-col gap-1 mb-2 pb-2 border-b dark:border-gray-700">
-      <div className="flex items-start gap-2 text-sm">
-        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0 mt-[3px]" />
-        <span className="flex-1 leading-tight">
+    <div data-testid="live-subtask-banner" className="flex flex-col gap-1 mb-2 pb-2 border-b dark:border-gray-700">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-mono text-xs tabular-nums shrink-0 min-w-[2.5rem] text-right flex items-center justify-end gap-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+          <span className="text-green-600 dark:text-green-400 font-semibold">{elapsed}</span>
+        </span>
+        <span className="flex-1 leading-tight min-w-0">
           {editingCategory ? (
             <CategoryPicker
-              value={slice.category}
+              value={subtask.category}
               categories={categories}
               onChange={changeCategory}
               compact
@@ -274,28 +277,25 @@ function LiveSliceBanner({
               onClick={() => setEditingCategory(true)}
               className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
             >
-              <span className="block">{slice.category}</span>
+              <span className="block">{subtask.category}</span>
               {description && (
                 <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{description}</span>
               )}
             </button>
           )}
         </span>
-        <span className="font-mono text-sm text-green-600 dark:text-green-400 font-semibold tabular-nums">
-          {elapsed}
-        </span>
         {!stopping && (
           <>
             <button
               onClick={() => setStopping(true)}
-              className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium shrink-0"
+              className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0"
             >
-              Stop slice
+              Stop subtask
             </button>
             <button
-              onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: slice.id })}
+              onClick={() => mutations.deleteSubtask.mutate({ date, periodId, subtaskId: subtask.id })}
               className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
-              aria-label="Delete live slice"
+              aria-label="Delete live subtask"
             >
               ×
             </button>
@@ -303,10 +303,10 @@ function LiveSliceBanner({
         )}
       </div>
       {stopping && (
-        <StopSliceForm
-          sliceStartedAt={slice.startedAt}
+        <StopSubtaskForm
+          subtaskStartedAt={subtask.startedAt}
           onStop={(stoppedAt) => {
-            mutations.stopLiveSlice.mutate({ date, periodId, sliceId: slice.id, stoppedAt })
+            mutations.stopLiveSubtask.mutate({ date, periodId, subtaskId: subtask.id, stoppedAt })
             setStopping(false)
           }}
           onCancel={() => setStopping(false)}
@@ -316,17 +316,23 @@ function LiveSliceBanner({
   )
 }
 
-// ─── Start Slice Form ─────────────────────────────────────────────────────────
+// ─── Start Subtask Form ─────────────────────────────────────────────────────────
 
-interface StartSliceFormProps {
+interface StartSubtaskFormProps {
   categories: string[]
   defaultCategory: string
-  onStart: (slice: LiveSlice) => void
+  onStart: (subtask: LiveSubtask) => void
   onCancel: () => void
   categoryDescriptions?: Record<string, string>
 }
 
-function StartSliceForm({ categories, defaultCategory, onStart, onCancel, categoryDescriptions }: StartSliceFormProps) {
+function StartSubtaskForm({
+  categories,
+  defaultCategory,
+  onStart,
+  onCancel,
+  categoryDescriptions,
+}: StartSubtaskFormProps) {
   const [category, setCategory] = useState(defaultCategory)
   const [startedAt, setStartedAt] = useState(nowHHMM)
 
@@ -356,7 +362,7 @@ function StartSliceForm({ categories, defaultCategory, onStart, onCancel, catego
           if (e.key === 'Enter') handleStart()
           if (e.key === 'Escape') onCancel()
         }}
-        aria-label="Slice started at"
+        aria-label="Subtask started at"
         className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400"
       />
       <button
@@ -375,10 +381,10 @@ function StartSliceForm({ categories, defaultCategory, onStart, onCancel, catego
   )
 }
 
-// ─── Slice Row (display + inline edit) ────────────────────────────────────────
+// ─── Subtask Row (display + inline edit) ────────────────────────────────────────
 
-interface SliceRowProps {
-  sl: WorkPeriodSlice
+interface SubtaskRowProps {
+  sl: WorkPeriodSubtask
   index: number
   periodId: string
   date: string
@@ -387,27 +393,27 @@ interface SliceRowProps {
   categoryDescriptions?: Record<string, string>
 }
 
-function resolveSliceEdit(
-  sl: WorkPeriodSlice,
+function resolveSubtaskEdit(
+  sl: WorkPeriodSubtask,
   category: string,
   note: string | undefined,
   start: string,
   end: string,
   hoursRaw: string,
   submode: 'timed' | 'decimal',
-): { slice: WorkPeriodSlice; valid: boolean } {
+): { subtask: WorkPeriodSubtask; valid: boolean } {
   if (submode === 'timed') {
-    const h = calcSliceHours(start, end)
-    if (!h || h <= 0) return { slice: sl, valid: false }
-    return { slice: { ...sl, category, hours: h, startedAt: start, stoppedAt: end, note }, valid: true }
+    const h = calcSubtaskHours(start, end)
+    if (!h || h <= 0) return { subtask: sl, valid: false }
+    return { subtask: { ...sl, category, hours: h, startedAt: start, stoppedAt: end, note }, valid: true }
   }
   const h = parseDurationInput(hoursRaw)
-  if (!h || h <= 0) return { slice: sl, valid: false }
-  return { slice: { ...sl, category, hours: h, startedAt: undefined, stoppedAt: undefined, note }, valid: true }
+  if (!h || h <= 0) return { subtask: sl, valid: false }
+  return { subtask: { ...sl, category, hours: h, startedAt: undefined, stoppedAt: undefined, note }, valid: true }
 }
 
-interface SliceEditFormProps {
-  sl: WorkPeriodSlice
+interface SubtaskEditFormProps {
+  sl: WorkPeriodSubtask
   periodId: string
   date: string
   categories: string[]
@@ -417,7 +423,7 @@ interface SliceEditFormProps {
   onDone: () => void
 }
 
-function SliceEditForm({
+function SubtaskEditForm({
   sl,
   periodId,
   date,
@@ -426,8 +432,8 @@ function SliceEditForm({
   stripeBg,
   mutations,
   onDone,
-}: SliceEditFormProps) {
-  const timed = isTimedSlice(sl)
+}: SubtaskEditFormProps) {
+  const timed = isTimedSubtask(sl)
   const [editCategory, setEditCategory] = useState(sl.category)
   const [editHours, setEditHours] = useState(String(sl.hours))
   const [editNote, setEditNote] = useState(sl.note ?? '')
@@ -444,7 +450,7 @@ function SliceEditForm({
   }, [submode])
 
   function commit() {
-    const { slice, valid } = resolveSliceEdit(
+    const { subtask, valid } = resolveSubtaskEdit(
       sl,
       editCategory,
       editNote.trim() || undefined,
@@ -457,12 +463,12 @@ function SliceEditForm({
       onDone()
       return
     }
-    mutations.addSlice.mutate({ date, periodId, slice })
+    mutations.addSubtask.mutate({ date, periodId, subtask })
     onDone()
   }
 
   function switchToDecimal() {
-    setEditHours(String(Math.round(calcSliceHours(editStart, editEnd) * 100) / 100))
+    setEditHours(String(Math.round(calcSubtaskHours(editStart, editEnd) * 100) / 100))
     setSubmode('decimal')
   }
 
@@ -488,7 +494,7 @@ function SliceEditForm({
               value={editStart}
               onChange={(e) => setEditStart(e.target.value)}
               onKeyDown={kd}
-              aria-label="Slice start time"
+              aria-label="Subtask start time"
               className={`${inputClass} w-16`}
             />
             <span className="text-xs text-gray-400">–</span>
@@ -497,12 +503,12 @@ function SliceEditForm({
               value={editEnd}
               onChange={(e) => setEditEnd(e.target.value)}
               onKeyDown={kd}
-              aria-label="Slice end time"
+              aria-label="Subtask end time"
               ref={endInputRef}
               className={`${inputClass} w-16`}
             />
             <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums">
-              {formatHours(calcSliceHours(editStart, editEnd), timeFormat)}
+              {formatHours(calcSubtaskHours(editStart, editEnd), timeFormat)}
             </span>
           </>
         ) : (
@@ -511,7 +517,7 @@ function SliceEditForm({
             value={editHours}
             onChange={(e) => setEditHours(e.target.value)}
             onKeyDown={kd}
-            aria-label="Slice hours"
+            aria-label="Subtask hours"
             ref={hoursInputRef}
             className={`${inputClass} w-20`}
           />
@@ -540,7 +546,7 @@ function SliceEditForm({
           onChange={(e) => setEditNote(e.target.value)}
           onKeyDown={kd}
           placeholder="Note (optional)"
-          aria-label="Slice note"
+          aria-label="Subtask note"
           className={`${inputClass} flex-1 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
         />
         {timed && submode === 'timed' && (
@@ -556,16 +562,16 @@ function SliceEditForm({
   )
 }
 
-function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDescriptions }: SliceRowProps) {
+function SubtaskRow({ sl, index, periodId, date, categories, mutations, categoryDescriptions }: SubtaskRowProps) {
   const [editing, setEditing] = useState(false)
-  const timed = isTimedSlice(sl)
+  const timed = isTimedSubtask(sl)
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
   const timeFormat = useTimeFormatStore((s) => s.format)
   const categoryDescription = categoryDescriptions?.[sl.category]
 
   if (editing) {
     return (
-      <SliceEditForm
+      <SubtaskEditForm
         sl={sl}
         periodId={periodId}
         date={date}
@@ -579,7 +585,7 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
   }
 
   return (
-    <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-1.5 ${stripeBg}`}>
+    <div data-testid="subtask-row" className={`flex items-center gap-2 text-sm group/slice py-1.5 ${stripeBg}`}>
       <button
         onClick={() => setEditing(true)}
         className="font-mono text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums shrink-0 min-w-[2.5rem] text-right"
@@ -590,7 +596,7 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
       <button
         onClick={() => setEditing(true)}
         className="flex-1 font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight min-w-0"
-        aria-label={`Edit ${sl.category} slice`}
+        aria-label={`Edit ${sl.category} subtask`}
       >
         <span className="block truncate">
           {sl.category}
@@ -608,9 +614,9 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
         )}
       </button>
       <button
-        onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: sl.id })}
+        onClick={() => mutations.deleteSubtask.mutate({ date, periodId, subtaskId: sl.id })}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none self-start shrink-0"
-        aria-label={`Remove ${sl.category} slice`}
+        aria-label={`Remove ${sl.category} subtask`}
       >
         ×
       </button>
@@ -618,16 +624,16 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
   )
 }
 
-// ─── Add Slice Form (fixed duration) ─────────────────────────────────────────
+// ─── Add Subtask Form ─────────────────────────────────────────
 
-interface SliceFormProps {
+interface SubtaskFormProps {
   categories: string[]
-  onAdd: (slice: WorkPeriodSlice) => void
+  onAdd: (subtask: WorkPeriodSubtask) => void
   onCancel: () => void
   categoryDescriptions?: Record<string, string>
 }
 
-function SliceForm({ categories, onAdd, onCancel, categoryDescriptions }: SliceFormProps) {
+function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: SubtaskFormProps) {
   const [category, setCategory] = useState(categories[0] ?? UNCATEGORIZED_CATEGORY)
   const [durationRaw, setDurationRaw] = useState('')
   const [note, setNote] = useState('')
@@ -668,7 +674,7 @@ function SliceForm({ categories, onAdd, onCancel, categoryDescriptions }: SliceF
             if (e.key === 'Enter') handleSubmit()
             if (e.key === 'Escape') onCancel()
           }}
-          aria-label="Slice duration"
+          aria-label="Subtask duration"
           ref={durationInputRef}
           className="text-xs rounded border px-2 py-0.5 w-24 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400"
         />
@@ -694,7 +700,7 @@ function SliceForm({ categories, onAdd, onCancel, categoryDescriptions }: SliceF
           if (e.key === 'Escape') onCancel()
         }}
         placeholder="Note (optional)"
-        aria-label="Slice note"
+        aria-label="Subtask note"
         className="text-xs rounded border px-2 py-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 placeholder:text-gray-300 dark:placeholder:text-gray-600"
       />
     </div>
@@ -722,34 +728,34 @@ function PeriodCardFooter({
   mutations,
   categoryDescriptions,
 }: PeriodCardFooterProps) {
-  const [addingSlice, setAddingSlice] = useState(false)
-  const [startingSlice, setStartingSlice] = useState(false)
+  const [addingSubtask, setAddingSubtask] = useState(false)
+  const [startingSubtask, setStartingSubtask] = useState(false)
 
-  if (startingSlice) {
+  if (startingSubtask) {
     return (
-      <StartSliceForm
+      <StartSubtaskForm
         categories={categories}
         defaultCategory={defaultCategory}
         categoryDescriptions={categoryDescriptions}
-        onStart={(slice) => {
-          mutations.startLiveSlice.mutate({ date, periodId, slice })
-          setStartingSlice(false)
+        onStart={(subtask) => {
+          mutations.startLiveSubtask.mutate({ date, periodId, subtask })
+          setStartingSubtask(false)
         }}
-        onCancel={() => setStartingSlice(false)}
+        onCancel={() => setStartingSubtask(false)}
       />
     )
   }
 
-  if (addingSlice) {
+  if (addingSubtask) {
     return (
-      <SliceForm
+      <SubtaskForm
         categories={categories}
         categoryDescriptions={categoryDescriptions}
-        onAdd={(sl) => {
-          mutations.addSlice.mutate({ date, periodId, slice: sl })
-          setAddingSlice(false)
+        onAdd={(subtask) => {
+          mutations.addSubtask.mutate({ date, periodId, subtask })
+          setAddingSubtask(false)
         }}
-        onCancel={() => setAddingSlice(false)}
+        onCancel={() => setAddingSubtask(false)}
       />
     )
   }
@@ -758,19 +764,19 @@ function PeriodCardFooter({
     <div className="flex items-center gap-3 mt-0.5">
       {isRunning && (
         <button
-          onClick={() => setStartingSlice(true)}
-          data-tooltip="Start a live timer for a category within this period"
+          onClick={() => setStartingSubtask(true)}
+          data-tooltip="Start live tracking for a subtask within this period"
           className="text-xs text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
         >
-          ▶ Live timer
+          ▶ Start tracking subtask
         </button>
       )}
       <button
-        onClick={() => setAddingSlice(true)}
-        data-tooltip="Record a completed time block within this period"
+        onClick={() => setAddingSubtask(true)}
+        data-tooltip="Log a completed subtask for this period"
         className="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
       >
-        + Log time
+        + Log subtask
       </button>
     </div>
   )
@@ -796,7 +802,7 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, onAdd }: AddPe
   function handleAdd() {
     if (!canSubmit) return
     const start = draftStart || nowHHMM()
-    onAdd({ id: crypto.randomUUID(), start, end: draftEnd || null, category, slices: [] })
+    onAdd({ id: crypto.randomUUID(), start, end: draftEnd || null, category, subtasks: [] })
     setDraftStart('')
     setDraftEnd('')
     setCategory(defaultCategory)
@@ -851,11 +857,11 @@ interface CardHeaderProps {
   date: string
   duration: number
   isRunning: boolean
-  liveSlice: LiveSlice | undefined
+  liveSubtask: LiveSubtask | undefined
   mutations: ReturnType<typeof useWorkPeriodMutations>
 }
 
-function CardHeader({ w, date, duration, isRunning, liveSlice, mutations }: CardHeaderProps) {
+function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: CardHeaderProps) {
   const [editingTime, setEditingTime] = useState(false)
   const [editStart, setEditStart] = useState(w.start)
   const [editEnd, setEditEnd] = useState(w.end ?? '')
@@ -971,14 +977,14 @@ function CardHeader({ w, date, duration, isRunning, liveSlice, mutations }: Card
       {stoppingPeriod && (
         <StopPeriodForm
           periodStart={w.start}
-          liveSlice={liveSlice}
+          liveSubtask={liveSubtask}
           onStop={(stopTime) => {
             mutations.stopPeriod.mutate({
               date,
               periodId: w.id,
               endTime: stopTime,
-              liveSliceId: liveSlice?.id,
-              stoppedAt: liveSlice ? stopTime : undefined,
+              liveSubtaskId: liveSubtask?.id,
+              stoppedAt: liveSubtask ? stopTime : undefined,
             })
             setStoppingPeriod(false)
           }}
@@ -994,6 +1000,7 @@ function CardHeader({ w, date, duration, isRunning, liveSlice, mutations }: Card
 function AutoCategoryRow({
   hours,
   isRunning,
+  hasLiveSubtask,
   category,
   categories,
   categoryDescriptions,
@@ -1004,6 +1011,7 @@ function AutoCategoryRow({
 }: {
   hours: number
   isRunning: boolean
+  hasLiveSubtask: boolean
   category: string
   categories: string[]
   categoryDescriptions?: Record<string, string>
@@ -1019,7 +1027,9 @@ function AutoCategoryRow({
   return (
     <div data-testid="auto-category-row" className={`flex items-center gap-2 text-sm py-1.5 ${stripeBg}`}>
       <span className="font-mono text-xs tabular-nums shrink-0 min-w-[2.5rem] text-right flex items-center justify-end gap-1">
-        {isRunning && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />}
+        {isRunning && !hasLiveSubtask && (
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+        )}
         <span
           className={
             isRunning ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
@@ -1058,17 +1068,17 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   const isRunning = w.end === null
-  const liveSlice = w.slices.find(isLiveSlice)
-  const completedSlices = w.slices.filter((s) => !isLiveSlice(s))
+  const liveSubtask = w.subtasks.find(isLiveSubtask)
+  const completedSubtasks = w.subtasks.filter((s) => !isLiveSubtask(s))
 
   const duration = calculateWorkedHours([w], isRunning ? nowTime : undefined)
-  const slicedHours = completedSlices.reduce((s, sl) => s + sl.hours, 0)
+  const slicedHours = completedSubtasks.reduce((s, sl) => s + sl.hours, 0)
   const remainder = Math.max(0, duration - slicedHours)
   const overbooked = !isRunning && slicedHours > duration + 0.001
 
   const liveElapsedHours = (() => {
-    if (!liveSlice) return 0
-    let startMins = minutesFrom(liveSlice.startedAt)
+    if (!liveSubtask) return 0
+    let startMins = minutesFrom(liveSubtask.startedAt)
     let endMins = minutesFrom(nowTime)
     if (endMins < startMins) endMins += 24 * 60
     return (endMins - startMins) / 60
@@ -1082,14 +1092,14 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
         date={date}
         duration={duration}
         isRunning={isRunning}
-        liveSlice={liveSlice}
+        liveSubtask={liveSubtask}
         mutations={mutations}
       />
 
       <div className="px-4 py-3 flex flex-col gap-1.5">
-        {liveSlice && (
-          <LiveSliceBanner
-            slice={liveSlice}
+        {liveSubtask && (
+          <LiveSubtaskBanner
+            subtask={liveSubtask}
             periodId={w.id}
             date={date}
             nowTime={nowTime}
@@ -1102,6 +1112,7 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
         <AutoCategoryRow
           hours={displayRemainder}
           isRunning={isRunning}
+          hasLiveSubtask={!!liveSubtask}
           category={w.category}
           categories={categories}
           categoryDescriptions={categoryDescriptions}
@@ -1111,8 +1122,8 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
           index={0}
         />
 
-        {[...completedSlices].reverse().map((sl, i) => (
-          <SliceRow
+        {[...completedSubtasks].reverse().map((sl, i) => (
+          <SubtaskRow
             key={sl.id}
             sl={sl}
             index={i + 1}
@@ -1126,8 +1137,8 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
 
         {overbooked && (
           <p className="text-xs text-red-600 dark:text-red-400 font-medium">
-            Slices exceed period by {formatHours(slicedHours - duration, timeFormat)} — reduce slice hours or extend the
-            period.
+            Subtasks exceed period by {formatHours(slicedHours - duration, timeFormat)} — reduce subtask hours or extend
+            the period.
           </p>
         )}
 

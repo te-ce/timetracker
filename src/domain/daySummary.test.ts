@@ -3,7 +3,7 @@ import { buildMonthSummaries } from './daySummary'
 import type { MonthData, WorkPeriod } from '../repositories/types'
 
 function win(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
-  return { id, start, end, category, slices: [] }
+  return { id, start, end, category, subtasks: [] }
 }
 
 describe('buildMonthSummaries', () => {
@@ -30,7 +30,7 @@ describe('buildMonthSummaries', () => {
   it('computes entryTotal from period categories (excluding uncategorized)', () => {
     const monthData: MonthData = {
       '2026-05-01': {
-        windows: [{ ...win('w1', '09:00', '12:00', 'QA'), slices: [{ id: 's1', category: 'Support', hours: 2 }] }],
+        windows: [{ ...win('w1', '09:00', '12:00', 'QA'), subtasks: [{ id: 's1', category: 'Support', hours: 2 }] }],
       },
     }
     const result = buildMonthSummaries(2026, 5, { monthData, today })

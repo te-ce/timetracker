@@ -85,7 +85,7 @@ describe('useTrackingMutations', () => {
 
     it('does not add a second open period if one already exists', async () => {
       const repo = makeRepo({
-        [date]: { windows: [{ id: 'existing', start: '08:00', end: null, category: '_OTHER', slices: [] }] },
+        [date]: { windows: [{ id: 'existing', start: '08:00', end: null, category: '_OTHER', subtasks: [] }] },
       })
       const trackingRepo = new ControlledTrackingRepository()
       const { result } = renderHook(() => useTrackingMutations(date, repo, trackingRepo), {
@@ -105,7 +105,7 @@ describe('useTrackingMutations', () => {
     it('closes a prior session with hours > 0 before opening a new one', async () => {
       const priorDate = '2026-05-19'
       const repo = makeRepo({
-        [priorDate]: { windows: [{ id: 'old', start: '09:00', end: null, category: '_SUPPORT', slices: [] }] },
+        [priorDate]: { windows: [{ id: 'old', start: '09:00', end: null, category: '_SUPPORT', subtasks: [] }] },
       })
       const trackingRepo = new ControlledTrackingRepository()
       trackingRepo.queueStop({ category: '_SUPPORT', date: priorDate, hours: 1 })
@@ -128,7 +128,7 @@ describe('useTrackingMutations', () => {
   describe('stop', () => {
     it('is a no-op when nothing is actively tracked', async () => {
       const repo = makeRepo({
-        [date]: { windows: [{ id: 'p1', start: '09:00', end: '10:00', category: '_COREMEDIA', slices: [] }] },
+        [date]: { windows: [{ id: 'p1', start: '09:00', end: '10:00', category: '_COREMEDIA', subtasks: [] }] },
       })
       const trackingRepo = new ControlledTrackingRepository()
       const { result } = renderHook(() => useTrackingMutations(date, repo, trackingRepo), {
@@ -146,7 +146,7 @@ describe('useTrackingMutations', () => {
 
     it('closes the open period when stopped with hours > 0', async () => {
       const repo = makeRepo({
-        [date]: { windows: [{ id: 'p1', start: '09:00', end: null, category: '_COREMEDIA', slices: [] }] },
+        [date]: { windows: [{ id: 'p1', start: '09:00', end: null, category: '_COREMEDIA', subtasks: [] }] },
       })
       const trackingRepo = new ControlledTrackingRepository()
       await trackingRepo.start(date, '_COREMEDIA')

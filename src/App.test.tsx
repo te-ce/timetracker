@@ -95,12 +95,12 @@ describe('App', () => {
     expect(indicator).toBeInTheDocument()
   })
 
-  it('navigates to /day when pressing the "d" hotkey', async () => {
-    renderApp('/')
+  it('navigates to / when pressing the "d" hotkey', async () => {
+    renderApp('/month')
     await screen.findByText('Timetracker')
     fireEvent.keyDown(document, { key: 'd' })
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/day')
+      expect(router.state.location.pathname).toBe('/')
     })
   })
 

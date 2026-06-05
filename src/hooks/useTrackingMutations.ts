@@ -16,7 +16,7 @@ async function openWorkPeriod(date: string, category: string, repository: MonthR
   if (dayWindows.some((w) => w.end === null)) return
   await repository.updateDay(date, (day) => ({
     ...day,
-    windows: [...day.windows, { id: crypto.randomUUID(), start: nowHHMM(), end: null, category, slices: [] }],
+    windows: [...day.windows, { id: crypto.randomUUID(), start: nowHHMM(), end: null, category, subtasks: [] }],
   }))
 }
 

@@ -29,7 +29,7 @@ export async function renameCategoryAcrossAllMonths(
     const data = await monthRepo.getMonth(year, month)
     for (const [date, day] of Object.entries(data)) {
       const needsRename = day.windows.some(
-        (w) => w.category === oldName || w.slices.some((s) => s.category === oldName),
+        (w) => w.category === oldName || w.subtasks.some((s) => s.category === oldName),
       )
       if (needsRename) {
         await monthRepo.updateDay(date, (d) => ({
@@ -37,7 +37,7 @@ export async function renameCategoryAcrossAllMonths(
           windows: d.windows.map((w) => ({
             ...w,
             category: w.category === oldName ? newName : w.category,
-            slices: w.slices.map((s) => (s.category === oldName ? { ...s, category: newName } : s)),
+            subtasks: w.subtasks.map((s) => (s.category === oldName ? { ...s, category: newName } : s)),
           })),
         }))
       }

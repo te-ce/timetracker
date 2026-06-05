@@ -150,10 +150,10 @@ describe('SprintView', () => {
     const MONTH_DATA: Record<string, MonthData> = {
       '2026-01': {
         '2026-01-06': {
-          windows: [{ id: 'w1', start: '09:00', end: '12:00', category: '_COREMEDIA', slices: [] }],
+          windows: [{ id: 'w1', start: '09:00', end: '12:00', category: '_COREMEDIA', subtasks: [] }],
         },
         '2026-01-07': {
-          windows: [{ id: 'w2', start: '08:00', end: '10:00', category: '_SUPPORT', slices: [] }],
+          windows: [{ id: 'w2', start: '08:00', end: '10:00', category: '_SUPPORT', subtasks: [] }],
         },
       },
     }
@@ -179,7 +179,7 @@ describe('SprintView', () => {
           ...MONTH_DATA['2026-01'],
           // Jan 19 is outside Sprint 1 (Jan 5–18)
           '2026-01-19': {
-            windows: [{ id: 'w-out', start: '09:00', end: '17:00', category: '_LEAVE', slices: [] }],
+            windows: [{ id: 'w-out', start: '09:00', end: '17:00', category: '_LEAVE', subtasks: [] }],
           },
         },
       }

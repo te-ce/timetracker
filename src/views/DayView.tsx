@@ -121,10 +121,10 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
 export function DayView() {
   const { monthRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
-  const { date: selectedDate } = useSearch({ from: '/day' })
+  const { date: selectedDate } = useSearch({ from: '/' })
 
   function setSelectedDate(date: string) {
-    void navigate({ to: '/day', search: { date } })
+    void navigate({ to: '/', search: { date } })
   }
 
   const {

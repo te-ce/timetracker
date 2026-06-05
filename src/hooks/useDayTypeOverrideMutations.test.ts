@@ -29,7 +29,7 @@ async function flush() {
 const date = '2026-06-04'
 
 function period(id: string): WorkPeriod {
-  return { id, start: '09:00', end: '10:00', category: 'Work', slices: [] }
+  return { id, start: '09:00', end: '10:00', category: 'Work', subtasks: [] }
 }
 
 function makeRepo(initial: Record<string, Day> = {}) {

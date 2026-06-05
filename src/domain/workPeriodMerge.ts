@@ -1,19 +1,19 @@
-import type { WorkPeriod, WorkPeriodSlice } from '../repositories/types'
+import type { WorkPeriod, WorkPeriodSubtask } from '../repositories/types'
 import { calculateWorkedHours } from './worktime'
 
 function hhmm(time: string): string {
   return time.slice(0, 5)
 }
 
-function collectSlicesFromAbsorbed(merged: WorkPeriod, absorbed: WorkPeriod): WorkPeriodSlice[] {
+function collectSubtasksFromAbsorbed(merged: WorkPeriod, absorbed: WorkPeriod): WorkPeriodSubtask[] {
   const duration = calculateWorkedHours([absorbed])
-  const slicedHours = absorbed.slices.reduce((sum, s) => sum + s.hours, 0)
-  const remainder = Math.max(0, duration - slicedHours)
-  const syntheticSlice: WorkPeriodSlice[] =
+  const subtaskedHours = absorbed.subtasks.reduce((sum, s) => sum + s.hours, 0)
+  const remainder = Math.max(0, duration - subtaskedHours)
+  const syntheticSubtask: WorkPeriodSubtask[] =
     absorbed.category !== merged.category && remainder > 0.001
       ? [{ id: crypto.randomUUID(), category: absorbed.category, hours: remainder }]
       : []
-  return [...merged.slices, ...absorbed.slices, ...syntheticSlice]
+  return [...merged.subtasks, ...absorbed.subtasks, ...syntheticSubtask]
 }
 
 /**
@@ -35,14 +35,14 @@ export function mergeAdjacentInto(
       if (absorbed.includes(p.id) || p.id === incoming.id) continue
       // p ends exactly where merged starts
       if (p.end !== null && hhmm(p.end) === hhmm(merged.start)) {
-        merged = { ...merged, start: p.start, slices: collectSlicesFromAbsorbed(merged, p) }
+        merged = { ...merged, start: p.start, subtasks: collectSubtasksFromAbsorbed(merged, p) }
         absorbed.push(p.id)
         changed = true
         break
       }
       // merged ends exactly where p starts
       if (merged.end !== null && hhmm(merged.end) === hhmm(p.start)) {
-        merged = { ...merged, end: p.end, slices: collectSlicesFromAbsorbed(merged, p) }
+        merged = { ...merged, end: p.end, subtasks: collectSubtasksFromAbsorbed(merged, p) }
         absorbed.push(p.id)
         changed = true
         break

@@ -13,14 +13,14 @@ import type { DisplayStatus } from '../domain/statusColors'
 export function MonthView() {
   const { monthRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
-  const { year, month } = useSearch({ from: '/' })
+  const { year, month } = useSearch({ from: '/month' })
 
   function onSelectDate(date: string) {
-    void navigate({ to: '/day', search: { date } })
+    void navigate({ to: '/', search: { date } })
   }
 
   function onMonthChange(y: number, m: number) {
-    void navigate({ to: '/', search: { year: y, month: m + 1 } })
+    void navigate({ to: '/month', search: { year: y, month: m + 1 } })
   }
 
   const queryClient = useQueryClient()

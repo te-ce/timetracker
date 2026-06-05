@@ -95,7 +95,7 @@ describe('DayView', () => {
     navigateSpy.mockReset()
     monthRepo = new InMemoryMonthRepository({
       '2026-05': {
-        [testDate]: { windows: [{ id: 'a', start: '09:00', end: '10:00', category: '_COREMEDIA', slices: [] }] },
+        [testDate]: { windows: [{ id: 'a', start: '09:00', end: '10:00', category: '_COREMEDIA', subtasks: [] }] },
       },
     })
     stubQuery()
@@ -180,7 +180,7 @@ describe('DayView', () => {
       const repo = new InMemoryMonthRepository({
         '2026-05': {
           [testDate]: {
-            windows: [{ id: 'a', start: '09:00', end: '10:00', category: '_COREMEDIA', slices: [] }],
+            windows: [{ id: 'a', start: '09:00', end: '10:00', category: '_COREMEDIA', subtasks: [] }],
             confirmed: true,
           },
         },

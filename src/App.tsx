@@ -112,9 +112,9 @@ function IconSettings() {
 }
 
 const NAV_ITEMS: { label: string; icon: React.ReactNode; to: string }[] = [
-  { label: 'Month', icon: <IconCalendar />, to: '/' },
+  { label: 'Day', icon: <IconDay />, to: '/' },
+  { label: 'Month', icon: <IconCalendar />, to: '/month' },
   { label: 'Grid', icon: <IconGrid />, to: '/grid' },
-  { label: 'Day', icon: <IconDay />, to: '/day' },
   { label: 'Sprint', icon: <IconBolt />, to: '/sprint' },
   { label: 'Settings', icon: <IconSettings />, to: '/settings' },
 ]
@@ -315,7 +315,7 @@ function App() {
         const current = isDaySearch(loc.search) ? loc.search.date : toLocalIso(new Date())
         const d = new Date(current)
         d.setDate(d.getDate() + delta)
-        void navigate({ to: '/day', search: { date: toLocalIso(d) } })
+        void navigate({ to: '/', search: { date: toLocalIso(d) } })
       }
 
       function handleNavShortcuts() {
@@ -324,24 +324,24 @@ function App() {
         const now = new Date()
         const defaultMonthSearch = { year: now.getFullYear(), month: now.getMonth() + 1 }
         function goTodayOrHome() {
-          if (path === '/day') {
-            void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
+          if (path === '/') {
+            void navigate({ to: '/', search: { date: toLocalIso(new Date()) } })
           } else {
-            void navigate({ to: '/', search: defaultMonthSearch })
+            void navigate({ to: '/month', search: defaultMonthSearch })
           }
         }
         function goPrevDay() {
-          if (path === '/day') navigateDayOffset(loc, -1)
+          if (path === '/') navigateDayOffset(loc, -1)
         }
         function goNextDay() {
-          if (path === '/day') navigateDayOffset(loc, 1)
+          if (path === '/') navigateDayOffset(loc, 1)
         }
         if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
-          void navigate({ to: '/', search: defaultMonthSearch })
+          void navigate({ to: '/month', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'gridView', e.key, ctrl, shift)) {
           void navigate({ to: '/grid', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
-          void navigate({ to: '/day', search: { date: toLocalIso(new Date()) } })
+          void navigate({ to: '/', search: { date: toLocalIso(new Date()) } })
         } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {
           void navigate({ to: '/sprint', search: { sprint: undefined } })
         } else if (matchesShortcut(hotkeyConfig, 'today', e.key, ctrl, shift)) {
