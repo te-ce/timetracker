@@ -35,7 +35,7 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
       {badgeStatus !== 'future' && (
         <div className="group relative">
           <span
-            className={`cursor-help rounded-md px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
+            className={`inline-flex items-center cursor-help rounded-md border border-transparent px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
           >
             {STATUS_LABEL[badgeStatus]}
           </span>
@@ -180,8 +180,8 @@ export function DayView() {
         activeTrackingStartedAt={activeTracking?.startedAt}
       />
 
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 shrink-0">
           <DayTypePicker date={selectedDate} override={dayTypeOverride} repository={monthRepo} />
           <button
             onClick={() => dayMutations.toggleLocation.mutate()}
@@ -191,13 +191,18 @@ export function DayView() {
             <span aria-hidden="true">{locationIcon}</span> {effectiveLocation}
           </button>
         </div>
-        <DayActions
-          badgeStatus={badgeStatus}
-          statusReason={statusReason}
-          isConfirmed={isConfirmed}
-          onConfirm={() => dayMutations.confirm.mutate()}
-          onUnconfirm={() => dayMutations.unconfirm.mutate()}
-        />
+        <div className="flex-1 min-w-0 self-stretch flex items-center">
+          <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />
+        </div>
+        <div className="shrink-0">
+          <DayActions
+            badgeStatus={badgeStatus}
+            statusReason={statusReason}
+            isConfirmed={isConfirmed}
+            onConfirm={() => dayMutations.confirm.mutate()}
+            onUnconfirm={() => dayMutations.unconfirm.mutate()}
+          />
+        </div>
       </div>
 
       <section aria-label="Work periods">
@@ -212,8 +217,6 @@ export function DayView() {
           categoryDescriptions={categoryDescriptions}
         />
       </section>
-
-      <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />
     </div>
   )
 }
