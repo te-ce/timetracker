@@ -159,22 +159,24 @@ The source for investment row discovery (→ DynamicCategory) and the write targ
 
 The display and action status of a single day. Derived from DayType, WorkedHours, TimeEntries, and confirmation state.
 
-| Status | Meaning |
-|---|---|
-| `non-working` | Weekend or PublicHoliday — no work expected |
-| `leave` | Vacation, SickDay, or Absence — day off |
-| `future` | Future WorkDay with no hours logged yet |
-| `today` | Today — display modifier layered on top of actual work status |
-| `complete` | Past WorkDay that needs no action: confirmed, balanced, or AutoCategory covers the gap |
-| `needs-review` | Past or current WorkDay where hours don't add up and user attention is needed |
-| `untracked` | Past WorkDay with zero WorkedHours **and** zero TimeEntries |
+| Status         | Meaning                                                                                |
+| -------------- | -------------------------------------------------------------------------------------- |
+| `non-working`  | Weekend or PublicHoliday — no work expected                                            |
+| `leave`        | Vacation, SickDay, or Absence — day off                                                |
+| `future`       | Future WorkDay with no hours logged yet                                                |
+| `today`        | Today — display modifier layered on top of actual work status                          |
+| `complete`     | Past WorkDay that needs no action: confirmed, balanced, or AutoCategory covers the gap |
+| `needs-review` | Past or current WorkDay where hours don't add up and user attention is needed          |
+| `untracked`    | Past WorkDay with zero WorkedHours **and** zero TimeEntries                            |
 
 **`needs-review`** arises from three distinct causes:
+
 - **Under-categorized**: WorkedHours > Σ TimeEntries and no AutoCategory set
 - **Over-categorized**: Σ TimeEntries > WorkedHours
 - **Entries without work time**: Σ TimeEntries > 0 but WorkedHours = 0
 
 **`complete`** has multiple sub-causes, all visible in the status reason:
+
 - Explicitly confirmed by the user (confirmation overlays the balance state — misalignment is still shown)
 - Balanced: Σ TimeEntries ≈ WorkedHours (within 0.01 h)
 - AutoCategory absorbs the remaining gap
@@ -203,6 +205,7 @@ Interface abstracting read/write access to the Excel sprint template. Two adapte
 - **LocalFolderWorkbookService** — reads/writes a local `.xlsx` file via the File System Access API and the `xlsx` library
 
 Both implement:
+
 - `listSheets()` — worksheet names
 - `listRows(sheet)` — task rows (Task ID + description) for mapping configuration
 - `writeSprintData(sheet, mapping, hoursPerCategory)` — write sprint totals to the template
@@ -211,9 +214,10 @@ Components and views use the interface; which adapter is active depends on wheth
 
 ## QUERY_KEYS
 
-Centralized registry of all TanStack Query cache keys. Lives in `src/hooks/queryKeys.ts`. All `useQuery` and invalidation calls must use these factory functions — never inline arrays.
+Centralized registry of all TanStack Query cache keys. Lives in `src/shared/queryKeys.ts`. All `useQuery` and invalidation calls must use these factory functions — never inline arrays.
 
 Examples:
+
 - `QUERY_KEYS.config` — app config
 - `QUERY_KEYS.timeEntriesByDate(date)` — entries for a single day
 - `QUERY_KEYS.workWindowsByMonthTagged(year, month, tag)` — work windows for a month with a tag to distinguish between views that query the same month scope (e.g. `'month'` in MonthGrid vs `'dayOvertime'` in DayView)

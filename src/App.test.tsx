@@ -3,9 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryHistory } from '@tanstack/react-router'
 import { router } from './routes/router'
-import { useThemeStore } from './stores/themeStore'
-import { useAuthStore } from './stores/authStore'
-import { useUndoStore } from './stores/undoStore'
+import { useThemeStore } from './shared/themeStore'
+import { useAuthStore } from './shared/authStore'
+import { useUndoStore } from './shared/undoStore'
 
 function renderApp(path = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })

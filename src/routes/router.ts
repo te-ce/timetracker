@@ -1,11 +1,11 @@
 import { createRootRoute, createRoute, createRouter, createHashHistory } from '@tanstack/react-router'
 import App from '../App'
-import { DayView } from '../views/DayView'
-import { MonthView } from '../views/MonthView'
-import { TableView } from '../views/TableView'
-import { SprintView } from '../views/SprintView'
-import { SettingsView } from '../views/SettingsView'
-import { toLocalIso } from '../domain/dateUtils'
+import { DayView } from '../features/day/DayView'
+import { MonthView } from '../features/month/MonthView'
+import { TableView } from '../features/table/TableView'
+import { SprintView } from '../features/sprint/SprintView'
+import { SettingsView } from '../features/settings/SettingsView'
+import { toLocalIso } from '../shared/dateUtils'
 
 const rootRoute = createRootRoute({
   component: App,

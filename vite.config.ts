@@ -28,12 +28,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: [
-        'src/**/*.test.{ts,tsx}',
-        'src/test/**',
-        'src/mocks/**',
-        'src/types/**',
-      ],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/mocks/**', 'src/types/**'],
       reporter: ['text', 'json-summary'],
       reportsDirectory: './coverage',
       thresholds: {
@@ -41,7 +36,13 @@ export default defineConfig({
         branches: 75,
         functions: 77,
         lines: 81,
-        'src/domain/**': {
+        'src/shared/**': {
+          statements: 90,
+          branches: 80,
+          functions: 90,
+          lines: 90,
+        },
+        'src/features/**/!(*.tsx)': {
           statements: 90,
           branches: 80,
           functions: 90,

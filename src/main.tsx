@@ -3,11 +3,11 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { MsalProvider } from '@azure/msal-react'
-import { msalInstance } from './auth/msalInstance.ts'
-import { readBootstrapConfig, isSetupSkipped, isLocalFolderMode } from './auth/bootstrapConfig.ts'
-import { SetupWizard } from './components/SetupWizard.tsx'
-import { useMsalSync } from './hooks/useMsalSync.ts'
-import { RepositoryProvider } from './repositories/RepositoryContext.tsx'
+import { msalInstance } from './infra/auth/msalInstance'
+import { readBootstrapConfig, isSetupSkipped, isLocalFolderMode } from './infra/auth/bootstrapConfig'
+import { SetupWizard } from './features/settings/SetupWizard'
+import { useMsalSync } from './shared/useMsalSync'
+import { RepositoryProvider } from './infra/repositories/RepositoryContext'
 import { router } from './routes/router.ts'
 import './index.css'
 
@@ -63,7 +63,9 @@ function Root() {
       <MsalSync />
       {app}
     </MsalProvider>
-  ) : app
+  ) : (
+    app
+  )
 }
 
 createRoot(rootElement).render(
