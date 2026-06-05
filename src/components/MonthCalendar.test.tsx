@@ -14,21 +14,6 @@ describe('MonthCalendar', () => {
     }
   })
 
-  it('navigates to previous and next month', async () => {
-    const { rerender } = render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} onMonthChange={vi.fn()} />)
-    // Verify January shown
-    expect(screen.getByText(/january/i)).toBeInTheDocument()
-
-    // Click next
-    const onMonthChange = vi.fn()
-    rerender(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} onMonthChange={onMonthChange} />)
-    await userEvent.click(screen.getByRole('button', { name: /next/i }))
-    expect(onMonthChange).toHaveBeenCalledWith(2024, 1)
-
-    await userEvent.click(screen.getByRole('button', { name: /prev/i }))
-    expect(onMonthChange).toHaveBeenCalledWith(2023, 11)
-  })
-
   it('calls onSelectDate when a day is clicked', async () => {
     const onSelectDate = vi.fn()
     render(<MonthCalendar year={2024} month={0} onSelectDate={onSelectDate} />)
@@ -86,33 +71,10 @@ describe('MonthCalendar', () => {
     expect(onSelectDate).toHaveBeenCalledWith('2026-05-19')
   })
 
-  it('wraps from January to December of prior year on prev click', async () => {
-    const onMonthChange = vi.fn()
-    render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} onMonthChange={onMonthChange} />)
-    await userEvent.click(screen.getByRole('button', { name: /prev/i }))
-    expect(onMonthChange).toHaveBeenCalledWith(2023, 11)
-  })
-
-  it('wraps from December to January of next year on next click', async () => {
-    const onMonthChange = vi.fn()
-    render(<MonthCalendar year={2024} month={11} onSelectDate={vi.fn()} onMonthChange={onMonthChange} />)
-    await userEvent.click(screen.getByRole('button', { name: /next/i }))
-    expect(onMonthChange).toHaveBeenCalledWith(2025, 0)
-  })
-
-  it('does nothing on prev/next when onMonthChange is not provided', async () => {
-    render(<MonthCalendar year={2024} month={5} onSelectDate={vi.fn()} />)
-    await userEvent.click(screen.getByRole('button', { name: /prev/i }))
-    await userEvent.click(screen.getByRole('button', { name: /next/i }))
-    expect(screen.getByText(/june/i)).toBeInTheDocument()
-  })
-
-  it('clicking Today button calls onMonthChange with current month', async () => {
-    const onMonthChange = vi.fn()
-    render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} onMonthChange={onMonthChange} />)
-    await userEvent.click(screen.getByRole('button', { name: /current month/i }))
-    const now = new Date()
-    expect(onMonthChange).toHaveBeenCalledWith(now.getFullYear(), now.getMonth())
+  it('does not render the status legend', () => {
+    render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} />)
+    expect(screen.queryByText('Needs review')).not.toBeInTheDocument()
+    expect(screen.queryByText('Non-working')).not.toBeInTheDocument()
   })
 
   describe('status dots', () => {

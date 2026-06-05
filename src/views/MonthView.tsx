@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { MonthNav } from '../components/MonthNav'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { OvertimeBar } from '../components/OvertimeBar'
+import { StatusLegend } from '../components/StatusLegend'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useMonthSummaries } from '../hooks/useMonthSummaries'
 import { useRepositories } from '../repositories/RepositoryContext'
@@ -55,16 +57,7 @@ export function MonthView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <MonthCalendar
-        year={year}
-        month={month - 1}
-        onSelectDate={onSelectDate}
-        onMonthChange={onMonthChange}
-        dayStatusMap={dayStatusMap}
-        dayDisplayStatusMap={dayDisplayStatusMap}
-        dayStatusReasonMap={dayStatusReasonMap}
-        dayNoteMap={dayNoteMap}
-      />
+      <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
       <OvertimeBar
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
@@ -74,6 +67,16 @@ export function MonthView() {
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}
       />
+      <MonthCalendar
+        year={year}
+        month={month - 1}
+        onSelectDate={onSelectDate}
+        dayStatusMap={dayStatusMap}
+        dayDisplayStatusMap={dayDisplayStatusMap}
+        dayStatusReasonMap={dayStatusReasonMap}
+        dayNoteMap={dayNoteMap}
+      />
+      <StatusLegend />
       <div className="flex justify-end">
         <button
           onClick={() => setShowResetConfirm(true)}
