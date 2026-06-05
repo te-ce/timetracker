@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { AppConfig } from '../types'
 import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'

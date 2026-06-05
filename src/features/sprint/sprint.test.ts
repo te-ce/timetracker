@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from './sprint'
 import type { DatedTimeEntry } from '../../infra/repositories/types'

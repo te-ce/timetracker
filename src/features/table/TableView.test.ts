@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { resolveTableConfig } from './tableConfig'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'

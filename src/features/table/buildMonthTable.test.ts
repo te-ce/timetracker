@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { buildMonthTable } from './buildMonthTable'
 import type { MonthData, WorkPeriod } from '../../infra/repositories/types'

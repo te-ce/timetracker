@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { classifyDayType, isWorkPeriodExpected, getAutoBooking } from './dayType'
 import type { DayType } from './dayType'

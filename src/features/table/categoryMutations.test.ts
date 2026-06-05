@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { renameCategoryAcrossAllMonths } from './categoryMutations'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'

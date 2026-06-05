@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from 'vitest'
 import { FallbackStorageAdapter } from './fallback-adapter'
 import { InMemoryStorageAdapter } from './in-memory-adapter'

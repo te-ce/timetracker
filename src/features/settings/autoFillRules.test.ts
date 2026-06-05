@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { materializeAutoFillRules } from './autoFillRules'
 import { parseLocalDate, toLocalIso } from '../../shared/dateUtils'

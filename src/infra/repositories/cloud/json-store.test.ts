@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach } from 'vitest'
 import { JsonCollectionStore, JsonRecordStore } from './json-store'
 import type { StorageAdapter } from '../../storage/adapter'

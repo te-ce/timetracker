@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { composeDayContext } from './dayContext'
 import type { MonthData } from '../../infra/repositories/types'

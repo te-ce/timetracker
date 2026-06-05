@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { mergeAdjacentInto } from './workPeriodMerge'
 import type { WorkPeriod } from '../../infra/repositories/types'

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { getAllCategories, isValidCustomCategoryName } from './categories'
 import { DEFAULT_CATEGORIES } from '../infra/repositories/types'

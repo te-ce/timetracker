@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { computeSprintGroups } from './sprintGroups'
 import type { MonthTableRow } from '../table/buildMonthTable'

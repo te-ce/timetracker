@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { shouldAutoExport } from './exportStatus'
 import type { Sprint } from '../sprint/sprint'
