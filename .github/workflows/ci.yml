@@ -21,6 +21,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache Vite build
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.vite
+          key: vite-${{ runner.os }}-${{ hashFiles('**/package-lock.json', 'vite.config.*') }}
+          restore-keys: vite-${{ runner.os }}-
+
       - name: Typecheck
         run: npx tsc --noEmit
 
