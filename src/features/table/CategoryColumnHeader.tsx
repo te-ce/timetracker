@@ -100,7 +100,6 @@ export function CategoryColumnHeader({
       onDrop={() => dragHandlers.onDrop(catIdx, allCategories)}
       onDragEnd={dragHandlers.onDragEnd}
       className={`px-1 py-1.5 text-center w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
-      role="columnheader"
       data-tooltip={buildColTitle(cat, autoCategory, categoryDescriptions, onCategoryRename)}
     >
       {editingCat === cat ? (

@@ -18,7 +18,6 @@ export function RepositoryProvider({ children, repos }: { children: ReactNode; r
   return <RepositoryContext.Provider value={repos ?? defaultRepositories}>{children}</RepositoryContext.Provider>
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useRepositories(): Repositories {
   return useContext(RepositoryContext)
 }

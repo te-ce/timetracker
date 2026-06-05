@@ -1,0 +1,18 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "jsx-a11y/control-has-associated-label": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "react/no-children-prop": "off",
+    "complexity": ["warn", { "max": 10 }],
+    "max-depth": ["warn", { "max": 4 }]
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": ["dist", "public/mockServiceWorker.js"]
+}

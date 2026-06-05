@@ -443,7 +443,7 @@ export function CategorySettings({ repository }: Props) {
     const cat = categories[idx]
     if (!cat) return
     const trimmed = newDesc.trim()
-    const descs = { ...(config.categoryDescriptions ?? {}) }
+    const descs = { ...config.categoryDescriptions }
     if (trimmed) descs[cat] = trimmed
     else delete descs[cat]
     categoryMutation.mutate({ categoryDescriptions: descs })

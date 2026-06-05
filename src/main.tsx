@@ -36,13 +36,11 @@ void enableMocking()
 
 const needsSetup = !readBootstrapConfig() && !isSetupSkipped() && !isLocalFolderMode()
 
-// eslint-disable-next-line react-refresh/only-export-components
 function MsalSync() {
   useMsalSync()
   return null
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 function Root() {
   const [showSetup, setShowSetup] = useState(needsSetup)
 

@@ -5,7 +5,7 @@ import { calculateMonthStats } from './monthStats'
 describe('calculateMonthStats', () => {
   it('calculates totals for a normal month', () => {
     // 20 days with 8h each = 160h worked, target = 20*8 = 160h
-    const worked = new Array<number>(20).fill(8)
+    const worked = Array.from<number>({ length: 20 }).fill(8)
     const result = calculateMonthStats(worked, 20, 8)
     expect(result.totalHours).toBe(160)
     expect(result.targetHours).toBe(160)

@@ -373,7 +373,7 @@ export function MonthGrid({
   return (
     <div className={outerContainerClass(expanded)}>
       <div data-testid="table-scroll-container" className={scrollContainerClass(expanded)}>
-        <table className="w-full text-sm border-collapse" role="table">
+        <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm">
             <tr>
               <th className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-left w-12 border-b dark:border-gray-700">
@@ -385,10 +385,7 @@ export function MonthGrid({
               >
                 <span className="sr-only">Status</span>
               </th>
-              <th
-                className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-center w-16 border-b dark:border-gray-700"
-                role="columnheader"
-              >
+              <th className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-center w-16 border-b dark:border-gray-700">
                 Worked
               </th>
               <th
@@ -455,7 +452,7 @@ export function MonthGrid({
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
                 globalRowIdx++
                 return (
-                  <tr key={row.date} role="row" aria-label={row.date} className={`${rowBg} ${rowOpacityClass}`}>
+                  <tr key={row.date} aria-label={row.date} className={`${rowBg} ${rowOpacityClass}`}>
                     {renderDayCell(row.date, dayLabel, rowBg)}
                     <td
                       className={`sticky left-12 z-10 px-1 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${rowBg}`}
