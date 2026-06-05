@@ -3,6 +3,7 @@ import { DayNoteEditor } from './DayNoteEditor'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../repositories/RepositoryContext'
+import { OvertimeBar } from '../components/OvertimeBar'
 import { WorkOverview } from '../components/WorkOverview'
 import { DayTypePicker } from '../components/DayTypePicker'
 import { ConfirmDialog } from '../components/ConfirmDialog'
@@ -160,6 +161,7 @@ export function DayView() {
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
+  const liveWindowStart = windows.find((w) => w.end === null)?.start
 
   function prevDay() {
     const d = new Date(selectedDate)
@@ -203,6 +205,14 @@ export function DayView() {
         />
       </div>
 
+      <OvertimeBar
+        sollstunden={sollstunden}
+        priorOvertime={overtimeToDate.priorOvertime}
+        workedToday={overtimeToDate.workedToday}
+        liveWindowStart={liveWindowStart}
+        activeTrackingStartedAt={activeTracking?.startedAt}
+      />
+
       <section aria-label="Work periods">
         <h3 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>
         <WorkOverview
@@ -213,10 +223,6 @@ export function DayView() {
           customCategories={customCategories}
           categoryOrder={categoryOrder}
           categoryDescriptions={categoryDescriptions}
-          sollstunden={sollstunden}
-          priorOvertime={overtimeToDate.priorOvertime}
-          workedToday={overtimeToDate.workedToday}
-          activeTrackingStartedAt={activeTracking?.startedAt}
         />
       </section>
 

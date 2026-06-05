@@ -101,6 +101,21 @@ describe('DayView', () => {
     stubQuery()
   })
 
+  describe('OvertimeBar placement', () => {
+    it('renders OvertimeBar outside the work-periods section', () => {
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      const bar = screen.getByRole('status')
+      const section = screen.getByRole('region', { name: /work periods/i })
+      expect(section).not.toContainElement(bar)
+    })
+
+    it('always renders OvertimeBar even when workedToday is zero', () => {
+      stubQuery({ overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 } })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+  })
+
   describe('rendering', () => {
     it('shows the formatted date heading', () => {
       stubQuery()
