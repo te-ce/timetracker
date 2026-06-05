@@ -8,12 +8,17 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: {
       '@typescript-eslint': tseslint,
     },
     rules: {
       '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
+      '@typescript-eslint/no-unnecessary-condition': 'error',
     },
   },
 ])
