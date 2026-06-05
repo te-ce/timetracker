@@ -35,3 +35,4 @@ electron/icons/
 *.sln
 *.sw?
 coverage/
+.eslintcache
