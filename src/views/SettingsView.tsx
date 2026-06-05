@@ -2,6 +2,7 @@ import { AutoCategorySettings } from '../components/AutoCategorySettings'
 import { AppDataFolderSettings } from '../components/AppDataFolderSettings'
 import { ClearDataSettings } from '../components/ClearDataSettings'
 import { BundeslandSettings } from '../components/BundeslandSettings'
+import { TargetHoursSettings } from '../components/TargetHoursSettings'
 import { CategorySettings } from '../components/CategorySettings'
 import { CloudSyncSettings } from '../components/CloudSyncSettings'
 import { DefaultLocationSettings } from '../components/DefaultLocationSettings'
@@ -24,6 +25,7 @@ export function SettingsView() {
     <div className="flex flex-col gap-8">
       <h2 className="text-xl font-semibold dark:text-gray-100">Settings</h2>
       {!localFolder && <CloudSyncSettings />}
+      <TargetHoursSettings repository={configRepo} />
       <AutoCategorySettings repository={configRepo} />
       <BundeslandSettings repository={configRepo} />
       <DefaultLocationSettings repository={configRepo} />
