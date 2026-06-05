@@ -11,9 +11,19 @@ const rootRoute = createRootRoute({
   component: App,
 })
 
-const monthRoute = createRoute({
+const dayRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
+  component: DayView,
+  validateSearch: (search: Record<string, unknown>) => ({
+    date:
+      typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : toLocalIso(new Date()),
+  }),
+})
+
+const monthRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/month',
   component: MonthView,
   validateSearch: (search: Record<string, unknown>) => {
     const now = new Date()
@@ -22,16 +32,6 @@ const monthRoute = createRoute({
       month: Number(search.month) || now.getMonth() + 1,
     }
   },
-})
-
-const dayRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/day',
-  component: DayView,
-  validateSearch: (search: Record<string, unknown>) => ({
-    date:
-      typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : toLocalIso(new Date()),
-  }),
 })
 
 const gridRoute = createRoute({
@@ -62,11 +62,9 @@ const settingsRoute = createRoute({
   component: SettingsView,
 })
 
-const routeTree = rootRoute.addChildren([monthRoute, dayRoute, gridRoute, sprintRoute, settingsRoute])
+const routeTree = rootRoute.addChildren([dayRoute, monthRoute, gridRoute, sprintRoute, settingsRoute])
 
-const history = typeof window !== 'undefined' && window.location.protocol === 'file:'
-  ? createHashHistory()
-  : undefined
+const history = typeof window !== 'undefined' && window.location.protocol === 'file:' ? createHashHistory() : undefined
 
 export const router = createRouter({ routeTree, history })
 
