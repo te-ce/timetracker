@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, within, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WorkPeriodPanel } from './WorkPeriodPanel'
@@ -404,7 +404,7 @@ describe('WorkPeriodPanel', () => {
       })
     })
 
-    it('Stop slice rejects time not after slice start', async () => {
+    it('Stop slice rejects time before slice start', async () => {
       setup([periodWithLiveSlice('a', '09:00', 'Work', '10:00')])
       await screen.findByRole('button', { name: /stop slice/i })
       await userEvent.click(screen.getByRole('button', { name: /stop slice/i }))
@@ -412,7 +412,33 @@ describe('WorkPeriodPanel', () => {
       await userEvent.clear(stopInput)
       await userEvent.type(stopInput, '09:00')
       await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
-      expect(await screen.findByText(/must be after/i)).toBeInTheDocument()
+      expect(await screen.findByText(/must be at or after/i)).toBeInTheDocument()
+    })
+
+    it('Stop slice allows start == end (saves 0 hours)', async () => {
+      const { repo } = setup([periodWithLiveSlice('a', '09:00', 'Work', '10:00')])
+      await screen.findByRole('button', { name: /stop slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /stop slice/i }))
+      const stopInput = screen.getByLabelText(/slice stopped at/i)
+      await userEvent.clear(stopInput)
+      await userEvent.type(stopInput, '10:00')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.slices[0]?.hours).toBe(0)
+        expect(saved[0]?.slices[0]?.startedAt).toBe('10:00')
+        expect(saved[0]?.slices[0]?.stoppedAt).toBe('10:00')
+      })
+    })
+
+    it('Delete live slice button removes it from the repository', async () => {
+      const { repo } = setup([periodWithLiveSlice('a', '09:00', 'Work', '09:30')])
+      await screen.findByRole('button', { name: /delete live slice/i })
+      await userEvent.click(screen.getByRole('button', { name: /delete live slice/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.slices).toHaveLength(0)
+      })
     })
 
     it('Stop all (from period header) stops live slice and sets period end', async () => {
@@ -565,9 +591,9 @@ describe('WorkPeriodPanel', () => {
   describe('category descriptions', () => {
     const descriptions = { Work: 'Deep work sessions', Meeting: 'Sync meetings' }
 
-    it('shows category description below category name in slice row', async () => {
+    it('shows category description inline in parentheses in slice row', async () => {
       setup([periodWithSlice('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
-      const matches = await screen.findAllByText('Deep work sessions')
+      const matches = await screen.findAllByText(/\(Deep work sessions\)/)
       expect(matches.length).toBeGreaterThan(0)
     })
 
@@ -670,13 +696,13 @@ describe('WorkPeriodPanel', () => {
   describe('slice row alternating backgrounds', () => {
     const STRIPE = 'bg-gray-50'
 
-    it('first slice row has no stripe background', async () => {
+    it('first slice row (unified index 1) has stripe background', async () => {
       setup([periodWithSlices('a', '09:00', '11:00', [{ category: 'Work', hours: 1 }])])
       const rows = await screen.findAllByTestId('slice-row')
-      expect(rows[0]?.className).not.toContain(STRIPE)
+      expect(rows[0]?.className).toContain(STRIPE)
     })
 
-    it('second slice row has stripe background', async () => {
+    it('second slice row (unified index 2) has no stripe background', async () => {
       setup([
         periodWithSlices('a', '09:00', '11:00', [
           { category: 'Work', hours: 1 },
@@ -684,10 +710,10 @@ describe('WorkPeriodPanel', () => {
         ]),
       ])
       const rows = await screen.findAllByTestId('slice-row')
-      expect(rows[1]?.className).toContain(STRIPE)
+      expect(rows[1]?.className).not.toContain(STRIPE)
     })
 
-    it('third slice row has no stripe background', async () => {
+    it('third slice row (unified index 3) has stripe background', async () => {
       setup([
         periodWithSlices('a', '09:00', '11:00', [
           { category: 'Work', hours: 1 },
@@ -696,7 +722,61 @@ describe('WorkPeriodPanel', () => {
         ]),
       ])
       const rows = await screen.findAllByTestId('slice-row')
-      expect(rows[2]?.className).not.toContain(STRIPE)
+      expect(rows[2]?.className).toContain(STRIPE)
+    })
+  })
+
+  describe('new card layout', () => {
+    it('period card header has no category picker', async () => {
+      setup([period('a', '09:00', '11:00')])
+      const header = await screen.findByTestId('period-card-header')
+      expect(within(header).queryByRole('combobox', { name: /category/i })).not.toBeInTheDocument()
+    })
+
+    it('shows auto-category row with main badge', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')])
+      expect(await screen.findByTestId('auto-category-row')).toBeInTheDocument()
+      expect(screen.getByText('main')).toBeInTheDocument()
+    })
+
+    it('auto-category row has a category dropdown to change main category', async () => {
+      const { repo } = setup([period('a', '09:00', '11:00', 'Work')])
+      const row = await screen.findByTestId('auto-category-row')
+      const picker = within(row).getByRole('combobox', { name: /category/i })
+      await userEvent.selectOptions(picker, 'Meeting')
+      await waitFor(async () => {
+        expect(await getWindows(repo)).toContainEqual(expect.objectContaining({ category: 'Meeting' }))
+      })
+    })
+
+    it('header shows total duration for a closed period', async () => {
+      setup([period('a', '09:00', '11:00')])
+      const header = await screen.findByTestId('period-card-header')
+      expect(within(header).getByTestId('period-duration')).toBeInTheDocument()
+    })
+
+    it('auto-category row shows live pulsing indicator when period is running', async () => {
+      setup([period('a', '09:00', null)])
+      const row = await screen.findByTestId('auto-category-row')
+      expect(row.querySelector('.animate-pulse')).toBeInTheDocument()
+    })
+
+    it('auto-category row has no pulsing indicator when period is closed', async () => {
+      setup([period('a', '09:00', '11:00')])
+      const row = await screen.findByTestId('auto-category-row')
+      expect(row.querySelector('.animate-pulse')).not.toBeInTheDocument()
+    })
+
+    it('completed slices render newest first', async () => {
+      setup([
+        periodWithSlices('a', '09:00', '11:00', [
+          { category: 'Work', hours: 1 },
+          { category: 'Meeting', hours: 0.5 },
+        ]),
+      ])
+      const rows = await screen.findAllByTestId('slice-row')
+      expect(rows[0]).toHaveTextContent('Meeting')
+      expect(rows[1]).toHaveTextContent('Work')
     })
   })
 

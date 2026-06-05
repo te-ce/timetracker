@@ -121,7 +121,7 @@ function StopSliceForm({ sliceStartedAt, onStop, onCancel }: StopSliceFormProps)
   }, [])
 
   function handleStop() {
-    if (!stoppedAt || !isAfter(stoppedAt, sliceStartedAt)) {
+    if (!stoppedAt || minutesFrom(stoppedAt) < minutesFrom(sliceStartedAt)) {
       setError(true)
       return
     }
@@ -146,7 +146,7 @@ function StopSliceForm({ sliceStartedAt, onStop, onCancel }: StopSliceFormProps)
         aria-label="Slice stopped at"
         className={`rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
-      {error && <span className="text-xs text-red-600 dark:text-red-400">Must be after {sliceStartedAt}</span>}
+      {error && <span className="text-xs text-red-600 dark:text-red-400">Must be at or after {sliceStartedAt}</span>}
       <button
         onClick={handleStop}
         className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
@@ -285,12 +285,21 @@ function LiveSliceBanner({
           {elapsed}
         </span>
         {!stopping && (
-          <button
-            onClick={() => setStopping(true)}
-            className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium shrink-0"
-          >
-            Stop slice
-          </button>
+          <>
+            <button
+              onClick={() => setStopping(true)}
+              className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium shrink-0"
+            >
+              Stop slice
+            </button>
+            <button
+              onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: slice.id })}
+              className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
+              aria-label="Delete live slice"
+            >
+              ×
+            </button>
+          </>
         )}
       </div>
       {stopping && (
@@ -472,14 +481,6 @@ function SliceEditForm({
       }}
     >
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 self-start mt-[3px]" />
-        <CategoryPicker
-          value={editCategory}
-          categories={categories}
-          onChange={setEditCategory}
-          compact
-          categoryDescriptions={categoryDescriptions}
-        />
         {timed && submode === 'timed' ? (
           <>
             <input
@@ -515,6 +516,13 @@ function SliceEditForm({
             className={`${inputClass} w-20`}
           />
         )}
+        <CategoryPicker
+          value={editCategory}
+          categories={categories}
+          onChange={setEditCategory}
+          compact
+          categoryDescriptions={categoryDescriptions}
+        />
         <button
           onClick={commit}
           className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800"
@@ -572,20 +580,22 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
 
   return (
     <div data-testid="slice-row" className={`flex items-center gap-2 text-sm group/slice py-1.5 ${stripeBg}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 shrink-0 mt-[3px] self-start" />
+      <button
+        onClick={() => setEditing(true)}
+        className="font-mono text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums shrink-0 min-w-[2.5rem] text-right"
+        aria-label={`Edit ${sl.category} hours`}
+      >
+        {formatHours(sl.hours, timeFormat)}
+      </button>
       <button
         onClick={() => setEditing(true)}
         className="flex-1 font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left leading-tight min-w-0"
         aria-label={`Edit ${sl.category} slice`}
-        data-tooltip={categoryDescription}
       >
         <span className="block truncate">
           {sl.category}
           {categoryDescription && (
-            <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">
-              {' '}
-              — {categoryDescription}
-            </span>
+            <span className="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500">({categoryDescription})</span>
           )}
           {timed && (
             <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500 tabular-nums">
@@ -596,13 +606,6 @@ function SliceRow({ sl, index, periodId, date, categories, mutations, categoryDe
         {sl.note && (
           <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 italic">{sl.note}</span>
         )}
-      </button>
-      <button
-        onClick={() => setEditing(true)}
-        className="text-gray-500 dark:text-gray-400 text-xs hover:text-indigo-600 dark:hover:text-indigo-400 self-start mt-0.5 tabular-nums shrink-0"
-        aria-label={`Edit ${sl.category} hours`}
-      >
-        {formatHours(sl.hours, timeFormat)}
       </button>
       <button
         onClick={() => mutations.deleteSlice.mutate({ date, periodId, sliceId: sl.id })}
@@ -838,9 +841,7 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, onAdd }: AddPe
 
 // ─── Card Header ──────────────────────────────────────────────────────────────
 
-function headerBg(overbooked: boolean, uncategorized: boolean, isRunning: boolean): string {
-  if (overbooked) return 'bg-red-50 dark:bg-red-900/20'
-  if (uncategorized) return 'bg-amber-50 dark:bg-amber-900/20'
+function headerBg(isRunning: boolean): string {
   if (isRunning) return 'bg-green-50 dark:bg-green-900/20'
   return 'bg-gray-50 dark:bg-gray-800/60'
 }
@@ -849,29 +850,12 @@ interface CardHeaderProps {
   w: WorkPeriod
   date: string
   duration: number
-  slicedHours: number
-  overbooked: boolean
-  uncategorized: boolean
   isRunning: boolean
   liveSlice: LiveSlice | undefined
-  categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
-  categoryDescriptions?: Record<string, string>
 }
 
-function CardHeader({
-  w,
-  date,
-  duration,
-  slicedHours,
-  overbooked,
-  uncategorized,
-  isRunning,
-  liveSlice,
-  categories,
-  mutations,
-  categoryDescriptions,
-}: CardHeaderProps) {
+function CardHeader({ w, date, duration, isRunning, liveSlice, mutations }: CardHeaderProps) {
   const [editingTime, setEditingTime] = useState(false)
   const [editStart, setEditStart] = useState(w.start)
   const [editEnd, setEditEnd] = useState(w.end ?? '')
@@ -891,7 +875,7 @@ function CardHeader({
   const showStopButton = isRunning && !stoppingPeriod
 
   return (
-    <div className={`px-4 py-3 ${headerBg(overbooked, uncategorized, isRunning)}`}>
+    <div data-testid="period-card-header" className={`px-4 py-3 ${headerBg(isRunning)}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3 min-w-0">
           {editingTime ? (
@@ -958,23 +942,14 @@ function CardHeader({
               </svg>
             </button>
           )}
-          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-full px-2 py-0.5 border dark:border-gray-600 shrink-0">
-            {formatHours(duration, timeFormat)}
-          </span>
-          {overbooked && (
-            <span className="text-xs font-semibold text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30 rounded-full px-2 py-0.5 shrink-0">
-              +{formatHours(slicedHours - duration, timeFormat)} over
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <CategoryPicker
-            value={w.category}
-            categories={categories}
-            onChange={(cat) => mutations.setPeriodCategory.mutate({ date, periodId: w.id, category: cat })}
-            compact
-            categoryDescriptions={categoryDescriptions}
-          />
+          <span
+            data-testid="period-duration"
+            className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-full px-2 py-0.5 border dark:border-gray-600 tabular-nums"
+          >
+            {formatHours(duration, timeFormat)}
+          </span>
           {showStopButton && (
             <button
               onClick={() => setStoppingPeriod(true)}
@@ -1014,33 +989,56 @@ function CardHeader({
   )
 }
 
-// ─── Remainder Row ────────────────────────────────────────────────────────────
+// ─── Auto Category Row ────────────────────────────────────────────────────────
 
-function RemainderRow({
-  remainder,
-  uncategorized,
+function AutoCategoryRow({
+  hours,
+  isRunning,
   category,
+  categories,
   categoryDescriptions,
+  periodId,
+  date,
+  mutations,
+  index,
 }: {
-  remainder: number
-  uncategorized: boolean
+  hours: number
+  isRunning: boolean
   category: string
+  categories: string[]
   categoryDescriptions?: Record<string, string>
+  periodId: string
+  date: string
+  mutations: ReturnType<typeof useWorkPeriodMutations>
+  index: number
 }) {
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const dotClass = uncategorized ? 'bg-amber-400' : 'bg-emerald-400 dark:bg-emerald-500'
-  const labelClass = uncategorized ? 'text-amber-600 dark:text-amber-400' : 'text-gray-700 dark:text-gray-300'
-  const description = uncategorized ? undefined : categoryDescriptions?.[category]
+  const description = categoryDescriptions?.[category]
+  const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
+
   return (
-    <div className="flex items-start gap-2 text-sm">
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 mt-[3px] ${dotClass}`} />
-      <span className={`font-medium leading-tight ${labelClass}`}>
-        <span className="block">{uncategorized ? 'Uncategorized' : category}</span>
-        {description && (
-          <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{description}</span>
-        )}
+    <div data-testid="auto-category-row" className={`flex items-center gap-2 text-sm py-1.5 ${stripeBg}`}>
+      <span className="font-mono text-xs tabular-nums shrink-0 min-w-[2.5rem] text-right flex items-center justify-end gap-1">
+        {isRunning && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />}
+        <span
+          className={
+            isRunning ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
+          }
+        >
+          {formatHours(hours, timeFormat)}
+        </span>
       </span>
-      <span className="text-gray-400 dark:text-gray-500 text-xs mt-0.5">{formatHours(remainder, timeFormat)}</span>
+      <CategoryPicker
+        value={category}
+        categories={categories}
+        onChange={(cat) => mutations.setPeriodCategory.mutate({ date, periodId, category: cat })}
+        compact
+        categoryDescriptions={categoryDescriptions}
+      />
+      {description && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
+      <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded px-1.5 py-0.5 font-medium shrink-0 select-none">
+        main
+      </span>
     </div>
   )
 }
@@ -1065,9 +1063,17 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
 
   const duration = calculateWorkedHours([w], isRunning ? nowTime : undefined)
   const slicedHours = completedSlices.reduce((s, sl) => s + sl.hours, 0)
-  const remainder = isRunning ? null : Math.max(0, duration - slicedHours)
+  const remainder = Math.max(0, duration - slicedHours)
   const overbooked = !isRunning && slicedHours > duration + 0.001
-  const uncategorized = w.category === UNCATEGORIZED_CATEGORY && (remainder ?? 0) > 0.001
+
+  const liveElapsedHours = (() => {
+    if (!liveSlice) return 0
+    let startMins = minutesFrom(liveSlice.startedAt)
+    let endMins = minutesFrom(nowTime)
+    if (endMins < startMins) endMins += 24 * 60
+    return (endMins - startMins) / 60
+  })()
+  const displayRemainder = Math.max(0, remainder - liveElapsedHours)
 
   return (
     <div className="rounded-xl border dark:border-gray-700 shadow-sm overflow-hidden">
@@ -1075,14 +1081,9 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
         w={w}
         date={date}
         duration={duration}
-        slicedHours={slicedHours}
-        overbooked={overbooked}
-        uncategorized={uncategorized}
         isRunning={isRunning}
         liveSlice={liveSlice}
-        categories={categories}
         mutations={mutations}
-        categoryDescriptions={categoryDescriptions}
       />
 
       <div className="px-4 py-3 flex flex-col gap-1.5">
@@ -1098,11 +1099,23 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
           />
         )}
 
-        {completedSlices.map((sl, i) => (
+        <AutoCategoryRow
+          hours={displayRemainder}
+          isRunning={isRunning}
+          category={w.category}
+          categories={categories}
+          categoryDescriptions={categoryDescriptions}
+          periodId={w.id}
+          date={date}
+          mutations={mutations}
+          index={0}
+        />
+
+        {[...completedSlices].reverse().map((sl, i) => (
           <SliceRow
             key={sl.id}
             sl={sl}
-            index={i}
+            index={i + 1}
             periodId={w.id}
             date={date}
             categories={categories}
@@ -1110,15 +1123,6 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
             categoryDescriptions={categoryDescriptions}
           />
         ))}
-
-        {remainder !== null && remainder > 0.001 && (
-          <RemainderRow
-            remainder={remainder}
-            uncategorized={uncategorized}
-            category={w.category}
-            categoryDescriptions={categoryDescriptions}
-          />
-        )}
 
         {overbooked && (
           <p className="text-xs text-red-600 dark:text-red-400 font-medium">
