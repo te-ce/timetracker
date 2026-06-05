@@ -142,7 +142,6 @@ export function DayView() {
 
   const dayMutations = useDayMutations({
     date: selectedDate,
-    windows,
     effectiveLocation,
     repository: monthRepo,
   })

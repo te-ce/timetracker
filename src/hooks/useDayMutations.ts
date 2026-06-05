@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { WorkPeriod, MonthRepository, WorkLocation } from '../repositories/types'
+import type { MonthRepository, WorkLocation } from '../repositories/types'
 import { invalidateMonth } from './queryKeys'
 
 interface UseDayMutationsInput {
   date: string
-  windows: WorkPeriod[]
   effectiveLocation: WorkLocation
   repository: MonthRepository
 }
@@ -13,35 +12,27 @@ export function useDayMutations({ date, effectiveLocation, repository }: UseDayM
   const queryClient = useQueryClient()
 
   const confirm = useMutation({
-    mutationFn: () => repository.updateDay(date, (day) => ({ ...day, confirmed: true })),
+    mutationFn: () => repository.confirmDay(date),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 
   const unconfirm = useMutation({
-    mutationFn: () => repository.updateDay(date, (day) => ({ ...day, confirmed: false })),
+    mutationFn: () => repository.unconfirmDay(date),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 
   const toggleLocation = useMutation({
-    mutationFn: () => {
-      const next: WorkLocation = effectiveLocation === 'Remote' ? 'Office' : 'Remote'
-      return repository.updateDay(date, (day) => ({ ...day, location: next }))
-    },
+    mutationFn: () => repository.toggleLocation(date, effectiveLocation),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 
   const saveNote = useMutation({
-    mutationFn: (note: string) =>
-      repository.updateDay(date, (day) => {
-        const updated = { ...day }
-        delete updated.note
-        return note ? { ...updated, note } : updated
-      }),
+    mutationFn: (note: string) => repository.saveNote(date, note),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 
   const resetDay = useMutation({
-    mutationFn: () => repository.updateDay(date, () => ({ windows: [] })),
+    mutationFn: () => repository.resetDay(date),
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 

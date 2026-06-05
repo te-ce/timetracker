@@ -60,12 +60,7 @@ export function TableView() {
   })
 
   const noteMutation = useMutation({
-    mutationFn: ({ date, note }: { date: string; note: string }) =>
-      monthRepo.updateDay(date, (day) => {
-        const updated = { ...day }
-        delete updated.note
-        return note ? { ...updated, note } : updated
-      }),
+    mutationFn: ({ date, note }: { date: string; note: string }) => monthRepo.saveNote(date, note),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
@@ -95,7 +90,7 @@ export function TableView() {
   })
 
   const clearDayMutation = useMutation({
-    mutationFn: (date: string) => monthRepo.updateDay(date, () => ({ windows: [] })),
+    mutationFn: (date: string) => monthRepo.resetDay(date),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 

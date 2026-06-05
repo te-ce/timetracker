@@ -40,10 +40,9 @@ describe('useDayMutations', () => {
   describe('confirm', () => {
     it('sets confirmed to true', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')] } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Remote', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.confirm.mutate()
@@ -58,10 +57,9 @@ describe('useDayMutations', () => {
   describe('unconfirm', () => {
     it('sets confirmed to false', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')], confirmed: true } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Remote', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.unconfirm.mutate()
@@ -76,10 +74,9 @@ describe('useDayMutations', () => {
   describe('toggleLocation', () => {
     it('switches Remote to Office', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')] } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Remote', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.toggleLocation.mutate()
@@ -92,10 +89,9 @@ describe('useDayMutations', () => {
 
     it('switches Office to Remote', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')] } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Office', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Office', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.toggleLocation.mutate()
@@ -110,10 +106,9 @@ describe('useDayMutations', () => {
   describe('saveNote', () => {
     it('saves a note to the day', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')] } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Remote', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.saveNote.mutate('standup done')
@@ -126,10 +121,9 @@ describe('useDayMutations', () => {
 
     it('removes the note when empty string is passed', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')], note: 'old note' } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Remote', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.saveNote.mutate('')
@@ -142,10 +136,9 @@ describe('useDayMutations', () => {
 
     it('overwrites an existing note', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')], note: 'old note' } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Remote', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.saveNote.mutate('new note')
@@ -160,10 +153,9 @@ describe('useDayMutations', () => {
   describe('resetDay', () => {
     it('clears all windows from the day', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a'), period('b')] } })
-      const { result } = renderHook(
-        () => useDayMutations({ date, windows: [], effectiveLocation: 'Remote', repository: repo }),
-        { wrapper: makeWrapper(makeQC()) },
-      )
+      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
+        wrapper: makeWrapper(makeQC()),
+      })
 
       await act(async () => {
         result.current.resetDay.mutate()

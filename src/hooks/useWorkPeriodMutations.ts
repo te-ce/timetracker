@@ -1,16 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { WorkPeriod, WorkPeriodSubtask, MonthRepository } from '../repositories/types'
 import { invalidateMonth } from './queryKeys'
-import {
-  upsertWindow,
-  removeWindow,
-  updatePeriodCategory,
-  upsertSubtask,
-  removeSubtask,
-  startLiveSubtask as doStartLiveSubtask,
-  stopLiveSubtask as doStopLiveSubtask,
-  stopPeriod as doStopPeriod,
-} from '../domain/dayUpdaters'
 
 export function useWorkPeriodMutations(repository: MonthRepository) {
   const queryClient = useQueryClient()
@@ -20,41 +10,36 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
   }
 
   const save = useMutation({
-    mutationFn: ({ date, window }: { date: string; window: WorkPeriod }) =>
-      repository.updateDay(date, (day) => upsertWindow(day, window)),
+    mutationFn: ({ date, window }: { date: string; window: WorkPeriod }) => repository.saveWorkPeriod(date, window),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
   const remove = useMutation({
-    mutationFn: ({ date, id }: { date: string; id: string }) =>
-      repository.updateDay(date, (day) => removeWindow(day, id)),
+    mutationFn: ({ date, id }: { date: string; id: string }) => repository.removeWorkPeriod(date, id),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
   const saveWithAbsorbed = useMutation({
     mutationFn: ({ date, window, absorbed }: { date: string; window: WorkPeriod; absorbed: string[] }) =>
-      repository.updateDay(date, (day) => {
-        const withoutAbsorbed = { ...day, windows: day.windows.filter((w) => !absorbed.includes(w.id)) }
-        return upsertWindow(withoutAbsorbed, window)
-      }),
+      repository.saveWorkPeriodWithAbsorbed(date, window, absorbed),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
   const setPeriodCategory = useMutation({
     mutationFn: ({ date, periodId, category }: { date: string; periodId: string; category: string }) =>
-      repository.updateDay(date, (day) => updatePeriodCategory(day, periodId, category)),
+      repository.setPeriodCategory(date, periodId, category),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
   const addSubtask = useMutation({
     mutationFn: ({ date, periodId, subtask }: { date: string; periodId: string; subtask: WorkPeriodSubtask }) =>
-      repository.updateDay(date, (day) => upsertSubtask(day, periodId, subtask)),
+      repository.addSubtask(date, periodId, subtask),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
   const deleteSubtask = useMutation({
     mutationFn: ({ date, periodId, subtaskId }: { date: string; periodId: string; subtaskId: string }) =>
-      repository.updateDay(date, (day) => removeSubtask(day, periodId, subtaskId)),
+      repository.removeSubtask(date, periodId, subtaskId),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
@@ -67,7 +52,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       date: string
       periodId: string
       subtask: WorkPeriodSubtask & { startedAt: string }
-    }) => repository.updateDay(date, (day) => doStartLiveSubtask(day, periodId, subtask)),
+    }) => repository.startLiveSubtask(date, periodId, subtask),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
@@ -82,7 +67,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       periodId: string
       subtaskId: string
       stoppedAt: string
-    }) => repository.updateDay(date, (day) => doStopLiveSubtask(day, periodId, subtaskId, stoppedAt)),
+    }) => repository.stopLiveSubtask(date, periodId, subtaskId, stoppedAt),
     onSuccess: (_, { date }) => invalidate(date),
   })
 
@@ -99,7 +84,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       endTime: string
       liveSubtaskId?: string
       stoppedAt?: string
-    }) => repository.updateDay(date, (day) => doStopPeriod(day, periodId, endTime, liveSubtaskId, stoppedAt)),
+    }) => repository.stopWorkPeriod(date, periodId, endTime, liveSubtaskId, stoppedAt),
     onSuccess: (_, { date }) => invalidate(date),
   })
 

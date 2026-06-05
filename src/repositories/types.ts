@@ -71,6 +71,34 @@ export interface MonthRepository {
   deleteMonth(year: number, month: number): Promise<void>
   findEntriesByDateRange(from: string, to: string): Promise<DatedTimeEntry[]>
   getAllMonths(): Promise<string[]>
+
+  // Day-level verbs
+  confirmDay(date: string): Promise<void>
+  unconfirmDay(date: string): Promise<void>
+  toggleLocation(date: string, currentEffectiveLocation: WorkLocation): Promise<void>
+  saveNote(date: string, note: string): Promise<void>
+  resetDay(date: string): Promise<void>
+
+  // Work period verbs
+  saveWorkPeriod(date: string, window: WorkPeriod): Promise<void>
+  saveWorkPeriodWithAbsorbed(date: string, window: WorkPeriod, absorbed: string[]): Promise<void>
+  removeWorkPeriod(date: string, id: string): Promise<void>
+  setPeriodCategory(date: string, periodId: string, category: string): Promise<void>
+  addSubtask(date: string, periodId: string, subtask: WorkPeriodSubtask): Promise<void>
+  removeSubtask(date: string, periodId: string, subtaskId: string): Promise<void>
+  startLiveSubtask(date: string, periodId: string, subtask: WorkPeriodSubtask & { startedAt: string }): Promise<void>
+  stopLiveSubtask(date: string, periodId: string, subtaskId: string, stoppedAt: string): Promise<void>
+  stopWorkPeriod(
+    date: string,
+    periodId: string,
+    endTime: string,
+    liveSubtaskId?: string,
+    stoppedAt?: string,
+  ): Promise<void>
+
+  // Multi-step tracking operations (parameterised by now to stay testable)
+  openWorkPeriod(date: string, category: string, now: string): Promise<void>
+  closeOpenWorkPeriod(date: string, category: string, now: string): Promise<void>
 }
 
 export interface AppConfig {

@@ -1,136 +1,27 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../repositories/RepositoryContext'
-import { calculateOvertimeToDate, type OvertimeToDate } from '../domain/monthStats'
-import { buildMonthSummaries, type DaySummary } from '../domain/daySummary'
 import { toLocalIso } from '../domain/dateUtils'
-import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
-import { calculateTotalCategorizedHours } from '../domain/periodCategories'
-import type { AppConfig, WorkLocation, WorkPeriod, DayTypeOverride, Day } from '../repositories/types'
-import type { DayType } from '../domain/dayType'
-import type { DayStatus } from '../domain/dayStatus'
+import {
+  composeDayContext,
+  type DayContext,
+  type DayRawData,
+  type DayConfigContext,
+  type DayComputedStats,
+} from '../domain/dayContext'
+import type { AppConfig } from '../repositories/types'
 
-export interface DayRawData {
-  windows: WorkPeriod[]
-  workLocation: WorkLocation | null
-  autoCategoryOverride: string | null
-  dayTypeOverride: DayTypeOverride | undefined
-  isConfirmed: boolean
-  dayNote: string | null
-}
+export type { DayRawData, DayConfigContext, DayComputedStats, DayContext }
 
-export interface DayConfigContext {
-  sollstunden: number
-  defaultWorkLocation: WorkLocation
-  effectiveLocation: WorkLocation
-  autoCategory: string | null
-}
-
-export interface DayComputedStats {
-  workedHours: number
-  manualTotal: number
-  overtimeToDate: OvertimeToDate
-  selectedDayType: DayType
-  isEntriesBalanced: boolean
-  hasAutoCategory: boolean
-  dayClassification: { displayStatus: Exclude<DayStatus, 'today'>; reason: string }
-  officeDays: number
-  totalWorkDays: number
-  officePercent: number
-}
-
-export interface DayQueryResult extends DayRawData, DayConfigContext, DayComputedStats {
+export interface DayQueryResult extends DayContext {
   config: AppConfig | undefined
-  todayIso: string
-}
-
-const EMPTY_DAY: Day = { windows: [] }
-
-const FUTURE_SUMMARY: DaySummary = {
-  date: '',
-  dayType: 'WorkDay',
-  workedHours: 0,
-  entryTotal: 0,
-  isEntriesBalanced: false,
-  hasAutoCategory: false,
-  isConfirmed: false,
-  dayStatus: 'future',
-  displayStatus: 'future',
-  statusReason: '',
-}
-
-function extractDayFields(dayData: Day | undefined): DayRawData {
-  const day = dayData ?? EMPTY_DAY
-  return {
-    windows: day.windows,
-    workLocation: day.location ?? null,
-    autoCategoryOverride: day.autoCategoryOverride ?? null,
-    dayTypeOverride: day.dayTypeOverride,
-    isConfirmed: day.confirmed ?? false,
-    dayNote: day.note ?? null,
-  }
-}
-
-function resolveConfigDefaults(config: AppConfig | undefined) {
-  return {
-    sollstunden: config?.sollstunden ?? DEFAULT_APP_CONFIG.sollstunden,
-    defaultWorkLocation: config?.defaultWorkLocation ?? 'Remote',
-    globalAutoCategory: config?.autoCategory ?? null,
-  }
-}
-
-function fromDaySummary(s: DaySummary): Omit<DayComputedStats, 'overtimeToDate'> {
-  return {
-    dayClassification: { displayStatus: s.displayStatus, reason: s.statusReason },
-    workedHours: s.workedHours,
-    manualTotal: s.entryTotal,
-    selectedDayType: s.dayType,
-    isEntriesBalanced: s.isEntriesBalanced,
-    hasAutoCategory: s.hasAutoCategory,
-  }
-}
-
-function calcOfficeStats(
-  monthDays: DaySummary[],
-  monthData: Record<string, Day>,
-): { officeDays: number; totalWorkDays: number; officePercent: number } {
-  const trackedWorkDays = monthDays.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
-  const officeDays = trackedWorkDays.filter((d) => monthData[d.date]?.location === 'Office').length
-  const totalWorkDays = trackedWorkDays.length
-  const officePercent = totalWorkDays > 0 ? Math.round((officeDays / totalWorkDays) * 100) : 0
-  return { officeDays, totalWorkDays, officePercent }
-}
-
-function resolveDayExtras(
-  dayData: Day | undefined,
-  config: AppConfig | undefined,
-  daySummary: DaySummary,
-  workedHoursPerDay: number[],
-  monthDates: string[],
-  todayIso: string,
-  monthDays: DaySummary[],
-  monthData: Record<string, Day>,
-): DayConfigContext & DayComputedStats {
-  const { sollstunden, defaultWorkLocation, globalAutoCategory } = resolveConfigDefaults(config)
-  const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
-  const autoCategory = dayData?.autoCategoryOverride ?? globalAutoCategory
-  const overtimeToDate = calculateOvertimeToDate(workedHoursPerDay, monthDates, todayIso, sollstunden)
-  return {
-    sollstunden,
-    effectiveLocation,
-    defaultWorkLocation,
-    autoCategory,
-    overtimeToDate,
-    ...fromDaySummary(daySummary),
-    ...calcOfficeStats(monthDays, monthData),
-  }
 }
 
 export function useDayQuery(date: string): DayQueryResult {
   const { monthRepo, configRepo } = useRepositories()
   const todayIso = toLocalIso(new Date())
-  const selectedYear = parseInt(date.slice(0, 4))
-  const selectedMonth = parseInt(date.slice(5, 7))
+  const year = parseInt(date.slice(0, 4))
+  const month = parseInt(date.slice(5, 7))
 
   const { data: config } = useQuery({
     queryKey: QUERY_KEYS.config,
@@ -138,30 +29,9 @@ export function useDayQuery(date: string): DayQueryResult {
   })
 
   const { data: monthData = {} } = useQuery({
-    queryKey: QUERY_KEYS.month(selectedYear, selectedMonth),
-    queryFn: () => monthRepo.getMonth(selectedYear, selectedMonth),
+    queryKey: QUERY_KEYS.month(year, month),
+    queryFn: () => monthRepo.getMonth(year, month),
   })
 
-  const { days: monthDays, workedHoursPerDay } = buildMonthSummaries(selectedYear, selectedMonth, {
-    monthData,
-    today: todayIso,
-    globalAutoCategory: config?.autoCategory ?? null,
-  })
-
-  const dayData = monthData[date]
-  const daySummary = monthDays.find((d) => d.date === date) ?? FUTURE_SUMMARY
-  const extras = resolveDayExtras(
-    dayData,
-    config,
-    daySummary,
-    workedHoursPerDay,
-    monthDays.map((d) => d.date),
-    todayIso,
-    monthDays,
-    monthData,
-  )
-
-  const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])
-
-  return { config, ...extractDayFields(dayData), todayIso, ...extras, manualTotal }
+  return { config, ...composeDayContext(date, monthData, config, todayIso) }
 }
