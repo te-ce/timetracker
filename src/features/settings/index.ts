@@ -19,7 +19,12 @@ export { SharePointSettings } from './SharePointSettings'
 export { SheetSelector } from './SheetSelector'
 export { TargetHoursSettings } from './TargetHoursSettings'
 export { WindowBehaviorSettings } from './WindowBehaviorSettings'
-export { AutoFillPattern, AutoFillRule, MaterializeInput, materializeAutoFillRules } from './autoFillRules'
+export {
+  type AutoFillPattern,
+  type AutoFillRule,
+  type MaterializeInput,
+  materializeAutoFillRules,
+} from './autoFillRules'
 export { matchScore, autoMatchCategories } from './excelMapping'
 export { shouldAutoExport } from './exportStatus'
 export { useCategoryMutations } from './useCategoryMutations'

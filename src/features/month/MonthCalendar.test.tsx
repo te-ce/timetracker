@@ -96,7 +96,7 @@ describe('MonthCalendar', () => {
       )
       const dots = dotsIn(screen.getByText('15'))
       expect(dots).toHaveLength(1)
-      expect(dots[0].className).toContain('bg-emerald-500')
+      expect(dots[0]!.className).toContain('bg-emerald-500')
     })
 
     it('today shows two dots — orange then displayStatus color', () => {
@@ -113,8 +113,8 @@ describe('MonthCalendar', () => {
       )
       const dots = dotsIn(screen.getByText('15'))
       expect(dots).toHaveLength(2)
-      expect(dots[0].className).toContain('bg-orange-400')
-      expect(dots[1].className).toContain('bg-blue-300')
+      expect(dots[0]!.className).toContain('bg-orange-400')
+      expect(dots[1]!.className).toContain('bg-blue-300')
     })
 
     it('today shows two dots when displayStatus is complete', () => {
@@ -131,15 +131,15 @@ describe('MonthCalendar', () => {
       )
       const dots = dotsIn(screen.getByText('15'))
       expect(dots).toHaveLength(2)
-      expect(dots[0].className).toContain('bg-orange-400')
-      expect(dots[1].className).toContain('bg-emerald-500')
+      expect(dots[0]!.className).toContain('bg-orange-400')
+      expect(dots[1]!.className).toContain('bg-emerald-500')
     })
 
     it('days without a status map entry show a future dot', () => {
       render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} />)
       const dots = dotsIn(screen.getByText('10'))
       expect(dots).toHaveLength(1)
-      expect(dots[0].className).toContain('bg-gray-200')
+      expect(dots[0]!.className).toContain('bg-gray-200')
     })
 
     it('each status maps to its correct dot color', () => {
@@ -165,7 +165,7 @@ describe('MonthCalendar', () => {
         )
         const dots = dotsIn(screen.getByText('10'))
         expect(dots).toHaveLength(1)
-        expect(dots[0].className).toContain(expectedClass)
+        expect(dots[0]!.className).toContain(expectedClass)
         unmount()
       }
     })
@@ -187,7 +187,7 @@ describe('MonthCalendar', () => {
       expect(button.textContent).toContain('✓')
       const dots = dotsIn(button)
       expect(dots).toHaveLength(1)
-      expect(dots[0].className).toContain('bg-emerald-500')
+      expect(dots[0]!.className).toContain('bg-emerald-500')
     })
 
     it('today with confirmed displayStatus shows checkmark overlay', () => {
@@ -210,7 +210,7 @@ describe('MonthCalendar', () => {
       render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
       const dots = dotsIn(screen.getByText('15'))
       expect(dots).toHaveLength(1)
-      expect(dots[0].className).toContain('bg-orange-400')
+      expect(dots[0]!.className).toContain('bg-orange-400')
     })
 
     it('non-confirmed displayStatus does not show checkmark', () => {

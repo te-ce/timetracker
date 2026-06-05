@@ -2,16 +2,22 @@ export { ConfirmDialog } from './ConfirmDialog'
 export { KeyboardShortcutLegend } from './KeyboardShortcutLegend'
 export { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 export { useAuthStore } from './authStore'
-export { AutoCategoryResult, calculateAutoCategory, resolveAutoCategory } from './autoCategory'
+export { type AutoCategoryResult, calculateAutoCategory, resolveAutoCategory } from './autoCategory'
 export { btn } from './buttonVariants'
 export { getAllCategories, isValidCustomCategoryName } from './categories'
 export { toLocalIso, parseLocalDate } from './dateUtils'
-export { DayStatus, ClassifyDayInput, DayClassification, classifyDay } from './dayStatus'
+export { type DayStatus, type ClassifyDayInput, type DayClassification, classifyDay } from './dayStatus'
 export { formatHours, formatHoursCompact } from './formatHours'
-export { Bundesland, BUNDESLAENDER, PublicHoliday, HolidayApiResponse, isPublicHoliday } from './holidays'
 export {
-  InAppShortcutAction,
-  HotkeyConfig,
+  type Bundesland,
+  BUNDESLAENDER,
+  type PublicHoliday,
+  type HolidayApiResponse,
+  isPublicHoliday,
+} from './holidays'
+export {
+  type InAppShortcutAction,
+  type HotkeyConfig,
   HOTKEY_DEFAULTS,
   defaultHotkeyConfig,
   matchesShortcut,
@@ -20,7 +26,7 @@ export {
 export { calculateCategoryHours, calculateTotalCategorizedHours, calculateUncategorizedHours } from './periodCategories'
 export { invalidateConfig, invalidateMonth, QUERY_KEYS } from './queryKeys'
 export {
-  DisplayStatus,
+  type DisplayStatus,
   STATUS_LABEL,
   TODAY_DOT,
   STATUS_DOT,
@@ -29,7 +35,7 @@ export {
   STATUS_ROW_BG,
 } from './statusColors'
 export { useThemeStore } from './themeStore'
-export { TimeFormat, useTimeFormatStore } from './timeFormatStore'
+export { type TimeFormat, useTimeFormatStore } from './timeFormatStore'
 export { useUndoStore } from './undoStore'
 export { useCloseOnOutsideClickOrEscape } from './useCloseOnOutsideClickOrEscape'
 export { useElectronTraySync } from './useElectronTraySync'
@@ -39,7 +45,7 @@ export { useMsalSync } from './useMsalSync'
 export { usePrefetchCurrentMonth } from './usePrefetchCurrentMonth'
 export { useRemainingHours } from './useRemainingHours'
 export {
-  Restarbeitszeit,
+  type Restarbeitszeit,
   calculateWorkedHours,
   calcSubtaskHours,
   calculateRestarbeitszeit,

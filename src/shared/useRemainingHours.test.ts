@@ -35,6 +35,9 @@ function stubDayQuery(overrides: Partial<DayQueryResult>): void {
     isEntriesBalanced: false,
     hasAutoCategory: false,
     dayClassification: { displayStatus: 'untracked', reason: '' },
+    officeDays: 0,
+    totalWorkDays: 0,
+    officePercent: 0,
     todayIso: '2026-06-03',
     ...overrides,
   })

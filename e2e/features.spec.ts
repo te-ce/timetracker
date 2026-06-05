@@ -33,7 +33,7 @@ test.describe('daily booking', () => {
   })
 
   test('start work period, confirm day', async ({ page }) => {
-    await page.goto(`/day?date=${TEST_DATE}`)
+    await page.goto(`/?date=${TEST_DATE}`)
 
     const workSection = page.getByRole('region', { name: 'Work periods' })
     await workSection.getByLabel('Start').fill('09:00')
@@ -56,7 +56,7 @@ const CONFIRMED_DAY_SEED = {
         start: '09:00',
         end: '17:00',
         category: CATEGORY,
-        slices: [{ id: 's1', category: CATEGORY, hours: 8 }],
+        subtasks: [{ id: 's1', category: CATEGORY, hours: 8 }],
       },
     ],
     confirmed: true,
@@ -72,7 +72,7 @@ test.describe('month status', () => {
       seedBase({ 'timetracker_months/2026-05.json': JSON.stringify(CONFIRMED_DAY_SEED) }),
     )
 
-    await page.goto('/?year=2026&month=5')
+    await page.goto('/month?year=2026&month=5')
 
     const dayCell = page.getByRole('button', { name: /25 May 2026/ })
     await expect(dayCell).toHaveClass(/bg-emerald-100/)
@@ -93,7 +93,7 @@ test.describe('month status', () => {
                 start: '09:00',
                 end: '17:00',
                 category: CATEGORY,
-                slices: [{ id: 's1', category: CATEGORY, hours: 8 }],
+                subtasks: [{ id: 's1', category: CATEGORY, hours: 8 }],
               },
             ],
           },
@@ -101,7 +101,7 @@ test.describe('month status', () => {
       }),
     )
 
-    await page.goto('/?year=2026&month=5')
+    await page.goto('/month?year=2026&month=5')
 
     const dayCell = page.getByRole('button', { name: /25 May 2026/ })
     await expect(dayCell).toHaveClass(/bg-emerald-100/)
@@ -116,7 +116,7 @@ test.describe('month status', () => {
       seedBase({ 'timetracker_months/2026-05.json': JSON.stringify(CONFIRMED_DAY_SEED) }),
     )
 
-    await page.goto('/?year=2026&month=5')
+    await page.goto('/month?year=2026&month=5')
 
     // Confirmed day: dot inside the button
     const confirmedCell = page.getByRole('button', { name: /25 May 2026/ })
@@ -132,7 +132,7 @@ test.describe('month status', () => {
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
     }, seedBase())
 
-    await page.goto('/?year=2026&month=5')
+    await page.goto('/month?year=2026&month=5')
 
     await expect(page.getByText('Confirmed')).toBeVisible()
     await expect(page.getByText('Complete')).not.toBeVisible()
@@ -150,7 +150,7 @@ test.describe('auto category', () => {
       seedBase({ 'timetracker_config.json': JSON.stringify({ ...BASE_CONFIG, autoCategory: CATEGORY }) }),
     )
 
-    await page.goto(`/day?date=${TEST_DATE}`)
+    await page.goto(`/?date=${TEST_DATE}`)
 
     const workSection = page.getByRole('region', { name: 'Work periods' })
     await workSection.getByLabel('Start').fill('09:00')
@@ -158,7 +158,7 @@ test.describe('auto category', () => {
     await workSection.getByRole('button', { name: 'Add period' }).click()
     await expect(workSection.getByRole('button', { name: /Edit period 09:00 to 17:00/ })).toBeVisible()
 
-    await expect(page.getByText('base')).toBeVisible()
+    await expect(page.getByText('main', { exact: true }).first()).toBeVisible()
   })
 })
 
@@ -175,12 +175,12 @@ test.describe('grid view', () => {
     const d = new Date()
     const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
-    await page.goto('/grid')
+    await page.goto('/table')
 
-    const dayBtn = page.getByTitle(`Open ${today}`)
+    const dayBtn = page.locator(`[data-tooltip="Open ${today}"]`)
     await expect(dayBtn).toBeVisible()
     await dayBtn.click()
-    await expect(page).toHaveURL(new RegExp(`/day\\?date=${today}`))
+    await expect(page).toHaveURL(new RegExp(`\\?date=${today}`))
   })
 })
 
@@ -194,7 +194,7 @@ test.describe('month calendar navigation', () => {
   })
 
   test('clicking a day in the calendar opens DayView for that date', async ({ page }) => {
-    await page.goto('/?year=2026&month=5')
+    await page.goto('/month?year=2026&month=5')
 
     const dayBtn = page.getByRole('button', {
       name: 'Monday, 25 May 2026',
@@ -202,7 +202,7 @@ test.describe('month calendar navigation', () => {
     await expect(dayBtn).toBeVisible()
     await dayBtn.click()
 
-    await expect(page).toHaveURL(/\/day\?date=2026-05-25/)
+    await expect(page).toHaveURL(/\?date=2026-05-25/)
     await expect(page.getByRole('region', { name: 'Work periods' })).toBeVisible()
   })
 
@@ -211,7 +211,7 @@ test.describe('month calendar navigation', () => {
     const year = d.getFullYear()
     const month = d.getMonth() + 1
 
-    await page.goto(`/?year=${year}&month=${month}`)
+    await page.goto(`/month?year=${year}&month=${month}`)
 
     const todayCell = page.locator('[aria-current="date"]')
     await expect(todayCell).toBeVisible()

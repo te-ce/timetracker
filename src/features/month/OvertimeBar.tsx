@@ -68,7 +68,7 @@ function TrackingBadge({ startedAt }: { startedAt: string }) {
         −
       </span>
       <Link
-        to="/day"
+        to="/"
         search={{ date: startedAt.slice(0, 10) }}
         aria-hidden="true"
         className="font-medium text-green-700 dark:text-green-400 tabular-nums hover:underline"

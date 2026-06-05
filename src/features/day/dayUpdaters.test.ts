@@ -23,7 +23,7 @@ function subtask(id: string, category: string, hours: number): WorkPeriodSubtask
   return { id, category, hours }
 }
 
-function liveSubtask(id: string, category: string, startedAt: string): WorkPeriodSubtask {
+function liveSubtask(id: string, category: string, startedAt: string): WorkPeriodSubtask & { startedAt: string } {
   return { id, category, hours: 0, startedAt }
 }
 

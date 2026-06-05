@@ -453,7 +453,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const dayBtn = row.querySelector('[data-tooltip="Open 2026-05-04"]')
-      await userEvent.click(dayBtn)
+      await userEvent.click(dayBtn!)
 
       expect(onSelectDate).toHaveBeenCalledWith('2026-05-04')
     })
@@ -474,7 +474,7 @@ describe('MonthGrid', () => {
 
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
       const setAutoBtn = header.querySelector(`[data-tooltip='Set "_SUPPORT" as auto category']`)
-      await userEvent.click(setAutoBtn)
+      await userEvent.click(setAutoBtn!)
 
       expect(onAutoCategoryChange).toHaveBeenCalledWith('_SUPPORT')
     })

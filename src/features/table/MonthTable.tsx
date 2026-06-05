@@ -295,7 +295,7 @@ export function MonthGrid({
     locationMutation.mutate({ date, location: next })
   }
 
-  function handleDotClick(e: React.MouseEvent<HTMLButtonElement>, row: MonthTableRow) {
+  function handleDotClick(e: React.MouseEvent<HTMLElement>, row: MonthTableRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')
     const { displayStatus, reason } = classifyRow(row, autoCategory, confirmedDays, todayIso)
@@ -448,7 +448,7 @@ export function MonthGrid({
                 const isToday = row.date === todayIso
                 const displayStatus = classifyRow(row, autoCategory, confirmedDays, todayIso).displayStatus
                 const bgPair = isToday ? TODAY_ROW_BG : STATUS_ROW_BG[displayStatus]
-                const rowBg = bgPair[globalRowIdx % 2]
+                const rowBg = bgPair[globalRowIdx % 2]!
                 const loc = resolveWorkLocation(workLocations, row.date, defaultWorkLocation)
                 const locIcon = loc === 'Office' ? '🏢' : '🏠'
                 const rowOpacityClass = isNonWorkDay ? 'opacity-50' : ''

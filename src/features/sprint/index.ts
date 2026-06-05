@@ -1,5 +1,5 @@
 export { SprintConfigPanel } from './SprintConfigPanel'
-export { ExportStatus, SprintReportPanel } from './SprintReportPanel'
+export { type ExportStatus, SprintReportPanel } from './SprintReportPanel'
 export { SprintView } from './SprintView'
-export { SprintConfig, Sprint, getSprintBoundaries, getSprintForDate, aggregateSprintHours } from './sprint'
-export { SprintGroup, computeSprintGroups } from './sprintGroups'
+export { type SprintConfig, type Sprint, getSprintBoundaries, getSprintForDate, aggregateSprintHours } from './sprint'
+export { type SprintGroup, computeSprintGroups } from './sprintGroups'

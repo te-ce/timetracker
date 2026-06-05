@@ -1,16 +1,22 @@
 export { DayNoteEditor } from './DayNoteEditor'
 export { DayTypePicker } from './DayTypePicker'
 export { DayView } from './DayView'
-export { DotPopoverState, DotPopoverPanel } from './DotPopoverPanel'
+export { type DotPopoverState, DotPopoverPanel } from './DotPopoverPanel'
 export { IncompleteBanner } from './IncompleteBanner'
-export { NotePopoverState, NotePopoverPanel } from './NotePopoverPanel'
+export { type NotePopoverState, NotePopoverPanel } from './NotePopoverPanel'
 export { WorkOverview } from './WorkOverview'
 export { buildConfirmedDay } from './confirmDay'
-export { DayRawData, DayConfigContext, DayComputedStats, DayContext, composeDayContext } from './dayContext'
 export {
-  DayType,
+  type DayRawData,
+  type DayConfigContext,
+  type DayComputedStats,
+  type DayContext,
+  composeDayContext,
+} from './dayContext'
+export {
+  type DayType,
   isDayTypeOverride,
-  AutoBooking,
+  type AutoBooking,
   classifyDayType,
   isWorkPeriodExpected,
   getAutoBooking,
@@ -26,7 +32,7 @@ export {
   stopPeriod,
 } from './dayUpdaters'
 export { useDayMutations } from './useDayMutations'
-export { DayQueryResult, useDayQuery } from './useDayQuery'
+export { type DayQueryResult, useDayQuery } from './useDayQuery'
 export { useTrackingMutations } from './useTrackingMutations'
 export { useWorkPeriodMutations } from './useWorkPeriodMutations'
 export { mergeAdjacentInto } from './workPeriodMerge'

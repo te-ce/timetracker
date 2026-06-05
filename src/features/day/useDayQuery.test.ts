@@ -35,7 +35,7 @@ function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo: InMemoryCon
     return createElement(
       QueryClientProvider,
       { client: queryClient },
-      createElement(RepositoryProvider, { repos }, children),
+      createElement(RepositoryProvider, { repos, children }),
     )
   }
 }
