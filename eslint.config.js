@@ -20,6 +20,22 @@ export default defineConfig([
     },
   },
   {
+    files: ['src/repositories/**/*.{ts,tsx}', 'src/services/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/features/**'],
+              message: 'Infrastructure must not import from feature verticals.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
