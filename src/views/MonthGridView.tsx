@@ -5,7 +5,7 @@ import { useRepositories } from '../repositories/RepositoryContext'
 import type { ConfigRepository } from '../repositories/types'
 import { renameCategoryAcrossAllMonths } from '../domain/categoryMutations'
 import { MonthGrid } from '../components/MonthGrid'
-import { WorkOverview } from '../components/WorkOverview'
+import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthSummaries } from '../hooks/useMonthSummaries'
@@ -140,7 +140,7 @@ export function MonthGridView() {
           </button>
         </div>
       </div>
-      <WorkOverview
+      <OvertimeBar
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
         workedToday={overtimeToDate.workedToday}

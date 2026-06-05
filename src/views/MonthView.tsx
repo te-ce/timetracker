@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { MonthCalendar } from '../components/MonthCalendar'
-import { WorkOverview } from '../components/WorkOverview'
+import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { useMonthSummaries } from '../hooks/useMonthSummaries'
 import { useRepositories } from '../repositories/RepositoryContext'
@@ -65,7 +65,7 @@ export function MonthView() {
         dayStatusReasonMap={dayStatusReasonMap}
         dayNoteMap={dayNoteMap}
       />
-      <WorkOverview
+      <OvertimeBar
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
         workedToday={overtimeToDate.workedToday}
