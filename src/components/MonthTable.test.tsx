@@ -282,7 +282,7 @@ describe('MonthGrid', () => {
       setup()
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dotButton = within(row).getByRole('button', { name: /day status/i })
+      const dotButton = within(row).getByRole('cell', { name: /day status/i })
       await userEvent.click(dotButton)
 
       expect(await screen.findByText('Day type')).toBeInTheDocument()
@@ -297,7 +297,7 @@ describe('MonthGrid', () => {
       const { repo } = setup()
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dotButton = within(row).getByRole('button', { name: /day status/i })
+      const dotButton = within(row).getByRole('cell', { name: /day status/i })
       await userEvent.click(dotButton)
 
       await screen.findByText('Day type')
@@ -320,7 +320,7 @@ describe('MonthGrid', () => {
       })
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dotButton = within(row).getByRole('button', { name: /day status/i })
+      const dotButton = within(row).getByRole('cell', { name: /day status/i })
       await userEvent.click(dotButton)
 
       await screen.findByText('Day type')
@@ -336,7 +336,7 @@ describe('MonthGrid', () => {
       setup()
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dotButton = within(row).getByRole('button', { name: /day status/i })
+      const dotButton = within(row).getByRole('cell', { name: /day status/i })
       await userEvent.click(dotButton)
 
       await screen.findByText('Day type')
@@ -351,7 +351,7 @@ describe('MonthGrid', () => {
       setup()
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dotButton = within(row).getByRole('button', { name: /day status/i })
+      const dotButton = within(row).getByRole('cell', { name: /day status/i })
       await userEvent.click(dotButton)
 
       await screen.findByText('Day type')
@@ -404,14 +404,47 @@ describe('MonthGrid', () => {
     })
   })
 
+  describe('today row highlighting', () => {
+    function setupJune() {
+      const repo = new InMemoryMonthRepository({})
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MonthGrid year={2026} month={6} repository={repo} autoCategory="_COREMEDIA" />
+        </QueryClientProvider>,
+      )
+      return { repo }
+    }
+
+    it('today row has amber background', async () => {
+      setupJune()
+      const row = await screen.findByRole('row', { name: /2026-06-05/ })
+      expect(row.className).toMatch(/bg-amber/)
+    })
+
+    it('today worked cell has ring highlight', async () => {
+      setupJune()
+      const row = await screen.findByRole('row', { name: /2026-06-05/ })
+      const workedCell = within(row).getByTestId('worked-hours')
+      expect(workedCell.className).toMatch(/ring-2/)
+    })
+
+    it('non-today row does not have ring on worked cell', async () => {
+      setupJune()
+      const row = await screen.findByRole('row', { name: /2026-06-04/ })
+      const workedCell = within(row).getByTestId('worked-hours')
+      expect(workedCell.className).not.toMatch(/ring-2/)
+    })
+  })
+
   describe('onSelectDate', () => {
-    it('renders day cell as a button when onSelectDate is provided', async () => {
+    it('renders day cell as clickable when onSelectDate is provided', async () => {
       const onSelectDate = vi.fn<(isoDate: string) => void>()
       setup({ onSelectDate })
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dayBtn = row.querySelector('[data-tooltip="Open 2026-05-04"]')
-      expect(dayBtn).toBeInTheDocument()
+      const dayCell = row.querySelector('[data-tooltip="Open 2026-05-04"]')
+      expect(dayCell).toBeInTheDocument()
     })
 
     it('clicking the day cell calls onSelectDate with the iso date', async () => {

@@ -21,7 +21,7 @@ import { STATUS_DOT, STATUS_ROW_BG } from '../domain/statusColors'
 import { useTimeFormatStore } from '../stores/timeFormatStore'
 import { formatHoursCompact } from '../domain/formatHours'
 
-const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
+const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
 
 async function confirmDayInRepo(repository: MonthRepository, date: string): Promise<void> {
   await repository.updateDay(date, (day) => ({ ...day, confirmed: true }))
@@ -207,6 +207,34 @@ export function MonthGrid({
   const [editValue, setEditValue] = useState('')
 
   const todayIso = toLocalIso(new Date())
+
+  const renderDayCell = useCallback(
+    (date: string, dayLabel: string, rowBg: string) => {
+      const content = (
+        <>
+          {date.slice(8)}
+          <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
+        </>
+      )
+      if (onSelectDate) {
+        return (
+          <td
+            className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline ${rowBg}`}
+            onClick={() => onSelectDate(date)}
+            data-tooltip={`Open ${date}`}
+          >
+            {content}
+          </td>
+        )
+      }
+      return (
+        <td className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs ${rowBg}`} data-tooltip={date}>
+          {content}
+        </td>
+      )
+    },
+    [onSelectDate],
+  )
 
   const closeDotPopover = useCallback(() => setDotPopover(null), [])
   const closeNotePopover = useCallback(() => setNotePopover(null), [])
@@ -428,31 +456,13 @@ export function MonthGrid({
                 globalRowIdx++
                 return (
                   <tr key={row.date} role="row" aria-label={row.date} className={`${rowBg} ${rowOpacityClass}`}>
-                    <td className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs ${rowBg}`}>
-                      {onSelectDate ? (
-                        <button
-                          onClick={() => onSelectDate(row.date)}
-                          className="font-mono text-xs text-indigo-600 dark:text-indigo-400 hover:underline focus:outline-none"
-                          data-tooltip={`Open ${row.date}`}
-                        >
-                          {row.date.slice(8)}
-                          <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
-                        </button>
-                      ) : (
-                        <span data-tooltip={row.date}>
-                          {row.date.slice(8)}
-                          <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
-                        </span>
-                      )}
-                    </td>
-                    <td className={`sticky left-12 z-10 px-1 py-1 ${rowBg}`}>
-                      <button
-                        onClick={(e) => handleDotClick(e, row)}
-                        className="inline-flex items-center justify-center rounded-full hover:ring-2 hover:ring-offset-1 hover:ring-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                        aria-label={`Day status: ${displayStatus}. Click to change day type.`}
-                      >
-                        <span className={`inline-block h-2 w-2 rounded-full ${STATUS_DOT[displayStatus]}`} />
-                      </button>
+                    {renderDayCell(row.date, dayLabel, rowBg)}
+                    <td
+                      className={`sticky left-12 z-10 px-1 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${rowBg}`}
+                      onClick={(e) => handleDotClick(e, row)}
+                      aria-label={`Day status: ${displayStatus}. Click to change day type.`}
+                    >
+                      <span className={`inline-block h-2 w-2 rounded-full ${STATUS_DOT[displayStatus]}`} />
                     </td>
                     <WorkedHoursCell
                       date={row.date}
@@ -463,7 +473,7 @@ export function MonthGrid({
                       customCategories={customCategories}
                       categoryOrder={categoryOrder}
                       categoryDescriptions={categoryDescriptions}
-                      className={`sticky left-[4.25rem] z-10 ${rowBg}`}
+                      className={`sticky left-[4.25rem] z-10 ${rowBg}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
                     />
                     <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">
                       <button
