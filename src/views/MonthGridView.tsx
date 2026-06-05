@@ -2,7 +2,28 @@ import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../repositories/RepositoryContext'
-import type { ConfigRepository } from '../repositories/types'
+import type { AppConfig, ConfigRepository, MonthData, MonthRepository } from '../repositories/types'
+import type { GridConfig } from './gridConfig'
+
+function resolveTodayPanelProps(
+  isCurrentMonth: boolean,
+  todayIso: string,
+  monthData: MonthData,
+  monthRepo: MonthRepository,
+  config: AppConfig | undefined,
+  gridConfig: GridConfig,
+) {
+  if (!isCurrentMonth) return {}
+  return {
+    date: todayIso,
+    windows: monthData[todayIso]?.windows ?? [],
+    repository: monthRepo,
+    autoCategory: gridConfig.autoCategory,
+    customCategories: gridConfig.customCategories,
+    categoryOrder: config?.categoryOrder,
+    categoryDescriptions: config?.categoryDescriptions,
+  }
+}
 import { renameCategoryAcrossAllMonths } from '../domain/categoryMutations'
 import { MonthGrid } from '../components/MonthGrid'
 import { WorkOverview } from '../components/WorkOverview'
@@ -68,8 +89,18 @@ export function MonthGridView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  const { config, summaries, dayTypeOverrides, workLocations, confirmedDays, dayNotes, overtimeToDate, sollstunden } =
-    useMonthSummaries(year, month)
+  const {
+    config,
+    monthData,
+    summaries,
+    dayTypeOverrides,
+    workLocations,
+    confirmedDays,
+    dayNotes,
+    overtimeToDate,
+    sollstunden,
+    todayIso,
+  } = useMonthSummaries(year, month)
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
@@ -148,6 +179,7 @@ export function MonthGridView() {
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}
+        {...resolveTodayPanelProps(isCurrentMonth, todayIso, monthData, monthRepo, config, gridConfig)}
       />
       <MonthGrid
         year={year}

@@ -9,6 +9,26 @@ import { useRepositories } from '../repositories/RepositoryContext'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import type { DayStatus } from '../domain/dayStatus'
 import type { DisplayStatus } from '../domain/statusColors'
+import type { AppConfig, MonthData, MonthRepository } from '../repositories/types'
+
+function resolveTodayPanelProps(
+  isCurrentMonth: boolean,
+  todayIso: string,
+  monthData: MonthData,
+  monthRepo: MonthRepository,
+  config: AppConfig | undefined,
+) {
+  if (!isCurrentMonth) return {}
+  return {
+    date: todayIso,
+    windows: monthData[todayIso]?.windows ?? [],
+    repository: monthRepo,
+    autoCategory: config?.autoCategory ?? null,
+    customCategories: config?.customCategories,
+    categoryOrder: config?.categoryOrder,
+    categoryDescriptions: config?.categoryDescriptions,
+  }
+}
 
 export function MonthView() {
   const { monthRepo, timeTrackingRepo } = useRepositories()
@@ -37,7 +57,9 @@ export function MonthView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  const { summaries, overtimeToDate, workLocations, sollstunden, dayNotes } = useMonthSummaries(year, month)
+  const { config, monthData, summaries, overtimeToDate, workLocations, sollstunden, dayNotes, todayIso } =
+    useMonthSummaries(year, month)
+  const isCurrentMonth = todayIso.slice(0, 7) === `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}`
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
@@ -73,6 +95,7 @@ export function MonthView() {
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}
+        {...resolveTodayPanelProps(isCurrentMonth, todayIso, monthData, monthRepo, config)}
       />
       <div className="flex justify-end">
         <button
