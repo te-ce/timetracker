@@ -147,13 +147,6 @@ export function SprintView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SprintConfigPanel
-        repository={configRepo}
-        onConfigChanged={() => {
-          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
-          setSprintIndex(null)
-        }}
-      />
       {sprintState && config && (
         <SprintContent
           config={config}
@@ -164,6 +157,13 @@ export function SprintView() {
           isAuthenticated={isAuthenticated}
         />
       )}
+      <SprintConfigPanel
+        repository={configRepo}
+        onConfigChanged={() => {
+          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+          setSprintIndex(null)
+        }}
+      />
     </div>
   )
 }
