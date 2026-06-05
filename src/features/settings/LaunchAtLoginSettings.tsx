@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 
 interface Props {
@@ -19,7 +19,7 @@ export function LaunchAtLoginSettings({ repository }: Props) {
       await repository.save({ ...config!, launchAtLogin: enabled })
       await window.electronAPI?.autolaunch.set(enabled)
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   if (!config) return null

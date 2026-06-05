@@ -9,7 +9,7 @@ import { MonthNav } from '../month/MonthNav'
 import { OvertimeBar } from '../month/OvertimeBar'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { StatusLegend } from '../month/StatusLegend'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
 import { resolveTableConfig } from './tableConfig'
 
@@ -42,19 +42,19 @@ export function TableView() {
 
   const categoryReorderMutation = useMutation({
     mutationFn: (categoryOrder: string[]) => saveCategoryOrder(configRepo, categoryOrder),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   const autoCategoryMutation = useMutation({
     mutationFn: (category: string) => saveAutoCategory(configRepo, category),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   const categoryRenameMutation = useMutation({
     mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
       renameCategoryAcrossAllMonths(oldName, newName, configRepo, monthRepo),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+      invalidateConfig(queryClient)
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
     },
   })

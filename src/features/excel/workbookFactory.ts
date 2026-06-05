@@ -15,6 +15,16 @@ export function createWorkbookService(config: AppConfig, isAuthenticated: boolea
   return new GraphApiWorkbookService(config.sharepointUrl, getAccessToken)
 }
 
+export function buildWorkbookService(config: AppConfig | undefined, isAuthenticated: boolean): WorkbookService | null {
+  if (!config) return null
+  if (localFolder) {
+    if (!config.localExcelFile) return null
+    return new LocalFolderWorkbookService(config.localExcelFile)
+  }
+  if (!config.sharepointUrl || !isAuthenticated) return null
+  return new GraphApiWorkbookService(config.sharepointUrl, getAccessToken)
+}
+
 export function isExportReady(config: AppConfig | undefined, isAuthenticated: boolean): boolean {
   if (!config) return false
   const hasMapping = Object.keys(config.categoryMapping ?? {}).length > 0

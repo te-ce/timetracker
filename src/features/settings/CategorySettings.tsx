@@ -1,29 +1,15 @@
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import type { ExcelRow, WorkbookService } from '../excel/workbookService'
-import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../excel/workbookService'
+import type { ExcelRow } from '../excel'
+import { buildWorkbookService } from '../excel'
 import { getAllCategories } from '../../shared/categories'
 import { autoMatchCategories } from './excelMapping'
 import { useAuthStore } from '../../shared/authStore'
-import { getAccessToken } from '../../infra/auth/msalInstance'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
 
 const localFolder = isLocalFolderMode()
-
-function buildWorkbookService(
-  sharepointUrl: string | undefined,
-  localExcelFile: string | undefined | null,
-  isAuthenticated: boolean,
-): WorkbookService | null {
-  if (localFolder) {
-    if (!localExcelFile) return null
-    return new LocalFolderWorkbookService(localExcelFile)
-  }
-  if (!sharepointUrl || !isAuthenticated) return null
-  return new GraphApiWorkbookService(sharepointUrl, getAccessToken)
-}
 
 function getMappingHint(
   sharepointUrl: string | undefined,
@@ -350,7 +336,7 @@ export function CategorySettings({ repository }: Props) {
       categoryDescriptions?: Record<string, string>
       categoryImportOrder?: string[]
     }) => repository.save({ ...config!, ...updates }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   const mappingMutation = useMutation({
@@ -377,7 +363,7 @@ export function CategorySettings({ repository }: Props) {
       setAutoMatched(new Set())
       setMappingSaved(true)
       setTimeout(() => setMappingSaved(false), 2000)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+      invalidateConfig(queryClient)
     },
   })
 
@@ -473,7 +459,7 @@ export function CategorySettings({ repository }: Props) {
     setLoadingRows(true)
     try {
       if (!targetSheet) return
-      const service = buildWorkbookService(sharepointUrl ?? undefined, localExcelFile, isAuthenticated)
+      const service = buildWorkbookService(config, isAuthenticated)
       if (!service) return
       const rows = await service.listRows(targetSheet)
       setExcelRows(rows)

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { AppConfig, ConfigRepository, MonthRepository } from '../../infra/repositories/types'
 import { renameCategoryAcrossAllMonths } from '../table/categoryMutations'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 
 export function useCategoryMutations(
   config: AppConfig | undefined,
@@ -12,19 +12,19 @@ export function useCategoryMutations(
 
   const setAutoCategory = useMutation({
     mutationFn: (cat: string | null) => configRepo.save({ ...config!, autoCategory: cat }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   const reorderCategories = useMutation({
     mutationFn: (categoryOrder: string[]) => configRepo.save({ ...config!, categoryOrder }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   const renameCategory = useMutation({
     mutationFn: ({ oldName, newName }: { oldName: string; newName: string }) =>
       renameCategoryAcrossAllMonths(oldName, newName, configRepo, monthRepo),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+      invalidateConfig(queryClient)
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
     },
   })
@@ -37,7 +37,7 @@ export function useCategoryMutations(
         : Object.fromEntries(Object.entries(current).filter(([k]) => k !== category))
       return configRepo.save({ ...config!, categoryDescriptions: updated })
     },
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   return { setAutoCategory, reorderCategories, renameCategory, setCategoryDescription }

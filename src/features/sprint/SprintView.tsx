@@ -7,7 +7,7 @@ import { SprintConfigPanel } from './SprintConfigPanel'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { getAllCategories } from '../../shared/categories'
 import { useAuthStore } from '../../shared/authStore'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import { createWorkbookService, isExportReady } from '../excel/workbookFactory'
 import { toLocalIso } from '../../shared/dateUtils'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
@@ -160,7 +160,7 @@ export function SprintView() {
       <SprintConfigPanel
         repository={configRepo}
         onConfigChanged={() => {
-          void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+          invalidateConfig(queryClient)
           setSprintIndex(null)
         }}
       />

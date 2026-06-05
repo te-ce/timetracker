@@ -1,30 +1,16 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { AppConfig, ConfigRepository } from '../../infra/repositories/types'
-import type { ExcelRow, WorkbookService } from '../excel/workbookService'
-import { GraphApiWorkbookService, LocalFolderWorkbookService } from '../excel/workbookService'
+import type { ExcelRow } from '../excel'
+import { buildWorkbookService } from '../excel'
 import { getAllCategories } from '../../shared/categories'
 import { autoMatchCategories } from './excelMapping'
 import { DEFAULT_CATEGORIES } from '../../infra/repositories/types'
 import { useAuthStore } from '../../shared/authStore'
-import { getAccessToken } from '../../infra/auth/msalInstance'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
 
 const localFolder = isLocalFolderMode()
-
-function buildWorkbookService(
-  sharepointUrl: string | undefined,
-  localExcelFile: string | undefined | null,
-  isAuthenticated: boolean,
-): WorkbookService | null {
-  if (localFolder) {
-    if (!localExcelFile) return null
-    return new LocalFolderWorkbookService(localExcelFile)
-  }
-  if (!sharepointUrl || !isAuthenticated) return null
-  return new GraphApiWorkbookService(sharepointUrl, getAccessToken)
-}
 
 function resolveNotReadyHint(url: string | null | undefined, file: string | null | undefined): string {
   return getNotReadyHint(url ?? undefined, file)
@@ -213,7 +199,7 @@ export function ExcelMappingSettings({ repository }: Props) {
     setLoadingRows(true)
     try {
       if (!targetSheet) return
-      const service = buildWorkbookService(sharepointUrl ?? undefined, localExcelFile, isAuthenticated)
+      const service = buildWorkbookService(config, isAuthenticated)
       if (!service) return
       const rows = await service.listRows(targetSheet)
       setExcelRows(rows)
@@ -250,7 +236,7 @@ export function ExcelMappingSettings({ repository }: Props) {
     onSuccess: () => {
       setLocalMapping(null)
       setAutoMatched(new Set())
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+      invalidateConfig(queryClient)
     },
   })
 

@@ -1,7 +1,6 @@
 export { ConfirmDialog } from './ConfirmDialog'
 export { KeyboardShortcutLegend } from './KeyboardShortcutLegend'
 export { DEFAULT_APP_CONFIG } from './appConfigDefaults'
-export { useAppStore } from './appStore'
 export { useAuthStore } from './authStore'
 export { AutoCategoryResult, calculateAutoCategory, resolveAutoCategory } from './autoCategory'
 export { btn } from './buttonVariants'
@@ -19,7 +18,7 @@ export {
   getEffectiveShortcut,
 } from './hotkeyConfig'
 export { calculateCategoryHours, calculateTotalCategorizedHours, calculateUncategorizedHours } from './periodCategories'
-export { invalidateMonth, QUERY_KEYS } from './queryKeys'
+export { invalidateConfig, invalidateMonth, QUERY_KEYS } from './queryKeys'
 export {
   DisplayStatus,
   STATUS_LABEL,

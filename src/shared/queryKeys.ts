@@ -6,6 +6,10 @@ export function invalidateMonth(client: QueryClient, date: string): void {
   void client.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
 }
 
+export function invalidateConfig(client: QueryClient): void {
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.config })
+}
+
 export const QUERY_KEYS = {
   config: ['config'] as const,
 

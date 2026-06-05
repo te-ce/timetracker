@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 
 interface Props {
@@ -22,7 +22,7 @@ export function SharePointSettings({ repository }: Props) {
     },
     onSuccess: () => {
       setDraft(null)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config })
+      invalidateConfig(queryClient)
     },
   })
 

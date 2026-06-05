@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { getAllCategories } from '../../shared/categories'
 
@@ -14,7 +14,7 @@ export function AutoCategoryPicker() {
 
   const mutation = useMutation({
     mutationFn: (category: string | null) => configRepo.save({ ...config!, autoCategory: category }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.config }),
+    onSuccess: () => invalidateConfig(queryClient),
   })
 
   if (!config) return null
