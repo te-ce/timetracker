@@ -61,7 +61,6 @@ export function useMonthSummaries(year: number, month: number) {
 
   return {
     config,
-    monthData,
     summaries,
     dayTypeOverrides,
     workLocations,
