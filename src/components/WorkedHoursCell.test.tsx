@@ -63,8 +63,9 @@ describe('WorkedHoursCell', () => {
   it('user can add a duration entry via from/to inputs', async () => {
     const { repo } = setup()
     await userEvent.click(screen.getByText('8.00'))
-    await screen.findByLabelText(/start/i)
-    await userEvent.type(screen.getByLabelText(/start/i), '09:00')
+    const startInput = await screen.findByLabelText(/start/i)
+    await userEvent.clear(startInput)
+    await userEvent.type(startInput, '09:00')
     await userEvent.type(screen.getByLabelText(/end/i), '13:30')
     await userEvent.click(screen.getByRole('button', { name: /add/i }))
 

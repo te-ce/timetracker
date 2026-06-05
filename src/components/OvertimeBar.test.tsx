@@ -26,6 +26,22 @@ describe('OvertimeBar', () => {
     expect(status).toHaveAttribute('aria-label', expect.stringContaining('undertime'))
   })
 
+  it('includes "current" in aria-label when liveWindowStart is provided', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('current'))
+  })
+
+  it('does not include "current" in aria-label when liveWindowStart is absent', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} />)
+    expect(screen.getByRole('status')).not.toHaveAttribute('aria-label', expect.stringContaining('current'))
+  })
+
+  it('deducts live window elapsed from remaining', () => {
+    // sollstunden=8, workedToday=3, liveWindow=1h → remaining=4h
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('4'))
+  })
+
   it('does not render office section when office props are omitted', () => {
     render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={0} />)
     expect(screen.queryByText(/%/)).not.toBeInTheDocument()

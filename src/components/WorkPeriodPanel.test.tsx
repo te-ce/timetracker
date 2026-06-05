@@ -114,7 +114,11 @@ async function getWindows(repo: InMemoryMonthRepository): Promise<WorkPeriod[]> 
 }
 
 async function addPeriod(start: string, end?: string) {
-  if (start) await userEvent.type(screen.getByLabelText(/^start$/i), start)
+  if (start) {
+    const startInput = screen.getByLabelText(/^start$/i)
+    await userEvent.clear(startInput)
+    await userEvent.type(startInput, start)
+  }
   if (end) await userEvent.type(screen.getByLabelText(/^end$/i), end)
   await userEvent.click(screen.getByRole('button', { name: end ? /add period/i : /^start tracking$/i }))
 }
@@ -289,10 +293,24 @@ describe('WorkPeriodPanel', () => {
   })
 
   describe('add period form', () => {
+    it('prefills start input with current time', async () => {
+      setup()
+      await screen.findByText(/no periods recorded yet/i)
+      expect(screen.getByLabelText(/^start$/i)).toHaveDisplayValue(/^\d{2}:\d{2}$/)
+    })
+
+    it('defaults category dropdown to autoCategory when provided', async () => {
+      setup([], 'Work')
+      await screen.findByText(/no periods recorded yet/i)
+      expect(screen.getByLabelText(/^category$/i)).toHaveValue('Work')
+    })
+
     it('Start tracking creates a live period with end null', async () => {
       const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
-      await userEvent.type(screen.getByLabelText(/^start$/i), '09:00')
+      const startInput = screen.getByLabelText(/^start$/i)
+      await userEvent.clear(startInput)
+      await userEvent.type(startInput, '09:00')
       await userEvent.click(screen.getByRole('button', { name: /^start tracking$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -609,8 +627,8 @@ describe('WorkPeriodPanel', () => {
       await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
       const selects = screen.getAllByRole<HTMLSelectElement>('combobox', { name: /category/i })
       const allOptions = selects.flatMap((s) => Array.from(s.options).map((o) => o.text))
-      expect(allOptions).toContain('Work — Deep work sessions')
-      expect(allOptions).toContain('Meeting — Sync meetings')
+      expect(allOptions).toContain('Work (Deep work sessions)')
+      expect(allOptions).toContain('Meeting (Sync meetings)')
     })
 
     it('does not append separator when category has no description', async () => {
@@ -773,7 +791,7 @@ describe('WorkPeriodPanel', () => {
       expect(row.querySelector('.animate-pulse')).not.toBeInTheDocument()
     })
 
-    it('completed subtasks render newest first', async () => {
+    it('completed subtasks render oldest first', async () => {
       setup([
         periodWithSubtasks('a', '09:00', '11:00', [
           { category: 'Work', hours: 1 },
@@ -781,8 +799,8 @@ describe('WorkPeriodPanel', () => {
         ]),
       ])
       const rows = await screen.findAllByTestId('subtask-row')
-      expect(rows[0]).toHaveTextContent('Meeting')
-      expect(rows[1]).toHaveTextContent('Work')
+      expect(rows[0]).toHaveTextContent('Work')
+      expect(rows[1]).toHaveTextContent('Meeting')
     })
   })
 

@@ -5,8 +5,8 @@ import { WorkOverview } from './WorkOverview'
 import { InMemoryMonthRepository } from '../repositories/in-memory'
 
 vi.mock('./OvertimeBar', () => ({
-  OvertimeBar: ({ sollstunden }: { sollstunden: number }) => (
-    <div data-testid="overtime-bar" data-sollstunden={sollstunden} />
+  OvertimeBar: ({ sollstunden, liveWindowStart }: { sollstunden: number; liveWindowStart?: string | null }) => (
+    <div data-testid="overtime-bar" data-sollstunden={sollstunden} data-live-window-start={liveWindowStart ?? ''} />
   ),
 }))
 
@@ -51,6 +51,26 @@ describe('WorkOverview', () => {
     setup({ sollstunden: 8, priorOvertime: 1, workedToday: 6 })
     expect(screen.getByTestId('overtime-bar')).toBeInTheDocument()
     expect(screen.getByTestId('overtime-bar')).toHaveAttribute('data-sollstunden', '8')
+  })
+
+  it('passes liveWindowStart from open period to OvertimeBar', () => {
+    setup({
+      sollstunden: 8,
+      priorOvertime: 0,
+      workedToday: 3,
+      windows: [{ id: 'a', start: '09:00', end: null, category: 'Work', subtasks: [] }],
+    })
+    expect(screen.getByTestId('overtime-bar')).toHaveAttribute('data-live-window-start', '09:00')
+  })
+
+  it('passes empty liveWindowStart when no open period', () => {
+    setup({
+      sollstunden: 8,
+      priorOvertime: 0,
+      workedToday: 3,
+      windows: [{ id: 'a', start: '09:00', end: '10:00', category: 'Work', subtasks: [] }],
+    })
+    expect(screen.getByTestId('overtime-bar')).toHaveAttribute('data-live-window-start', '')
   })
 
   it('does not render OvertimeBar when only some overtime props are provided', () => {

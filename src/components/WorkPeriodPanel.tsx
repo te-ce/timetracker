@@ -96,7 +96,7 @@ function CategoryPicker({ value, categories, onChange, compact, categoryDescript
       <option value={UNCATEGORIZED_CATEGORY}>Uncategorized</option>
       {categories.map((c) => (
         <option key={c} value={c}>
-          {categoryDescriptions?.[c] ? `${c} — ${categoryDescriptions[c]}` : c}
+          {categoryDescriptions?.[c] ? `${c} (${categoryDescriptions[c]})` : c}
         </option>
       ))}
     </select>
@@ -792,9 +792,15 @@ interface AddPeriodFormProps {
 }
 
 function AddPeriodForm({ openPeriod, defaultCategory, categories, onAdd }: AddPeriodFormProps) {
-  const [draftStart, setDraftStart] = useState('')
+  const [draftStart, setDraftStart] = useState(nowHHMM)
   const [draftEnd, setDraftEnd] = useState('')
   const [category, setCategory] = useState(defaultCategory)
+  const [prevDefaultCategory, setPrevDefaultCategory] = useState(defaultCategory)
+
+  if (prevDefaultCategory !== defaultCategory) {
+    setPrevDefaultCategory(defaultCategory)
+    setCategory(defaultCategory)
+  }
 
   const isLive = !draftEnd
   const canSubmit = !isLive || !openPeriod
@@ -803,7 +809,7 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, onAdd }: AddPe
     if (!canSubmit) return
     const start = draftStart || nowHHMM()
     onAdd({ id: crypto.randomUUID(), start, end: draftEnd || null, category, subtasks: [] })
-    setDraftStart('')
+    setDraftStart(nowHHMM())
     setDraftEnd('')
     setCategory(defaultCategory)
   }
@@ -1021,7 +1027,6 @@ function AutoCategoryRow({
   index: number
 }) {
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const description = categoryDescriptions?.[category]
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
 
   return (
@@ -1038,6 +1043,9 @@ function AutoCategoryRow({
           {formatHours(hours, timeFormat)}
         </span>
       </span>
+      <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded px-1.5 py-0.5 font-medium shrink-0 select-none">
+        main
+      </span>
       <CategoryPicker
         value={category}
         categories={categories}
@@ -1045,10 +1053,6 @@ function AutoCategoryRow({
         compact
         categoryDescriptions={categoryDescriptions}
       />
-      {description && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
-      <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded px-1.5 py-0.5 font-medium shrink-0 select-none">
-        main
-      </span>
     </div>
   )
 }
@@ -1122,7 +1126,7 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
           index={0}
         />
 
-        {[...completedSubtasks].reverse().map((sl, i) => (
+        {completedSubtasks.map((sl, i) => (
           <SubtaskRow
             key={sl.id}
             sl={sl}

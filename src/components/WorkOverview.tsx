@@ -29,6 +29,8 @@ export function WorkOverview({
   workedToday,
   activeTrackingStartedAt,
 }: Props) {
+  const liveWindowStart = windows.find((w) => w.end === null)?.start ?? null
+
   return (
     <div className="flex flex-col gap-4">
       {sollstunden !== undefined && priorOvertime !== undefined && workedToday !== undefined && (
@@ -37,6 +39,7 @@ export function WorkOverview({
           priorOvertime={priorOvertime}
           workedToday={workedToday}
           activeTrackingStartedAt={activeTrackingStartedAt}
+          liveWindowStart={liveWindowStart}
         />
       )}
       <WorkPeriodPanel
