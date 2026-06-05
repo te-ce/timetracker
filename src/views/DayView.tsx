@@ -130,6 +130,9 @@ export function DayView() {
     sollstunden,
     overtimeToDate,
     todayIso,
+    officeDays,
+    totalWorkDays,
+    officePercent,
   } = useDayQuery(selectedDate)
 
   const { data: activeTracking = null } = useQuery({
@@ -150,6 +153,7 @@ export function DayView() {
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = windows.find((w) => w.end === null)?.start
+  const officeStats = totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
 
   function prevDay() {
     const d = new Date(selectedDate)
@@ -178,6 +182,7 @@ export function DayView() {
         workedToday={overtimeToDate.workedToday}
         liveWindowStart={liveWindowStart}
         activeTrackingStartedAt={activeTracking?.startedAt}
+        {...officeStats}
       />
 
       <div className="flex items-center gap-4">

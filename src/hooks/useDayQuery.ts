@@ -34,6 +34,9 @@ export interface DayComputedStats {
   isEntriesBalanced: boolean
   hasAutoCategory: boolean
   dayClassification: { displayStatus: Exclude<DayStatus, 'today'>; reason: string }
+  officeDays: number
+  totalWorkDays: number
+  officePercent: number
 }
 
 export interface DayQueryResult extends DayRawData, DayConfigContext, DayComputedStats {
@@ -87,6 +90,17 @@ function fromDaySummary(s: DaySummary): Omit<DayComputedStats, 'overtimeToDate'>
   }
 }
 
+function calcOfficeStats(
+  monthDays: DaySummary[],
+  monthData: Record<string, Day>,
+): { officeDays: number; totalWorkDays: number; officePercent: number } {
+  const trackedWorkDays = monthDays.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
+  const officeDays = trackedWorkDays.filter((d) => monthData[d.date]?.location === 'Office').length
+  const totalWorkDays = trackedWorkDays.length
+  const officePercent = totalWorkDays > 0 ? Math.round((officeDays / totalWorkDays) * 100) : 0
+  return { officeDays, totalWorkDays, officePercent }
+}
+
 function resolveDayExtras(
   dayData: Day | undefined,
   config: AppConfig | undefined,
@@ -94,6 +108,8 @@ function resolveDayExtras(
   workedHoursPerDay: number[],
   monthDates: string[],
   todayIso: string,
+  monthDays: DaySummary[],
+  monthData: Record<string, Day>,
 ): DayConfigContext & DayComputedStats {
   const { sollstunden, defaultWorkLocation, globalAutoCategory } = resolveConfigDefaults(config)
   const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
@@ -106,6 +122,7 @@ function resolveDayExtras(
     autoCategory,
     overtimeToDate,
     ...fromDaySummary(daySummary),
+    ...calcOfficeStats(monthDays, monthData),
   }
 }
 
@@ -140,6 +157,8 @@ export function useDayQuery(date: string): DayQueryResult {
     workedHoursPerDay,
     monthDays.map((d) => d.date),
     todayIso,
+    monthDays,
+    monthData,
   )
 
   const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])

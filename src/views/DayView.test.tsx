@@ -69,6 +69,9 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
     hasAutoCategory: false,
     dayClassification: { displayStatus: 'untracked', reason: 'No work periods' },
     todayIso: '2026-06-03',
+    officeDays: 0,
+    totalWorkDays: 0,
+    officePercent: 0,
     ...overrides,
   })
 }
@@ -99,6 +102,21 @@ describe('DayView', () => {
       },
     })
     stubQuery()
+  })
+
+  describe('office stats', () => {
+    it('shows office percentage and day count in OvertimeBar', () => {
+      stubQuery({ officeDays: 3, totalWorkDays: 5, officePercent: 60 })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.getByText(/60%\s*office/i)).toBeInTheDocument()
+      expect(screen.getByText(/3\/5\s*days/i)).toBeInTheDocument()
+    })
+
+    it('hides office stats when no work days tracked', () => {
+      stubQuery({ officeDays: 0, totalWorkDays: 0, officePercent: 0 })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.queryByText(/office/i)).not.toBeInTheDocument()
+    })
   })
 
   describe('OvertimeBar placement', () => {
