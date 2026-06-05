@@ -99,7 +99,7 @@ export function CategoryColumnHeader({
       onDragOver={(e) => dragHandlers.onDragOver(e, catIdx)}
       onDrop={() => dragHandlers.onDrop(catIdx, allCategories)}
       onDragEnd={dragHandlers.onDragEnd}
-      className={`px-1 py-1.5 text-right w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
+      className={`px-1 py-1.5 text-center w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
       role="columnheader"
       data-tooltip={buildColTitle(cat, autoCategory, categoryDescriptions, onCategoryRename)}
     >

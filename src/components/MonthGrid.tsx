@@ -76,6 +76,7 @@ interface Props {
   onNoteChange?: (date: string, note: string) => void
   onSelectDate?: (isoDate: string) => void
   onClearDay?: (date: string) => void
+  expanded?: boolean
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
@@ -162,6 +163,16 @@ function ClearCell({ date, onClearDay }: { date: string; onClearDay?: (date: str
   )
 }
 
+function outerContainerClass(expanded: boolean | undefined): string {
+  if (expanded) return 'flex flex-col h-full'
+  return 'flex flex-col gap-2'
+}
+
+function scrollContainerClass(expanded: boolean | undefined): string {
+  if (expanded) return 'overflow-x-auto flex-1 min-h-0 overflow-y-auto relative'
+  return 'overflow-x-auto max-h-[75vh] overflow-y-auto relative'
+}
+
 export function MonthGrid({
   year,
   month,
@@ -183,6 +194,7 @@ export function MonthGrid({
   onNoteChange,
   onSelectDate,
   onClearDay,
+  expanded,
 }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
@@ -331,8 +343,8 @@ export function MonthGrid({
   let globalRowIdx = 0
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="overflow-x-auto max-h-[75vh] overflow-y-auto relative">
+    <div className={outerContainerClass(expanded)}>
+      <div data-testid="grid-scroll-container" className={scrollContainerClass(expanded)}>
         <table className="w-full text-sm border-collapse" role="table">
           <thead className="sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm">
             <tr>
@@ -346,7 +358,7 @@ export function MonthGrid({
                 <span className="sr-only">Status</span>
               </th>
               <th
-                className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-right w-16 border-b dark:border-gray-700"
+                className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-center w-16 border-b dark:border-gray-700"
                 role="columnheader"
               >
                 Worked

@@ -26,6 +26,7 @@ function setup(
     sprintStartDate?: string | null
     sprintLengthDays?: number
     customCategories?: string[]
+    expanded?: boolean
   } = {},
 ) {
   const repo = new InMemoryMonthRepository(opts.monthData ? { '2026-05': opts.monthData } : {})
@@ -50,6 +51,7 @@ function setup(
         onClearDay={opts.onClearDay}
         sprintStartDate={opts.sprintStartDate}
         sprintLengthDays={opts.sprintLengthDays}
+        expanded={opts.expanded}
       />
     </QueryClientProvider>,
   )
@@ -70,6 +72,22 @@ describe('MonthGrid', () => {
     const rows = screen.getAllByRole('row')
     // header row + 31 data rows + 1 footer total row
     expect(rows.length).toBe(39)
+  })
+
+  describe('column header alignment', () => {
+    it('category column headers are centered', async () => {
+      setup()
+      for (const cat of DEFAULT_CATEGORIES) {
+        const header = await screen.findByRole('columnheader', { name: cat })
+        expect(header.className).toContain('text-center')
+      }
+    })
+
+    it('Worked header is centered', () => {
+      setup()
+      const header = screen.getByRole('columnheader', { name: /worked/i })
+      expect(header.className).toContain('text-center')
+    })
   })
 
   it('displays workedHours computed from WorkPeriods', async () => {
@@ -552,6 +570,33 @@ describe('MonthGrid', () => {
         expect(screen.getByTestId('sprint-worked-Sprint 1')).toHaveTextContent('3.00')
         expect(screen.getByTestId('sprint-worked-Sprint 2')).toHaveTextContent('8.00')
       })
+    })
+  })
+
+  describe('expand prop', () => {
+    it('scroll container has max-h class when not expanded', () => {
+      setup()
+      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      expect(scrollContainer.className).toContain('max-h-[75vh]')
+    })
+
+    it('scroll container has no max-h class when expanded', () => {
+      setup({ expanded: true })
+      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      expect(scrollContainer.className).not.toContain('max-h-[75vh]')
+    })
+
+    it('scroll container has flex-1 and min-h-0 when expanded', () => {
+      setup({ expanded: true })
+      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      expect(scrollContainer.className).toContain('flex-1')
+      expect(scrollContainer.className).toContain('min-h-0')
+    })
+
+    it('outer container has h-full when expanded', () => {
+      setup({ expanded: true })
+      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      expect(scrollContainer.parentElement?.className).toContain('h-full')
     })
   })
 })

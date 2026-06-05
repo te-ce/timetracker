@@ -26,10 +26,10 @@ vi.mock('../hooks/useMonthSummaries', () => ({
 }))
 
 vi.mock('../components/MonthGrid', () => ({
-  MonthGrid: ({ onClearDay }: { onClearDay?: (date: string) => void }) =>
+  MonthGrid: ({ onClearDay, expanded }: { onClearDay?: (date: string) => void; expanded?: boolean }) =>
     createElement(
       'div',
-      { 'data-testid': 'month-grid' },
+      { 'data-testid': 'month-grid', 'data-expanded': String(expanded ?? false) },
       onClearDay
         ? createElement('button', { onClick: () => onClearDay('2026-06-05'), 'aria-label': 'trigger-clear-day' }, '×')
         : null,
@@ -88,6 +88,65 @@ describe('MonthGridView', () => {
       const grid = screen.getByTestId('month-grid')
       const resetBtn = screen.getByRole('button', { name: /reset all/i })
       expect(grid.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+  })
+
+  describe('Reset all button appearance', () => {
+    it('is semi-transparent at rest', () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      const resetBtn = screen.getByRole('button', { name: /reset all/i })
+      expect(resetBtn.className).toMatch(/opacity-50/)
+    })
+
+    it('becomes fully visible on hover via class', () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      const resetBtn = screen.getByRole('button', { name: /reset all/i })
+      expect(resetBtn.className).toMatch(/hover:opacity-100/)
+    })
+  })
+
+  describe('grid expand toggle', () => {
+    it('renders an expand button', () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      expect(screen.getByRole('button', { name: /expand grid/i })).toBeInTheDocument()
+    })
+
+    it('grid starts collapsed (expanded=false)', () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      expect(screen.getByTestId('month-grid').dataset.expanded).toBe('false')
+    })
+
+    it('clicking expand passes expanded=true to grid', async () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
+      expect(screen.getByTestId('month-grid').dataset.expanded).toBe('true')
+    })
+
+    it('clicking expand again collapses grid', async () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
+      await userEvent.click(screen.getByRole('button', { name: /collapse grid/i }))
+      expect(screen.getByTestId('month-grid').dataset.expanded).toBe('false')
+    })
+
+    it('shows overlay container when expanded', async () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
+      expect(screen.getByTestId('grid-overlay')).toBeInTheDocument()
+    })
+
+    it('hides OvertimeBar when expanded', async () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      expect(screen.getByRole('status')).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('removes overlay when collapsed', async () => {
+      render(<MonthGridView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
+      await userEvent.click(screen.getByRole('button', { name: /collapse grid/i }))
+      expect(screen.queryByTestId('grid-overlay')).not.toBeInTheDocument()
     })
   })
 

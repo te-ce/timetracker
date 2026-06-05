@@ -46,4 +46,19 @@ describe('MonthNav', () => {
     const now = new Date()
     expect(onMonthChange).toHaveBeenCalledWith(now.getFullYear(), now.getMonth())
   })
+
+  describe('compact mode', () => {
+    it('heading uses smaller text class when compact', () => {
+      render(<MonthNav year={2024} month={0} compact />)
+      const heading = screen.getByRole('heading')
+      expect(heading.className).toMatch(/text-sm/)
+      expect(heading.className).not.toMatch(/text-lg/)
+    })
+
+    it('heading uses normal text class when not compact', () => {
+      render(<MonthNav year={2024} month={0} />)
+      const heading = screen.getByRole('heading')
+      expect(heading.className).toMatch(/text-lg/)
+    })
+  })
 })

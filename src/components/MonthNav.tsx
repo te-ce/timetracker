@@ -17,9 +17,10 @@ interface Props {
   year: number
   month: number // 0-indexed
   onMonthChange?: (year: number, month: number) => void
+  compact?: boolean
 }
 
-export function MonthNav({ year, month, onMonthChange }: Props) {
+export function MonthNav({ year, month, onMonthChange, compact }: Props) {
   const now = new Date()
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
 
@@ -35,17 +36,17 @@ export function MonthNav({ year, month, onMonthChange }: Props) {
     else onMonthChange(year, month + 1)
   }
 
+  const navBtnClass = compact
+    ? 'rounded border px-2 py-0.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700'
+    : 'rounded-md border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700'
+
   return (
-    <div className="flex items-center justify-between">
-      <button
-        aria-label="Previous month"
-        onClick={handlePrev}
-        className="rounded-md border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-      >
+    <div className={compact ? 'flex items-center gap-3' : 'flex items-center justify-between'}>
+      <button aria-label="Previous month" onClick={handlePrev} className={navBtnClass}>
         ← Prev
       </button>
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">
+        <h2 className={compact ? 'text-sm font-medium' : 'text-lg font-semibold'}>
           {MONTH_NAMES[month]} {year}
         </h2>
         <button
@@ -57,11 +58,7 @@ export function MonthNav({ year, month, onMonthChange }: Props) {
           Today
         </button>
       </div>
-      <button
-        aria-label="Next month"
-        onClick={handleNext}
-        className="rounded-md border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-      >
+      <button aria-label="Next month" onClick={handleNext} className={navBtnClass}>
         Next →
       </button>
     </div>

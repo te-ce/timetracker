@@ -80,7 +80,7 @@ export function MonthView() {
         <StatusLegend />
         <button
           onClick={() => setShowResetConfirm(true)}
-          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30 opacity-50 hover:opacity-100 transition-opacity"
           aria-label="Reset all data for this month"
         >
           Reset all

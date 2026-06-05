@@ -82,4 +82,18 @@ describe('MonthView', () => {
       expect(calendar.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
+
+  describe('Reset all button appearance', () => {
+    it('is semi-transparent at rest', () => {
+      render(<MonthView />, { wrapper: makeWrapper() })
+      const resetBtn = screen.getByRole('button', { name: /reset all/i })
+      expect(resetBtn.className).toMatch(/opacity-50/)
+    })
+
+    it('becomes fully visible on hover via class', () => {
+      render(<MonthView />, { wrapper: makeWrapper() })
+      const resetBtn = screen.getByRole('button', { name: /reset all/i })
+      expect(resetBtn.className).toMatch(/hover:opacity-100/)
+    })
+  })
 })
