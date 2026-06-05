@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { DayNoteEditor } from './DayNoteEditor'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
@@ -6,7 +5,6 @@ import { useRepositories } from '../repositories/RepositoryContext'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { WorkOverview } from '../components/WorkOverview'
 import { DayTypePicker } from '../components/DayTypePicker'
-import { ConfirmDialog } from '../components/ConfirmDialog'
 import { toLocalIso } from '../domain/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../domain/statusColors'
 import type { DayStatus } from '../domain/dayStatus'
@@ -147,7 +145,6 @@ export function DayView() {
   })
 
   const { displayStatus: badgeStatus, reason: statusReason } = dayClassification
-  const [showResetConfirm, setShowResetConfirm] = useState(false)
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
@@ -217,30 +214,6 @@ export function DayView() {
       </section>
 
       <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />
-
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowResetConfirm(true)}
-          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30"
-          aria-label="Reset all data for this day"
-        >
-          Reset
-        </button>
-      </div>
-
-      {showResetConfirm && (
-        <ConfirmDialog
-          title="Reset all data for this day?"
-          message={`This will permanently delete all work periods, location, day type, and confirmation for ${formatDate(selectedDate)}. This cannot be undone.`}
-          confirmLabel="Reset day"
-          danger
-          onConfirm={() => {
-            setShowResetConfirm(false)
-            dayMutations.resetDay.mutate()
-          }}
-          onCancel={() => setShowResetConfirm(false)}
-        />
-      )}
     </div>
   )
 }

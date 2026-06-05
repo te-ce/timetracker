@@ -114,20 +114,6 @@ describe('DayView', () => {
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.getByRole('status')).toBeInTheDocument()
     })
-
-    it('OvertimeBar appears before Reset button in document order', () => {
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      const bar = screen.getByRole('status')
-      const resetBtn = screen.getByRole('button', { name: /reset all data for this day/i })
-      expect(bar.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    })
-
-    it('Reset button appears after note editor', () => {
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      const noteEditor = screen.getByTestId('day-note-editor')
-      const resetBtn = screen.getByRole('button', { name: /reset all data for this day/i })
-      expect(noteEditor.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    })
   })
 
   describe('rendering', () => {
@@ -147,11 +133,6 @@ describe('DayView', () => {
       stubQuery({ isConfirmed: true })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.getByRole('button', { name: /unconfirm day/i })).toBeInTheDocument()
-    })
-
-    it('shows Reset button', () => {
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.getByRole('button', { name: /reset all data for this day/i })).toBeInTheDocument()
     })
 
     it('shows location button', () => {
@@ -219,22 +200,6 @@ describe('DayView', () => {
       await waitFor(async () => {
         const data = await repo.getMonth(2026, 5)
         expect(data[testDate]?.confirmed).toBe(false)
-      })
-    })
-
-    it('shows reset confirmation dialog when Reset is clicked', async () => {
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      await userEvent.click(screen.getByRole('button', { name: /reset all data for this day/i }))
-      expect(screen.getByRole('heading', { name: /reset all data for this day/i })).toBeInTheDocument()
-    })
-
-    it('resets windows when Reset is confirmed', async () => {
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      await userEvent.click(screen.getByRole('button', { name: /reset all data for this day/i }))
-      await userEvent.click(screen.getByRole('button', { name: /reset day/i }))
-      await waitFor(async () => {
-        const data = await monthRepo.getMonth(2026, 5)
-        expect(data[testDate]?.windows ?? []).toHaveLength(0)
       })
     })
   })
