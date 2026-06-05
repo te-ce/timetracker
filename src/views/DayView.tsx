@@ -29,10 +29,9 @@ interface DayActionsProps {
   isConfirmed: boolean
   onConfirm: () => void
   onUnconfirm: () => void
-  onReset: () => void
 }
 
-function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUnconfirm, onReset }: DayActionsProps) {
+function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUnconfirm }: DayActionsProps) {
   return (
     <div className="flex items-center gap-2">
       {badgeStatus !== 'future' && (
@@ -66,14 +65,6 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
           Confirm
         </button>
       )}
-      <span className="w-px h-5 bg-gray-200 dark:bg-gray-700 self-center" aria-hidden="true" />
-      <button
-        onClick={onReset}
-        className="rounded-md border border-red-200 dark:border-red-800 px-2 py-1.5 text-sm font-medium text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
-        aria-label="Reset all data for this day"
-      >
-        Reset all
-      </button>
     </div>
   )
 }
@@ -209,7 +200,6 @@ export function DayView() {
           isConfirmed={isConfirmed}
           onConfirm={() => dayMutations.confirm.mutate()}
           onUnconfirm={() => dayMutations.unconfirm.mutate()}
-          onReset={() => setShowResetConfirm(true)}
         />
       </div>
 
@@ -227,6 +217,16 @@ export function DayView() {
       </section>
 
       <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowResetConfirm(true)}
+          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+          aria-label="Reset all data for this day"
+        >
+          Reset all
+        </button>
+      </div>
 
       {showResetConfirm && (
         <ConfirmDialog

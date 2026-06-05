@@ -22,6 +22,7 @@ function setup(
     onCategoryRename?: (oldName: string, newName: string) => void
     onAutoCategoryChange?: (category: string) => void
     onSelectDate?: (isoDate: string) => void
+    onClearDay?: (date: string) => void
     sprintStartDate?: string | null
     sprintLengthDays?: number
     customCategories?: string[]
@@ -46,6 +47,7 @@ function setup(
         onCategoryRename={opts.onCategoryRename}
         onAutoCategoryChange={opts.onAutoCategoryChange}
         onSelectDate={opts.onSelectDate}
+        onClearDay={opts.onClearDay}
         sprintStartDate={opts.sprintStartDate}
         sprintLengthDays={opts.sprintLengthDays}
       />
@@ -430,6 +432,21 @@ describe('MonthGrid', () => {
       setup()
       const header = await screen.findByRole('columnheader', { name: '_COREMEDIA' })
       expect(within(header).getByText('auto')).toBeInTheDocument()
+    })
+  })
+
+  describe('clear day column', () => {
+    it('no clear button when onClearDay not provided', async () => {
+      setup()
+      await screen.findByRole('row', { name: /2026-05-04/ })
+      expect(screen.queryByRole('button', { name: /clear 2026-05-04/i })).not.toBeInTheDocument()
+    })
+
+    it('X button per row calls onClearDay with that date', async () => {
+      const onClearDay = vi.fn<(date: string) => void>()
+      setup({ onClearDay })
+      await userEvent.click(await screen.findByRole('button', { name: /clear 2026-05-04/i }))
+      expect(onClearDay).toHaveBeenCalledWith('2026-05-04')
     })
   })
 

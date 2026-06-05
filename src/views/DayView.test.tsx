@@ -37,7 +37,7 @@ vi.mock('../components/DayTypePicker', () => ({
 }))
 
 vi.mock('./DayNoteEditor', () => ({
-  DayNoteEditor: () => null,
+  DayNoteEditor: () => createElement('div', { 'data-testid': 'day-note-editor' }),
 }))
 
 import { useDayQuery } from '../hooks/useDayQuery'
@@ -120,6 +120,13 @@ describe('DayView', () => {
       const bar = screen.getByRole('status')
       const resetBtn = screen.getByRole('button', { name: /reset all/i })
       expect(bar.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('Reset all button appears after note editor', () => {
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      const noteEditor = screen.getByTestId('day-note-editor')
+      const resetBtn = screen.getByRole('button', { name: /reset all/i })
+      expect(noteEditor.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
 

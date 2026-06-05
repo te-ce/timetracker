@@ -20,7 +20,6 @@ import type { NotePopoverState } from './NotePopoverPanel'
 import { STATUS_DOT, STATUS_ROW_BG } from '../domain/statusColors'
 import { useTimeFormatStore } from '../stores/timeFormatStore'
 import { formatHoursCompact } from '../domain/formatHours'
-import { StatusLegend } from './StatusLegend'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-50', 'bg-amber-100/70']
 
@@ -76,6 +75,7 @@ interface Props {
   onAutoCategoryChange?: (category: string) => void
   onNoteChange?: (date: string, note: string) => void
   onSelectDate?: (isoDate: string) => void
+  onClearDay?: (date: string) => void
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
@@ -129,6 +129,39 @@ function ConfirmCell({ date, isNonWorkDay, isConfirmed, onConfirm, onUnconfirm }
   )
 }
 
+function ClearColumnHeader({ visible }: { visible: boolean }) {
+  if (!visible) return null
+  return (
+    <th
+      className="px-1 py-1.5 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700"
+      data-tooltip="Clear all data for this day"
+    >
+      <span className="sr-only">Clear day</span>
+    </th>
+  )
+}
+
+function ClearColumnPlaceholder({ visible }: { visible: boolean }) {
+  if (!visible) return null
+  return <td className="w-8 border-l border-gray-200 dark:border-gray-700"></td>
+}
+
+function ClearCell({ date, onClearDay }: { date: string; onClearDay?: (date: string) => void }) {
+  if (!onClearDay) return null
+  return (
+    <td className="w-8 text-center border-l border-gray-200 dark:border-gray-700">
+      <button
+        onClick={() => onClearDay(date)}
+        className="w-full py-1 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+        aria-label={`Clear ${date}`}
+        data-tooltip="Clear all data for this day"
+      >
+        ×
+      </button>
+    </td>
+  )
+}
+
 export function MonthGrid({
   year,
   month,
@@ -149,6 +182,7 @@ export function MonthGrid({
   onAutoCategoryChange,
   onNoteChange,
   onSelectDate,
+  onClearDay,
 }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
@@ -291,8 +325,8 @@ export function MonthGrid({
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, resolveSprintStart(sprintStartDate, year), sprintLengthDays)
 
-  // day + status + worked + location + separator + categories + confirm + note
-  const colCount = allCategories.length + 7
+  // day + status + worked + location + separator + categories + confirm + note + (clear?)
+  const colCount = allCategories.length + 7 + Number(!!onClearDay)
 
   let globalRowIdx = 0
 
@@ -363,6 +397,7 @@ export function MonthGrid({
                 </span>
                 <span className="sr-only">Notes</span>
               </th>
+              <ClearColumnHeader visible={!!onClearDay} />
             </tr>
           </thead>
           <tbody>
@@ -470,6 +505,7 @@ export function MonthGrid({
                         </button>
                       )}
                     </td>
+                    <ClearCell date={row.date} onClearDay={onClearDay} />
                   </tr>
                 )
               })
@@ -518,6 +554,7 @@ export function MonthGrid({
                       })}
                       <td></td>
                       <td></td>
+                      <ClearColumnPlaceholder visible={!!onClearDay} />
                     </tr>
                   )}
                 </Fragment>
@@ -550,12 +587,11 @@ export function MonthGrid({
               })}
               <td className="w-10 border-l border-gray-200 dark:border-gray-700"></td>
               <td className="w-8 border-l border-gray-200 dark:border-gray-700"></td>
+              <ClearColumnPlaceholder visible={!!onClearDay} />
             </tr>
           </tfoot>
         </table>
       </div>
-
-      <StatusLegend className="px-1" />
 
       <DotPopoverPanel state={dotPopover} popoverRef={popoverRef} onSelectDayType={handleDayTypeSelect} />
       <NotePopoverPanel

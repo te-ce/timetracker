@@ -67,15 +67,6 @@ export function MonthView() {
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}
       />
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowResetConfirm(true)}
-          className="text-xs font-medium text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400"
-          aria-label="Reset all data for this month"
-        >
-          Reset all
-        </button>
-      </div>
       <MonthCalendar
         year={year}
         month={month - 1}
@@ -85,7 +76,16 @@ export function MonthView() {
         dayStatusReasonMap={dayStatusReasonMap}
         dayNoteMap={dayNoteMap}
       />
-      <StatusLegend />
+      <div className="flex items-center justify-between gap-4">
+        <StatusLegend />
+        <button
+          onClick={() => setShowResetConfirm(true)}
+          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+          aria-label="Reset all data for this month"
+        >
+          Reset all
+        </button>
+      </div>
 
       {showResetConfirm && (
         <ConfirmDialog

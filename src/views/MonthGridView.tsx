@@ -8,6 +8,7 @@ import { MonthGrid } from '../components/MonthGrid'
 import { MonthNav } from '../components/MonthNav'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { StatusLegend } from '../components/StatusLegend'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthSummaries } from '../hooks/useMonthSummaries'
 import { resolveGridConfig } from './gridConfig'
@@ -71,9 +72,15 @@ export function MonthGridView() {
   const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+  const [clearDayDate, setClearDayDate] = useState<string | null>(null)
 
   const resetMonthMutation = useMutation({
     mutationFn: () => monthRepo.deleteMonth(year, month),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
+  })
+
+  const clearDayMutation = useMutation({
+    mutationFn: (date: string) => monthRepo.updateDay(date, () => ({ windows: [] })),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
@@ -101,15 +108,6 @@ export function MonthGridView() {
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}
       />
-      <div className="flex justify-end">
-        <button
-          onClick={() => setShowResetConfirm(true)}
-          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
-          aria-label="Reset all data for this month"
-        >
-          Reset all
-        </button>
-      </div>
       <MonthGrid
         year={year}
         month={month}
@@ -130,7 +128,18 @@ export function MonthGridView() {
         onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
         onNoteChange={(date, note) => noteMutation.mutate({ date, note })}
         onSelectDate={(date) => void navigate({ to: '/', search: { date } })}
+        onClearDay={(date) => setClearDayDate(date)}
       />
+      <div className="flex items-center justify-between gap-4">
+        <StatusLegend className="px-1" />
+        <button
+          onClick={() => setShowResetConfirm(true)}
+          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+          aria-label="Reset all data for this month"
+        >
+          Reset all
+        </button>
+      </div>
 
       {showResetConfirm && (
         <ConfirmDialog
@@ -143,6 +152,21 @@ export function MonthGridView() {
             resetMonthMutation.mutate()
           }}
           onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
+
+      {clearDayDate && (
+        <ConfirmDialog
+          title={`Clear data for ${clearDayDate}?`}
+          message={`This will permanently delete all work periods, location, day type, and confirmation for ${clearDayDate}. This cannot be undone.`}
+          confirmLabel="Clear day"
+          danger
+          onConfirm={() => {
+            const date = clearDayDate
+            setClearDayDate(null)
+            clearDayMutation.mutate(date)
+          }}
+          onCancel={() => setClearDayDate(null)}
         />
       )}
     </div>

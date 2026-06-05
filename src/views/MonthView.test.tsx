@@ -75,14 +75,11 @@ describe('MonthView', () => {
   })
 
   describe('layout order', () => {
-    it('Reset all button appears after OvertimeBar and before the calendar', () => {
+    it('Reset all button appears after the calendar', () => {
       render(<MonthView />, { wrapper: makeWrapper() })
-      const bar = screen.getByRole('status')
-      const resetBtn = screen.getByRole('button', { name: /reset all/i })
       const calendar = screen.getByTestId('month-calendar')
-      // OvertimeBar → Reset all → calendar
-      expect(bar.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-      expect(resetBtn.compareDocumentPosition(calendar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      const resetBtn = screen.getByRole('button', { name: /reset all/i })
+      expect(calendar.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
 })
