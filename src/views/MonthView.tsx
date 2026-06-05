@@ -39,7 +39,10 @@ export function MonthView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  const { summaries, overtimeToDate, workLocations, sollstunden, dayNotes } = useMonthSummaries(year, month)
+  const { summaries, overtimeToDate, workLocations, sollstunden, dayNotes, todayLiveWindowStart } = useMonthSummaries(
+    year,
+    month,
+  )
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
@@ -63,6 +66,7 @@ export function MonthView() {
         priorOvertime={overtimeToDate.priorOvertime}
         workedToday={overtimeToDate.workedToday}
         activeTrackingStartedAt={activeTracking?.startedAt}
+        liveWindowStart={todayLiveWindowStart}
         officeDays={officeDays}
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}

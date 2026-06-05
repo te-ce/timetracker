@@ -14,6 +14,18 @@ interface MonthMaps {
   dayNotes: Map<string, string>
 }
 
+function findTodayLiveWindowStart(
+  monthData: MonthData,
+  todayIso: string,
+  year: number,
+  month: number,
+): string | undefined {
+  const todayYear = parseInt(todayIso.slice(0, 4))
+  const todayMonth = parseInt(todayIso.slice(5, 7))
+  if (year !== todayYear || month !== todayMonth) return undefined
+  return monthData[todayIso]?.windows.find((w) => w.end === null)?.start
+}
+
 function extractMonthMaps(monthData: MonthData): MonthMaps {
   const dayTypeOverrides = new Map<string, DayTypeOverride>()
   const workLocations = new Map<string, WorkLocation>()
@@ -58,6 +70,7 @@ export function useMonthSummaries(year: number, month: number) {
   )
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
+  const todayLiveWindowStart = findTodayLiveWindowStart(monthData, todayIso, year, month)
 
   return {
     config,
@@ -69,5 +82,6 @@ export function useMonthSummaries(year: number, month: number) {
     overtimeToDate,
     sollstunden,
     todayIso,
+    todayLiveWindowStart,
   }
 }

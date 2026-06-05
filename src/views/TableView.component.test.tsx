@@ -40,6 +40,27 @@ import { useMonthSummaries } from '../hooks/useMonthSummaries'
 
 type MonthSummariesReturn = ReturnType<typeof useMonthSummaries>
 
+function stubSummariesWithLiveWindow(liveWindowStart: string): void {
+  const stub: MonthSummariesReturn = {
+    config: undefined,
+    summaries: {
+      days: [],
+      workDayCount: 0,
+      workedHoursPerDay: [],
+      hasAnyTrackedHours: false,
+    },
+    dayTypeOverrides: new Map(),
+    workLocations: new Map(),
+    confirmedDays: new Set(),
+    dayNotes: new Map(),
+    overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
+    sollstunden: 8,
+    todayIso: '2026-06-05',
+    todayLiveWindowStart: liveWindowStart,
+  }
+  vi.mocked(useMonthSummaries).mockReturnValue(stub)
+}
+
 function stubSummaries(): void {
   const stub: MonthSummariesReturn = {
     config: undefined,
@@ -56,6 +77,7 @@ function stubSummaries(): void {
     overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
     sollstunden: 8,
     todayIso: '2026-06-05',
+    todayLiveWindowStart: undefined,
   }
   vi.mocked(useMonthSummaries).mockReturnValue(stub)
 }
@@ -80,6 +102,19 @@ function makeWrapper(monthRepo?: InMemoryMonthRepository) {
 describe('TableView', () => {
   beforeEach(() => {
     stubSummaries()
+  })
+
+  describe('OvertimeBar live window', () => {
+    it('shows current elapsed time when today has an open window', () => {
+      stubSummariesWithLiveWindow('09:00')
+      render(<TableView />, { wrapper: makeWrapper() })
+      expect(screen.getByText(/current/)).toBeInTheDocument()
+    })
+
+    it('does not show current elapsed time when no open window', () => {
+      render(<TableView />, { wrapper: makeWrapper() })
+      expect(screen.queryByText(/current/)).not.toBeInTheDocument()
+    })
   })
 
   describe('layout order', () => {
