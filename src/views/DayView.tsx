@@ -184,6 +184,14 @@ export function DayView() {
         onToday={() => setSelectedDate(toLocalIso(new Date()))}
       />
 
+      <OvertimeBar
+        sollstunden={sollstunden}
+        priorOvertime={overtimeToDate.priorOvertime}
+        workedToday={overtimeToDate.workedToday}
+        liveWindowStart={liveWindowStart}
+        activeTrackingStartedAt={activeTracking?.startedAt}
+      />
+
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <DayTypePicker date={selectedDate} override={dayTypeOverride} repository={monthRepo} />
@@ -204,14 +212,6 @@ export function DayView() {
           onReset={() => setShowResetConfirm(true)}
         />
       </div>
-
-      <OvertimeBar
-        sollstunden={sollstunden}
-        priorOvertime={overtimeToDate.priorOvertime}
-        workedToday={overtimeToDate.workedToday}
-        liveWindowStart={liveWindowStart}
-        activeTrackingStartedAt={activeTracking?.startedAt}
-      />
 
       <section aria-label="Work periods">
         <h3 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>

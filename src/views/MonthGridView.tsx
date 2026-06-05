@@ -5,16 +5,12 @@ import { useRepositories } from '../repositories/RepositoryContext'
 import type { ConfigRepository } from '../repositories/types'
 import { renameCategoryAcrossAllMonths } from '../domain/categoryMutations'
 import { MonthGrid } from '../components/MonthGrid'
+import { MonthNav } from '../components/MonthNav'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthSummaries } from '../hooks/useMonthSummaries'
 import { resolveGridConfig } from './gridConfig'
-
-function shiftMonth(year: number, month: number, delta: -1 | 1): { year: number; month: number } {
-  if (delta === -1) return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 }
-  return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
-}
 
 async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
   const cfg = await configRepo.get()
@@ -32,7 +28,6 @@ export function MonthGridView() {
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
-  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
   const queryClient = useQueryClient()
   const { data: activeTracking = null } = useQuery({
     queryKey: QUERY_KEYS.activeTracking,
@@ -82,16 +77,9 @@ export function MonthGridView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  function prevMonth() {
-    const next = shiftMonth(year, month, -1)
-    setYear(next.year)
-    setMonth(next.month)
-  }
-
-  function nextMonth() {
-    const next = shiftMonth(year, month, 1)
-    setYear(next.year)
-    setMonth(next.month)
+  function onMonthChange(y: number, m: number) {
+    setYear(y)
+    setMonth(m + 1)
   }
 
   const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', {
@@ -102,44 +90,8 @@ export function MonthGridView() {
   const gridConfig = resolveGridConfig(config)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center">
-        <button
-          onClick={prevMonth}
-          className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-        >
-          ← Prev
-        </button>
-        <div className="flex flex-1 items-center justify-center gap-2">
-          <h2 className="text-lg font-semibold">{monthLabel}</h2>
-          <button
-            onClick={() => {
-              const now = new Date()
-              setYear(now.getFullYear())
-              setMonth(now.getMonth() + 1)
-            }}
-            className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isCurrentMonth ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30'}`}
-            aria-disabled={isCurrentMonth}
-          >
-            Today
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowResetConfirm(true)}
-            className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
-            aria-label="Reset all data for this month"
-          >
-            Reset all
-          </button>
-          <button
-            onClick={nextMonth}
-            className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-          >
-            Next →
-          </button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
       <OvertimeBar
         sollstunden={sollstunden}
         priorOvertime={overtimeToDate.priorOvertime}
@@ -149,6 +101,15 @@ export function MonthGridView() {
         totalWorkDays={trackedWorkDays.length}
         officePercent={officePercent}
       />
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowResetConfirm(true)}
+          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+          aria-label="Reset all data for this month"
+        >
+          Reset all
+        </button>
+      </div>
       <MonthGrid
         year={year}
         month={month}

@@ -114,6 +114,13 @@ describe('DayView', () => {
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.getByRole('status')).toBeInTheDocument()
     })
+
+    it('OvertimeBar appears before Reset all button in document order', () => {
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      const bar = screen.getByRole('status')
+      const resetBtn = screen.getByRole('button', { name: /reset all/i })
+      expect(bar.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
   })
 
   describe('rendering', () => {
