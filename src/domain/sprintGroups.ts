@@ -1,12 +1,12 @@
-import type { MonthGridRow } from './monthGrid'
+import type { MonthTableRow } from './monthTable'
 
 export interface SprintGroup {
   label: string
-  rows: MonthGridRow[]
+  rows: MonthTableRow[]
 }
 
 export function computeSprintGroups(
-  rows: MonthGridRow[],
+  rows: MonthTableRow[],
   sprintStartDate: string | null,
   sprintLengthDays: number,
 ): SprintGroup[] {
@@ -16,7 +16,7 @@ export function computeSprintGroups(
 
   const sprintStart = new Date(sprintStartDate)
   const groups: SprintGroup[] = []
-  let currentRows: MonthGridRow[] = []
+  let currentRows: MonthTableRow[] = []
   let currentSprintIdx: number | null = null
 
   for (const row of rows) {

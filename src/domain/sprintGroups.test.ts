@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { computeSprintGroups } from './sprintGroups'
-import type { MonthGridRow } from './monthGrid'
+import type { MonthTableRow } from './monthTable'
 
-function makeRow(date: string): MonthGridRow {
+function makeRow(date: string): MonthTableRow {
   return {
     date,
     dayType: 'WorkDay',

@@ -46,45 +46,52 @@ describe('getEffectiveShortcut', () => {
     expect(config.globalToggle).toBe('CommandOrControl+Shift+T')
   })
 
-describe('matchesShortcut', () => {
-  it('returns true when event key matches default shortcut', () => {
-    expect(matchesShortcut(defaultHotkeyConfig(), 'monthView', 'M', false, false)).toBe(true)
-    expect(matchesShortcut(defaultHotkeyConfig(), 'monthView', 'm', false, false)).toBe(true)
-  })
+  describe('matchesShortcut', () => {
+    it('returns true when event key matches default shortcut', () => {
+      expect(matchesShortcut(defaultHotkeyConfig(), 'monthView', 'M', false, false)).toBe(true)
+      expect(matchesShortcut(defaultHotkeyConfig(), 'monthView', 'm', false, false)).toBe(true)
+    })
 
-  it('returns false when action is disabled', () => {
-    const config: HotkeyConfig = { ...defaultHotkeyConfig(), inApp: { monthView: null } }
-    expect(matchesShortcut(config, 'monthView', 'M', false, false)).toBe(false)
-  })
+    it('returns false when action is disabled', () => {
+      const config: HotkeyConfig = { ...defaultHotkeyConfig(), inApp: { monthView: null } }
+      expect(matchesShortcut(config, 'monthView', 'M', false, false)).toBe(false)
+    })
 
-  it('returns true when action is remapped and new key pressed', () => {
-    const config: HotkeyConfig = { ...defaultHotkeyConfig(), inApp: { monthView: '1' } }
-    expect(matchesShortcut(config, 'monthView', '1', false, false)).toBe(true)
-  })
+    it('returns true when action is remapped and new key pressed', () => {
+      const config: HotkeyConfig = { ...defaultHotkeyConfig(), inApp: { monthView: '1' } }
+      expect(matchesShortcut(config, 'monthView', '1', false, false)).toBe(true)
+    })
 
-  it('returns false when wrong key pressed', () => {
-    expect(matchesShortcut(defaultHotkeyConfig(), 'monthView', 'G', false, false)).toBe(false)
-  })
+    it('returns false when wrong key pressed', () => {
+      expect(matchesShortcut(defaultHotkeyConfig(), 'monthView', 'G', false, false)).toBe(false)
+    })
 
-  it('matches undo with ctrl+z', () => {
-    expect(matchesShortcut(defaultHotkeyConfig(), 'undo', 'z', true, false)).toBe(true)
-  })
+    it('matches undo with ctrl+z', () => {
+      expect(matchesShortcut(defaultHotkeyConfig(), 'undo', 'z', true, false)).toBe(true)
+    })
 
-  it('matches redo with ctrl+shift+z', () => {
-    expect(matchesShortcut(defaultHotkeyConfig(), 'redo', 'z', true, true)).toBe(true)
-  })
+    it('matches redo with ctrl+shift+z', () => {
+      expect(matchesShortcut(defaultHotkeyConfig(), 'redo', 'z', true, true)).toBe(true)
+    })
 
-  it('returns false for undo when undo is disabled', () => {
-    const config: HotkeyConfig = { ...defaultHotkeyConfig(), inApp: { undo: null } }
-    expect(matchesShortcut(config, 'undo', 'z', true, false)).toBe(false)
+    it('returns false for undo when undo is disabled', () => {
+      const config: HotkeyConfig = { ...defaultHotkeyConfig(), inApp: { undo: null } }
+      expect(matchesShortcut(config, 'undo', 'z', true, false)).toBe(false)
+    })
   })
-})
 
   it('covers all defined in-app actions with a default', () => {
     const actions: InAppShortcutAction[] = [
-      'monthView', 'gridView', 'dayView', 'sprintView',
-      'today', 'prevDay', 'nextDay',
-      'undo', 'redo', 'toggleLegend',
+      'monthView',
+      'tableView',
+      'dayView',
+      'sprintView',
+      'today',
+      'prevDay',
+      'nextDay',
+      'undo',
+      'redo',
+      'toggleLegend',
     ]
     const config = defaultHotkeyConfig()
     for (const action of actions) {

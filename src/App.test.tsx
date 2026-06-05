@@ -36,7 +36,7 @@ describe('App', () => {
   it('renders all nav links', async () => {
     renderApp()
     expect(await screen.findByRole('link', { name: /month/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /grid/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /table/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /day/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /sprint/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument()
@@ -104,17 +104,17 @@ describe('App', () => {
     })
   })
 
-  it('navigates to /grid when pressing the "g" hotkey', async () => {
+  it('navigates to /table when pressing the "g" hotkey', async () => {
     renderApp('/')
     await screen.findByText('Timetracker')
     fireEvent.keyDown(document, { key: 'g' })
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/grid')
+      expect(router.state.location.pathname).toBe('/table')
     })
   })
 
   it('ignores hotkeys when focus is in an input', async () => {
-    renderApp('/grid')
+    renderApp('/table')
     await screen.findByText('Timetracker')
     const input = document.createElement('input')
     document.body.appendChild(input)
@@ -123,7 +123,7 @@ describe('App', () => {
     fireEvent.keyDown(input, { key: 'm' })
     // pathname should remain on /grid, not have navigated to /
     await new Promise((r) => setTimeout(r, 50))
-    expect(router.state.location.pathname).toBe('/grid')
+    expect(router.state.location.pathname).toBe('/table')
     document.body.removeChild(input)
   })
 })

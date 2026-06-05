@@ -1,7 +1,7 @@
 import type { AppConfig, WorkLocation } from '../repositories/types'
 import { DEFAULT_APP_CONFIG } from '../domain/appConfigDefaults'
 
-export interface GridConfig {
+export interface TableConfig {
   autoCategory: string | null
   customCategories: string[]
   sprintStartDate: string | null
@@ -9,7 +9,7 @@ export interface GridConfig {
   defaultWorkLocation: WorkLocation | null
 }
 
-export function resolveGridConfig(config: AppConfig | undefined): GridConfig {
+export function resolveTableConfig(config: AppConfig | undefined): TableConfig {
   const src = config ?? DEFAULT_APP_CONFIG
   return {
     autoCategory: src.autoCategory ?? null,

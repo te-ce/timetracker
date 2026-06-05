@@ -16,7 +16,7 @@ interface Props {
 
 const ACTION_LABELS: Record<InAppShortcutAction, string> = {
   monthView: 'Month view',
-  gridView: 'Grid view',
+  tableView: 'Table view',
   dayView: 'Day view',
   sprintView: 'Sprint view',
   today: 'Jump to today',
@@ -28,8 +28,16 @@ const ACTION_LABELS: Record<InAppShortcutAction, string> = {
 }
 
 const IN_APP_ACTIONS: InAppShortcutAction[] = [
-  'monthView', 'gridView', 'dayView', 'sprintView',
-  'today', 'prevDay', 'nextDay', 'undo', 'redo', 'toggleLegend',
+  'monthView',
+  'tableView',
+  'dayView',
+  'sprintView',
+  'today',
+  'prevDay',
+  'nextDay',
+  'undo',
+  'redo',
+  'toggleLegend',
 ]
 
 function KeyCaptureField({

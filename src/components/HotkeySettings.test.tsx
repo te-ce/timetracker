@@ -15,13 +15,13 @@ describe('HotkeySettings', () => {
     render(<HotkeySettings repository={repo} />, { wrapper })
     expect(await screen.findByText('Month view')).toBeInTheDocument()
     expect(await screen.findByText('M')).toBeInTheDocument()
-    expect(await screen.findByText('Grid view')).toBeInTheDocument()
+    expect(await screen.findByText('Table view')).toBeInTheDocument()
     expect(await screen.findByText('G')).toBeInTheDocument()
   })
 
   it('shows disabled badge when in-app shortcut is null in config', async () => {
     const repo = new InMemoryConfigRepository({
-      ...await new InMemoryConfigRepository().get(),
+      ...(await new InMemoryConfigRepository().get()),
       hotkeys: { globalToggle: 'CommandOrControl+Shift+Space', inApp: { monthView: null } },
     })
     render(<HotkeySettings repository={repo} />, { wrapper })

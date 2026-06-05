@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { buildMonthGrid } from './monthGrid'
+import { buildMonthTable } from './monthTable'
 import type { MonthData, WorkPeriod } from '../repositories/types'
 
 function win(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
   return { id, start, end, category, subtasks: [] }
 }
 
-describe('buildMonthGrid', () => {
+describe('buildMonthTable', () => {
   it('produces one row per day in the month', () => {
-    const rows = buildMonthGrid({ year: 2026, month: 5, monthData: {}, dayTypes: new Map() })
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData: {}, dayTypes: new Map() })
 
     expect(rows).toHaveLength(31)
     expect(rows[0]!.date).toBe('2026-05-01')
@@ -24,7 +24,7 @@ describe('buildMonthGrid', () => {
         windows: [win('3', '08:00', '16:30')],
       },
     }
-    const rows = buildMonthGrid({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
 
     expect(rows[0]!.workedHours).toBe(7)
     expect(rows[1]!.workedHours).toBe(8.5)
@@ -43,7 +43,7 @@ describe('buildMonthGrid', () => {
         windows: [win('4', '09:00', '13:00', 'Infra')],
       },
     }
-    const rows = buildMonthGrid({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
 
     // Period 1: 2h total, 1.5h sliced to Support → 0.5h QA, 1.5h Support
     // Period 3: 1h QA
@@ -61,14 +61,14 @@ describe('buildMonthGrid', () => {
         ],
       },
     }
-    const rows = buildMonthGrid({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
 
     expect(rows[0]!.workedHours).toBe(8)
     expect(rows[0]!.autoCategoryHours).toBe(5)
   })
 
   it('classifies weekends automatically', () => {
-    const rows = buildMonthGrid({ year: 2026, month: 5, monthData: {}, dayTypes: new Map() })
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData: {}, dayTypes: new Map() })
 
     expect(rows[0]!.dayType).toBe('WorkDay') // May 1 = Friday
     expect(rows[1]!.dayType).toBe('Weekend') // May 2 = Saturday
@@ -77,7 +77,7 @@ describe('buildMonthGrid', () => {
   })
 
   it('uses explicit dayType from map over auto-classification', () => {
-    const rows = buildMonthGrid({
+    const rows = buildMonthTable({
       year: 2026,
       month: 5,
       monthData: {},
@@ -91,7 +91,7 @@ describe('buildMonthGrid', () => {
     const monthData: MonthData = {
       '2026-05-01': { windows: [], dayTypeOverride: 'Vacation' },
     }
-    const rows = buildMonthGrid({
+    const rows = buildMonthTable({
       year: 2026,
       month: 5,
       monthData,

@@ -3,7 +3,7 @@ import type { Day, MonthData } from '../repositories/types'
 import { calculateWorkedHours } from './worktime'
 import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from './periodCategories'
 
-export interface MonthGridRow {
+export interface MonthTableRow {
   date: string
   dayType: DayType
   workedHours: number
@@ -13,7 +13,7 @@ export interface MonthGridRow {
   hasUnaccountedHours: boolean
 }
 
-export interface MonthGridInput {
+export interface MonthTableInput {
   year: number
   month: number
   monthData: MonthData
@@ -38,7 +38,7 @@ function buildDayRow(
   month: number,
   dayData: Day | undefined,
   dayTypes: Map<string, DayType>,
-): MonthGridRow {
+): MonthTableRow {
   const workedHours = calculateWorkedHours(dayData?.windows ?? [])
   const categoryHours = calculateCategoryHours(dayData?.windows ?? [])
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
@@ -58,10 +58,10 @@ function buildDayRow(
   }
 }
 
-export function buildMonthGrid(input: MonthGridInput): MonthGridRow[] {
+export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
   const { year, month, monthData, dayTypes } = input
   const totalDays = new Date(year, month, 0).getDate()
-  const rows: MonthGridRow[] = []
+  const rows: MonthTableRow[] = []
   for (let d = 1; d <= totalDays; d++) {
     const date = padDay(year, month, d)
     rows.push(buildDayRow(date, d, year, month, monthData[date], dayTypes))

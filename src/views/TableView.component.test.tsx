@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MonthGridView } from './MonthGridView'
+import { TableView } from './TableView'
 import { RepositoryProvider } from '../repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../repositories/in-memory/config-repository'
@@ -25,11 +25,11 @@ vi.mock('../hooks/useMonthSummaries', () => ({
   useMonthSummaries: vi.fn(),
 }))
 
-vi.mock('../components/MonthGrid', () => ({
+vi.mock('../components/MonthTable', () => ({
   MonthGrid: ({ onClearDay, expanded }: { onClearDay?: (date: string) => void; expanded?: boolean }) =>
     createElement(
       'div',
-      { 'data-testid': 'month-grid', 'data-expanded': String(expanded ?? false) },
+      { 'data-testid': 'month-table', 'data-expanded': String(expanded ?? false) },
       onClearDay
         ? createElement('button', { onClick: () => onClearDay('2026-06-05'), 'aria-label': 'trigger-clear-day' }, '×')
         : null,
@@ -77,15 +77,15 @@ function makeWrapper(monthRepo?: InMemoryMonthRepository) {
   }
 }
 
-describe('MonthGridView', () => {
+describe('TableView', () => {
   beforeEach(() => {
     stubSummaries()
   })
 
   describe('layout order', () => {
     it('Reset all button appears after the grid', () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
-      const grid = screen.getByTestId('month-grid')
+      render(<TableView />, { wrapper: makeWrapper() })
+      const grid = screen.getByTestId('month-table')
       const resetBtn = screen.getByRole('button', { name: /reset all/i })
       expect(grid.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
@@ -93,13 +93,13 @@ describe('MonthGridView', () => {
 
   describe('Reset all button appearance', () => {
     it('is semi-transparent at rest', () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
+      render(<TableView />, { wrapper: makeWrapper() })
       const resetBtn = screen.getByRole('button', { name: /reset all/i })
       expect(resetBtn.className).toMatch(/opacity-50/)
     })
 
     it('becomes fully visible on hover via class', () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
+      render(<TableView />, { wrapper: makeWrapper() })
       const resetBtn = screen.getByRole('button', { name: /reset all/i })
       expect(resetBtn.className).toMatch(/hover:opacity-100/)
     })
@@ -107,52 +107,52 @@ describe('MonthGridView', () => {
 
   describe('grid expand toggle', () => {
     it('renders an expand button', () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
-      expect(screen.getByRole('button', { name: /expand grid/i })).toBeInTheDocument()
+      render(<TableView />, { wrapper: makeWrapper() })
+      expect(screen.getByRole('button', { name: /expand table/i })).toBeInTheDocument()
     })
 
     it('grid starts collapsed (expanded=false)', () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
-      expect(screen.getByTestId('month-grid').dataset.expanded).toBe('false')
+      render(<TableView />, { wrapper: makeWrapper() })
+      expect(screen.getByTestId('month-table').dataset.expanded).toBe('false')
     })
 
     it('clicking expand passes expanded=true to grid', async () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
-      expect(screen.getByTestId('month-grid').dataset.expanded).toBe('true')
+      render(<TableView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
+      expect(screen.getByTestId('month-table').dataset.expanded).toBe('true')
     })
 
     it('clicking expand again collapses grid', async () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
-      await userEvent.click(screen.getByRole('button', { name: /collapse grid/i }))
-      expect(screen.getByTestId('month-grid').dataset.expanded).toBe('false')
+      render(<TableView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
+      await userEvent.click(screen.getByRole('button', { name: /collapse table/i }))
+      expect(screen.getByTestId('month-table').dataset.expanded).toBe('false')
     })
 
     it('shows overlay container when expanded', async () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
-      expect(screen.getByTestId('grid-overlay')).toBeInTheDocument()
+      render(<TableView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
+      expect(screen.getByTestId('table-overlay')).toBeInTheDocument()
     })
 
     it('hides OvertimeBar when expanded', async () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
+      render(<TableView />, { wrapper: makeWrapper() })
       expect(screen.getByRole('status')).toBeInTheDocument()
-      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
+      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
     })
 
     it('removes overlay when collapsed', async () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand grid/i }))
-      await userEvent.click(screen.getByRole('button', { name: /collapse grid/i }))
-      expect(screen.queryByTestId('grid-overlay')).not.toBeInTheDocument()
+      render(<TableView />, { wrapper: makeWrapper() })
+      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
+      await userEvent.click(screen.getByRole('button', { name: /collapse table/i }))
+      expect(screen.queryByTestId('table-overlay')).not.toBeInTheDocument()
     })
   })
 
   describe('clear day', () => {
     it('clicking X in grid shows confirm dialog', async () => {
-      render(<MonthGridView />, { wrapper: makeWrapper() })
+      render(<TableView />, { wrapper: makeWrapper() })
       await userEvent.click(screen.getByRole('button', { name: /trigger-clear-day/i }))
       expect(screen.getByRole('heading', { name: /clear data for/i })).toBeInTheDocument()
     })
@@ -163,7 +163,7 @@ describe('MonthGridView', () => {
           '2026-06-05': { windows: [w('a', '09:00', '10:00')] },
         },
       })
-      render(<MonthGridView />, { wrapper: makeWrapper(monthRepo) })
+      render(<TableView />, { wrapper: makeWrapper(monthRepo) })
       await userEvent.click(screen.getByRole('button', { name: /trigger-clear-day/i }))
       await userEvent.click(screen.getByRole('button', { name: /clear day/i }))
       await waitFor(async () => {
@@ -178,7 +178,7 @@ describe('MonthGridView', () => {
           '2026-06-05': { windows: [w('a', '09:00', '10:00')] },
         },
       })
-      render(<MonthGridView />, { wrapper: makeWrapper(monthRepo) })
+      render(<TableView />, { wrapper: makeWrapper(monthRepo) })
       await userEvent.click(screen.getByRole('button', { name: /trigger-clear-day/i }))
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
       const data = await monthRepo.getMonth(2026, 6)

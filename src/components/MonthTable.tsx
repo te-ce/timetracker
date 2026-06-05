@@ -5,7 +5,7 @@ import type { MonthRepository, WorkLocation } from '../repositories/types'
 import type { DayType } from '../domain/dayType'
 import { isDayTypeOverride } from '../domain/dayType'
 import { classifyDay } from '../domain/dayStatus'
-import { buildMonthGrid } from '../domain/monthGrid'
+import { buildMonthTable } from '../domain/monthTable'
 import { getAllCategories } from '../domain/categories'
 import { computeSprintGroups } from '../domain/sprintGroups'
 import { WorkedHoursCell } from './WorkedHoursCell'
@@ -14,7 +14,7 @@ import { DotPopoverPanel } from './DotPopoverPanel'
 import { NotePopoverPanel } from './NotePopoverPanel'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { toLocalIso } from '../domain/dateUtils'
-import type { MonthGridRow } from '../domain/monthGrid'
+import type { MonthTableRow } from '../domain/monthTable'
 import type { DotPopoverState } from './DotPopoverPanel'
 import type { NotePopoverState } from './NotePopoverPanel'
 import { STATUS_DOT, STATUS_ROW_BG } from '../domain/statusColors'
@@ -41,7 +41,7 @@ function saveDayTypeInRepo(repository: MonthRepository, date: string, value: str
   return Promise.resolve()
 }
 
-function classifyRow(row: MonthGridRow, autoCategory: string | null, confirmedDays: Set<string>, today: string) {
+function classifyRow(row: MonthTableRow, autoCategory: string | null, confirmedDays: Set<string>, today: string) {
   const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
   return classifyDay({
     dayType: row.dayType,
@@ -225,7 +225,7 @@ export function MonthGrid({
   }
 
   const gridConfirmMutation = useMutation({
-    mutationFn: (row: MonthGridRow) => confirmDayInRepo(repository, row.date),
+    mutationFn: (row: MonthTableRow) => confirmDayInRepo(repository, row.date),
     onSuccess: invalidate,
   })
 
@@ -252,9 +252,9 @@ export function MonthGrid({
     onSuccess: invalidate,
   })
 
-  const rows = buildMonthGrid({ year, month, monthData, dayTypes })
+  const rows = buildMonthTable({ year, month, monthData, dayTypes })
 
-  function getCellValue(row: MonthGridRow, category: string): string {
+  function getCellValue(row: MonthTableRow, category: string): string {
     const manual = row.entries[category] ?? 0
     const autoHours = category === autoCategory ? row.autoCategoryHours : 0
     const val = manual + autoHours
@@ -267,7 +267,7 @@ export function MonthGrid({
     locationMutation.mutate({ date, location: next })
   }
 
-  function handleDotClick(e: React.MouseEvent<HTMLButtonElement>, row: MonthGridRow) {
+  function handleDotClick(e: React.MouseEvent<HTMLButtonElement>, row: MonthTableRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')
     const { displayStatus, reason } = classifyRow(row, autoCategory, confirmedDays, todayIso)
@@ -344,7 +344,7 @@ export function MonthGrid({
 
   return (
     <div className={outerContainerClass(expanded)}>
-      <div data-testid="grid-scroll-container" className={scrollContainerClass(expanded)}>
+      <div data-testid="table-scroll-container" className={scrollContainerClass(expanded)}>
         <table className="w-full text-sm border-collapse" role="table">
           <thead className="sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm">
             <tr>

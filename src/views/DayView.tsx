@@ -221,10 +221,10 @@ export function DayView() {
       <div className="flex justify-end">
         <button
           onClick={() => setShowResetConfirm(true)}
-          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30"
+          className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30"
           aria-label="Reset all data for this day"
         >
-          Reset all
+          Reset
         </button>
       </div>
 

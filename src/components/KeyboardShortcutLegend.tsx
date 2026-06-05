@@ -7,7 +7,7 @@ interface Props {
 
 const SHORTCUTS: { keys: string[]; description: string }[] = [
   { keys: ['M'], description: 'Go to Month view' },
-  { keys: ['G'], description: 'Go to Grid view' },
+  { keys: ['G'], description: 'Go to Table view' },
   { keys: ['D'], description: 'Go to Day view (today)' },
   { keys: ['S'], description: 'Go to Sprint view' },
   { keys: ['T'], description: 'Jump to today' },

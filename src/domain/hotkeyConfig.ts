@@ -1,6 +1,6 @@
 export type InAppShortcutAction =
   | 'monthView'
-  | 'gridView'
+  | 'tableView'
   | 'dayView'
   | 'sprintView'
   | 'today'
@@ -22,7 +22,7 @@ export const HOTKEY_DEFAULTS: {
   globalToggle: 'CommandOrControl+Shift+Space',
   inApp: {
     monthView: 'M',
-    gridView: 'G',
+    tableView: 'G',
     dayView: 'D',
     sprintView: 'S',
     today: 'T',
@@ -57,10 +57,7 @@ export function matchesShortcut(
   return key.toLowerCase() === keyPart.toLowerCase()
 }
 
-export function getEffectiveShortcut(
-  config: HotkeyConfig,
-  action: InAppShortcutAction,
-): string | null {
+export function getEffectiveShortcut(config: HotkeyConfig, action: InAppShortcutAction): string | null {
   if (action in config.inApp) {
     return config.inApp[action] ?? null
   }

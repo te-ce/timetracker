@@ -37,7 +37,7 @@ function IconCalendar() {
   )
 }
 
-function IconGrid() {
+function IconTable() {
   return (
     <svg
       className="h-4 w-4"
@@ -114,7 +114,7 @@ function IconSettings() {
 const NAV_ITEMS: { label: string; icon: React.ReactNode; to: string }[] = [
   { label: 'Day', icon: <IconDay />, to: '/' },
   { label: 'Month', icon: <IconCalendar />, to: '/month' },
-  { label: 'Grid', icon: <IconGrid />, to: '/grid' },
+  { label: 'Table', icon: <IconTable />, to: '/table' },
   { label: 'Sprint', icon: <IconBolt />, to: '/sprint' },
   { label: 'Settings', icon: <IconSettings />, to: '/settings' },
 ]
@@ -338,8 +338,8 @@ function App() {
         }
         if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
           void navigate({ to: '/month', search: defaultMonthSearch })
-        } else if (matchesShortcut(hotkeyConfig, 'gridView', e.key, ctrl, shift)) {
-          void navigate({ to: '/grid', search: defaultMonthSearch })
+        } else if (matchesShortcut(hotkeyConfig, 'tableView', e.key, ctrl, shift)) {
+          void navigate({ to: '/table', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
           void navigate({ to: '/', search: { date: toLocalIso(new Date()) } })
         } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {

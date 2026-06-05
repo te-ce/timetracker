@@ -12,7 +12,7 @@ describe('KeyboardShortcutLegend', () => {
   it('lists all shortcut descriptions', () => {
     render(<KeyboardShortcutLegend onClose={() => {}} />)
     expect(screen.getByText(/go to month view/i)).toBeInTheDocument()
-    expect(screen.getByText(/go to grid view/i)).toBeInTheDocument()
+    expect(screen.getByText(/go to table view/i)).toBeInTheDocument()
     expect(screen.getByText(/jump to today/i)).toBeInTheDocument()
     expect(screen.getByText(/undo last change/i)).toBeInTheDocument()
   })

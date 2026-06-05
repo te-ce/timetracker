@@ -4,14 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../repositories/RepositoryContext'
 import type { ConfigRepository } from '../repositories/types'
 import { renameCategoryAcrossAllMonths } from '../domain/categoryMutations'
-import { MonthGrid } from '../components/MonthGrid'
+import { MonthGrid } from '../components/MonthTable'
 import { MonthNav } from '../components/MonthNav'
 import { OvertimeBar } from '../components/OvertimeBar'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { StatusLegend } from '../components/StatusLegend'
 import { QUERY_KEYS } from '../hooks/queryKeys'
 import { useMonthSummaries } from '../hooks/useMonthSummaries'
-import { resolveGridConfig } from './gridConfig'
+import { resolveTableConfig } from './tableConfig'
 
 function calcOfficePercent(officeDays: number, totalWorkDays: number): number {
   if (totalWorkDays === 0) return 0
@@ -28,7 +28,7 @@ async function saveAutoCategory(configRepo: ConfigRepository, category: string):
   await configRepo.save({ ...cfg, autoCategory: category })
 }
 
-export function MonthGridView() {
+export function TableView() {
   const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
   const today = new Date()
@@ -100,9 +100,9 @@ export function MonthGridView() {
     year: 'numeric',
   })
 
-  const gridConfig = resolveGridConfig(config)
+  const gridConfig = resolveTableConfig(config)
 
-  const grid = (
+  const table = (
     <MonthGrid
       year={year}
       month={month}
@@ -131,7 +131,7 @@ export function MonthGridView() {
   const expandBtn = (
     <button
       onClick={() => setExpanded((e) => !e)}
-      aria-label={expanded ? 'Collapse grid' : 'Expand grid'}
+      aria-label={expanded ? 'Collapse table' : 'Expand table'}
       aria-pressed={expanded}
       className="rounded border px-2 py-1 text-xs text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
     >
@@ -187,12 +187,12 @@ export function MonthGridView() {
 
   if (expanded) {
     return (
-      <div data-testid="grid-overlay" className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
+      <div data-testid="table-overlay" className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} compact />
           {expandBtn}
         </div>
-        <div className="flex-1 min-h-0 px-4 py-2">{grid}</div>
+        <div className="flex-1 min-h-0 px-4 py-2">{table}</div>
         <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 shrink-0">{footer}</div>
         {dialogs}
       </div>
@@ -212,7 +212,7 @@ export function MonthGridView() {
         officePercent={officePercent}
       />
       <div className="flex justify-end">{expandBtn}</div>
-      {grid}
+      {table}
       {footer}
       {dialogs}
     </div>

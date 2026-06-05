@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryMonthRepository } from '../repositories/in-memory'
-import { MonthGrid } from './MonthGrid'
+import { MonthGrid } from './MonthTable'
 import { DEFAULT_CATEGORIES, UNCATEGORIZED_CATEGORY } from '../repositories/types'
 import type { MonthData, WorkPeriod } from '../repositories/types'
 
@@ -576,26 +576,26 @@ describe('MonthGrid', () => {
   describe('expand prop', () => {
     it('scroll container has max-h class when not expanded', () => {
       setup()
-      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      const scrollContainer = screen.getByTestId('table-scroll-container')
       expect(scrollContainer.className).toContain('max-h-[75vh]')
     })
 
     it('scroll container has no max-h class when expanded', () => {
       setup({ expanded: true })
-      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      const scrollContainer = screen.getByTestId('table-scroll-container')
       expect(scrollContainer.className).not.toContain('max-h-[75vh]')
     })
 
     it('scroll container has flex-1 and min-h-0 when expanded', () => {
       setup({ expanded: true })
-      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      const scrollContainer = screen.getByTestId('table-scroll-container')
       expect(scrollContainer.className).toContain('flex-1')
       expect(scrollContainer.className).toContain('min-h-0')
     })
 
     it('outer container has h-full when expanded', () => {
       setup({ expanded: true })
-      const scrollContainer = screen.getByTestId('grid-scroll-container')
+      const scrollContainer = screen.getByTestId('table-scroll-container')
       expect(scrollContainer.parentElement?.className).toContain('h-full')
     })
   })

@@ -2,7 +2,7 @@ import { createRootRoute, createRoute, createRouter, createHashHistory } from '@
 import App from '../App'
 import { DayView } from '../views/DayView'
 import { MonthView } from '../views/MonthView'
-import { MonthGridView } from '../views/MonthGridView'
+import { TableView } from '../views/TableView'
 import { SprintView } from '../views/SprintView'
 import { SettingsView } from '../views/SettingsView'
 import { toLocalIso } from '../domain/dateUtils'
@@ -34,10 +34,10 @@ const monthRoute = createRoute({
   },
 })
 
-const gridRoute = createRoute({
+const tableRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/grid',
-  component: MonthGridView,
+  path: '/table',
+  component: TableView,
   validateSearch: (search: Record<string, unknown>) => {
     const now = new Date()
     return {
@@ -62,7 +62,7 @@ const settingsRoute = createRoute({
   component: SettingsView,
 })
 
-const routeTree = rootRoute.addChildren([dayRoute, monthRoute, gridRoute, sprintRoute, settingsRoute])
+const routeTree = rootRoute.addChildren([dayRoute, monthRoute, tableRoute, sprintRoute, settingsRoute])
 
 const history = typeof window !== 'undefined' && window.location.protocol === 'file:' ? createHashHistory() : undefined
 
