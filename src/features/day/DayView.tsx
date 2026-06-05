@@ -9,6 +9,7 @@ import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
 import { QUERY_KEYS } from '../../shared/queryKeys'
+import { findOpenPeriod } from '../../shared/worktime'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
 
@@ -151,7 +152,7 @@ export function DayView() {
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
-  const liveWindowStart = windows.find((w) => w.end === null)?.start
+  const liveWindowStart = findOpenPeriod(windows)?.start
   const officeStats = totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
 
   function prevDay() {

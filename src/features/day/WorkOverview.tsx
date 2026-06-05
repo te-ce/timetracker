@@ -3,7 +3,7 @@ import type { WorkPeriod, WorkPeriodSubtask, MonthRepository } from '../../infra
 import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import { mergeAdjacentInto } from './workPeriodMerge'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
-import { calculateWorkedHours, calcSubtaskHours } from '../../shared/worktime'
+import { calculateWorkedHours, calcSubtaskHours, findOpenPeriod } from '../../shared/worktime'
 import { getAllCategories } from '../../shared/categories'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
@@ -1173,7 +1173,7 @@ export function WorkOverview({
 }: Props) {
   const mutations = useWorkPeriodMutations(repository)
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
-  const openPeriod = windows.find((w) => w.end === null) ?? null
+  const openPeriod = findOpenPeriod(windows) ?? null
   const categories = getAllCategories(customCategories, categoryOrder)
   const defaultCategory = autoCategory ?? UNCATEGORIZED_CATEGORY
   const nowTime = useNow()

@@ -21,6 +21,7 @@ import {
   stopPeriod as doStopPeriod,
 } from '../../../features/day/dayUpdaters'
 import { mergeAdjacentInto } from '../../../features/day/workPeriodMerge'
+import { hasOpenPeriod, findOpenPeriod } from '../../../shared/worktime'
 
 function monthKey(year: number, month: number): string {
   return `months/${year}-${String(month).padStart(2, '0')}.json`
@@ -193,7 +194,7 @@ export class CloudMonthRepository implements MonthRepository {
     const year = parseInt(date.slice(0, 4))
     const month = parseInt(date.slice(5, 7))
     const monthData = await this.getMonth(year, month)
-    if (monthData[date]?.windows.some((w) => w.end === null)) return
+    if (hasOpenPeriod(monthData[date]?.windows ?? [])) return
     await this.updateDay(date, (day) => ({
       ...day,
       windows: [...day.windows, { id: crypto.randomUUID(), start: now, end: null, category, subtasks: [] }],
@@ -205,9 +206,8 @@ export class CloudMonthRepository implements MonthRepository {
     const month = parseInt(date.slice(5, 7))
     const monthData = await this.getMonth(year, month)
     const dayWindows = monthData[date]?.windows ?? []
-    const open = dayWindows.filter((w) => w.end === null)
-    if (open.length === 0) return
-    const latest = open.reduce((a, b) => (a.start > b.start ? a : b))
+    const latest = findOpenPeriod(dayWindows)
+    if (!latest) return
     const closed = { ...latest, end: now, category }
     const { merged, absorbed } = mergeAdjacentInto(dayWindows, closed)
     await this.updateDay(date, (day) => ({

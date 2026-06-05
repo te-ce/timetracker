@@ -5,6 +5,14 @@ export type Restarbeitszeit = {
   isOvertime: boolean
 }
 
+export function hasOpenPeriod(windows: WorkPeriod[]): boolean {
+  return windows.some((w) => w.end === null)
+}
+
+export function findOpenPeriod(windows: WorkPeriod[]): WorkPeriod | undefined {
+  return windows.find((w) => w.end === null)
+}
+
 function parseMinutes(time: string): number {
   const parts = time.split(':').map(Number)
   const h = parts[0] ?? 0

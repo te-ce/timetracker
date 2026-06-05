@@ -63,6 +63,8 @@ export interface Day {
 
 export type MonthData = Record<string, Day>
 
+export type DayOverrides = Pick<Day, 'autoCategoryOverride' | 'dayTypeOverride'>
+
 export type DatedTimeEntry = TimeEntry & { date: string }
 
 export interface MonthRepository {
@@ -126,6 +128,9 @@ export interface ConfigRepository {
   get(): Promise<AppConfig>
   save(config: AppConfig): Promise<void>
 }
+
+export type SprintScheduleConfig = Pick<AppConfig, 'sprintLengthDays' | 'sprintStartDate'>
+export type SprintExportConfig = Pick<AppConfig, 'categoryMapping' | 'targetSheet' | 'sharepointUrl' | 'localExcelFile'>
 
 export interface SprintExport {
   sprintIndex: number

@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { getAllCategories } from '../../shared/categories'
+import { getAllCategories, isValidCustomCategoryName } from '../../shared/categories'
 
 interface Props {
   repository: ConfigRepository
@@ -34,7 +34,7 @@ export function CustomCategorySettings({ repository }: Props) {
 
   function handleAdd() {
     const trimmed = newCategory.trim()
-    if (!trimmed || categories.includes(trimmed)) return
+    if (!isValidCustomCategoryName(trimmed) || categories.includes(trimmed)) return
     const newCustom = [...customCategories, trimmed]
     const newOrder = [...categories, trimmed]
     saveMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })

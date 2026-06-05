@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { calculateWorkedHours, calculateRestarbeitszeit, calcSubtaskHours } from './worktime'
+import {
+  calculateWorkedHours,
+  calculateRestarbeitszeit,
+  calcSubtaskHours,
+  hasOpenPeriod,
+  findOpenPeriod,
+} from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
 const makeWindow = (start: string, end: string | null): WorkPeriod => ({
@@ -67,6 +73,45 @@ describe('calcSubtaskHours', () => {
 
   it('handles midnight crossing (23:00 → 01:00 = 2h)', () => {
     expect(calcSubtaskHours('23:00', '01:00')).toBe(2)
+  })
+})
+
+describe('hasOpenPeriod', () => {
+  it('returns false for empty list', () => {
+    expect(hasOpenPeriod([])).toBe(false)
+  })
+
+  it('returns false when all periods are closed', () => {
+    expect(hasOpenPeriod([makeWindow('09:00', '10:00'), makeWindow('11:00', '12:00')])).toBe(false)
+  })
+
+  it('returns true when any period has end === null', () => {
+    expect(hasOpenPeriod([makeWindow('09:00', null)])).toBe(true)
+  })
+
+  it('returns true when open period is mixed with closed ones', () => {
+    expect(hasOpenPeriod([makeWindow('09:00', '10:00'), makeWindow('11:00', null)])).toBe(true)
+  })
+})
+
+describe('findOpenPeriod', () => {
+  it('returns undefined for empty list', () => {
+    expect(findOpenPeriod([])).toBeUndefined()
+  })
+
+  it('returns undefined when all periods are closed', () => {
+    expect(findOpenPeriod([makeWindow('09:00', '10:00')])).toBeUndefined()
+  })
+
+  it('returns the open period', () => {
+    const open = makeWindow('11:00', null)
+    expect(findOpenPeriod([makeWindow('09:00', '10:00'), open])).toBe(open)
+  })
+
+  it('returns the first open period in the list', () => {
+    const first = makeWindow('09:00', null)
+    const second = { ...makeWindow('11:00', null), id: '2' }
+    expect(findOpenPeriod([first, second])).toBe(first)
   })
 })
 

@@ -1,5 +1,9 @@
 import { DEFAULT_CATEGORIES } from '../infra/repositories/types'
 
+export function isValidCustomCategoryName(name: string): boolean {
+  return name.trim().length > 0 && !name.startsWith('_')
+}
+
 /**
  * Merge default categories with user-defined custom categories.
  * If categoryOrder is provided, use it as the source of truth (filtering out removed ones).

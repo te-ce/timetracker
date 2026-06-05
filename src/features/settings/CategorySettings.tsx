@@ -4,7 +4,7 @@ import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import type { ExcelRow } from '../excel'
 import { buildWorkbookService } from '../excel'
-import { getAllCategories } from '../../shared/categories'
+import { getAllCategories, isValidCustomCategoryName } from '../../shared/categories'
 import { autoMatchCategories } from './excelMapping'
 import { useAuthStore } from '../../shared/authStore'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
@@ -383,7 +383,7 @@ export function CategorySettings({ repository }: Props) {
 
   function handleAdd() {
     const trimmed = newCategory.trim()
-    if (!trimmed || categories.includes(trimmed)) return
+    if (!isValidCustomCategoryName(trimmed) || categories.includes(trimmed)) return
     const newCustom = [...customCategories, trimmed]
     const newOrder = [...categories, trimmed]
     categoryMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })

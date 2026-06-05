@@ -5,6 +5,7 @@ import { calculateOvertimeToDate } from '../features/month/monthStats'
 import { toLocalIso } from './dateUtils'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
+import { findOpenPeriod } from './worktime'
 import type { DayTypeOverride, MonthData, WorkLocation } from '../infra/repositories/types'
 
 interface MonthMaps {
@@ -23,7 +24,7 @@ function findTodayLiveWindowStart(
   const todayYear = parseInt(todayIso.slice(0, 4))
   const todayMonth = parseInt(todayIso.slice(5, 7))
   if (year !== todayYear || month !== todayMonth) return undefined
-  return monthData[todayIso]?.windows.find((w) => w.end === null)?.start
+  return findOpenPeriod(monthData[todayIso]?.windows ?? [])?.start
 }
 
 function extractMonthMaps(monthData: MonthData): MonthMaps {

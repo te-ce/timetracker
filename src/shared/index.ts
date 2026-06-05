@@ -4,7 +4,7 @@ export { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 export { useAuthStore } from './authStore'
 export { AutoCategoryResult, calculateAutoCategory, resolveAutoCategory } from './autoCategory'
 export { btn } from './buttonVariants'
-export { getAllCategories } from './categories'
+export { getAllCategories, isValidCustomCategoryName } from './categories'
 export { toLocalIso, parseLocalDate } from './dateUtils'
 export { DayStatus, ClassifyDayInput, DayClassification, classifyDay } from './dayStatus'
 export { formatHours, formatHoursCompact } from './formatHours'
@@ -38,4 +38,11 @@ export { useMonthSummaries } from './useMonthSummaries'
 export { useMsalSync } from './useMsalSync'
 export { usePrefetchCurrentMonth } from './usePrefetchCurrentMonth'
 export { useRemainingHours } from './useRemainingHours'
-export { Restarbeitszeit, calculateWorkedHours, calcSubtaskHours, calculateRestarbeitszeit } from './worktime'
+export {
+  Restarbeitszeit,
+  calculateWorkedHours,
+  calcSubtaskHours,
+  calculateRestarbeitszeit,
+  hasOpenPeriod,
+  findOpenPeriod,
+} from './worktime'
