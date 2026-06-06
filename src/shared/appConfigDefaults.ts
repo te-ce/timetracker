@@ -10,4 +10,5 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   sharepointUrl: null,
   targetSheet: null,
   categoryMapping: {},
+  showOvertimeBar: true,
 }

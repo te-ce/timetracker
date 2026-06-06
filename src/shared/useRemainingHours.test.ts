@@ -49,22 +49,77 @@ afterEach(() => {
 
 describe('useRemainingHours', () => {
   describe('remaining calculation', () => {
-    it('returns sollstunden minus workedHours', () => {
+    it('returns sollstunden minus workedHours when no priorOvertime', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3 })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(5)
     })
 
-    it('clamps remaining to 0 when workedHours exceeds sollstunden', () => {
+    it('subtracts priorOvertime from remaining', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3, overtimeToDate: makeOvertimeToDate(1) })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(4)
+    })
+
+    it('returns negative remaining when overtime (no clamping)', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 9 })
       const { result } = renderHook(() => useRemainingHours())
-      expect(result.current.remaining).toBe(0)
+      expect(result.current.remaining).toBeCloseTo(-1)
     })
 
     it('returns 0 remaining when exactly at sollstunden', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 8 })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBe(0)
+    })
+
+    it('negative priorOvertime (undertime carry-over) increases remaining', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3, overtimeToDate: makeOvertimeToDate(-1) })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(6)
+    })
+  })
+
+  describe('summary string', () => {
+    it('returns summary with target, carry-over and worked', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3, overtimeToDate: makeOvertimeToDate(1) })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.summary).toMatch(/8/)
+      expect(result.current.summary).toMatch(/overtime carry-over/)
+      expect(result.current.summary).toMatch(/worked today/)
+      expect(result.current.summary).toMatch(/remaining/)
+    })
+
+    it('shows overtime today when remaining is negative', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 10 })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.summary).toMatch(/overtime today/)
+    })
+
+    it('shows Done when remaining is 0', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 8 })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.summary).toMatch(/Done/)
+    })
+  })
+
+  describe('office stats pass-through', () => {
+    it('returns officeDays from the query', () => {
+      stubDayQuery({ officeDays: 12 })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.officeDays).toBe(12)
+    })
+
+    it('returns totalWorkDays from the query', () => {
+      stubDayQuery({ totalWorkDays: 20 })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.totalWorkDays).toBe(20)
+    })
+
+    it('returns officePercent from the query', () => {
+      stubDayQuery({ officePercent: 65 })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.officePercent).toBe(65)
     })
   })
 
@@ -97,6 +152,12 @@ describe('useRemainingHours', () => {
 
     it('sets title to plain "Timetracker" when goal is reached', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 8 })
+      renderHook(() => useRemainingHours())
+      expect(document.title).toBe('Timetracker')
+    })
+
+    it('sets title to plain "Timetracker" when overtime', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 9 })
       renderHook(() => useRemainingHours())
       expect(document.title).toBe('Timetracker')
     })

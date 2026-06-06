@@ -9,6 +9,7 @@ import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/mont
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemoryTimeTrackingRepository } from '../../infra/repositories/in-memory/time-tracking-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -115,6 +116,30 @@ describe('MonthView', () => {
     it('does not show current elapsed time when no open window', () => {
       render(<MonthView />, { wrapper: makeWrapper() })
       expect(screen.queryByText(/current/)).not.toBeInTheDocument()
+    })
+  })
+
+  describe('OvertimeBar visibility', () => {
+    it('renders OvertimeBar by default', () => {
+      render(<MonthView />, { wrapper: makeWrapper() })
+      expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+
+    it('hides OvertimeBar when showOvertimeBar is false in config', () => {
+      vi.mocked(useMonthSummaries).mockReturnValue({
+        config: { ...DEFAULT_APP_CONFIG, showOvertimeBar: false },
+        summaries: { days: [], workDayCount: 0, workedHoursPerDay: [], hasAnyTrackedHours: false },
+        dayTypeOverrides: new Map(),
+        workLocations: new Map(),
+        confirmedDays: new Set(),
+        dayNotes: new Map(),
+        overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
+        sollstunden: 8,
+        todayIso: '2026-06-05',
+        todayLiveWindowStart: undefined,
+      })
+      render(<MonthView />, { wrapper: makeWrapper() })
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
     })
   })
 

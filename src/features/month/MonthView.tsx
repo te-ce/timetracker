@@ -39,10 +39,8 @@ export function MonthView() {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
   })
 
-  const { summaries, overtimeToDate, workLocations, sollstunden, dayNotes, todayLiveWindowStart } = useMonthSummaries(
-    year,
-    month,
-  )
+  const { config, summaries, overtimeToDate, workLocations, sollstunden, dayNotes, todayLiveWindowStart } =
+    useMonthSummaries(year, month)
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
@@ -58,19 +56,23 @@ export function MonthView() {
   }
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
 
+  const showOvertimeBar = config?.showOvertimeBar !== false
+
   return (
     <div className="flex flex-col gap-6">
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
-      <OvertimeBar
-        sollstunden={sollstunden}
-        priorOvertime={overtimeToDate.priorOvertime}
-        workedToday={overtimeToDate.workedToday}
-        activeTrackingStartedAt={activeTracking?.startedAt}
-        liveWindowStart={todayLiveWindowStart}
-        officeDays={officeDays}
-        totalWorkDays={trackedWorkDays.length}
-        officePercent={officePercent}
-      />
+      {showOvertimeBar && (
+        <OvertimeBar
+          sollstunden={sollstunden}
+          priorOvertime={overtimeToDate.priorOvertime}
+          workedToday={overtimeToDate.workedToday}
+          activeTrackingStartedAt={activeTracking?.startedAt}
+          liveWindowStart={todayLiveWindowStart}
+          officeDays={officeDays}
+          totalWorkDays={trackedWorkDays.length}
+          officePercent={officePercent}
+        />
+      )}
       <MonthCalendar
         year={year}
         month={month - 1}

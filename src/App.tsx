@@ -244,14 +244,40 @@ function UndoButton() {
 }
 
 function RemainingHoursBadge() {
-  const { remaining } = useRemainingHours()
+  const { remaining, summary } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
-  if (remaining <= 0) return null
-  const label = formatHours(remaining, timeFormat)
+
+  let label: string
+  let badgeClass: string
+  if (remaining > 0) {
+    label = `${formatHours(remaining, timeFormat)} left`
+    badgeClass =
+      'hidden sm:inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400'
+  } else if (remaining === 0) {
+    label = 'Done'
+    badgeClass =
+      'hidden sm:inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
+  } else {
+    label = `${formatHours(Math.abs(remaining), timeFormat)} overtime`
+    badgeClass =
+      'hidden sm:inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
+  }
+
   return (
-    <Tooltip content={`${label} remaining today`} placement="bottom">
-      <span className="hidden sm:inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
-        {label} left
+    <Tooltip content={summary} placement="bottom">
+      <span className={badgeClass}>{label}</span>
+    </Tooltip>
+  )
+}
+
+function OfficeStatsBadge() {
+  const { officeDays, totalWorkDays, officePercent } = useRemainingHours()
+  if (totalWorkDays === 0) return null
+  const tooltipContent = `${officeDays}/${totalWorkDays} days in office this month`
+  return (
+    <Tooltip content={tooltipContent} placement="bottom">
+      <span className="hidden sm:inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs font-medium text-gray-600 dark:text-gray-300">
+        🏢 {officePercent}%
       </span>
     </Tooltip>
   )
@@ -396,6 +422,7 @@ function App() {
           {/* Status indicators */}
           <div className="flex items-center gap-2">
             <RemainingHoursBadge />
+            <OfficeStatsBadge />
             <SyncIndicator />
           </div>
 

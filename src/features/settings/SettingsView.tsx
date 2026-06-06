@@ -1,4 +1,5 @@
 import { AutoCategorySettings } from './AutoCategorySettings'
+import { OvertimeBarSettings } from './OvertimeBarSettings'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
 import { ClearDataSettings } from './ClearDataSettings'
 import { BundeslandSettings } from './BundeslandSettings'
@@ -29,6 +30,7 @@ export function SettingsView() {
       <AutoCategorySettings repository={configRepo} />
       <BundeslandSettings repository={configRepo} />
       <DefaultLocationSettings repository={configRepo} />
+      <OvertimeBarSettings repository={configRepo} />
       {localFolder ? (
         <>
           <AppDataFolderSettings />

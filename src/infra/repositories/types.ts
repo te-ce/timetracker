@@ -122,6 +122,7 @@ export interface AppConfig {
   startMinimized?: boolean
   closeToTray?: boolean
   hotkeys?: import('../../shared/hotkeyConfig').HotkeyConfig
+  showOvertimeBar?: boolean
 }
 
 export interface ConfigRepository {
