@@ -405,6 +405,17 @@ describe('MonthGrid', () => {
   })
 
   describe('today row highlighting', () => {
+    const PINNED_TODAY = '2026-06-15'
+
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${PINNED_TODAY}T12:00:00`))
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
     function setupJune() {
       const repo = new InMemoryMonthRepository({})
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -418,20 +429,20 @@ describe('MonthGrid', () => {
 
     it('today row has amber background', async () => {
       setupJune()
-      const row = await screen.findByRole('row', { name: /2026-06-05/ })
+      const row = await screen.findByRole('row', { name: new RegExp(PINNED_TODAY) })
       expect(row.className).toMatch(/bg-amber/)
     })
 
     it('today worked cell has ring highlight', async () => {
       setupJune()
-      const row = await screen.findByRole('row', { name: /2026-06-05/ })
+      const row = await screen.findByRole('row', { name: new RegExp(PINNED_TODAY) })
       const workedCell = within(row).getByTestId('worked-hours')
       expect(workedCell.className).toMatch(/ring-2/)
     })
 
     it('non-today row does not have ring on worked cell', async () => {
       setupJune()
-      const row = await screen.findByRole('row', { name: /2026-06-04/ })
+      const row = await screen.findByRole('row', { name: /2026-06-14/ })
       const workedCell = within(row).getByTestId('worked-hours')
       expect(workedCell.className).not.toMatch(/ring-2/)
     })
