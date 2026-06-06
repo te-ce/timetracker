@@ -9,6 +9,7 @@ import type {
   WorkPeriodSubtask,
 } from '../types'
 import { JsonRecordStore } from './json-store'
+import { validateDay } from '../configSchema'
 import { calculateCategoryHours } from '../../../shared/periodCategories'
 import {
   upsertWindow,
@@ -55,7 +56,7 @@ export class CloudMonthRepository implements MonthRepository {
   private getStore(year: number, month: number): JsonRecordStore<Day> {
     const key = monthKey(year, month)
     if (!this.stores.has(key)) {
-      this.stores.set(key, new JsonRecordStore<Day>(this.adapter, key))
+      this.stores.set(key, new JsonRecordStore<Day>(this.adapter, key, validateDay))
     }
     return this.stores.get(key)!
   }

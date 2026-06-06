@@ -1,22 +1,43 @@
 import type { StorageAdapter } from '../../storage/adapter'
 
-/**
- * Generic cached collection store for array-shaped JSON blobs.
- * Handles load/cache/persist and provides upsert, remove, and filter.
- */
+type Validator<T> = (v: unknown) => T | null
+
 export class JsonCollectionStore<T> {
   private adapter: StorageAdapter
   private key: string
+  private validate: Validator<T> | undefined
   private cache: T[] | null = null
 
-  constructor(adapter: StorageAdapter, key: string) {
+  constructor(adapter: StorageAdapter, key: string, validate?: Validator<T>) {
     this.adapter = adapter
     this.key = key
+    this.validate = validate
   }
 
   async getAll(): Promise<T[]> {
     if (this.cache) return this.cache
-    this.cache = (await this.adapter.get<T[]>(this.key)) ?? []
+    const raw: unknown = (await this.adapter.get<unknown>(this.key)) ?? []
+    if (!this.validate) {
+      const data: unknown = raw
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      this.cache = data as T[]
+      return this.cache
+    }
+    if (!Array.isArray(raw)) {
+      console.warn(`[JsonCollectionStore] ${this.key}: expected array, got`, typeof raw)
+      this.cache = []
+      return this.cache
+    }
+    const valid: T[] = []
+    for (const item of raw) {
+      const result = this.validate(item)
+      if (result !== null) {
+        valid.push(result)
+      } else {
+        console.warn(`[JsonCollectionStore] ${this.key}: invalid item dropped`, item)
+      }
+    }
+    this.cache = valid
     return this.cache
   }
 
@@ -54,23 +75,42 @@ export class JsonCollectionStore<T> {
   }
 }
 
-/**
- * Generic cached record store for key-value shaped JSON blobs.
- * Handles load/cache/persist and provides set, get, remove, and filterByKeyRange.
- */
 export class JsonRecordStore<V> {
   private adapter: StorageAdapter
   private key: string
+  private validate: Validator<V> | undefined
   private cache: Record<string, V> | null = null
 
-  constructor(adapter: StorageAdapter, key: string) {
+  constructor(adapter: StorageAdapter, key: string, validate?: Validator<V>) {
     this.adapter = adapter
     this.key = key
+    this.validate = validate
   }
 
   async getAll(): Promise<Record<string, V>> {
     if (this.cache) return this.cache
-    this.cache = (await this.adapter.get<Record<string, V>>(this.key)) ?? {}
+    const raw: unknown = (await this.adapter.get<unknown>(this.key)) ?? {}
+    if (!this.validate) {
+      const data: unknown = raw
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      this.cache = data as Record<string, V>
+      return this.cache
+    }
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      console.warn(`[JsonRecordStore] ${this.key}: expected object, got`, typeof raw)
+      this.cache = {}
+      return this.cache
+    }
+    const validated: Record<string, V> = {}
+    for (const [k, v] of Object.entries(raw)) {
+      const result = this.validate(v)
+      if (result !== null) {
+        validated[k] = result
+      } else {
+        console.warn(`[JsonRecordStore] ${this.key}: invalid record for key "${k}" dropped`, v)
+      }
+    }
+    this.cache = validated
     return this.cache
   }
 
