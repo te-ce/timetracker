@@ -2,7 +2,8 @@
 export default {
   testRunner: 'vitest',
   vitest: {
-    configFile: 'vite.config.ts',
+    configFile: 'vitest.config.ts',
+    related: false,
   },
   mutate: ['src/domain/**/*.ts', '!src/domain/**/*.test.ts'],
   reporters: ['html', 'clear-text', 'progress'],
@@ -10,4 +11,5 @@ export default {
   thresholds: { high: 80, low: 60, break: 50 },
   coverageAnalysis: 'perTest',
   ignoreStatic: true,
+  ignorePatterns: ['dist', 'dist-electron', 'reports'],
 }
