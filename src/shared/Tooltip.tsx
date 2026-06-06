@@ -62,7 +62,7 @@ export function Tooltip({ content, children, placement = 'top' }: TooltipProps) 
               left: coords.left,
               transform: `translateX(-50%) translateY(${transformY})`,
             }}
-            className="bg-gray-800 dark:bg-gray-700 text-white text-xs rounded px-2.5 py-1.5 shadow-lg pointer-events-none whitespace-nowrap max-w-52 z-[9999]"
+            className="bg-gray-800 dark:bg-gray-700 text-white text-xs rounded px-2.5 py-1.5 shadow-lg pointer-events-none max-w-52 break-words z-[9999]"
           >
             {content}
           </div>,

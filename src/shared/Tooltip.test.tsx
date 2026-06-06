@@ -210,5 +210,16 @@ describe('Tooltip', () => {
       expect(tooltip.className).toContain('text-white')
       expect(tooltip.className).toContain('text-xs')
     })
+
+    it('tooltip bubble does not prevent text wrapping (no whitespace-nowrap)', () => {
+      render(
+        <Tooltip content="Long content that should be allowed to wrap across multiple lines in the tooltip bubble">
+          <button>trigger</button>
+        </Tooltip>,
+      )
+
+      fireEvent.mouseEnter(screen.getByRole('button'))
+      expect(screen.getByRole('tooltip').className).not.toContain('whitespace-nowrap')
+    })
   })
 })
