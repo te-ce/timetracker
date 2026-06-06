@@ -79,7 +79,7 @@ export function MonthCalendar({
               onClick={() => onSelectDate(iso)}
               aria-label={label}
               aria-current={isToday ? 'date' : undefined}
-              className={`relative w-full rounded-lg px-2 pb-3 pt-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
+              className={`relative w-full rounded-lg px-2 pb-3 pt-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${isToday || status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
             >
               {date.getDate()}
               {displayStatus === 'confirmed' && (
