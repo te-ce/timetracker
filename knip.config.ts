@@ -1,10 +1,7 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  entry: [
-    'electron/preload.cjs',
-    'scripts/**/*.mjs',
-  ],
+  entry: ['electron/preload.cjs', 'scripts/**/*.mjs'],
   project: ['src/**/*.{ts,tsx}', 'electron/**/*.{ts,cjs}'],
   ignore: [
     // Ambient type declarations — not imported, that's the point
@@ -19,6 +16,14 @@ const config: KnipConfig = {
     'tailwindcss',
     // Unified package; individual @typescript-eslint/* packages are imported instead
     'typescript-eslint',
+    // ESLint plugins — available for configuration but not used in the current minimal eslint.config.js
+    '@eslint/js',
+    'eslint-config-prettier',
+    'eslint-plugin-jsx-a11y',
+    'eslint-plugin-oxlint',
+    'eslint-plugin-react-hooks',
+    'eslint-plugin-react-refresh',
+    'globals',
   ],
   ignoreExportsUsedInFile: true,
 }

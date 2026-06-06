@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { shouldAutoExport } from './exportStatus'
-import type { Sprint } from '../sprint/sprint'
+import type { Sprint } from '../sprint'
 
 const sprint: Sprint = { index: 5, start: '2026-05-05', end: '2026-05-16' }
 

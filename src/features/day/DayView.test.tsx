@@ -11,7 +11,7 @@ import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/con
 import { InMemoryTimeTrackingRepository } from '../../infra/repositories/in-memory/time-tracking-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
 import type { DayQueryResult } from './useDayQuery'
-import type { OvertimeToDate } from '../month/monthStats'
+import type { OvertimeToDate } from '../month'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 vi.mock('../../infra/auth/msalInstance', () => ({

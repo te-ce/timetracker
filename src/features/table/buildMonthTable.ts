@@ -1,4 +1,4 @@
-import type { DayType } from '../day/dayType'
+import type { DayType } from '../day'
 import type { Day, MonthData } from '../../infra/repositories/types'
 import { calculateWorkedHours } from '../../shared/worktime'
 import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'

@@ -1,5 +1,5 @@
 import type { DatedTimeEntry } from '../../infra/repositories/types'
-import type { DayType } from '../day/dayType'
+import type { DayType } from '../day'
 import { parseLocalDate, toLocalIso } from '../../shared/dateUtils'
 
 export type AutoFillPattern =

@@ -1,4 +1,4 @@
-import type { MonthTableRow } from '../table/buildMonthTable'
+import type { MonthTableRow } from '../table'
 
 export interface SprintGroup {
   label: string

@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
-import { buildMonthSummaries } from '../features/month/daySummary'
-import { calculateOvertimeToDate } from '../features/month/monthStats'
+import { buildMonthSummaries, calculateOvertimeToDate } from '../features/month'
 import { toLocalIso } from './dateUtils'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'

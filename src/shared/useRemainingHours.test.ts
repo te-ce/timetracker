@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { DayQueryResult } from '../features/day/useDayQuery'
-import type { OvertimeToDate } from '../features/month/monthStats'
+import type { OvertimeToDate } from '../features/month'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 
 vi.mock('../features/day/useDayQuery', () => ({

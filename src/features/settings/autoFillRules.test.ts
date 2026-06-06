@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { materializeAutoFillRules } from './autoFillRules'
 import { parseLocalDate, toLocalIso } from '../../shared/dateUtils'
 import type { AutoFillRule } from './autoFillRules'
-import type { DayType } from '../day/dayType'
+import type { DayType } from '../day'
 
 function dayTypes(overrides: Record<string, DayType>): Map<string, DayType> {
   return new Map(Object.entries(overrides))

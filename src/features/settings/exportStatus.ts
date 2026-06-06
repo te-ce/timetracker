@@ -1,4 +1,4 @@
-import type { Sprint } from '../sprint/sprint'
+import type { Sprint } from '../sprint'
 import type { SprintExport } from '../../infra/repositories/types'
 
 export type { SprintExport }
