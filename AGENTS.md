@@ -8,17 +8,17 @@ React + TypeScript + Vite · Tailwind CSS v4 · TanStack Query v5 · TanStack Ro
 
 ## Where to make changes
 
-| Task | Directory |
-|---|---|
-| New computed value / business rule | `src/domain/` |
-| New data type or repository interface | `src/repositories/types.ts` |
-| New storage backend | `src/storage/` |
-| New server/API query or derived state | `src/hooks/` |
-| New UI component | `src/components/` |
-| New page / route | `src/views/` + `src/main.tsx` routes |
-| New Excel / external service integration | `src/services/` |
-| New global client state | `src/stores/` |
-| New ambient browser API type | `src/types/` |
+| Task                                     | Directory                            |
+| ---------------------------------------- | ------------------------------------ |
+| New computed value / business rule       | `src/domain/`                        |
+| New data type or repository interface    | `src/repositories/types.ts`          |
+| New storage backend                      | `src/storage/`                       |
+| New server/API query or derived state    | `src/hooks/`                         |
+| New UI component                         | `src/components/`                    |
+| New page / route                         | `src/views/` + `src/main.tsx` routes |
+| New Excel / external service integration | `src/services/`                      |
+| New global client state                  | `src/stores/`                        |
+| New ambient browser API type             | `src/types/`                         |
 
 ## Layer rules (hard)
 
@@ -27,13 +27,22 @@ React + TypeScript + Vite · Tailwind CSS v4 · TanStack Query v5 · TanStack Ro
 - **`src/hooks/`** — fetch + domain wiring. Every cache key must go through `QUERY_KEYS` in `src/hooks/queryKeys.ts` — never inline `['someKey']` arrays.
 - **`src/views/`** — route-level wiring only. No domain logic that belongs in `src/domain/`.
 
+## Linting and type-checking rules: never disable or remove
+
+**Hard rule — no exceptions.** When a lint or type error fires, fix the code. Never silence it.
+
+- No `// eslint-disable`, `// eslint-disable-next-line`, `/* oxlint-disable */`
+- No `@ts-ignore` or `@ts-expect-error`
+- No removing or weakening flags in `tsconfig.app.json` / `tsconfig.node.json`
+- No removing or overriding rules in `eslint.config.*` or `.oxlintrc`
+
 ## TypeScript: no `as` assertions at call sites
 
 See `CONTRIBUTING.md` for the full table. The standard pattern for any `any`-typed source:
 
 ```typescript
 const data: unknown = anySource
-return data as T  // unknown → T is acceptable; any → T is not
+return data as T // unknown → T is acceptable; any → T is not
 ```
 
 ## Testing
@@ -56,11 +65,11 @@ Components receive repositories as **props** so tests can inject in-memory insta
 
 Determined at startup by `isLocalFolderMode()` in `src/auth/bootstrapConfig.ts`:
 
-| Mode | Adapter |
-|---|---|
+| Mode             | Adapter                                                                                |
+| ---------------- | -------------------------------------------------------------------------------------- |
 | Cloud (OneDrive) | `OneDriveStorageAdapter` + `LocalStorageAdapter` fallback via `FallbackStorageAdapter` |
-| Local folder | `LocalFolderStorageAdapter` (File System Access API, handle in IndexedDB) |
-| Offline / skip | `LocalStorageAdapter` |
+| Local folder     | `LocalFolderStorageAdapter` (File System Access API, handle in IndexedDB)              |
+| Offline / skip   | `LocalStorageAdapter`                                                                  |
 
 ## Undo / redo
 
@@ -78,15 +87,15 @@ Tailwind v4 class-based: `@variant dark (&:where(.dark, .dark *))` in `src/index
 
 ## Key files
 
-| File | Purpose |
-|---|---|
-| `src/repositories/types.ts` | All repository interfaces and entity types |
-| `src/repositories/shared.ts` | Singleton repo instances wired to the active storage adapter |
-| `src/hooks/queryKeys.ts` | Single source of truth for all TanStack Query cache keys |
-| `src/domain/dayStatus.ts` | Unified day classification (`classifyDay`) |
-| `src/domain/daySummary.ts` | Month-level aggregation (`buildMonthSummaries`) |
-| `src/stores/undoStore.ts` | Undo/redo command stack |
-| `src/auth/bootstrapConfig.ts` | Storage mode detection and OAuth config |
+| File                          | Purpose                                                      |
+| ----------------------------- | ------------------------------------------------------------ |
+| `src/repositories/types.ts`   | All repository interfaces and entity types                   |
+| `src/repositories/shared.ts`  | Singleton repo instances wired to the active storage adapter |
+| `src/hooks/queryKeys.ts`      | Single source of truth for all TanStack Query cache keys     |
+| `src/domain/dayStatus.ts`     | Unified day classification (`classifyDay`)                   |
+| `src/domain/daySummary.ts`    | Month-level aggregation (`buildMonthSummaries`)              |
+| `src/stores/undoStore.ts`     | Undo/redo command stack                                      |
+| `src/auth/bootstrapConfig.ts` | Storage mode detection and OAuth config                      |
 
 ---
 

@@ -77,6 +77,15 @@ The `unknown` intermediate pattern (`const data: unknown = anySource; return dat
 
 **Typed arrays** — never `[x, y] as T[]`. Declare `const items: T[] = [x, y]` instead.
 
+## Linting and type-checking rules
+
+**Never disable or remove existing rules.** This is a hard constraint with no exceptions.
+
+- Do not add `// eslint-disable`, `// eslint-disable-next-line`, `/* oxlint-disable */`, `@ts-ignore`, or `@ts-expect-error`
+- Do not remove or weaken flags in `tsconfig.app.json` or `tsconfig.node.json`
+- Do not remove or override rules in `eslint.config.*` or `.oxlintrc`
+- When a rule fires, fix the code — never silence the rule
+
 ## Code style
 
 - No comments unless the **why** is non-obvious (hidden constraint, workaround for a known bug, surprising invariant)
