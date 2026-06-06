@@ -37,8 +37,38 @@ jobs:
       - name: Build
         run: npm run build
 
+  knip:
+    name: Knip
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Knip
         run: npm run knip
+
+  mutation:
+    name: Mutation Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Mutation tests
         run: npm run test:mutation
