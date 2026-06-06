@@ -37,6 +37,18 @@ export default defineConfig({
           functions: 90,
           lines: 90,
         },
+        'src/features/**/*.tsx': {
+          statements: 80,
+          branches: 75,
+          functions: 80,
+          lines: 82,
+        },
+        'src/shared/**/*.tsx': {
+          statements: 80,
+          branches: 75,
+          functions: 80,
+          lines: 82,
+        },
       },
     },
   },
