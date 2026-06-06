@@ -46,4 +46,38 @@ describe('getAllCategories', () => {
     const result = getAllCategories(customs)
     expect(result.slice(DEFAULT_CATEGORIES.length)).toEqual(customs)
   })
+
+  describe('with categoryOrder', () => {
+    it('uses categoryOrder as source of truth for ordering', () => {
+      const result = getAllCategories(['Custom A'], ['Custom A', '_COREMEDIA'])
+      expect(result[0]).toBe('Custom A')
+      expect(result[1]).toBe('_COREMEDIA')
+    })
+
+    it('filters out categories from order that no longer exist', () => {
+      const result = getAllCategories(['Custom A'], ['Custom A', 'Removed', '_COREMEDIA'])
+      expect(result).not.toContain('Removed')
+      expect(result).toContain('Custom A')
+      expect(result).toContain('_COREMEDIA')
+    })
+
+    it('appends new categories not yet in the order', () => {
+      const result = getAllCategories(['New One'], ['_COREMEDIA'])
+      expect(result).toContain('New One')
+      expect(result.indexOf('_COREMEDIA')).toBeLessThan(result.indexOf('New One'))
+    })
+
+    it('treats empty categoryOrder the same as no order', () => {
+      const result = getAllCategories(['Custom A'], [])
+      expect(result).toEqual([...DEFAULT_CATEGORIES, 'Custom A'])
+    })
+
+    it('puts order-listed categories first, then appends the rest', () => {
+      const result = getAllCategories([], ['_COREMEDIA', '_LEAVE'])
+      expect(result[0]).toBe('_COREMEDIA')
+      expect(result[1]).toBe('_LEAVE')
+      // remaining defaults appended after the ordered ones
+      expect(result).toHaveLength(DEFAULT_CATEGORIES.length)
+    })
+  })
 })

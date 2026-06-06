@@ -67,4 +67,39 @@ describe('autoMatchCategories', () => {
     const result = autoMatchCategories(['quality'], tightRows, {})
     expect(result['quality']).toBe('B')
   })
+
+  it('matches via taskId when taskId score beats description score', () => {
+    const taskRows: ExcelRow[] = [{ taskId: 'core', description: 'unrelated' }]
+    const result = autoMatchCategories(['core'], taskRows, {})
+    expect(result['core']).toBe('core')
+  })
+
+  it('does not map when best score is below threshold', () => {
+    // 'xyz' vs 'xyzlong': b.includes(a) → 3/7 ≈ 0.43 < 0.5
+    const taskRows: ExcelRow[] = [{ taskId: 'xyzlong', description: 'xyzlong' }]
+    const result = autoMatchCategories(['xyz'], taskRows, {})
+    expect(result['xyz']).toBeUndefined()
+  })
+
+  it('maps all categories in one call', () => {
+    const multiRows: ExcelRow[] = [
+      { taskId: 'CORE', description: 'coremedia' },
+      { taskId: 'QA', description: 'quality' },
+    ]
+    const result = autoMatchCategories(['coremedia', 'quality'], multiRows, {})
+    expect(result['coremedia']).toBe('CORE')
+    expect(result['quality']).toBe('QA')
+  })
+})
+
+describe('matchScore boundary', () => {
+  it('accepts strings of exactly 3 chars', () => {
+    expect(matchScore('abc', 'abcdef')).toBeGreaterThan(0)
+    expect(matchScore('abcdef', 'abc')).toBeGreaterThan(0)
+  })
+
+  it('rejects strings of exactly 2 chars', () => {
+    expect(matchScore('ab', 'abcdef')).toBe(0)
+    expect(matchScore('abcdef', 'ab')).toBe(0)
+  })
 })

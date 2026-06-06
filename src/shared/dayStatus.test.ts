@@ -150,5 +150,58 @@ describe('classifyDay', () => {
     it('returns correct reason for vacation', () => {
       expect(classify({ dayType: 'Vacation', isoDate: '2026-05-12' }).reason).toBe('Marked as vacation')
     })
+
+    it('returns correct reason for public holiday', () => {
+      expect(classify({ dayType: 'PublicHoliday', isoDate: '2026-05-01' }).reason).toBe('Public holiday')
+    })
+
+    it('returns correct reason for sick day', () => {
+      expect(classify({ dayType: 'SickDay', isoDate: '2026-05-12' }).reason).toBe('Marked as sick day')
+    })
+
+    it('returns correct reason for absence', () => {
+      expect(classify({ dayType: 'Absence', isoDate: '2026-05-12' }).reason).toBe('Marked as absence')
+    })
+
+    it('returns future reason for future work days', () => {
+      expect(classify({ isoDate: '2026-05-20' }).reason).toBe('Future work day — no hours yet')
+    })
+
+    it('returns logged-ahead reason for future days with hours', () => {
+      expect(classify({ isoDate: '2026-05-20', workedHours: 4 }).reason).toBe('4.0 h logged ahead of schedule')
+    })
+
+    it('returns no-hours reason for untracked days', () => {
+      expect(classify({ workedHours: 0, manualTotal: 0 }).reason).toBe('No hours recorded')
+    })
+
+    describe('balanceReason', () => {
+      it('reports categorized but no work when workedHours=0 and manualTotal>0', () => {
+        expect(classify({ workedHours: 0, manualTotal: 3 }).reason).toBe('3.0 h categorized but no work time recorded')
+      })
+
+      it('reports fully categorized when worked and manual differ by less than 0.01', () => {
+        expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).reason).toContain(
+          '8.0 h worked and fully categorized',
+        )
+      })
+
+      it('reports auto-category fills remaining when hasAutoCategory and manualTotal <= workedHours', () => {
+        const result = classify({ workedHours: 8, manualTotal: 6, hasAutoCategory: true, isEntriesBalanced: true })
+        expect(result.reason).toContain('auto-category fills 2.0 h')
+      })
+
+      it('reports over-booked when manualTotal > workedHours', () => {
+        const result = classify({ workedHours: 6, manualTotal: 8 })
+        expect(result.reason).toContain('8.0 h booked')
+        expect(result.reason).toContain('2.0 h over')
+      })
+
+      it('reports unaccounted hours in default branch', () => {
+        const result = classify({ workedHours: 8, manualTotal: 3 })
+        expect(result.reason).toContain('3.0 h categorized')
+        expect(result.reason).toContain('5.0 h unaccounted')
+      })
+    })
   })
 })

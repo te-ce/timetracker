@@ -1,10 +1,14 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { mergeAdjacentInto } from './workPeriodMerge'
-import type { WorkPeriod } from '../../infra/repositories/types'
+import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
 
-function period(id: string, start: string, end: string | null): WorkPeriod {
-  return { id, start, end, category: '_COREMEDIA', subtasks: [] }
+function period(id: string, start: string, end: string | null, category = '_COREMEDIA'): WorkPeriod {
+  return { id, start, end, category, subtasks: [] }
+}
+
+function subtask(category: string, hours: number): WorkPeriodSubtask {
+  return { id: 'st-' + category, category, hours }
 }
 
 describe('mergeAdjacentInto', () => {
@@ -100,5 +104,52 @@ describe('mergeAdjacentInto', () => {
     const incoming = period('b', '09:00', '10:00')
     const { merged } = mergeAdjacentInto([a, incoming], incoming)
     expect(merged.id).toBe('b')
+  })
+
+  describe('subtask collection when absorbing', () => {
+    it('creates synthetic subtask from absorbed period with different category and uncovered hours', () => {
+      const absorbed = { ...period('a', '08:00', '09:00', '_OTHER'), subtasks: [] }
+      const incoming = period('b', '09:00', '10:00', '_COREMEDIA')
+      const { merged } = mergeAdjacentInto([absorbed, incoming], incoming)
+      // absorbed has 1h duration, 0h subtasked, category differs → synthetic subtask for _OTHER
+      const synthetic = merged.subtasks.find((s) => s.category === '_OTHER')
+      expect(synthetic).toBeDefined()
+      expect(synthetic?.hours).toBeCloseTo(1, 1)
+    })
+
+    it('does not create synthetic subtask when absorbed and merged share same category', () => {
+      const absorbed = { ...period('a', '08:00', '09:00', '_COREMEDIA'), subtasks: [] }
+      const incoming = period('b', '09:00', '10:00', '_COREMEDIA')
+      const { merged } = mergeAdjacentInto([absorbed, incoming], incoming)
+      expect(merged.subtasks).toHaveLength(0)
+    })
+
+    it('carries existing subtasks from absorbed period into merged result', () => {
+      const st = subtask('_OTHER', 0.5)
+      const absorbed = { ...period('a', '08:00', '09:00', '_COREMEDIA'), subtasks: [st] }
+      const incoming = period('b', '09:00', '10:00', '_COREMEDIA')
+      const { merged } = mergeAdjacentInto([absorbed, incoming], incoming)
+      expect(merged.subtasks).toContainEqual(st)
+    })
+
+    it('does not create synthetic subtask when absorbed subtasks cover all hours', () => {
+      // absorbed: 1h period (_LEAVE category), subtasks = 1h _OTHER → remainder = 0
+      // category differs (_LEAVE vs _COREMEDIA) but remainder = 0 so no synthetic is created
+      const st = subtask('_OTHER', 1)
+      const absorbed = { ...period('a', '08:00', '09:00', '_LEAVE'), subtasks: [st] }
+      const incoming = period('b', '09:00', '10:00', '_COREMEDIA')
+      const { merged } = mergeAdjacentInto([absorbed, incoming], incoming)
+      // only the carried _OTHER subtask should be present — no synthetic _LEAVE subtask
+      expect(merged.subtasks).toHaveLength(1)
+      expect(merged.subtasks[0]).toEqual(st)
+    })
+
+    it('carries subtasks from incoming period into merged result', () => {
+      const st = subtask('_RELEASE', 2)
+      const incoming = { ...period('b', '09:00', '11:00', '_COREMEDIA'), subtasks: [st] }
+      const prev = period('a', '08:00', '09:00', '_COREMEDIA')
+      const { merged } = mergeAdjacentInto([prev, incoming], incoming)
+      expect(merged.subtasks).toContainEqual(st)
+    })
   })
 })
