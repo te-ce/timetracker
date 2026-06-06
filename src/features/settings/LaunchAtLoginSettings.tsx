@@ -39,6 +39,11 @@ export function LaunchAtLoginSettings({ repository }: Props) {
         <span className="text-sm font-medium dark:text-gray-100">Launch at login</span>
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400 ml-7">Start Timetracker automatically when you log in.</p>
+      {mutation.isError && (
+        <p role="alert" className="text-xs text-red-600 dark:text-red-400 ml-7">
+          Failed to save setting. Please try again.
+        </p>
+      )}
     </div>
   )
 }

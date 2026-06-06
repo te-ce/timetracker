@@ -37,6 +37,11 @@ export function OvertimeBarSettings({ repository }: Props) {
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Display the overtime summary bar on the day, month, and table views. Stats are always shown in the header.
       </p>
+      {mutation.isError && (
+        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+          Failed to save setting. Please try again.
+        </p>
+      )}
     </div>
   )
 }

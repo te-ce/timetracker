@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { matchScore, autoMatchCategories } from './excelMapping'
-import type { ExcelRow } from '../excel/excelService'
+import type { ExcelRow } from '../excel'
 
 describe('matchScore', () => {
   it('returns 0 when either string is shorter than 3 chars', () => {

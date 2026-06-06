@@ -1,4 +1,4 @@
-import type { ExcelRow } from '../excel/excelService'
+import type { ExcelRow } from '../excel'
 
 export function matchScore(a: string, b: string): number {
   if (a.length < 3 || b.length < 3) return 0

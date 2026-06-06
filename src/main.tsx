@@ -9,6 +9,7 @@ import { SetupWizard } from './features/settings/SetupWizard'
 import { useMsalSync } from './shared/useMsalSync'
 import { RepositoryProvider } from './infra/repositories/RepositoryContext'
 import { router } from './routes/router.ts'
+import { ErrorBoundary } from './shared/ErrorBoundary'
 import './index.css'
 
 const queryClient = new QueryClient({
@@ -68,6 +69,8 @@ function Root() {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <Root />
+    <ErrorBoundary>
+      <Root />
+    </ErrorBoundary>
   </StrictMode>,
 )
