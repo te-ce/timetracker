@@ -18,7 +18,7 @@ function MsalSyncPanel() {
 
   async function handleSignOut() {
     try {
-      await instance.logoutPopup({ ...(account ? { account } : {}) })
+      await instance.logoutPopup(account ? { account } : {})
     } catch {
       // ignore
     }
