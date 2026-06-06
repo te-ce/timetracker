@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { MonthCalendar } from './MonthCalendar'
@@ -245,6 +245,7 @@ describe('MonthCalendar', () => {
         dayStatusReasonMap={dayStatusReasonMap}
       />,
     )
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /10 january 2024/i }))
     expect(screen.getByText('Holiday: New Year')).toBeInTheDocument()
   })
 })

@@ -10,6 +10,7 @@ import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import { findOpenPeriod } from '../../shared/worktime'
+import { Tooltip } from '../../shared'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
 
@@ -34,18 +35,14 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
   return (
     <div className="flex items-center gap-2">
       {badgeStatus !== 'future' && (
-        <div className="group relative">
+        <Tooltip content={statusReason}>
           <span
+            tabIndex={0}
             className={`inline-flex items-center cursor-help rounded-md border border-transparent px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
           >
             {STATUS_LABEL[badgeStatus]}
           </span>
-          <div className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 hidden -translate-x-1/2 group-hover:block z-10">
-            <div className="rounded bg-gray-800 dark:bg-gray-700 px-2 py-1 text-xs text-white shadow-lg whitespace-nowrap">
-              {statusReason}
-            </div>
-          </div>
-        </div>
+        </Tooltip>
       )}
       {isConfirmed ? (
         <button

@@ -1,5 +1,6 @@
 export { ConfirmDialog } from './ConfirmDialog'
 export { KeyboardShortcutLegend } from './KeyboardShortcutLegend'
+export { Tooltip } from './Tooltip'
 export { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 export { useAuthStore } from './authStore'
 export { type AutoCategoryResult, calculateAutoCategory, resolveAutoCategory } from './autoCategory'

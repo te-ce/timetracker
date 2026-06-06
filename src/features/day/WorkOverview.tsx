@@ -7,6 +7,7 @@ import { calculateWorkedHours, calcSubtaskHours, findOpenPeriod } from '../../sh
 import { getAllCategories } from '../../shared/categories'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
+import { Tooltip } from '../../shared'
 
 interface Props {
   date: string
@@ -763,21 +764,23 @@ function PeriodCardFooter({
   return (
     <div className="flex items-center gap-3 mt-0.5">
       {isRunning && (
-        <button
-          onClick={() => setStartingSubtask(true)}
-          data-tooltip="Start live tracking for a subtask within this period"
-          className="text-xs text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
-        >
-          ▶ Start tracking subtask
-        </button>
+        <Tooltip content="Start live tracking for a subtask within this period">
+          <button
+            onClick={() => setStartingSubtask(true)}
+            className="text-xs text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
+          >
+            ▶ Start tracking subtask
+          </button>
+        </Tooltip>
       )}
-      <button
-        onClick={() => setAddingSubtask(true)}
-        data-tooltip="Log a completed subtask for this period"
-        className="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
-      >
-        + Log subtask
-      </button>
+      <Tooltip content="Log a completed subtask for this period">
+        <button
+          onClick={() => setAddingSubtask(true)}
+          className="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+        >
+          + Log subtask
+        </button>
+      </Tooltip>
     </div>
   )
 }

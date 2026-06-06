@@ -2,6 +2,7 @@ import { toLocalIso } from '../../shared/dateUtils'
 import type { DayStatus } from '../../shared/dayStatus'
 import { STATUS_CELL, STATUS_DOT, STATUS_LABEL, TODAY_DOT } from '../../shared/statusColors'
 import type { DisplayStatus } from '../../shared/statusColors'
+import { Tooltip } from '../../shared'
 
 interface Props {
   year: number
@@ -73,48 +74,49 @@ export function MonthCalendar({
         })
         const displayStatus = dayDisplayStatusMap[iso]
         const dots = buildDots(status, displayStatus)
-        return (
-          <div key={date.getDate()} className="group relative">
-            <button
-              onClick={() => onSelectDate(iso)}
-              aria-label={label}
-              aria-current={isToday ? 'date' : undefined}
-              className={`relative w-full rounded-lg px-2 pb-3 pt-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${isToday || status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
-            >
-              {date.getDate()}
-              {displayStatus === 'confirmed' && (
-                <span
-                  className="absolute top-0.5 right-1 text-[9px] font-bold leading-none text-emerald-600 dark:text-emerald-400"
-                  aria-hidden="true"
-                >
-                  ✓
-                </span>
+        const tooltipContent =
+          reason || note ? (
+            <div>
+              {reason && (
+                <>
+                  <p className="font-semibold">{STATUS_NAME[status]}</p>
+                  <p className="mt-0.5 text-gray-300">{reason}</p>
+                </>
               )}
-              <span className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5" aria-hidden="true">
-                {dots.map((cls, i) => (
-                  <span key={i} className={`h-1 w-1 rounded-full ${cls}`} />
-                ))}
-              </span>
-            </button>
-            {(reason || note) && (
-              <div className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden w-max max-w-52 -translate-x-1/2 group-hover:block">
-                <div className="rounded bg-gray-800 dark:bg-gray-700 px-2.5 py-2 text-xs text-white shadow-lg">
-                  {reason && (
-                    <>
-                      <p className="font-semibold">{STATUS_NAME[status]}</p>
-                      <p className="mt-0.5 text-gray-300">{reason}</p>
-                    </>
-                  )}
-                  {note && (
-                    <p
-                      className={`whitespace-pre-wrap text-gray-200 ${reason ? 'mt-1.5 border-t border-gray-600 pt-1.5' : ''}`}
-                    >
-                      {note}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
+              {note && (
+                <p
+                  className={`whitespace-pre-wrap text-gray-200 ${reason ? 'mt-1.5 border-t border-gray-600 pt-1.5' : ''}`}
+                >
+                  {note}
+                </p>
+              )}
+            </div>
+          ) : undefined
+        return (
+          <div key={date.getDate()}>
+            <Tooltip content={tooltipContent}>
+              <button
+                onClick={() => onSelectDate(iso)}
+                aria-label={label}
+                aria-current={isToday ? 'date' : undefined}
+                className={`relative w-full rounded-lg px-2 pb-3 pt-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${isToday || status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
+              >
+                {date.getDate()}
+                {displayStatus === 'confirmed' && (
+                  <span
+                    className="absolute top-0.5 right-1 text-[9px] font-bold leading-none text-emerald-600 dark:text-emerald-400"
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                )}
+                <span className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5" aria-hidden="true">
+                  {dots.map((cls, i) => (
+                    <span key={i} className={`h-1 w-1 rounded-full ${cls}`} />
+                  ))}
+                </span>
+              </button>
+            </Tooltip>
           </div>
         )
       })}
