@@ -1,3 +1,4 @@
+import React from 'react'
 import { toLocalIso } from '../../shared/dateUtils'
 import type { DayStatus } from '../../shared/dayStatus'
 import { STATUS_CELL, STATUS_DOT, STATUS_LABEL, TODAY_DOT } from '../../shared/statusColors'
@@ -26,6 +27,25 @@ function getDaysInMonth(year: number, month: number): Date[] {
     days.push(new Date(year, month, d))
   }
   return days
+}
+
+function buildTooltipContent(reason: string | undefined, note: string | undefined, status: DayStatus): React.ReactNode {
+  if (!reason && !note) return undefined
+  return (
+    <div>
+      {reason && (
+        <>
+          <p className="font-semibold">{STATUS_NAME[status]}</p>
+          <p className="mt-0.5 text-gray-300">{reason}</p>
+        </>
+      )}
+      {note && (
+        <p className={`whitespace-pre-wrap text-gray-200 ${reason ? 'mt-1.5 border-t border-gray-600 pt-1.5' : ''}`}>
+          {note}
+        </p>
+      )}
+    </div>
+  )
 }
 
 function buildDots(status: DayStatus, displayStatus: DisplayStatus | undefined): string[] {
@@ -74,27 +94,9 @@ export function MonthCalendar({
         })
         const displayStatus = dayDisplayStatusMap[iso]
         const dots = buildDots(status, displayStatus)
-        const tooltipContent =
-          reason || note ? (
-            <div>
-              {reason && (
-                <>
-                  <p className="font-semibold">{STATUS_NAME[status]}</p>
-                  <p className="mt-0.5 text-gray-300">{reason}</p>
-                </>
-              )}
-              {note && (
-                <p
-                  className={`whitespace-pre-wrap text-gray-200 ${reason ? 'mt-1.5 border-t border-gray-600 pt-1.5' : ''}`}
-                >
-                  {note}
-                </p>
-              )}
-            </div>
-          ) : undefined
         return (
           <div key={date.getDate()}>
-            <Tooltip content={tooltipContent}>
+            <Tooltip content={buildTooltipContent(reason, note, status)}>
               <button
                 onClick={() => onSelectDate(iso)}
                 aria-label={label}

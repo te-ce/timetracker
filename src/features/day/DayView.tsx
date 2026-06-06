@@ -37,7 +37,6 @@ function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUncon
       {badgeStatus !== 'future' && (
         <Tooltip content={statusReason}>
           <span
-            tabIndex={0}
             className={`inline-flex items-center cursor-help rounded-md border border-transparent px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
           >
             {STATUS_LABEL[badgeStatus]}
