@@ -1,3 +1,5 @@
+import { Tooltip } from '../../shared'
+
 export interface ColumnDragHandlers {
   onDragStart: (idx: number) => void
   onDragOver: (e: React.DragEvent, idx: number) => void
@@ -54,23 +56,6 @@ function CategoryBadge({
   return <span className="text-[9px] leading-none">&nbsp;</span>
 }
 
-function buildColTitle(
-  cat: string,
-  autoCategory: string,
-  categoryDescriptions?: Record<string, string>,
-  onCategoryRename?: (o: string, n: string) => void,
-): string {
-  if (cat === autoCategory)
-    return [`${cat} — auto category (absorbs remaining hours)`, categoryDescriptions?.[cat]]
-      .filter(Boolean)
-      .join('\n\n')
-  return (
-    [categoryDescriptions?.[cat], onCategoryRename ? 'Double-click to rename' : undefined]
-      .filter(Boolean)
-      .join('\n\n') || cat
-  )
-}
-
 export function CategoryColumnHeader({
   cat,
   catIdx,
@@ -89,9 +74,18 @@ export function CategoryColumnHeader({
   onSetEditingCat,
 }: CategoryColumnHeaderProps) {
   const isAuto = cat === autoCategory
+  const description = categoryDescriptions?.[cat]
   const dragClass = onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''
   const dragOverClass = colDragOverIdx === catIdx ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''
   const nameClass = `block truncate text-xs ${onCategoryRename ? 'cursor-text' : ''}`
+  const tooltipContent = (
+    <div>
+      <p className="font-semibold">{cat}</p>
+      {isAuto && <p className="mt-1 text-gray-300">auto category — absorbs remaining hours</p>}
+      {description && <p className="mt-1 text-gray-300">{description}</p>}
+      {onCategoryRename && <p className="mt-1.5 text-gray-400 text-[10px]">Double-click to rename</p>}
+    </div>
+  )
   return (
     <th
       draggable={editingCat !== cat && !!onCategoryReorder}
@@ -100,7 +94,6 @@ export function CategoryColumnHeader({
       onDrop={() => dragHandlers.onDrop(catIdx, allCategories)}
       onDragEnd={dragHandlers.onDragEnd}
       className={`px-1 py-1.5 text-center w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
-      data-tooltip={buildColTitle(cat, autoCategory, categoryDescriptions, onCategoryRename)}
     >
       {editingCat === cat ? (
         <input
@@ -120,17 +113,19 @@ export function CategoryColumnHeader({
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <span
-          className={nameClass}
-          onDoubleClick={() => {
-            if (onCategoryRename) {
-              onSetEditingCat(cat)
-              onEditValueChange(cat)
-            }
-          }}
-        >
-          {cat}
-        </span>
+        <Tooltip content={tooltipContent}>
+          <span
+            className={nameClass}
+            onDoubleClick={() => {
+              if (onCategoryRename) {
+                onSetEditingCat(cat)
+                onEditValueChange(cat)
+              }
+            }}
+          >
+            {cat}
+          </span>
+        </Tooltip>
       )}
       <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
         <CategoryBadge cat={cat} isAuto={isAuto} onAutoCategoryChange={onAutoCategoryChange} />

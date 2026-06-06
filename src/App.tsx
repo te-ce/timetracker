@@ -13,6 +13,7 @@ import { useGoalNotification } from './shared/useGoalNotification'
 import { usePrefetchCurrentMonth } from './shared/usePrefetchCurrentMonth'
 import { useQuery } from '@tanstack/react-query'
 import { KeyboardShortcutLegend } from './shared/KeyboardShortcutLegend'
+import { Tooltip } from './shared'
 import { msalInstance } from './infra/auth/msalInstance'
 import { toLocalIso } from './shared/dateUtils'
 import { defaultHotkeyConfig, matchesShortcut } from './shared/hotkeyConfig'
@@ -128,26 +129,28 @@ function SyncIndicator() {
 
   if (!msalInstance) {
     return (
-      <span
-        className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
-        aria-label="Local only mode"
-        data-tooltip="Microsoft not configured — local only"
-      >
-        <span aria-hidden="true">💾</span>
-        <span>Local</span>
-      </span>
+      <Tooltip content="Microsoft not configured — local only" placement="bottom">
+        <span
+          className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
+          aria-label="Local only mode"
+        >
+          <span aria-hidden="true">💾</span>
+          <span>Local</span>
+        </span>
+      </Tooltip>
     )
   }
 
   return (
-    <span
-      className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
-      aria-label={isAuthenticated ? 'OneDrive sync active' : 'Offline mode'}
-      data-tooltip={isAuthenticated ? 'Synced with OneDrive' : 'Offline — sign in to sync'}
-    >
-      <span aria-hidden="true">{isAuthenticated ? '☁️' : '💾'}</span>
-      <span>{isAuthenticated ? 'OneDrive' : 'Offline'}</span>
-    </span>
+    <Tooltip content={isAuthenticated ? 'Synced with OneDrive' : 'Offline — sign in to sync'} placement="bottom">
+      <span
+        className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500"
+        aria-label={isAuthenticated ? 'OneDrive sync active' : 'Offline mode'}
+      >
+        <span aria-hidden="true">{isAuthenticated ? '☁️' : '💾'}</span>
+        <span>{isAuthenticated ? 'OneDrive' : 'Offline'}</span>
+      </span>
+    </Tooltip>
   )
 }
 
@@ -246,12 +249,11 @@ function RemainingHoursBadge() {
   if (remaining <= 0) return null
   const label = formatHours(remaining, timeFormat)
   return (
-    <span
-      className="hidden sm:inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400"
-      data-tooltip={`${label} remaining today`}
-    >
-      {label} left
-    </span>
+    <Tooltip content={`${label} remaining today`} placement="bottom">
+      <span className="hidden sm:inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+        {label} left
+      </span>
+    </Tooltip>
   )
 }
 

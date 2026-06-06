@@ -20,6 +20,7 @@ import type { NotePopoverState } from '../day/NotePopoverPanel'
 import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
+import { Tooltip } from '../../shared'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
 
@@ -210,26 +211,29 @@ export function MonthGrid({
 
   const renderDayCell = useCallback(
     (date: string, dayLabel: string, rowBg: string) => {
-      const content = (
-        <>
-          {date.slice(8)}
-          <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
-        </>
-      )
       if (onSelectDate) {
         return (
           <td
             className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline ${rowBg}`}
             onClick={() => onSelectDate(date)}
-            data-tooltip={`Open ${date}`}
           >
-            {content}
+            <Tooltip content={`Open ${date}`}>
+              <span data-testid="day-link" className="inline-flex items-center">
+                {date.slice(8)}
+                <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
+              </span>
+            </Tooltip>
           </td>
         )
       }
       return (
-        <td className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs ${rowBg}`} data-tooltip={date}>
-          {content}
+        <td className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs ${rowBg}`}>
+          <Tooltip content={date}>
+            <span data-testid="day-link" className="inline-flex items-center">
+              {date.slice(8)}
+              <span className="text-gray-400 dark:text-gray-500 ml-0.5">{dayLabel}</span>
+            </span>
+          </Tooltip>
         </td>
       )
     },

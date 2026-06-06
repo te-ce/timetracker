@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory'
@@ -454,8 +454,8 @@ describe('MonthGrid', () => {
       setup({ onSelectDate })
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dayCell = row.querySelector('[data-tooltip="Open 2026-05-04"]')
-      expect(dayCell).toBeInTheDocument()
+      const dayLink = within(row).getByTestId('day-link')
+      expect(dayLink.closest('td')).toHaveClass('cursor-pointer')
     })
 
     it('clicking the day cell calls onSelectDate with the iso date', async () => {
@@ -463,10 +463,19 @@ describe('MonthGrid', () => {
       setup({ onSelectDate })
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const dayBtn = row.querySelector('[data-tooltip="Open 2026-05-04"]')
-      await userEvent.click(dayBtn!)
+      await userEvent.click(within(row).getByTestId('day-link'))
 
       expect(onSelectDate).toHaveBeenCalledWith('2026-05-04')
+    })
+
+    it('shows tooltip with date on hover of day cell', async () => {
+      setup({ onSelectDate: vi.fn() })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      const dayLink = within(row).getByTestId('day-link')
+      fireEvent.mouseEnter(dayLink)
+
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Open 2026-05-04')
     })
   })
 
