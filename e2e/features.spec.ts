@@ -177,7 +177,8 @@ test.describe('grid view', () => {
 
     await page.goto('/table')
 
-    const dayBtn = page.locator(`[data-tooltip="Open ${today}"]`)
+    const dayRow = page.getByRole('row', { name: today })
+    const dayBtn = dayRow.getByTestId('day-link')
     await expect(dayBtn).toBeVisible()
     await dayBtn.click()
     await expect(page).toHaveURL(new RegExp(`\\?date=${today}`))
