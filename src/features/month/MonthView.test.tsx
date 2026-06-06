@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -79,11 +80,11 @@ function stubSummaries(): void {
   vi.mocked(useMonthSummaries).mockReturnValue(stub)
 }
 
-function makeWrapper() {
+function makeWrapper(configRepo?: InMemoryConfigRepository) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const repos = {
     monthRepo: new InMemoryMonthRepository({}),
-    configRepo: new InMemoryConfigRepository(),
+    configRepo: configRepo ?? new InMemoryConfigRepository(),
     timeTrackingRepo: new InMemoryTimeTrackingRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
   }
@@ -123,6 +124,16 @@ describe('MonthView', () => {
     it('renders OvertimeBar by default', () => {
       render(<MonthView />, { wrapper: makeWrapper() })
       expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+
+    it('saves showOvertimeBar=false when hide button is clicked', async () => {
+      const configRepo = new InMemoryConfigRepository()
+      render(<MonthView />, { wrapper: makeWrapper(configRepo) })
+      await userEvent.click(await screen.findByRole('button', { name: /hide overtime bar/i }))
+      await waitFor(async () => {
+        const saved = await configRepo.get()
+        expect(saved.showOvertimeBar).toBe(false)
+      })
     })
 
     it('hides OvertimeBar when showOvertimeBar is false in config', () => {

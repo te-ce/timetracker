@@ -8,12 +8,12 @@ import { StatusLegend } from './StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
 
 export function MonthView() {
-  const { monthRepo, timeTrackingRepo } = useRepositories()
+  const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
   const { year, month } = useSearch({ from: '/month' })
 
@@ -57,6 +57,13 @@ export function MonthView() {
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
 
   const showOvertimeBar = config?.showOvertimeBar !== false
+  const hideOvertimeMutation = useMutation({
+    mutationFn: async () => {
+      const cfg = await configRepo.get()
+      await configRepo.save({ ...cfg, showOvertimeBar: false })
+    },
+    onSuccess: () => invalidateConfig(queryClient),
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,6 +78,7 @@ export function MonthView() {
           officeDays={officeDays}
           totalWorkDays={trackedWorkDays.length}
           officePercent={officePercent}
+          onHide={() => hideOvertimeMutation.mutate()}
         />
       )}
       <MonthCalendar

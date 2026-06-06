@@ -13,6 +13,7 @@ interface Props {
   officeDays?: number
   totalWorkDays?: number
   officePercent?: number
+  onHide?: () => void
 }
 
 function nowHHMMFn() {
@@ -145,6 +146,7 @@ export function OvertimeBar({
   officeDays,
   totalWorkDays,
   officePercent,
+  onHide,
 }: Props) {
   const [, setTick] = useState(0)
   const timeFormat = useTimeFormatStore((s) => s.format)
@@ -195,9 +197,20 @@ export function OvertimeBar({
           {liveWindowStart && <LiveWindowBadge elapsed={liveElapsed} fmt={timeFormat} />}
           {activeTrackingStartedAt && <TrackingBadge startedAt={activeTrackingStartedAt} />}
         </div>
-        <span className={`text-lg font-bold tabular-nums shrink-0 ${resultClass}`} aria-hidden="true">
-          {remainingLabel}
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`text-lg font-bold tabular-nums ${resultClass}`} aria-hidden="true">
+            {remainingLabel}
+          </span>
+          {onHide && (
+            <button
+              onClick={onHide}
+              aria-label="Hide overtime bar"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 leading-none"
+            >
+              ×
+            </button>
+          )}
+        </div>
       </div>
       {officeStats && (
         <div className="mt-1.5 flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">

@@ -1,5 +1,5 @@
 import { DayNoteEditor } from './DayNoteEditor'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { OvertimeBar } from '../month/OvertimeBar'
@@ -8,7 +8,7 @@ import { DayTypePicker } from './DayTypePicker'
 import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import { findOpenPeriod } from '../../shared/worktime'
 import { Tooltip } from '../../shared'
 import { useDayQuery } from './useDayQuery'
@@ -106,7 +106,7 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
 }
 
 export function DayView() {
-  const { monthRepo, timeTrackingRepo } = useRepositories()
+  const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
   const navigate = useNavigate()
   const { date: selectedDate } = useSearch({ from: '/' })
 
@@ -147,9 +147,19 @@ export function DayView() {
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
+  const queryClient = useQueryClient()
+  const hideOvertimeMutation = useMutation({
+    mutationFn: async () => {
+      const cfg = await configRepo.get()
+      await configRepo.save({ ...cfg, showOvertimeBar: false })
+    },
+    onSuccess: () => invalidateConfig(queryClient),
+  })
+
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = findOpenPeriod(windows)?.start
   const officeStats = totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
+  const showOvertimeBar = config?.showOvertimeBar !== false
 
   function prevDay() {
     const d = new Date(selectedDate)
@@ -172,14 +182,17 @@ export function DayView() {
         onToday={() => setSelectedDate(toLocalIso(new Date()))}
       />
 
-      <OvertimeBar
-        sollstunden={sollstunden}
-        priorOvertime={overtimeToDate.priorOvertime}
-        workedToday={overtimeToDate.workedToday}
-        liveWindowStart={liveWindowStart}
-        activeTrackingStartedAt={activeTracking?.startedAt}
-        {...officeStats}
-      />
+      {showOvertimeBar && (
+        <OvertimeBar
+          sollstunden={sollstunden}
+          priorOvertime={overtimeToDate.priorOvertime}
+          workedToday={overtimeToDate.workedToday}
+          liveWindowStart={liveWindowStart}
+          activeTrackingStartedAt={activeTracking?.startedAt}
+          onHide={() => hideOvertimeMutation.mutate()}
+          {...officeStats}
+        />
+      )}
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-4 shrink-0">

@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { vi } from 'vitest'
 import { OvertimeBar } from './OvertimeBar'
 
 describe('OvertimeBar', () => {
@@ -60,5 +62,24 @@ describe('OvertimeBar', () => {
     )
     expect(screen.getByText(/60%/)).toBeInTheDocument()
     expect(screen.getByText(/3\/5 days/)).toBeInTheDocument()
+  })
+
+  describe('dismiss button', () => {
+    it('shows hide button when onHide is provided', () => {
+      render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} onHide={() => undefined} />)
+      expect(screen.getByRole('button', { name: /hide overtime bar/i })).toBeInTheDocument()
+    })
+
+    it('calls onHide when hide button is clicked', async () => {
+      const onHide = vi.fn()
+      render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} onHide={onHide} />)
+      await userEvent.click(screen.getByRole('button', { name: /hide overtime bar/i }))
+      expect(onHide).toHaveBeenCalledOnce()
+    })
+
+    it('does not show hide button when onHide is not provided', () => {
+      render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} />)
+      expect(screen.queryByRole('button', { name: /hide overtime bar/i })).not.toBeInTheDocument()
+    })
   })
 })

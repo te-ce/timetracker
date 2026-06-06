@@ -76,11 +76,11 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
   })
 }
 
-function makeWrapper(monthRepo: InMemoryMonthRepository) {
+function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo?: InMemoryConfigRepository) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const repos = {
     monthRepo,
-    configRepo: new InMemoryConfigRepository(),
+    configRepo: configRepo ?? new InMemoryConfigRepository(),
     timeTrackingRepo: new InMemoryTimeTrackingRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
   }
@@ -131,6 +131,24 @@ describe('DayView', () => {
       stubQuery({ overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 } })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.getByRole('status')).toBeInTheDocument()
+    })
+  })
+
+  describe('OvertimeBar visibility', () => {
+    it('hides OvertimeBar when showOvertimeBar is false in config', () => {
+      stubQuery({ config: { ...DEFAULT_APP_CONFIG, showOvertimeBar: false } })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
+
+    it('saves showOvertimeBar=false when hide button is clicked', async () => {
+      const configRepo = new InMemoryConfigRepository()
+      render(<DayView />, { wrapper: makeWrapper(monthRepo, configRepo) })
+      await userEvent.click(await screen.findByRole('button', { name: /hide overtime bar/i }))
+      await waitFor(async () => {
+        const saved = await configRepo.get()
+        expect(saved.showOvertimeBar).toBe(false)
+      })
     })
   })
 

@@ -35,7 +35,7 @@ export function OvertimeBarSettings({ repository }: Props) {
         Show overtime bar
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        Display the overtime summary bar on the month view. Stats are always shown in the header.
+        Display the overtime summary bar on the day, month, and table views. Stats are always shown in the header.
       </p>
     </div>
   )

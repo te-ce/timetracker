@@ -76,6 +76,14 @@ export function TableView() {
     todayLiveWindowStart,
   } = useMonthSummaries(year, month)
 
+  const hideOvertimeMutation = useMutation({
+    mutationFn: async () => {
+      const cfg = await configRepo.get()
+      await configRepo.save({ ...cfg, showOvertimeBar: false })
+    },
+    onSuccess: () => invalidateConfig(queryClient),
+  })
+
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
   const officePercent = calcOfficePercent(officeDays, trackedWorkDays.length)
@@ -104,6 +112,7 @@ export function TableView() {
     year: 'numeric',
   })
 
+  const showOvertimeBar = config?.showOvertimeBar !== false
   const gridConfig = resolveTableConfig(config)
 
   const table = (
@@ -206,16 +215,19 @@ export function TableView() {
   return (
     <div className="flex flex-col gap-6">
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
-      <OvertimeBar
-        sollstunden={sollstunden}
-        priorOvertime={overtimeToDate.priorOvertime}
-        workedToday={overtimeToDate.workedToday}
-        activeTrackingStartedAt={activeTracking?.startedAt}
-        liveWindowStart={todayLiveWindowStart}
-        officeDays={officeDays}
-        totalWorkDays={trackedWorkDays.length}
-        officePercent={officePercent}
-      />
+      {showOvertimeBar && (
+        <OvertimeBar
+          sollstunden={sollstunden}
+          priorOvertime={overtimeToDate.priorOvertime}
+          workedToday={overtimeToDate.workedToday}
+          activeTrackingStartedAt={activeTracking?.startedAt}
+          liveWindowStart={todayLiveWindowStart}
+          officeDays={officeDays}
+          totalWorkDays={trackedWorkDays.length}
+          officePercent={officePercent}
+          onHide={() => hideOvertimeMutation.mutate()}
+        />
+      )}
       <div className="flex justify-end">{expandBtn}</div>
       {table}
       {footer}
