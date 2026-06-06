@@ -3,7 +3,7 @@ import tsParser from '@typescript-eslint/parser'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'public/mockServiceWorker.js']),
+  globalIgnores(['dist', 'public/mockServiceWorker.js', '.stryker-tmp']),
   {
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
