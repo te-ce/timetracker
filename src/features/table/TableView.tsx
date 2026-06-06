@@ -220,8 +220,8 @@ export function TableView() {
           sollstunden={sollstunden}
           priorOvertime={overtimeToDate.priorOvertime}
           workedToday={overtimeToDate.workedToday}
-          activeTrackingStartedAt={activeTracking?.startedAt}
-          liveWindowStart={todayLiveWindowStart}
+          activeTrackingStartedAt={activeTracking?.startedAt ?? null}
+          liveWindowStart={todayLiveWindowStart ?? null}
           officeDays={officeDays}
           totalWorkDays={trackedWorkDays.length}
           officePercent={officePercent}

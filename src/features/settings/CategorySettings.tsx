@@ -347,7 +347,7 @@ export function CategorySettings({ repository }: Props) {
     }: {
       mapping: Record<string, string>
       newCustomCategories: string[]
-      importOrder?: string[]
+      importOrder?: string[] | undefined
     }) => {
       const current = await repository.get()
       const mergedCustom = [

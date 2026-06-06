@@ -61,23 +61,23 @@ interface Props {
   month: number
   repository: MonthRepository
   autoCategory: string | null
-  customCategories?: string[]
-  categoryOrder?: string[]
-  dayTypes?: Map<string, DayType>
-  confirmedDays?: Set<string>
-  sprintStartDate?: string | null
-  sprintLengthDays?: number
-  workLocations?: Map<string, WorkLocation>
-  defaultWorkLocation?: WorkLocation | null
-  categoryDescriptions?: Record<string, string>
-  dayNotes?: Map<string, string>
-  onCategoryReorder?: (order: string[]) => void
-  onCategoryRename?: (oldName: string, newName: string) => void
-  onAutoCategoryChange?: (category: string) => void
-  onNoteChange?: (date: string, note: string) => void
-  onSelectDate?: (isoDate: string) => void
-  onClearDay?: (date: string) => void
-  expanded?: boolean
+  customCategories?: string[] | undefined
+  categoryOrder?: string[] | undefined
+  dayTypes?: Map<string, DayType> | undefined
+  confirmedDays?: Set<string> | undefined
+  sprintStartDate?: string | null | undefined
+  sprintLengthDays?: number | undefined
+  workLocations?: Map<string, WorkLocation> | undefined
+  defaultWorkLocation?: WorkLocation | null | undefined
+  categoryDescriptions?: Record<string, string> | undefined
+  dayNotes?: Map<string, string> | undefined
+  onCategoryReorder?: ((order: string[]) => void) | undefined
+  onCategoryRename?: ((oldName: string, newName: string) => void) | undefined
+  onAutoCategoryChange?: ((category: string) => void) | undefined
+  onNoteChange?: ((date: string, note: string) => void) | undefined
+  onSelectDate?: ((isoDate: string) => void) | undefined
+  onClearDay?: ((date: string) => void) | undefined
+  expanded?: boolean | undefined
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
@@ -148,7 +148,7 @@ function ClearColumnPlaceholder({ visible }: { visible: boolean }) {
   return <td className="w-8 border-l border-gray-200 dark:border-gray-700"></td>
 }
 
-function ClearCell({ date, onClearDay }: { date: string; onClearDay?: (date: string) => void }) {
+function ClearCell({ date, onClearDay }: { date: string; onClearDay?: ((date: string) => void) | undefined }) {
   if (!onClearDay) return null
   return (
     <td className="w-8 text-center border-l border-gray-200 dark:border-gray-700">

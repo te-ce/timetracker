@@ -35,9 +35,9 @@ export interface WorkPeriodSubtask {
   id: string
   category: string
   hours: number
-  startedAt?: string
-  stoppedAt?: string
-  note?: string
+  startedAt?: string | undefined
+  stoppedAt?: string | undefined
+  note?: string | undefined
 }
 
 export interface WorkPeriod {
@@ -110,19 +110,19 @@ export interface AppConfig {
   sprintLengthDays: number
   sprintStartDate: string | null
   customCategories: string[]
-  categoryOrder?: string[]
-  defaultWorkLocation?: WorkLocation | null
-  sharepointUrl?: string | null
-  targetSheet?: string | null
-  categoryMapping?: Record<string, string>
-  categoryDescriptions?: Record<string, string>
-  categoryImportOrder?: string[]
-  localExcelFile?: string | null
-  launchAtLogin?: boolean
-  startMinimized?: boolean
-  closeToTray?: boolean
-  hotkeys?: import('../../shared/hotkeyConfig').HotkeyConfig
-  showOvertimeBar?: boolean
+  categoryOrder?: string[] | undefined
+  defaultWorkLocation?: WorkLocation | null | undefined
+  sharepointUrl?: string | null | undefined
+  targetSheet?: string | null | undefined
+  categoryMapping?: Record<string, string> | undefined
+  categoryDescriptions?: Record<string, string> | undefined
+  categoryImportOrder?: string[] | undefined
+  localExcelFile?: string | null | undefined
+  launchAtLogin?: boolean | undefined
+  startMinimized?: boolean | undefined
+  closeToTray?: boolean | undefined
+  hotkeys?: import('../../shared/hotkeyConfig').HotkeyConfig | undefined
+  showOvertimeBar?: boolean | undefined
 }
 
 export interface ConfigRepository {

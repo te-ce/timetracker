@@ -14,10 +14,10 @@ export interface CategoryColumnHeaderProps {
   editingCat: string | null
   editValue: string
   colDragOverIdx: number | null
-  categoryDescriptions?: Record<string, string>
-  onCategoryReorder?: (order: string[]) => void
-  onCategoryRename?: (oldName: string, newName: string) => void
-  onAutoCategoryChange?: (category: string) => void
+  categoryDescriptions?: Record<string, string> | undefined
+  onCategoryReorder?: ((order: string[]) => void) | undefined
+  onCategoryRename?: ((oldName: string, newName: string) => void) | undefined
+  onAutoCategoryChange?: ((category: string) => void) | undefined
   dragHandlers: ColumnDragHandlers
   allCategories: string[]
   onEditValueChange: (v: string) => void
@@ -32,7 +32,7 @@ function CategoryBadge({
 }: {
   cat: string
   isAuto: boolean
-  onAutoCategoryChange?: (cat: string) => void
+  onAutoCategoryChange?: ((cat: string) => void) | undefined
 }) {
   if (isAuto)
     return (

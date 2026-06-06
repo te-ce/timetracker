@@ -82,8 +82,8 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       date: string
       periodId: string
       endTime: string
-      liveSubtaskId?: string
-      stoppedAt?: string
+      liveSubtaskId?: string | undefined
+      stoppedAt?: string | undefined
     }) => repository.stopWorkPeriod(date, periodId, endTime, liveSubtaskId, stoppedAt),
     onSuccess: (_, { date }) => invalidate(date),
   })

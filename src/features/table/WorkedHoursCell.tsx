@@ -11,10 +11,10 @@ interface Props {
   windows: WorkPeriod[]
   repository: MonthRepository
   autoCategory: string | null
-  customCategories?: string[]
-  categoryOrder?: string[]
-  categoryDescriptions?: Record<string, string>
-  className?: string
+  customCategories?: string[] | undefined
+  categoryOrder?: string[] | undefined
+  categoryDescriptions?: Record<string, string> | undefined
+  className?: string | undefined
 }
 
 export function WorkedHoursCell({

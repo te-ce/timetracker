@@ -187,8 +187,8 @@ export function DayView() {
           sollstunden={sollstunden}
           priorOvertime={overtimeToDate.priorOvertime}
           workedToday={overtimeToDate.workedToday}
-          liveWindowStart={liveWindowStart}
-          activeTrackingStartedAt={activeTracking?.startedAt}
+          liveWindowStart={liveWindowStart ?? null}
+          activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           onHide={() => hideOvertimeMutation.mutate()}
           {...officeStats}
         />

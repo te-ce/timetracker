@@ -36,7 +36,7 @@ export async function getAccessToken(): Promise<string> {
   if (accounts.length === 0) throw new Error('Not authenticated — no MSAL account')
   const result = await msalInstance.acquireTokenSilent({
     scopes: graphScopes,
-    account: accounts[0],
+    ...(accounts[0] ? { account: accounts[0] } : {}),
   })
   return result.accessToken
 }

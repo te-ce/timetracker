@@ -14,9 +14,9 @@ interface Props {
   windows: WorkPeriod[]
   repository: MonthRepository
   autoCategory: string | null
-  customCategories?: string[]
-  categoryOrder?: string[]
-  categoryDescriptions?: Record<string, string>
+  customCategories?: string[] | undefined
+  categoryOrder?: string[] | undefined
+  categoryDescriptions?: Record<string, string> | undefined | undefined
 }
 
 type LiveSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt?: undefined }
@@ -84,7 +84,7 @@ interface CategoryPickerProps {
   categories: string[]
   onChange: (cat: string) => void
   compact?: boolean
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
 }
 
 function CategoryPicker({ value, categories, onChange, compact, categoryDescriptions }: CategoryPickerProps) {
@@ -235,7 +235,7 @@ interface LiveSubtaskBannerProps {
   nowTime: string
   categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
 }
 
 function LiveSubtaskBanner({
@@ -324,7 +324,7 @@ interface StartSubtaskFormProps {
   defaultCategory: string
   onStart: (subtask: LiveSubtask) => void
   onCancel: () => void
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
 }
 
 function StartSubtaskForm({
@@ -391,7 +391,7 @@ interface SubtaskRowProps {
   date: string
   categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
 }
 
 function resolveSubtaskEdit(
@@ -418,7 +418,7 @@ interface SubtaskEditFormProps {
   periodId: string
   date: string
   categories: string[]
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
   stripeBg: string
   mutations: ReturnType<typeof useWorkPeriodMutations>
   onDone: () => void
@@ -631,7 +631,7 @@ interface SubtaskFormProps {
   categories: string[]
   onAdd: (subtask: WorkPeriodSubtask) => void
   onCancel: () => void
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
 }
 
 function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: SubtaskFormProps) {
@@ -717,7 +717,7 @@ interface PeriodCardFooterProps {
   categories: string[]
   defaultCategory: string
   mutations: ReturnType<typeof useWorkPeriodMutations>
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
 }
 
 function PeriodCardFooter({
@@ -1023,7 +1023,7 @@ function AutoCategoryRow({
   hasLiveSubtask: boolean
   category: string
   categories: string[]
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
   periodId: string
   date: string
   mutations: ReturnType<typeof useWorkPeriodMutations>
@@ -1067,7 +1067,7 @@ interface PeriodCardProps {
   date: string
   categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
-  categoryDescriptions?: Record<string, string>
+  categoryDescriptions?: Record<string, string> | undefined
   nowTime: string
 }
 

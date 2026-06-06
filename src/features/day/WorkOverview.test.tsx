@@ -71,8 +71,8 @@ function TestPanel({
 }: {
   repo: MonthRepository
   autoCategory?: string | null
-  customCategories?: string[]
-  categoryDescriptions?: Record<string, string>
+  customCategories?: string[] | undefined
+  categoryDescriptions?: Record<string, string> | undefined
 }) {
   const { data: monthData = {} } = useQuery<MonthData>({
     queryKey: QUERY_KEYS.month(YEAR, MONTH),

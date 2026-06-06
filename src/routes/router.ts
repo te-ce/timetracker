@@ -66,7 +66,7 @@ const routeTree = rootRoute.addChildren([dayRoute, monthRoute, tableRoute, sprin
 
 const history = typeof window !== 'undefined' && window.location.protocol === 'file:' ? createHashHistory() : undefined
 
-export const router = createRouter({ routeTree, history })
+export const router = createRouter({ routeTree, ...(history ? { history } : {}) })
 
 declare module '@tanstack/react-router' {
   interface Register {
