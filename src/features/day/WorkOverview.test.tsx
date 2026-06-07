@@ -389,6 +389,29 @@ describe('WorkOverview', () => {
       await screen.findByRole('button', { name: /edit period/i })
       expect(screen.queryByRole('button', { name: /stop tracking/i })).not.toBeInTheDocument()
     })
+
+    it('pressing Escape in stop period form dismisses without saving', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+      await userEvent.keyboard('{Escape}')
+      expect(await screen.findByRole('button', { name: /stop tracking/i })).toBeInTheDocument()
+      expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
+    })
+
+    it('stop period form dismisses when focus moves to an element outside the form', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+      expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
+    })
+
+    it('stop period time input is a plain text field not a native time picker', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+      expect(screen.getByLabelText(/period ended at/i)).toHaveAttribute('type', 'text')
+    })
   })
 
   describe('live subtask tracking', () => {
@@ -512,6 +535,29 @@ describe('WorkOverview', () => {
         expect(saved[0]?.subtasks[0]?.stoppedAt).toBe('10:00')
         expect(saved[0]?.subtasks[0]?.hours).toBe(1)
       })
+    })
+
+    it('pressing Escape in stop subtask form dismisses without saving', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+      await userEvent.keyboard('{Escape}')
+      expect(await screen.findByRole('button', { name: /stop subtask/i })).toBeInTheDocument()
+      expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
+    })
+
+    it('stop subtask form dismisses when focus moves to an element outside the form', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+      expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
+    })
+
+    it('stop subtask time input is a plain text field not a native time picker', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      expect(screen.getByLabelText(/subtask stopped at/i)).toHaveAttribute('type', 'text')
     })
 
     it('Stop all (from period header) stops live slice and sets period end', async () => {
@@ -836,10 +882,10 @@ describe('WorkOverview', () => {
       })
     })
 
-    it('auto-category row shows info icon indicating change is period-scoped', async () => {
+    it('auto-category row has no info icon', async () => {
       setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
-      expect(within(row).getByLabelText(/applies to this work period only/i)).toBeInTheDocument()
+      expect(within(row).queryByLabelText(/applies to this work period only/i)).not.toBeInTheDocument()
     })
 
     it('header shows total duration for a closed period', async () => {
@@ -938,12 +984,11 @@ describe('WorkOverview', () => {
       expect(hoursBtn.compareDocumentPosition(catBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
-    it('category description shown after category name without parentheses', async () => {
+    it('category description shown in parentheses after category name in view mode', async () => {
       const descriptions = { Work: 'Deep work sessions' }
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
       const row = await screen.findByTestId('subtask-row')
-      expect(within(row).getByText('Deep work sessions')).toBeInTheDocument()
-      expect(within(row).queryByText(/\(Deep work sessions\)/)).not.toBeInTheDocument()
+      expect(within(row).getByText('(Deep work sessions)')).toBeInTheDocument()
     })
 
     it('category description appears after category button in DOM', async () => {
@@ -951,20 +996,20 @@ describe('WorkOverview', () => {
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
       const row = await screen.findByTestId('subtask-row')
       const catBtn = within(row).getByRole('button', { name: /edit Work subtask/i })
-      const desc = within(row).getByText('Deep work sessions')
+      const desc = within(row).getByText('(Deep work sessions)')
       expect(catBtn.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
-    it('category description shown after category picker in edit mode', async () => {
-      const descriptions = { Work: 'Deep work sessions', Meeting: 'Sync meetings' }
+    it('category description hidden in edit mode (shown in dropdown instead)', async () => {
+      const descriptions = { Work: 'Deep work sessions' }
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
       await screen.findByRole('button', { name: /edit Work subtask/i })
       await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
       const row = screen.getByTestId('subtask-row')
-      const picker = within(row).getByRole('combobox', { name: /category/i })
-      const desc = within(row).getByText('Deep work sessions')
-      expect(desc.tagName).not.toBe('OPTION')
-      expect(picker.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      const nonOptionDescs = Array.from(row.querySelectorAll('*')).filter(
+        (el) => el.tagName !== 'OPTION' && el.textContent === '(Deep work sessions)',
+      )
+      expect(nonOptionDescs).toHaveLength(0)
     })
   })
 
