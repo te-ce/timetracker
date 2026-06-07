@@ -37,4 +37,13 @@ describe('LocalStorageAdapter', () => {
     await adapter.put('entries', data)
     expect(await adapter.get('entries')).toEqual(data)
   })
+
+  it('returns null and warns when stored JSON is corrupt', async () => {
+    const adapter = new LocalStorageAdapter()
+    localStorage.setItem('timetracker_broken', '{not valid json')
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(await adapter.get('broken')).toBeNull()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to parse JSON'))
+    warnSpy.mockRestore()
+  })
 })

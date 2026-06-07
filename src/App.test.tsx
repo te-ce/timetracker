@@ -126,4 +126,69 @@ describe('App', () => {
     expect(router.state.location.pathname).toBe('/table')
     document.body.removeChild(input)
   })
+
+  it('navigates to /month when pressing the "m" hotkey', async () => {
+    renderApp('/')
+    await screen.findByText('Timetracker')
+    fireEvent.keyDown(document, { key: 'm' })
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/month')
+    })
+  })
+
+  it('navigates to /sprint when pressing the "s" hotkey', async () => {
+    renderApp('/')
+    await screen.findByText('Timetracker')
+    fireEvent.keyDown(document, { key: 's' })
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/sprint')
+    })
+  })
+
+  it('Ctrl+Z triggers undo', async () => {
+    const undo = vi.fn().mockResolvedValue(undefined)
+    const cmd = { description: 'test', undo: vi.fn(), redo: vi.fn() }
+    useUndoStore.setState({ past: [cmd], future: [], canUndo: true, canRedo: false, undo, redo: vi.fn() })
+    renderApp('/')
+    await screen.findByText('Timetracker')
+    fireEvent.keyDown(document, { key: 'z', ctrlKey: true })
+    await waitFor(() => {
+      expect(undo).toHaveBeenCalled()
+    })
+  })
+
+  it('Ctrl+Shift+Z triggers redo', async () => {
+    const redo = vi.fn().mockResolvedValue(undefined)
+    const cmd = { description: 'test', undo: vi.fn(), redo: vi.fn() }
+    useUndoStore.setState({ past: [], future: [cmd], canUndo: false, canRedo: true, undo: vi.fn(), redo })
+    renderApp('/')
+    await screen.findByText('Timetracker')
+    fireEvent.keyDown(document, { key: 'z', ctrlKey: true, shiftKey: true })
+    await waitFor(() => {
+      expect(redo).toHaveBeenCalled()
+    })
+  })
+
+  it('opens keyboard shortcut legend with "?" key', async () => {
+    renderApp('/')
+    await screen.findByText('Timetracker')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    fireEvent.keyDown(document, { key: '?' })
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    })
+  })
+
+  it('closes keyboard shortcut legend with Escape', async () => {
+    renderApp('/')
+    await screen.findByText('Timetracker')
+    fireEvent.keyDown(document, { key: '?' })
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument()
+    })
+    fireEvent.keyDown(document, { key: 'Escape' })
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull()
+    })
+  })
 })

@@ -159,3 +159,91 @@ describe('JsonRecordStore', () => {
     expect(await store.get('x')).toBe('updated')
   })
 })
+
+describe('JsonCollectionStore with validator', () => {
+  function isItem(v: unknown): Item | null {
+    if (typeof v !== 'object' || v === null) return null
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const o = v as Record<string, unknown>
+    if (typeof o['id'] !== 'string' || typeof o['value'] !== 'number') return null
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    return { id: o['id'] as string, value: o['value'] as number }
+  }
+
+  it('accepts valid items', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['items.json'] = [
+      { id: 'a', value: 1 },
+      { id: 'b', value: 2 },
+    ]
+    const store = new JsonCollectionStore<Item>(adapter, 'items.json', isItem)
+    expect(await store.getAll()).toEqual([
+      { id: 'a', value: 1 },
+      { id: 'b', value: 2 },
+    ])
+  })
+
+  it('drops invalid items and warns', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['items.json'] = [
+      { id: 'a', value: 1 },
+      { id: 'bad', value: 'not-a-number' },
+      { id: 'c', value: 3 },
+    ]
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = new JsonCollectionStore<Item>(adapter, 'items.json', isItem)
+    const result = await store.getAll()
+    expect(result).toEqual([
+      { id: 'a', value: 1 },
+      { id: 'c', value: 3 },
+    ])
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid item dropped'), expect.anything())
+    warnSpy.mockRestore()
+  })
+
+  it('returns empty array and warns when stored data is not an array', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['items.json'] = { wrong: 'type' }
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = new JsonCollectionStore<Item>(adapter, 'items.json', isItem)
+    expect(await store.getAll()).toEqual([])
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('expected array'), expect.anything())
+    warnSpy.mockRestore()
+  })
+})
+
+describe('JsonRecordStore with validator', () => {
+  function isString(v: unknown): string | null {
+    return typeof v === 'string' ? v : null
+  }
+
+  it('accepts valid record entries', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['records.json'] = { a: 'hello', b: 'world' }
+    const store = new JsonRecordStore<string>(adapter, 'records.json', isString)
+    expect(await store.getAll()).toEqual({ a: 'hello', b: 'world' })
+  })
+
+  it('drops invalid record entries and warns', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['records.json'] = { a: 'hello', b: 42, c: 'valid' }
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = new JsonRecordStore<string>(adapter, 'records.json', isString)
+    expect(await store.getAll()).toEqual({ a: 'hello', c: 'valid' })
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('invalid record for key "b" dropped'),
+      expect.anything(),
+    )
+    warnSpy.mockRestore()
+  })
+
+  it('returns empty record and warns when stored data is not an object', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['records.json'] = [1, 2, 3]
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = new JsonRecordStore<string>(adapter, 'records.json', isString)
+    expect(await store.getAll()).toEqual({})
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('expected object'), expect.anything())
+    warnSpy.mockRestore()
+  })
+})

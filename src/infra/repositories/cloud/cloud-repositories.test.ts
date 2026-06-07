@@ -1,10 +1,23 @@
 // @vitest-environment node
 import type { AppConfig } from '../types'
+import type { StorageAdapter } from '../../storage/adapter'
 import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
 import { CloudTimeTrackingRepository } from './time-tracking-repository'
 import { CloudMonthRepository } from './month-repository'
+
+function adapterWithValue(key: string, value: unknown): StorageAdapter {
+  return {
+    get<T>(k: string): Promise<T | null> {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      if (k === key) return Promise.resolve(value as T | null)
+      return Promise.resolve(null)
+    },
+    put: () => Promise.resolve(),
+    delete: () => Promise.resolve(),
+  }
+}
 
 describe('CloudConfigRepository', () => {
   it('returns defaults when no data stored', async () => {
@@ -58,6 +71,16 @@ describe('CloudConfigRepository', () => {
     const stored = await repo.get()
     expect(stored.customCategories).toEqual(['A'])
     expect(stored.categoryMapping).toEqual({ A: 'original' })
+  })
+
+  it('falls back to defaults and warns when stored config fails schema validation', async () => {
+    const adapter = adapterWithValue('config.json', { sollstunden: 'not-a-number' })
+    const repo = new CloudConfigRepository(adapter)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const config = await repo.get()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Stored config failed validation'), expect.anything())
+    expect(config.sollstunden).toBe(8)
+    warnSpy.mockRestore()
   })
 
   it('persists and retrieves config', async () => {
@@ -208,6 +231,15 @@ describe('CloudTimeTrackingRepository', () => {
     await repo.start('2026-05-25', '_SUPPORT')
     await repo.stop()
     expect(await repo.getActive()).toBeNull()
+  })
+
+  it('getActive returns null and warns when stored tracking data is invalid', async () => {
+    const adapter = adapterWithValue('active-tracking.json', { broken: true })
+    const repo = new CloudTimeTrackingRepository(adapter)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(await repo.getActive()).toBeNull()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid stored tracking data'), expect.anything())
+    warnSpy.mockRestore()
   })
 
   it('stop returns hours when elapsed time is positive', async () => {

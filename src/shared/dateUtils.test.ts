@@ -64,4 +64,20 @@ describe('parseLocalDate', () => {
     expect(toLocalIso(parseLocalDate('2026-01-31'))).toBe('2026-01-31')
     expect(toLocalIso(parseLocalDate('2026-12-01'))).toBe('2026-12-01')
   })
+
+  it('throws on empty string', () => {
+    expect(() => parseLocalDate('')).toThrow('invalid date string')
+  })
+
+  it('throws on non-date string', () => {
+    expect(() => parseLocalDate('not-a-date')).toThrow('invalid date string')
+  })
+
+  it('throws on partial date string', () => {
+    expect(() => parseLocalDate('2026-05')).toThrow('invalid date string')
+  })
+
+  it('throws on date with wrong separators', () => {
+    expect(() => parseLocalDate('2026/05/18')).toThrow('invalid date string')
+  })
 })

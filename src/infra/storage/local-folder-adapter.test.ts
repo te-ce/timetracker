@@ -149,4 +149,16 @@ describe('LocalFolderStorageAdapter', () => {
       expect(fs.files.has('months-index.json.json')).toBe(false)
     })
   })
+
+  describe('corrupt JSON handling', () => {
+    it('returns null and warns when stored file contains invalid JSON', async () => {
+      // Inject corrupt content directly into the in-memory FS
+      fs.files.set('corrupt.json', '{not valid json')
+      const adapter = new LocalFolderStorageAdapter()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect(await adapter.get('corrupt')).toBeNull()
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to parse JSON'))
+      warnSpy.mockRestore()
+    })
+  })
 })
