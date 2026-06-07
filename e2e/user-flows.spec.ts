@@ -275,7 +275,7 @@ test.describe('per-day auto category', () => {
     await page.goto(`/?date=${TEST_DATE}`)
     const row = page.getByTestId('auto-category-row').first()
     await expect(row).toBeVisible()
-    await expect(row.getByText('main')).toBeVisible()
+    await expect(row.getByText('main', { exact: true })).toBeVisible()
   })
 
   test('changing period category does not change the global auto-category setting', async ({ page }) => {
