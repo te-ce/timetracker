@@ -220,7 +220,43 @@ test.describe('month calendar navigation', () => {
   })
 })
 
-// ─── Test 6: Sprint view renders without crashing ────────────────────────────
+// ─── Test 6: Settings persist across reload ───────────────────────────────────
+
+test.describe('settings persistence', () => {
+  test('target hours change survives page reload', async ({ page }) => {
+    // Use evaluate (not addInitScript) so the seed does not re-run on reload.
+    await page.goto('/settings')
+    await page.evaluate((seed: Record<string, string>) => {
+      for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
+    }, seedBase())
+    await page.reload()
+
+    const input = page.getByLabel('Target hours per day')
+    await expect(input).toHaveValue('8')
+
+    await input.fill('6')
+    await page.keyboard.press('Tab')
+
+    await page.waitForFunction(() => {
+      const raw = localStorage.getItem('timetracker_config.json')
+      if (!raw) return false
+      try {
+        const data: unknown = JSON.parse(raw)
+        if (typeof data !== 'object' || data === null) return false
+        const value: unknown = Reflect.get(data, 'sollstunden')
+        return value === 6
+      } catch {
+        return false
+      }
+    })
+
+    await page.reload()
+
+    await expect(page.getByLabel('Target hours per day')).toHaveValue('6')
+  })
+})
+
+// ─── Test 7: Sprint view renders without crashing ────────────────────────────
 
 test.describe('sprint view', () => {
   test.beforeEach(async ({ page }) => {
