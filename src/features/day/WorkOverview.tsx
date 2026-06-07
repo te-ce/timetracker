@@ -900,7 +900,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
         >
           {formatHours(duration, timeFormat)}
         </span>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex justify-center">
           {editingTime ? (
             <div
               className="flex items-center gap-1 flex-wrap"
@@ -1113,18 +1113,6 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
       />
 
       <div className="px-4 py-3 flex flex-col gap-1.5">
-        {liveSubtask && (
-          <LiveSubtaskBanner
-            subtask={liveSubtask}
-            periodId={w.id}
-            date={date}
-            nowTime={nowTime}
-            categories={categories}
-            mutations={mutations}
-            categoryDescriptions={categoryDescriptions}
-          />
-        )}
-
         <AutoCategoryRow
           hours={displayRemainder}
           isRunning={isRunning}
@@ -1150,6 +1138,18 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
             categoryDescriptions={categoryDescriptions}
           />
         ))}
+
+        {liveSubtask && (
+          <LiveSubtaskBanner
+            subtask={liveSubtask}
+            periodId={w.id}
+            date={date}
+            nowTime={nowTime}
+            categories={categories}
+            mutations={mutations}
+            categoryDescriptions={categoryDescriptions}
+          />
+        )}
 
         {overbooked && (
           <p className="text-xs text-red-600 dark:text-red-400 font-medium">

@@ -856,6 +856,31 @@ describe('WorkOverview', () => {
       expect(rows[0]).toHaveTextContent('Work')
       expect(rows[1]).toHaveTextContent('Meeting')
     })
+
+    it('auto-category row appears before live-subtask-banner in DOM order', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const autoRow = await screen.findByTestId('auto-category-row')
+      const banner = screen.getByTestId('live-subtask-banner')
+      expect(autoRow.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('live-subtask-banner appears after completed subtask rows in DOM order', async () => {
+      const p: WorkPeriod = {
+        id: 'a',
+        start: '09:00',
+        end: null,
+        category: 'Work',
+        subtasks: [
+          { id: 'sl-1', category: 'Meeting', hours: 0.5 },
+          { id: 'sl-live', category: 'Work', hours: 0, startedAt: '09:30' },
+        ],
+      }
+      setup([p])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      const subtaskRows = screen.getAllByTestId('subtask-row')
+      const lastSubtaskRow = subtaskRows[subtaskRows.length - 1]!
+      expect(lastSubtaskRow.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
   })
 
   describe('auto-merge on add — async repo (race condition regression)', () => {
