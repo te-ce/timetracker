@@ -260,7 +260,7 @@ test.describe('day type leave', () => {
 // ─── 8. Per-day AutoCategory (period category) ──────────────────────────────
 
 test.describe('per-day auto category', () => {
-  test('AutoCategoryRow shows info icon about period-scoped change', async ({ page }) => {
+  test('AutoCategoryRow shows main badge identifying the period-level category', async ({ page }) => {
     await page.addInitScript(
       (seed: Record<string, string>) => {
         for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
@@ -275,7 +275,7 @@ test.describe('per-day auto category', () => {
     await page.goto(`/?date=${TEST_DATE}`)
     const row = page.getByTestId('auto-category-row').first()
     await expect(row).toBeVisible()
-    await expect(row.getByLabel(/applies to this work period only/i)).toBeVisible()
+    await expect(row.getByText('main')).toBeVisible()
   })
 
   test('changing period category does not change the global auto-category setting', async ({ page }) => {
