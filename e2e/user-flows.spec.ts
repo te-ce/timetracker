@@ -185,17 +185,12 @@ test.describe('work location toggle', () => {
 
     const locationBtn = page.getByRole('button', { name: /Work location:/i })
     const initialText = await locationBtn.textContent()
+    const expectedAfterToggle = initialText?.includes('Remote') ? 'Office' : 'Remote'
 
     await locationBtn.click()
 
-    const newText = await locationBtn.textContent()
-    expect(newText).not.toEqual(initialText)
-    // After toggle should show the other location
-    if (initialText?.includes('Remote')) {
-      expect(newText).toContain('Office')
-    } else {
-      expect(newText).toContain('Remote')
-    }
+    // Use retrying assertion — mutation is async so text may not change immediately
+    await expect(locationBtn).toContainText(expectedAfterToggle)
   })
 
   test('location change persists after page reload', async ({ page }) => {
