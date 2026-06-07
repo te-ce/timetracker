@@ -1,9 +1,10 @@
-import { useState, useRef, Fragment, useCallback } from 'react'
+import { useState, useRef, Fragment, useCallback, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useCloseOnOutsideClickOrEscape } from '../../shared/useCloseOnOutsideClickOrEscape'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { MonthRepository, WorkLocation } from '../../infra/repositories/types'
 import type { DayType, DotPopoverState, NotePopoverState } from '../day'
-import { isDayTypeOverride, DotPopoverPanel, NotePopoverPanel } from '../day'
+import { isDayTypeOverride, DotPopoverPanel, NotePopoverPanel, WorkOverview } from '../day'
 import { classifyDay } from '../../shared/dayStatus'
 import { buildMonthTable } from './buildMonthTable'
 import { getAllCategories } from '../../shared/categories'
@@ -202,8 +203,28 @@ export function MonthGrid({
   const [colDragOverIdx, setColDragOverIdx] = useState<number | null>(null)
   const [editingCat, setEditingCat] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
+  const [activeDialogDate, setActiveDialogDate] = useState<string | null>(null)
+  const categoryDialogRef = useRef<HTMLDivElement>(null)
 
   const todayIso = toLocalIso(new Date())
+
+  useEffect(() => {
+    if (!activeDialogDate) return
+    function handleMouseDown(e: MouseEvent) {
+      if (categoryDialogRef.current && e.target instanceof Node && !categoryDialogRef.current.contains(e.target)) {
+        setActiveDialogDate(null)
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setActiveDialogDate(null)
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [activeDialogDate])
 
   const renderDayCell = useCallback(
     (date: string, dayLabel: string, rowBg: string) => {
@@ -487,11 +508,12 @@ export function MonthGrid({
                       const isAutoTarget = cat === autoCategory
                       const val = getCellValue(row, cat)
                       return (
-                        <td key={cat} className="px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem]">
-                          <span
-                            className={`inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-600 dark:text-gray-300 ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
-                            data-tooltip="Edit hours in Day view"
-                          >
+                        <td
+                          key={cat}
+                          className={`px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem] cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
+                          onClick={() => setActiveDialogDate(row.date)}
+                        >
+                          <span className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-600 dark:text-gray-300">
                             {val}
                           </span>
                         </td>
@@ -612,6 +634,50 @@ export function MonthGrid({
         </table>
       </div>
 
+      {activeDialogDate &&
+        createPortal(
+          <>
+            <div className="fixed inset-0 z-[100] bg-black/20" />
+            <div
+              ref={categoryDialogRef}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[200] w-full max-w-2xl rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-xl"
+            >
+              <div className="flex items-center justify-between border-b dark:border-gray-700 px-5 py-3">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-medium">
+                    Work periods
+                  </p>
+                  <p className="text-sm font-semibold">
+                    {new Date(activeDialogDate + 'T12:00').toLocaleDateString('en-GB', {
+                      weekday: 'long',
+                      day: 'numeric',
+                      month: 'long',
+                    })}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setActiveDialogDate(null)}
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none"
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">
+                <WorkOverview
+                  date={activeDialogDate}
+                  windows={monthData[activeDialogDate]?.windows ?? []}
+                  repository={repository}
+                  autoCategory={autoCategory}
+                  customCategories={customCategories}
+                  categoryOrder={categoryOrder}
+                  categoryDescriptions={categoryDescriptions}
+                />
+              </div>
+            </div>
+          </>,
+          document.body,
+        )}
       <DotPopoverPanel state={dotPopover} popoverRef={popoverRef} onSelectDayType={handleDayTypeSelect} />
       <NotePopoverPanel
         state={notePopover}

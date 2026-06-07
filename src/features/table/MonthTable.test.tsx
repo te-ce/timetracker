@@ -122,8 +122,7 @@ describe('MonthGrid', () => {
     const row = await screen.findByRole('row', { name: /2026-05-01/ })
     // 8h worked, 3h _SUPPORT, 5h uncategorized → appears in _COREMEDIA (auto-category) column
     await waitFor(() => {
-      const coremediaCell = row.querySelectorAll('[data-tooltip="Edit hours in Day view"]')[2]
-      expect(coremediaCell).toHaveTextContent('5')
+      expect(within(row).getByText('5.00')).toBeInTheDocument()
     })
   })
 
@@ -623,6 +622,92 @@ describe('MonthGrid', () => {
         expect(screen.getByTestId('sprint-worked-Sprint 1')).toHaveTextContent('3.00')
         expect(screen.getByTestId('sprint-worked-Sprint 2')).toHaveTextContent('8.00')
       })
+    })
+  })
+
+  describe('category cell click opens work period dialog', () => {
+    it('clicking a category cell opens the WorkOverview dialog', async () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
+        },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      const cells = within(row).getAllByRole('cell')
+      // first category cell is after: day, status, worked, location, separator (index 5)
+      await userEvent.click(cells[5]!)
+
+      expect(await screen.findByText('Work periods')).toBeInTheDocument()
+    })
+
+    it('dialog shows a date label for the clicked row', async () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
+        },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      const cells = within(row).getAllByRole('cell')
+      await userEvent.click(cells[5]!)
+
+      await screen.findByText('Work periods')
+      // date label is rendered in a <p> below the heading
+      const heading = screen.getByText('Work periods')
+      expect(heading.nextElementSibling).not.toBeNull()
+      expect(heading.nextElementSibling!.textContent).not.toBe('')
+    })
+
+    it('pressing Escape closes the dialog', async () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
+        },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      const cells = within(row).getAllByRole('cell')
+      await userEvent.click(cells[5]!)
+      await screen.findByText('Work periods')
+
+      await userEvent.keyboard('{Escape}')
+
+      await waitFor(() => {
+        expect(screen.queryByText('Work periods')).not.toBeInTheDocument()
+      })
+    })
+
+    it('clicking the close button closes the dialog', async () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
+        },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      const cells = within(row).getAllByRole('cell')
+      await userEvent.click(cells[5]!)
+      await screen.findByText('Work periods')
+
+      await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+      await waitFor(() => {
+        expect(screen.queryByText('Work periods')).not.toBeInTheDocument()
+      })
+    })
+
+    it('category cells have no tooltip', async () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
+        },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      const cells = within(row).getAllByRole('cell')
+      expect(cells[5]).not.toHaveAttribute('data-tooltip')
+      expect(cells[5]!.querySelector('[data-tooltip]')).toBeNull()
     })
   })
 
