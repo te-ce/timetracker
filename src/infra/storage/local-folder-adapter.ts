@@ -42,6 +42,10 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
       return data as T
     } catch (e) {
       if (e instanceof DOMException && e.name === 'NotFoundError') return null
+      if (e instanceof SyntaxError) {
+        console.warn(`[LocalFolderStorageAdapter] Failed to parse JSON for key "${key}", discarding`)
+        return null
+      }
       throw e
     }
   }

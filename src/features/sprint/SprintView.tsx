@@ -7,7 +7,7 @@ import { SprintConfigPanel } from './SprintConfigPanel'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { getAllCategories } from '../../shared/categories'
 import { useAuthStore } from '../../shared/authStore'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig, invalidateSprintExport } from '../../shared/queryKeys'
 import { createWorkbookService, isExportReady } from '../excel'
 import { toLocalIso } from '../../shared/dateUtils'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
@@ -74,10 +74,7 @@ function SprintContent({
         status: 'exported',
         exportedAt: toLocalIso(new Date()),
       }),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.sprintExportByIndex(activeIndex),
-      }),
+    onSuccess: () => invalidateSprintExport(queryClient, activeIndex),
   })
 
   const exportStatus = sprintExport ? sprintExport.status : 'pending'

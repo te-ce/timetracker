@@ -8,6 +8,9 @@ export function toLocalIso(date: Date): string {
 
 /** Parse a YYYY-MM-DD string as a local-timezone Date (not UTC midnight). */
 export function parseLocalDate(iso: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    throw new Error(`parseLocalDate: invalid date string "${iso}"`)
+  }
   const parts = iso.split('-')
   return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]))
 }

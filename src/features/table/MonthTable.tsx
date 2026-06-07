@@ -10,7 +10,7 @@ import { getAllCategories } from '../../shared/categories'
 import { computeSprintGroups } from '../sprint'
 import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
-import { QUERY_KEYS } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { toLocalIso } from '../../shared/dateUtils'
 import type { MonthTableRow } from './buildMonthTable'
 import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
@@ -249,7 +249,7 @@ export function MonthGrid({
   const queryClient = useQueryClient()
 
   function invalidate() {
-    void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
+    invalidateMonthByYearMonth(queryClient, year, month)
   }
 
   const gridConfirmMutation = useMutation({

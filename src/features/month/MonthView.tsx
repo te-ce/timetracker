@@ -8,7 +8,7 @@ import { StatusLegend } from './StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
 
@@ -36,7 +36,7 @@ export function MonthView() {
 
   const resetMonthMutation = useMutation({
     mutationFn: () => monthRepo.deleteMonth(year, month),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
+    onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
   const { config, summaries, overtimeToDate, workLocations, sollstunden, dayNotes, todayLiveWindowStart } =

@@ -7,7 +7,7 @@ import { renameCategoryAcrossAllMonths } from './categoryMutations'
 import { MonthGrid } from './MonthTable'
 import { MonthNav, OvertimeBar, StatusLegend } from '../month'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
 import { resolveTableConfig } from './tableConfig'
 
@@ -53,13 +53,13 @@ export function TableView() {
       renameCategoryAcrossAllMonths(oldName, newName, configRepo, monthRepo),
     onSuccess: () => {
       invalidateConfig(queryClient)
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
+      invalidateMonthAll(queryClient)
     },
   })
 
   const noteMutation = useMutation({
     mutationFn: ({ date, note }: { date: string; note: string }) => monthRepo.saveNote(date, note),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
+    onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
   const {
@@ -92,12 +92,12 @@ export function TableView() {
 
   const resetMonthMutation = useMutation({
     mutationFn: () => monthRepo.deleteMonth(year, month),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
+    onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
   const clearDayMutation = useMutation({
     mutationFn: (date: string) => monthRepo.resetDay(date),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) }),
+    onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
   function onMonthChange(y: number, m: number) {

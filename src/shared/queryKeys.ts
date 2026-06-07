@@ -1,13 +1,29 @@
 import type { QueryClient } from '@tanstack/react-query'
+import { parseLocalDate } from './dateUtils'
 
 export function invalidateMonth(client: QueryClient, date: string): void {
-  const year = parseInt(date.slice(0, 4))
-  const month = parseInt(date.slice(5, 7))
+  const d = parseLocalDate(date)
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.month(d.getFullYear(), d.getMonth() + 1) })
+}
+
+export function invalidateMonthByYearMonth(client: QueryClient, year: number, month: number): void {
   void client.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
+}
+
+export function invalidateMonthAll(client: QueryClient): void {
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
 }
 
 export function invalidateConfig(client: QueryClient): void {
   void client.invalidateQueries({ queryKey: QUERY_KEYS.config })
+}
+
+export function invalidateActiveTracking(client: QueryClient): void {
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
+}
+
+export function invalidateSprintExport(client: QueryClient, index: number): void {
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.sprintExportByIndex(index) })
 }
 
 export const QUERY_KEYS = {

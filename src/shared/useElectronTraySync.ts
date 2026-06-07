@@ -1,6 +1,6 @@
 import { useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS } from './queryKeys'
+import { QUERY_KEYS, invalidateActiveTracking } from './queryKeys'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { getAllCategories } from './categories'
 import { toLocalIso } from './dateUtils'
@@ -54,7 +54,7 @@ export function useElectronTraySync() {
   const handleSetCategory = useCallback(
     async (category: string) => {
       await applyCategorySwitch(category, timeTrackingRepo, toLocalIso(new Date()))
-      await queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
+      await invalidateActiveTracking(queryClient)
     },
     [queryClient, timeTrackingRepo],
   )

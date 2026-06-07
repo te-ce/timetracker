@@ -24,7 +24,15 @@ export {
   getEffectiveShortcut,
 } from './hotkeyConfig'
 export { calculateCategoryHours, calculateTotalCategorizedHours, calculateUncategorizedHours } from './periodCategories'
-export { invalidateConfig, invalidateMonth, QUERY_KEYS } from './queryKeys'
+export {
+  invalidateConfig,
+  invalidateMonth,
+  invalidateMonthByYearMonth,
+  invalidateMonthAll,
+  invalidateActiveTracking,
+  invalidateSprintExport,
+  QUERY_KEYS,
+} from './queryKeys'
 export {
   type DisplayStatus,
   STATUS_LABEL,

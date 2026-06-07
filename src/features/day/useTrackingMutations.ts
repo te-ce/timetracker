@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { MonthRepository, TimeTrackingRepository } from '../../infra/repositories/types'
-import { QUERY_KEYS, invalidateMonth } from '../../shared/queryKeys'
+import { invalidateMonth, invalidateActiveTracking } from '../../shared/queryKeys'
 
 function nowHHMM(): string {
   const d = new Date()
@@ -25,7 +25,7 @@ export function useTrackingMutations(
       await repository.openWorkPeriod(date, category, nowHHMM())
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
+      invalidateActiveTracking(queryClient)
       invalidateMonth(queryClient, date)
     },
   })
@@ -40,7 +40,7 @@ export function useTrackingMutations(
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
+      invalidateActiveTracking(queryClient)
     },
   })
 
