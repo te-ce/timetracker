@@ -267,6 +267,76 @@ interface LiveSubtaskBannerProps {
   categoryDescriptions?: Record<string, string> | undefined
 }
 
+function EditStartTimeForm({
+  current,
+  onSave,
+  onCancel,
+}: {
+  current: string
+  onSave: (t: string) => void
+  onCancel: () => void
+}) {
+  const [value, setValue] = useState(current)
+  const [error, setError] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  function handleSave() {
+    if (!/^\d{1,2}:\d{2}$/.test(value.trim())) {
+      setError(true)
+      return
+    }
+    onSave(value.trim())
+  }
+
+  return (
+    <span
+      className="relative flex items-center gap-1"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        placeholder="HH:MM"
+        onChange={(e) => {
+          setValue(e.target.value)
+          setError(false)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleSave()
+          if (e.key === 'Escape') onCancel()
+        }}
+        aria-label="Subtask started at"
+        className={`rounded border px-1.5 py-0.5 text-xs w-16 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
+      />
+      <span className="text-xs text-gray-400">– --:--</span>
+      {error && (
+        <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
+          Must be HH:MM
+        </span>
+      )}
+      <button
+        onClick={onCancel}
+        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5"
+      >
+        Cancel
+      </button>
+      <button
+        onClick={handleSave}
+        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-0.5"
+      >
+        Save
+      </button>
+    </span>
+  )
+}
+
 function LiveSubtaskBanner({
   subtask,
   periodId,
@@ -278,6 +348,7 @@ function LiveSubtaskBanner({
 }: LiveSubtaskBannerProps) {
   const [stopping, setStopping] = useState(false)
   const [editingCategory, setEditingCategory] = useState(false)
+  const [editingStart, setEditingStart] = useState(false)
   const timeFormat = useTimeFormatStore((s) => s.format)
   const elapsedHours = (() => {
     let startMins = minutesFrom(subtask.startedAt)
@@ -291,6 +362,11 @@ function LiveSubtaskBanner({
   function changeCategory(cat: string) {
     mutations.addSubtask.mutate({ date, periodId, subtask: { ...subtask, category: cat } })
     setEditingCategory(false)
+  }
+
+  function changeStart(startedAt: string) {
+    mutations.addSubtask.mutate({ date, periodId, subtask: { ...subtask, startedAt } })
+    setEditingStart(false)
   }
 
   if (stopping) {
@@ -357,9 +433,17 @@ function LiveSubtaskBanner({
           {description && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
         </>
       )}
-      <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
-        {subtask.startedAt} – --:--
-      </span>
+      {editingStart ? (
+        <EditStartTimeForm current={subtask.startedAt} onSave={changeStart} onCancel={() => setEditingStart(false)} />
+      ) : (
+        <button
+          onClick={() => setEditingStart(true)}
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
+          aria-label="Edit subtask start time"
+        >
+          {subtask.startedAt} – --:--
+        </button>
+      )}
       <span className="flex-1" />
       <button
         onClick={() => setStopping(true)}
@@ -671,9 +755,13 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
         <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[sl.category]})</span>
       )}
       {timed && (
-        <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
+        <button
+          onClick={() => setEditing(true)}
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
+          aria-label={`Edit ${sl.category} time range`}
+        >
           {sl.startedAt} – {sl.stoppedAt}
-        </span>
+        </button>
       )}
       {sl.note ? (
         <span className="text-xs text-gray-500 dark:text-gray-400 italic truncate flex-1">{sl.note}</span>

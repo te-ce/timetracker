@@ -1013,6 +1013,122 @@ describe('WorkOverview', () => {
     })
   })
 
+  describe('timed subtask time range — click to edit', () => {
+    function periodWithTimedSubtask(
+      id: string,
+      start: string,
+      end: string,
+      sliceCategory: string,
+      sliceStart: string,
+      sliceEnd: string,
+    ): WorkPeriod {
+      const hours =
+        (new Date(`2000-01-01T${sliceEnd}`).getTime() - new Date(`2000-01-01T${sliceStart}`).getTime()) / 3_600_000
+      return {
+        id,
+        start,
+        end,
+        category: sliceCategory,
+        subtasks: [{ id: 'sl-timed', category: sliceCategory, hours, startedAt: sliceStart, stoppedAt: sliceEnd }],
+      }
+    }
+
+    it('clicking the time range button enters edit mode with start and end inputs', async () => {
+      setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
+      const row = await screen.findByTestId('subtask-row')
+      await userEvent.click(within(row).getByRole('button', { name: /edit Work time range/i }))
+      expect(screen.getByLabelText(/subtask start time/i)).toBeInTheDocument()
+      expect(screen.getByLabelText(/subtask end time/i)).toBeInTheDocument()
+    })
+
+    it('editing via time range button saves updated start time to repository', async () => {
+      const { repo } = setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
+      const row = await screen.findByTestId('subtask-row')
+      await userEvent.click(within(row).getByRole('button', { name: /edit Work time range/i }))
+      const startInput = screen.getByLabelText(/subtask start time/i)
+      await userEvent.clear(startInput)
+      await userEvent.type(startInput, '09:30')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.subtasks[0]?.startedAt).toBe('09:30')
+      })
+    })
+  })
+
+  describe('live subtask start time editing', () => {
+    it('clicking the start time shows an input pre-filled with current startedAt', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      expect(screen.getByLabelText<HTMLInputElement>(/subtask started at/i).value).toBe('09:30')
+    })
+
+    it('saving a new start time persists to the repository', async () => {
+      const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      const input = screen.getByLabelText(/subtask started at/i)
+      await userEvent.clear(input)
+      await userEvent.type(input, '08:45')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.subtasks[0]?.startedAt).toBe('08:45')
+      })
+    })
+
+    it('pressing Enter saves the new start time', async () => {
+      const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      const input = screen.getByLabelText(/subtask started at/i)
+      await userEvent.clear(input)
+      await userEvent.type(input, '08:00{Enter}')
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.subtasks[0]?.startedAt).toBe('08:00')
+      })
+    })
+
+    it('pressing Escape cancels without saving', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      expect(screen.getByLabelText(/subtask started at/i)).toBeInTheDocument()
+      await userEvent.keyboard('{Escape}')
+      expect(await screen.findByRole('button', { name: /edit subtask start time/i })).toBeInTheDocument()
+      expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
+    })
+
+    it('Cancel button closes the form without saving', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+      expect(await screen.findByRole('button', { name: /edit subtask start time/i })).toBeInTheDocument()
+      expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
+    })
+
+    it('invalid format shows error and does not save', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      const input = screen.getByLabelText(/subtask started at/i)
+      await userEvent.clear(input)
+      await userEvent.type(input, 'not-a-time')
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      expect(await screen.findByText(/must be HH:MM/i)).toBeInTheDocument()
+    })
+
+    it('start time input is a plain text field not a native time picker', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      expect(screen.getByLabelText(/subtask started at/i)).toHaveAttribute('type', 'text')
+    })
+  })
+
   describe('live subtask banner layout', () => {
     it('shows start – --:-- format for active subtask time', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
