@@ -94,7 +94,7 @@ test.describe('break flow', () => {
     // Stop the running period
     await workSection.getByLabel('Stop tracking').click()
     await workSection.getByLabel('Period ended at').fill('12:00')
-    await workSection.getByRole('button', { name: 'Save' }).click()
+    await workSection.getByRole('button', { name: 'Confirm' }).click()
 
     // Period should now be closed
     await expect(workSection.getByLabel(/Edit period 09:00 to 12:00/)).toBeVisible()
