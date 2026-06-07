@@ -65,4 +65,10 @@ describe('shouldAutoExport', () => {
     )
     expect(result).toBe(false)
   })
+
+  it('returns false when daysSinceEnd equals autoExportDelayDays exactly', () => {
+    // May 19 is exactly 3 days after May 16; 3 > 3 is false, so should not export
+    const result = shouldAutoExport(sprint, { sprintIndex: 5, status: 'pending', exportedAt: null }, 3, '2026-05-19')
+    expect(result).toBe(false)
+  })
 })

@@ -35,7 +35,7 @@ export default {
   ],
   reporters: ['html', 'clear-text', 'progress'],
   htmlReporter: { fileName: 'reports/mutation/index.html' },
-  thresholds: { high: 80, low: 60, break: 50 },
+  thresholds: { high: 90, low: 70, break: 60 },
   coverageAnalysis: 'perTest',
   ignoreStatic: true,
   ignorePatterns: ['dist', 'dist-electron', 'reports'],

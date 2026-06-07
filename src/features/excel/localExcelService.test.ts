@@ -25,6 +25,7 @@ const mockState = vi.hoisted(() => {
   const rows: MockRow[] = []
   const writtenCells: Map<string, number | null> = new Map()
   let sheetName = 'Sheet1'
+  let writeBufferResult: unknown = new Uint8Array([0])
   return {
     rows,
     writtenCells,
@@ -34,6 +35,12 @@ const mockState = vi.hoisted(() => {
     set sheetName(v: string) {
       sheetName = v
     },
+    get writeBufferResult() {
+      return writeBufferResult
+    },
+    set writeBufferResult(v: unknown) {
+      writeBufferResult = v
+    },
   }
 })
 
@@ -41,7 +48,7 @@ vi.mock('exceljs', () => {
   class MockWorkbook {
     xlsx = {
       load: vi.fn().mockResolvedValue(undefined),
-      writeBuffer: vi.fn().mockResolvedValue(new Uint8Array([0])),
+      writeBuffer: vi.fn().mockImplementation(() => Promise.resolve(mockState.writeBufferResult)),
     }
     get worksheets() {
       return [{ name: mockState.sheetName }]
@@ -79,7 +86,7 @@ vi.mock('exceljs', () => {
 })
 
 import { loadExcelHandle } from '../../infra/storage/folder-handle-store'
-import { listLocalXlsxFiles, listLocalRows, writeLocalSprintData } from './localExcelService'
+import { listLocalXlsxFiles, listLocalSheets, listLocalRows, writeLocalSprintData } from './localExcelService'
 
 function makeRow(col1: string | null, col2: string | null, col3: string | null): MockRow {
   return {
@@ -141,6 +148,7 @@ beforeEach(() => {
   mockState.rows.length = 0
   mockState.sheetName = 'Sheet1'
   mockState.writtenCells.clear()
+  mockState.writeBufferResult = new Uint8Array([0])
 })
 
 describe('listLocalXlsxFiles', () => {
@@ -250,5 +258,50 @@ describe('writeLocalSprintData', () => {
     vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
 
     await expect(writeLocalSprintData('sprint.xlsx', 'WrongSheet', {}, {})).rejects.toThrow('"WrongSheet" not found')
+  })
+
+  it('skips rows where col1 is null when building the row map', async () => {
+    mockState.rows.push(makeRow(null, null, null), makeRow('TASK-1', null, null))
+    const { handle } = makeWritableFileHandle()
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+
+    await expect(
+      writeLocalSprintData('sprint.xlsx', 'Sheet1', { _CAT: 'TASK-1' }, { _CAT: 5 }),
+    ).resolves.toBeUndefined()
+    expect(mockState.writtenCells.get('2:2')).toBe(5)
+  })
+
+  it('trims whitespace from col1 when building task ID row map', async () => {
+    mockState.rows.push(makeRow('  TASK-1  ', null, null))
+    const { handle } = makeWritableFileHandle()
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+
+    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _CAT: 'TASK-1' }, { _CAT: 7 })
+    expect(mockState.writtenCells.get('1:2')).toBe(7)
+  })
+
+  it('throws when writeBuffer returns an unexpected type', async () => {
+    mockState.rows.push(makeRow('TASK-1', null, null))
+    mockState.writeBufferResult = 'not-a-buffer'
+    const { handle } = makeWritableFileHandle()
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+
+    await expect(writeLocalSprintData('sprint.xlsx', 'Sheet1', {}, {})).rejects.toThrow(
+      'writeBuffer returned unexpected type',
+    )
+  })
+})
+
+describe('listLocalSheets', () => {
+  it('returns worksheet names from the workbook', async () => {
+    mockState.sheetName = 'Sprint 42'
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('report.xlsx', makeReadonlyFileHandle()))
+
+    const sheets = await listLocalSheets('report.xlsx')
+    expect(sheets).toEqual(['Sprint 42'])
+  })
+
+  it('throws when no folder is configured', async () => {
+    await expect(listLocalSheets('report.xlsx')).rejects.toThrow('No local folder configured')
   })
 })

@@ -163,5 +163,36 @@ describe('renameCategoryAcrossAllMonths', () => {
 
       await expect(renameCategoryAcrossAllMonths('OldName', 'NewName', configRepo, monthRepo)).resolves.toBeUndefined()
     })
+
+    it('renames only the matching window in a day with mixed categories', async () => {
+      const monthRepo = new InMemoryMonthRepository({
+        '2026-06': {
+          '2026-06-01': {
+            windows: [period('a', 'OldName'), period('b', '_COREMEDIA')],
+          },
+        },
+      })
+      const configRepo = new InMemoryConfigRepository()
+
+      await renameCategoryAcrossAllMonths('OldName', 'NewName', configRepo, monthRepo)
+
+      const data = await monthRepo.getMonth(2026, 6)
+      const wins = data['2026-06-01']!.windows
+      expect(wins[0]!.category).toBe('NewName')
+      expect(wins[1]!.category).toBe('_COREMEDIA')
+    })
+  })
+
+  describe('config edge cases', () => {
+    it('saves empty categoryOrder array when it was undefined', async () => {
+      const cfg = { ...DEFAULT_APP_CONFIG, customCategories: [], categoryOrder: undefined }
+      const configRepo = new InMemoryConfigRepository(cfg)
+      const monthRepo = new InMemoryMonthRepository()
+
+      await renameCategoryAcrossAllMonths('OldName', 'NewName', configRepo, monthRepo)
+
+      const saved = await configRepo.get()
+      expect(saved.categoryOrder).toEqual([])
+    })
   })
 })

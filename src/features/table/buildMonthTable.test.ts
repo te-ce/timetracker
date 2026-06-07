@@ -101,4 +101,61 @@ describe('buildMonthTable', () => {
 
     expect(rows[0]!.dayType).toBe('Vacation')
   })
+
+  it('excludes the _UNCATEGORIZED key from entries', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        windows: [
+          {
+            ...win('w1', '09:00', '10:00', '_UNCATEGORIZED'),
+            subtasks: [{ id: 's1', category: 'QA', hours: 0.5 }],
+          },
+        ],
+      },
+    }
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+
+    expect('_UNCATEGORIZED' in rows[0]!.entries).toBe(false)
+    expect(rows[0]!.entries['QA']).toBeCloseTo(0.5)
+  })
+
+  it('sets hasUnaccountedHours true when uncategorized hours exceed threshold', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        windows: [win('w1', '09:00', '10:00', '_UNCATEGORIZED')],
+      },
+    }
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+
+    expect(rows[0]!.hasUnaccountedHours).toBe(true)
+    expect(rows[0]!.autoCategoryHours).toBe(1)
+  })
+
+  it('sets hasUnaccountedHours false when all hours are categorized', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        windows: [win('w1', '09:00', '10:00', '_COREMEDIA')],
+      },
+    }
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+
+    expect(rows[0]!.hasUnaccountedHours).toBe(false)
+  })
+
+  it('sets hasUnaccountedHours false when uncategorized hours are at or below 0.001', () => {
+    // 1h window, 0.9995h sliced → ~0.0005h uncategorized (below threshold)
+    const monthData: MonthData = {
+      '2026-05-01': {
+        windows: [
+          {
+            ...win('w1', '09:00', '10:00', '_UNCATEGORIZED'),
+            subtasks: [{ id: 's1', category: 'QA', hours: 0.9995 }],
+          },
+        ],
+      },
+    }
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+
+    expect(rows[0]!.hasUnaccountedHours).toBe(false)
+  })
 })

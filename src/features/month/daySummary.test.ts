@@ -106,4 +106,36 @@ describe('buildMonthSummaries', () => {
     expect(result.days[0]!.dayStatus).toBe('confirmed')
     expect(result.days[0]!.displayStatus).toBe('confirmed')
   })
+
+  it('sets isEntriesBalanced false when workedHours is zero', () => {
+    const monthData: MonthData = {
+      '2026-05-01': { windows: [] },
+    }
+    const result = buildMonthSummaries(2026, 5, { monthData, today })
+    expect(result.days[0]!.isEntriesBalanced).toBe(false)
+  })
+
+  it('excludes uncategorized hours from entryTotal', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        windows: [win('w1', '09:00', '10:00', '_UNCATEGORIZED')],
+      },
+    }
+    const result = buildMonthSummaries(2026, 5, { monthData, today })
+    expect(result.days[0]!.entryTotal).toBe(0)
+  })
+
+  it('sets hasAutoCategory to false', () => {
+    const monthData: MonthData = {
+      '2026-05-01': { windows: [win('w1', '09:00', '10:00')] },
+    }
+    const result = buildMonthSummaries(2026, 5, { monthData, today })
+    expect(result.days[0]!.hasAutoCategory).toBe(false)
+  })
+
+  it('workedHoursPerDay has exactly one entry per day in the month', () => {
+    const result = buildMonthSummaries(2026, 5, { monthData: {}, today })
+    expect(result.workedHoursPerDay).toHaveLength(31)
+    expect(result.workedHoursPerDay[0]).toBe(0)
+  })
 })
