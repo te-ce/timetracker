@@ -1056,6 +1056,14 @@ function AutoCategoryRow({
         compact
         categoryDescriptions={categoryDescriptions}
       />
+      <Tooltip content="Changing the category here applies to this work period only, not your global auto-category setting.">
+        <span
+          aria-label="This change applies to this work period only"
+          className="text-gray-400 dark:text-gray-500 cursor-help select-none text-xs"
+        >
+          ⓘ
+        </span>
+      </Tooltip>
     </div>
   )
 }

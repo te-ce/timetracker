@@ -239,4 +239,36 @@ describe('DayView', () => {
       })
     })
   })
+
+  describe('leave day', () => {
+    it.each(['Vacation', 'SickDay', 'Absence'] as const)(
+      'hides work periods section and shows leave banner for %s',
+      (dayType) => {
+        stubQuery({ selectedDayType: dayType, sollstunden: 8 })
+        render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+        expect(screen.queryByRole('region', { name: /work periods/i })).not.toBeInTheDocument()
+        expect(screen.getByRole('status', { name: /leave day info/i })).toBeInTheDocument()
+        expect(screen.getByText(/8h on leave/i)).toBeInTheDocument()
+      },
+    )
+
+    it('shows leave banner with configured sollstunden hours', () => {
+      stubQuery({ selectedDayType: 'Vacation', sollstunden: 6 })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.getByText(/6h on leave/i)).toBeInTheDocument()
+    })
+
+    it('keeps Confirm button visible on leave day', () => {
+      stubQuery({ selectedDayType: 'Vacation', isConfirmed: false })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.getByRole('button', { name: /confirm day/i })).toBeInTheDocument()
+    })
+
+    it('shows work periods section for WorkDay', () => {
+      stubQuery({ selectedDayType: 'WorkDay' })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.getByRole('region', { name: /work periods/i })).toBeInTheDocument()
+      expect(screen.queryByRole('status', { name: /leave day info/i })).not.toBeInTheDocument()
+    })
+  })
 })

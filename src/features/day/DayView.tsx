@@ -124,6 +124,7 @@ export function DayView() {
     autoCategory,
     dayClassification,
     effectiveLocation,
+    selectedDayType,
     sollstunden,
     overtimeToDate,
     todayIso,
@@ -158,6 +159,7 @@ export function DayView() {
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = findOpenPeriod(windows)?.start
+  const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay' || selectedDayType === 'Absence'
   const officeStats = totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
   const showOvertimeBar = config?.showOvertimeBar !== false
 
@@ -219,18 +221,28 @@ export function DayView() {
         </div>
       </div>
 
-      <section aria-label="Work periods">
-        <h3 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>
-        <WorkOverview
-          date={selectedDate}
-          windows={windows}
-          repository={monthRepo}
-          autoCategory={autoCategory ?? autoCategoryOverride}
-          customCategories={customCategories}
-          categoryOrder={categoryOrder}
-          categoryDescriptions={categoryDescriptions}
-        />
-      </section>
+      {isLeaveDay ? (
+        <div
+          role="status"
+          aria-label="Leave day info"
+          className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"
+        >
+          This day counts as {sollstunden}h On Leave — no work periods expected.
+        </div>
+      ) : (
+        <section aria-label="Work periods">
+          <h3 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>
+          <WorkOverview
+            date={selectedDate}
+            windows={windows}
+            repository={monthRepo}
+            autoCategory={autoCategory ?? autoCategoryOverride}
+            customCategories={customCategories}
+            categoryOrder={categoryOrder}
+            categoryDescriptions={categoryDescriptions}
+          />
+        </section>
+      )}
     </div>
   )
 }

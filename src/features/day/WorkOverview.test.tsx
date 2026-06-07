@@ -767,6 +767,12 @@ describe('WorkOverview', () => {
       })
     })
 
+    it('auto-category row shows info icon indicating change is period-scoped', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')])
+      const row = await screen.findByTestId('auto-category-row')
+      expect(within(row).getByLabelText(/applies to this work period only/i)).toBeInTheDocument()
+    })
+
     it('header shows total duration for a closed period', async () => {
       setup([period('a', '09:00', '11:00')])
       const header = await screen.findByTestId('period-card-header')
