@@ -430,6 +430,12 @@ describe('WorkOverview', () => {
       expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
     })
 
+    it('delete × button remains visible while stop subtask form is open', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      expect(screen.getByRole('button', { name: /delete live subtask/i })).toBeInTheDocument()
+    })
+
     it('Cancel in stop subtask form restores Stop subtask button', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
@@ -570,15 +576,15 @@ describe('WorkOverview', () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await screen.findByRole('button', { name: /stop subtask/i })
       const banner = screen.getByTestId('live-subtask-banner')
-      await userEvent.click(screen.getByRole('button', { name: /^Work$/i }))
+      await userEvent.click(within(banner).getByRole('button', { name: /^Work/i }))
       expect(banner.querySelector('select')).toBeInTheDocument()
     })
 
     it('selecting a new category from the picker saves it immediately', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await screen.findByRole('button', { name: /stop subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /^Work$/i }))
       const banner = screen.getByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /^Work/i }))
       await userEvent.selectOptions(banner.querySelector('select')!, 'Meeting')
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -773,6 +779,20 @@ describe('WorkOverview', () => {
   })
 
   describe('new card layout', () => {
+    it('period-card-header shows duration before from-to time range', async () => {
+      setup([period('a', '09:00', '11:00')])
+      const header = await screen.findByTestId('period-card-header')
+      const duration = within(header).getByTestId('period-duration')
+      const timeBtn = within(header).getByRole('button', { name: /edit period/i })
+      expect(duration.compareDocumentPosition(timeBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('live subtask banner shows the time the subtask started', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      expect(within(banner).getByText(/09:30/)).toBeInTheDocument()
+    })
+
     it('period card header has no category picker', async () => {
       setup([period('a', '09:00', '11:00')])
       const header = await screen.findByTestId('period-card-header')

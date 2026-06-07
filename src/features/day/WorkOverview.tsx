@@ -150,13 +150,13 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
       {error && <span className="text-xs text-red-600 dark:text-red-400">Must be at or after {subtaskStartedAt}</span>}
       <button
         onClick={onCancel}
-        className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5"
       >
         Cancel
       </button>
       <button
         onClick={handleStop}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
+        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-0.5"
       >
         Confirm
       </button>
@@ -212,13 +212,13 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
       {error && <span className="text-xs text-red-600 dark:text-red-400">Must be after {periodStart}</span>}
       <button
         onClick={onCancel}
-        className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5"
       >
         Cancel
       </button>
       <button
         onClick={handleStop}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
+        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-0.5"
       >
         Confirm
       </button>
@@ -278,7 +278,12 @@ function LiveSubtaskBanner({
               onClick={() => setEditingCategory(true)}
               className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left"
             >
-              <span className="block">{subtask.category}</span>
+              <span className="block">
+                {subtask.category}
+                <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500 tabular-nums">
+                  since {subtask.startedAt}
+                </span>
+              </span>
               {description && (
                 <span className="block text-xs font-normal text-gray-400 dark:text-gray-500">{description}</span>
               )}
@@ -295,22 +300,20 @@ function LiveSubtaskBanner({
             onCancel={() => setStopping(false)}
           />
         ) : (
-          <>
-            <button
-              onClick={() => setStopping(true)}
-              className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0"
-            >
-              Stop subtask
-            </button>
-            <button
-              onClick={() => mutations.deleteSubtask.mutate({ date, periodId, subtaskId: subtask.id })}
-              className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
-              aria-label="Delete live subtask"
-            >
-              ×
-            </button>
-          </>
+          <button
+            onClick={() => setStopping(true)}
+            className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0"
+          >
+            Stop subtask
+          </button>
         )}
+        <button
+          onClick={() => mutations.deleteSubtask.mutate({ date, periodId, subtaskId: subtask.id })}
+          className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
+          aria-label="Delete live subtask"
+        >
+          ×
+        </button>
       </div>
     </div>
   )
@@ -761,7 +764,7 @@ function PeriodCardFooter({
   }
 
   return (
-    <div className="flex items-center gap-3 mt-0.5">
+    <div className="flex items-center gap-3 mt-0.5 justify-end">
       {isRunning && (
         <Tooltip content="Start live tracking for a subtask within this period">
           <button
@@ -890,11 +893,17 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
 
   return (
     <div data-testid="period-card-header" className={`px-4 py-3 ${headerBg(isRunning)}`}>
-      <div className="flex items-center justify-between min-h-[1.75rem]">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 min-h-[1.75rem]">
+        <span
+          data-testid="period-duration"
+          className="font-mono text-xs font-medium tabular-nums shrink-0 min-w-[2.5rem] text-right text-gray-500 dark:text-gray-400"
+        >
+          {formatHours(duration, timeFormat)}
+        </span>
+        <div className="flex-1 min-w-0">
           {editingTime ? (
             <div
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 flex-wrap"
               onBlur={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget)) saveTime()
               }}
@@ -957,48 +966,40 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <span
-            data-testid="period-duration"
-            className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-full px-2 py-0.5 border dark:border-gray-600 tabular-nums"
-          >
-            {formatHours(duration, timeFormat)}
-          </span>
-          {stoppingPeriod ? (
-            <StopPeriodForm
-              periodStart={w.start}
-              liveSubtask={liveSubtask}
-              onStop={(stopTime) => {
-                mutations.stopPeriod.mutate({
-                  date,
-                  periodId: w.id,
-                  endTime: stopTime,
-                  liveSubtaskId: liveSubtask?.id,
-                  stoppedAt: liveSubtask ? stopTime : undefined,
-                })
-                setStoppingPeriod(false)
-              }}
-              onCancel={() => setStoppingPeriod(false)}
-            />
-          ) : (
-            showStopButton && (
-              <button
-                onClick={() => setStoppingPeriod(true)}
-                aria-label="Stop tracking"
-                className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5"
-              >
-                Stop
-              </button>
-            )
-          )}
-          <button
-            onClick={() => mutations.remove.mutate({ date, id: w.id })}
-            className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none"
-            aria-label="Remove period"
-          >
-            ×
-          </button>
-        </div>
+        {stoppingPeriod ? (
+          <StopPeriodForm
+            periodStart={w.start}
+            liveSubtask={liveSubtask}
+            onStop={(stopTime) => {
+              mutations.stopPeriod.mutate({
+                date,
+                periodId: w.id,
+                endTime: stopTime,
+                liveSubtaskId: liveSubtask?.id,
+                stoppedAt: liveSubtask ? stopTime : undefined,
+              })
+              setStoppingPeriod(false)
+            }}
+            onCancel={() => setStoppingPeriod(false)}
+          />
+        ) : (
+          showStopButton && (
+            <button
+              onClick={() => setStoppingPeriod(true)}
+              aria-label="Stop tracking"
+              className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5 shrink-0"
+            >
+              Stop
+            </button>
+          )
+        )}
+        <button
+          onClick={() => mutations.remove.mutate({ date, id: w.id })}
+          className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none shrink-0"
+          aria-label="Remove period"
+        >
+          ×
+        </button>
       </div>
     </div>
   )
