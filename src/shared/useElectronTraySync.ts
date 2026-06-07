@@ -60,24 +60,26 @@ export function useElectronTraySync() {
   )
 
   useEffect(() => {
-    if (!window.electronAPI) return
+    const api = window.electronAPI
+    if (!api) return
     const listener = (cat: string) => {
       void handleSetCategory(cat)
     }
-    window.electronAPI.tray.onSetCategory(listener)
+    api.tray.onSetCategory(listener)
     return () => {
-      window.electronAPI!.tray.offSetCategory(listener)
+      api.tray.offSetCategory(listener)
     }
   }, [handleSetCategory])
 
   useEffect(() => {
-    if (!window.electronAPI) return
+    const api = window.electronAPI
+    if (!api) return
     const listener = () => {
       if (activeTracking) void handleSetCategory(activeTracking.category)
     }
-    window.electronAPI.hotkey.onToggle(listener)
+    api.hotkey.onToggle(listener)
     return () => {
-      window.electronAPI!.hotkey.offToggle(listener)
+      api.hotkey.offToggle(listener)
     }
   }, [activeTracking, handleSetCategory])
 }
