@@ -73,7 +73,7 @@ interface CategoryPickerProps {
   categories: string[]
   onChange: (cat: string) => void
   compact?: boolean
-  autoFocus?: boolean
+  focusOnMount?: boolean
   categoryDescriptions?: Record<string, string> | undefined
 }
 
@@ -82,19 +82,25 @@ function CategoryPicker({
   categories,
   onChange,
   compact,
-  autoFocus,
+  focusOnMount,
   categoryDescriptions,
 }: CategoryPickerProps) {
+  const selectRef = useRef<HTMLSelectElement>(null)
+
+  useEffect(() => {
+    if (focusOnMount) selectRef.current?.focus()
+  }, [focusOnMount])
+
   const selectClass = compact
     ? 'text-xs rounded border px-1 py-0.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[10rem]'
     : 'text-sm rounded-lg border px-2 py-1.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[8rem] max-w-[14rem]'
 
   return (
     <select
+      ref={selectRef}
       aria-label="Category"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      autoFocus={autoFocus}
       className={selectClass}
     >
       <option value={UNCATEGORIZED_CATEGORY}>Uncategorized</option>
@@ -309,7 +315,7 @@ function LiveSubtaskBanner({
             categories={categories}
             onChange={changeCategory}
             compact
-            autoFocus
+            focusOnMount
             categoryDescriptions={categoryDescriptions}
           />
         </span>
