@@ -430,10 +430,11 @@ describe('WorkOverview', () => {
       expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
     })
 
-    it('delete × button remains visible while stop subtask form is open', async () => {
+    it('stop form hides Stop subtask and × buttons while open', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      expect(screen.getByRole('button', { name: /delete live subtask/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /stop subtask/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /stop live subtask/i })).not.toBeInTheDocument()
     })
 
     it('Cancel in stop subtask form restores Stop subtask button', async () => {
@@ -483,13 +484,33 @@ describe('WorkOverview', () => {
       })
     })
 
-    it('Delete live subtask button removes it from the repository', async () => {
-      const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      await screen.findByRole('button', { name: /delete live subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /delete live subtask/i }))
+    it('× on live subtask opens the stop form instead of deleting', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop live subtask/i }))
+      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
+    })
+
+    it('× on live subtask: Cancel restores Stop subtask and × buttons', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop live subtask/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+      expect(await screen.findByRole('button', { name: /stop subtask/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /stop live subtask/i })).toBeInTheDocument()
+    })
+
+    it('× on live subtask: Confirm stops the subtask and saves to repository', async () => {
+      const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:00')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop live subtask/i }))
+      const stopInput = screen.getByLabelText(/subtask stopped at/i)
+      await userEvent.clear(stopInput)
+      await userEvent.type(stopInput, '10:00')
+      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
-        expect(saved[0]?.subtasks).toHaveLength(0)
+        expect(saved[0]?.subtasks[0]?.stoppedAt).toBe('10:00')
+        expect(saved[0]?.subtasks[0]?.hours).toBe(1)
       })
     })
 
@@ -880,6 +901,96 @@ describe('WorkOverview', () => {
       const subtaskRows = screen.getAllByTestId('subtask-row')
       const lastSubtaskRow = subtaskRows[subtaskRows.length - 1]!
       expect(lastSubtaskRow.compareDocumentPosition(banner) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+  })
+
+  describe('subtask row layout', () => {
+    function periodWithTimedSubtask(
+      id: string,
+      start: string,
+      end: string,
+      sliceCategory: string,
+      sliceStart: string,
+      sliceEnd: string,
+    ): WorkPeriod {
+      const hours =
+        (new Date(`2000-01-01T${sliceEnd}`).getTime() - new Date(`2000-01-01T${sliceStart}`).getTime()) / 3_600_000
+      return {
+        id,
+        start,
+        end,
+        category: sliceCategory,
+        subtasks: [{ id: 'sl-timed', category: sliceCategory, hours, startedAt: sliceStart, stoppedAt: sliceEnd }],
+      }
+    }
+
+    it('timed subtask shows start – end range after category name', async () => {
+      setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
+      const row = await screen.findByTestId('subtask-row')
+      expect(within(row).getByText(/09:00\s*–\s*11:00/)).toBeInTheDocument()
+    })
+
+    it('hours button appears before the category name button in DOM', async () => {
+      setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1.5)])
+      const row = await screen.findByTestId('subtask-row')
+      const hoursBtn = within(row).getByRole('button', { name: /edit Work hours/i })
+      const catBtn = within(row).getByRole('button', { name: /edit Work subtask/i })
+      expect(hoursBtn.compareDocumentPosition(catBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('category description shown after category name without parentheses', async () => {
+      const descriptions = { Work: 'Deep work sessions' }
+      setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
+      const row = await screen.findByTestId('subtask-row')
+      expect(within(row).getByText('Deep work sessions')).toBeInTheDocument()
+      expect(within(row).queryByText(/\(Deep work sessions\)/)).not.toBeInTheDocument()
+    })
+
+    it('category description appears after category button in DOM', async () => {
+      const descriptions = { Work: 'Deep work sessions' }
+      setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
+      const row = await screen.findByTestId('subtask-row')
+      const catBtn = within(row).getByRole('button', { name: /edit Work subtask/i })
+      const desc = within(row).getByText('Deep work sessions')
+      expect(catBtn.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('category description shown after category picker in edit mode', async () => {
+      const descriptions = { Work: 'Deep work sessions', Meeting: 'Sync meetings' }
+      setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
+      await screen.findByRole('button', { name: /edit Work subtask/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      const row = screen.getByTestId('subtask-row')
+      const picker = within(row).getByRole('combobox', { name: /category/i })
+      const desc = within(row).getByText('Deep work sessions')
+      expect(desc.tagName).not.toBe('OPTION')
+      expect(picker.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+  })
+
+  describe('live subtask banner layout', () => {
+    it('shows start – --:-- format for active subtask time', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      expect(within(banner).getByText(/09:30\s*–\s*--:--/)).toBeInTheDocument()
+    })
+
+    it('category name appears before the time range in DOM', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      const catBtn = within(banner).getByRole('button', { name: /^Work/i })
+      const timeRange = within(banner).getByText(/09:30\s*–\s*--:--/)
+      expect(catBtn.compareDocumentPosition(timeRange) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+  })
+
+  describe('auto-category row layout', () => {
+    it('main badge appears after the category dropdown', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')])
+      const row = await screen.findByTestId('auto-category-row')
+      const picker = within(row).getByRole('combobox', { name: /category/i })
+      const badge = within(row).getByText('main')
+      expect(picker.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
 
