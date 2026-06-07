@@ -130,7 +130,7 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
   }
 
   return (
-    <div className="flex items-center gap-2 pl-4 flex-wrap">
+    <>
       <span className="text-xs text-gray-500 dark:text-gray-400">Stopped at</span>
       <input
         ref={inputRef}
@@ -149,18 +149,18 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
       />
       {error && <span className="text-xs text-red-600 dark:text-red-400">Must be at or after {subtaskStartedAt}</span>}
       <button
-        onClick={handleStop}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
-      >
-        Save
-      </button>
-      <button
         onClick={onCancel}
         className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
       >
         Cancel
       </button>
-    </div>
+      <button
+        onClick={handleStop}
+        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
+      >
+        Confirm
+      </button>
+    </>
   )
 }
 
@@ -192,7 +192,7 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
   }
 
   return (
-    <div className="flex items-center gap-2 mt-2 flex-wrap">
+    <>
       <span className="text-xs text-gray-500 dark:text-gray-400">Ended at</span>
       <input
         ref={inputRef}
@@ -207,22 +207,22 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
           if (e.key === 'Escape') onCancel()
         }}
         aria-label="Period ended at"
-        className={`rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
+        className={`rounded border px-1.5 py-0.5 text-xs w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
       {error && <span className="text-xs text-red-600 dark:text-red-400">Must be after {periodStart}</span>}
-      <button
-        onClick={handleStop}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
-      >
-        Save
-      </button>
       <button
         onClick={onCancel}
         className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
       >
         Cancel
       </button>
-    </div>
+      <button
+        onClick={handleStop}
+        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300"
+      >
+        Confirm
+      </button>
+    </>
   )
 }
 
@@ -285,7 +285,16 @@ function LiveSubtaskBanner({
             </button>
           )}
         </span>
-        {!stopping && (
+        {stopping ? (
+          <StopSubtaskForm
+            subtaskStartedAt={subtask.startedAt}
+            onStop={(stoppedAt) => {
+              mutations.stopLiveSubtask.mutate({ date, periodId, subtaskId: subtask.id, stoppedAt })
+              setStopping(false)
+            }}
+            onCancel={() => setStopping(false)}
+          />
+        ) : (
           <>
             <button
               onClick={() => setStopping(true)}
@@ -303,16 +312,6 @@ function LiveSubtaskBanner({
           </>
         )}
       </div>
-      {stopping && (
-        <StopSubtaskForm
-          subtaskStartedAt={subtask.startedAt}
-          onStop={(stoppedAt) => {
-            mutations.stopLiveSubtask.mutate({ date, periodId, subtaskId: subtask.id, stoppedAt })
-            setStopping(false)
-          }}
-          onCancel={() => setStopping(false)}
-        />
-      )}
     </div>
   )
 }
@@ -891,7 +890,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
 
   return (
     <div data-testid="period-card-header" className={`px-4 py-3 ${headerBg(isRunning)}`}>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between min-h-[1.75rem]">
         <div className="flex items-center gap-3 min-w-0">
           {editingTime ? (
             <div
@@ -965,14 +964,32 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
           >
             {formatHours(duration, timeFormat)}
           </span>
-          {showStopButton && (
-            <button
-              onClick={() => setStoppingPeriod(true)}
-              aria-label="Stop tracking"
-              className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5"
-            >
-              Stop
-            </button>
+          {stoppingPeriod ? (
+            <StopPeriodForm
+              periodStart={w.start}
+              liveSubtask={liveSubtask}
+              onStop={(stopTime) => {
+                mutations.stopPeriod.mutate({
+                  date,
+                  periodId: w.id,
+                  endTime: stopTime,
+                  liveSubtaskId: liveSubtask?.id,
+                  stoppedAt: liveSubtask ? stopTime : undefined,
+                })
+                setStoppingPeriod(false)
+              }}
+              onCancel={() => setStoppingPeriod(false)}
+            />
+          ) : (
+            showStopButton && (
+              <button
+                onClick={() => setStoppingPeriod(true)}
+                aria-label="Stop tracking"
+                className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5"
+              >
+                Stop
+              </button>
+            )
           )}
           <button
             onClick={() => mutations.remove.mutate({ date, id: w.id })}
@@ -983,23 +1000,6 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
           </button>
         </div>
       </div>
-      {stoppingPeriod && (
-        <StopPeriodForm
-          periodStart={w.start}
-          liveSubtask={liveSubtask}
-          onStop={(stopTime) => {
-            mutations.stopPeriod.mutate({
-              date,
-              periodId: w.id,
-              endTime: stopTime,
-              liveSubtaskId: liveSubtask?.id,
-              stoppedAt: liveSubtask ? stopTime : undefined,
-            })
-            setStoppingPeriod(false)
-          }}
-          onCancel={() => setStoppingPeriod(false)}
-        />
-      )}
     </div>
   )
 }

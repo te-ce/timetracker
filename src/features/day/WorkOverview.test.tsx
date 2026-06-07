@@ -343,14 +343,30 @@ describe('WorkOverview', () => {
       expect(await screen.findByRole('button', { name: /stop tracking/i })).toBeInTheDocument()
     })
 
+    it('clicking Stop shows Cancel and Confirm buttons inline, hides Stop', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+      expect(screen.queryByRole('button', { name: /stop tracking/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
+      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+    })
+
+    it('Cancel in stop form restores Stop button', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+      expect(await screen.findByRole('button', { name: /stop tracking/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^cancel$/i })).not.toBeInTheDocument()
+    })
+
     it('Stop button sets period end time in repository', async () => {
       const { repo } = setup([period('a', '09:00', null)])
-      await screen.findByRole('button', { name: /stop tracking/i })
-      await userEvent.click(screen.getByRole('button', { name: /stop tracking/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
       const stopInput = screen.getByLabelText(/period ended at/i)
       await userEvent.clear(stopInput)
       await userEvent.type(stopInput, '17:00')
-      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.start).toBe('09:00')
@@ -360,12 +376,11 @@ describe('WorkOverview', () => {
 
     it('Stop rejects time not after period start', async () => {
       setup([period('a', '10:00', null)])
-      await screen.findByRole('button', { name: /stop tracking/i })
-      await userEvent.click(screen.getByRole('button', { name: /stop tracking/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
       const stopInput = screen.getByLabelText(/period ended at/i)
       await userEvent.clear(stopInput)
       await userEvent.type(stopInput, '09:00')
-      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
       expect(await screen.findByText(/must be after/i)).toBeInTheDocument()
     })
 
@@ -406,14 +421,29 @@ describe('WorkOverview', () => {
       expect(await screen.findByRole('button', { name: /stop subtask/i })).toBeInTheDocument()
     })
 
+    it('clicking Stop subtask shows Cancel and Confirm buttons inline, hides Stop subtask', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      expect(screen.queryByRole('button', { name: /stop subtask/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
+      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+    })
+
+    it('Cancel in stop subtask form restores Stop subtask button', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
+      expect(await screen.findByRole('button', { name: /stop subtask/i })).toBeInTheDocument()
+    })
+
     it('Stop subtask saves computed hours and preserves start/end times', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:00')])
-      await screen.findByRole('button', { name: /stop subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /stop subtask/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
       const stopInput = screen.getByLabelText(/subtask stopped at/i)
       await userEvent.clear(stopInput)
       await userEvent.type(stopInput, '10:30')
-      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.subtasks[0]?.hours).toBe(1.5)
@@ -424,23 +454,21 @@ describe('WorkOverview', () => {
 
     it('Stop subtask rejects time before slice start', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '10:00')])
-      await screen.findByRole('button', { name: /stop subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /stop subtask/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
       const stopInput = screen.getByLabelText(/subtask stopped at/i)
       await userEvent.clear(stopInput)
       await userEvent.type(stopInput, '09:00')
-      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
       expect(await screen.findByText(/must be at or after/i)).toBeInTheDocument()
     })
 
     it('Stop subtask allows start == end (saves 0 hours)', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '10:00')])
-      await screen.findByRole('button', { name: /stop subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /stop subtask/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
       const stopInput = screen.getByLabelText(/subtask stopped at/i)
       await userEvent.clear(stopInput)
       await userEvent.type(stopInput, '10:00')
-      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.subtasks[0]?.hours).toBe(0)
@@ -466,7 +494,7 @@ describe('WorkOverview', () => {
       const stopInput = screen.getByLabelText(/period ended at/i)
       await userEvent.clear(stopInput)
       await userEvent.type(stopInput, '11:00')
-      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.end).toBe('11:00')
