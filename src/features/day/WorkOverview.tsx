@@ -1359,7 +1359,7 @@ function AutoCategoryRow({
     <div
       data-testid="auto-category-row"
       aria-label="Edit category"
-      className={`relative grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
+      className={`relative grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 min-h-[2.875rem] ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
       onClick={() => {
         if (!editing) {
           reset()
