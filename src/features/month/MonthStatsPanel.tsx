@@ -5,15 +5,17 @@ import { formatHours } from '../../shared/formatHours'
 interface Props {
   workedHoursPerDay: number[]
   dates: string[]
-  sollstunden: number
+  targetHoursPerDay: number[]
   overtimeCarryOver: number
   today: string
 }
 
-export function MonthStatsPanel({ workedHoursPerDay, dates, sollstunden, overtimeCarryOver, today }: Props) {
-  const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, today, sollstunden)
+export function MonthStatsPanel({ workedHoursPerDay, dates, targetHoursPerDay, overtimeCarryOver, today }: Props) {
+  const toDate = calculateOvertimeToDate(workedHoursPerDay, dates, today, targetHoursPerDay)
   const cumulativeOvertime = overtimeCarryOver + toDate.value
-  const hoursNeededToday = Math.max(0, sollstunden - toDate.workedToday)
+  const todayIdx = dates.indexOf(today)
+  const todaySollstunden = todayIdx >= 0 ? (targetHoursPerDay[todayIdx] ?? 0) : 0
+  const hoursNeededToday = Math.max(0, todaySollstunden - toDate.workedToday)
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   return (

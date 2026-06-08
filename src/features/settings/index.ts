@@ -17,7 +17,7 @@ export { SettingsView } from './SettingsView'
 export { SetupWizard } from './SetupWizard'
 export { SharePointSettings } from './SharePointSettings'
 export { SheetSelector } from './SheetSelector'
-export { TargetHoursSettings } from './TargetHoursSettings'
+export { WeeklyScheduleSettings } from './WeeklyScheduleSettings'
 export { WindowBehaviorSettings } from './WindowBehaviorSettings'
 export {
   type AutoFillPattern,

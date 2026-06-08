@@ -5,6 +5,7 @@ import { SheetSelector } from './SheetSelector'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
 import type { AppConfig } from '../../infra/repositories/types'
 import { useAuthStore } from '../../shared/authStore'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 vi.mock('../excel/excelService', () => ({
   listSheets: vi.fn(),
@@ -16,17 +17,7 @@ vi.mock('../../infra/auth/msalInstance', () => ({
 
 import { listSheets } from '../excel/excelService'
 
-const defaultConfig: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-  sharepointUrl: null,
-  targetSheet: null,
-  categoryMapping: {},
-}
+const defaultConfig: AppConfig = DEFAULT_APP_CONFIG
 
 function setup(config: Partial<AppConfig> = {}) {
   const repo = new InMemoryConfigRepository({ ...defaultConfig, ...config })

@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CategorySettings } from './CategorySettings'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
@@ -26,17 +27,7 @@ function makeWrapper() {
   }
 }
 
-const baseConfig: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-  sharepointUrl: null,
-  targetSheet: null,
-  categoryMapping: {},
-}
+const baseConfig = DEFAULT_APP_CONFIG
 
 describe('CategorySettings', () => {
   it('renders the default category list', async () => {

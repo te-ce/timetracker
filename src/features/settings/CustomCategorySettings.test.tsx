@@ -3,16 +3,10 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
 import { CustomCategorySettings } from './CustomCategorySettings'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
-const baseConfig: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-}
+const baseConfig = DEFAULT_APP_CONFIG
 
 function setup(config: AppConfig = baseConfig) {
   const repo = new InMemoryConfigRepository(config)

@@ -5,6 +5,7 @@ import { toLocalIso } from './dateUtils'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
 import { findOpenPeriod } from './worktime'
+import { targetHoursForDate } from './weekdayHours'
 import type { DayTypeOverride, MonthData, WorkLocation } from '../infra/repositories/types'
 
 interface MonthMaps {
@@ -54,7 +55,8 @@ export function useMonthSummaries(year: number, month: number) {
     queryFn: () => monthRepo.getMonth(year, month),
   })
 
-  const sollstunden = config?.sollstunden ?? DEFAULT_APP_CONFIG.sollstunden
+  const weekdayHours = config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours
+  const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
   const summaries = buildMonthSummaries(year, month, {
     monthData,
@@ -62,11 +64,13 @@ export function useMonthSummaries(year: number, month: number) {
     globalAutoCategory: config?.autoCategory ?? null,
   })
 
+  const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))
+
   const overtimeToDate = calculateOvertimeToDate(
     summaries.workedHoursPerDay,
     summaries.days.map((d) => d.date),
     todayIso,
-    sollstunden,
+    targetHoursPerDay,
   )
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
@@ -81,6 +85,7 @@ export function useMonthSummaries(year: number, month: number) {
     dayNotes,
     overtimeToDate,
     sollstunden,
+    targetHoursPerDay,
     todayIso,
     todayLiveWindowStart,
   }

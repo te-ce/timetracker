@@ -3,15 +3,13 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
 import { SprintConfigPanel } from './SprintConfigPanel'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 function setup(overrides: { sprintStartDate?: string; sprintLengthDays?: number } = {}) {
   const repo = new InMemoryConfigRepository({
-    sollstunden: 8,
-    autoCategory: null,
-    federalState: null,
+    ...DEFAULT_APP_CONFIG,
     sprintLengthDays: overrides.sprintLengthDays ?? 14,
     sprintStartDate: overrides.sprintStartDate ?? '2024-01-01',
-    customCategories: [],
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const onConfigChanged = vi.fn()
@@ -96,12 +94,9 @@ describe('SprintConfigPanel', () => {
 
   it('works without onConfigChanged prop', async () => {
     const repo = new InMemoryConfigRepository({
-      sollstunden: 8,
-      autoCategory: null,
-      federalState: null,
+      ...DEFAULT_APP_CONFIG,
       sprintLengthDays: 14,
       sprintStartDate: '2024-01-01',
-      customCategories: [],
     })
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(

@@ -24,7 +24,7 @@ describe('CloudConfigRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudConfigRepository(adapter)
     const config = await repo.get()
-    expect(config.sollstunden).toBe(8)
+    expect(config.weekdayHours).toEqual([0, 8, 8, 8, 8, 8, 0])
     expect(config.customCategories).toEqual([])
   })
 
@@ -32,7 +32,7 @@ describe('CloudConfigRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudConfigRepository(adapter)
     await repo.save({
-      sollstunden: 8,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
       autoCategory: null,
       federalState: null,
       sprintLengthDays: 10,
@@ -55,7 +55,7 @@ describe('CloudConfigRepository', () => {
     const repo = new CloudConfigRepository(adapter)
     const categoryMapping: Record<string, string> = { A: 'original' }
     const config: AppConfig = {
-      sollstunden: 8,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
       autoCategory: null,
       federalState: null,
       sprintLengthDays: 10,
@@ -79,15 +79,29 @@ describe('CloudConfigRepository', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const config = await repo.get()
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Stored config failed validation'), expect.anything())
-    expect(config.sollstunden).toBe(8)
+    expect(config.weekdayHours).toEqual([0, 8, 8, 8, 8, 8, 0])
     warnSpy.mockRestore()
+  })
+
+  it('migrates old sollstunden to weekdayHours on load', async () => {
+    const adapter = adapterWithValue('config.json', {
+      sollstunden: 7,
+      autoCategory: null,
+      federalState: null,
+      sprintLengthDays: 14,
+      sprintStartDate: null,
+      customCategories: [],
+    })
+    const repo = new CloudConfigRepository(adapter)
+    const config = await repo.get()
+    expect(config.weekdayHours).toEqual([0, 7, 7, 7, 7, 7, 0])
   })
 
   it('persists and retrieves config', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudConfigRepository(adapter)
     await repo.save({
-      sollstunden: 7,
+      weekdayHours: [0, 7, 7, 7, 7, 7, 0],
       autoCategory: 'QA',
       federalState: 'HH',
       sprintLengthDays: 10,
@@ -96,7 +110,7 @@ describe('CloudConfigRepository', () => {
     })
     const repo2 = new CloudConfigRepository(adapter)
     const config = await repo2.get()
-    expect(config.sollstunden).toBe(7)
+    expect(config.weekdayHours).toEqual([0, 7, 7, 7, 7, 7, 0])
     expect(config.autoCategory).toBe('QA')
     expect(config.customCategories).toEqual(['Custom1'])
   })

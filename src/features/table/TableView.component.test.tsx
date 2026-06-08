@@ -56,6 +56,7 @@ function stubSummariesWithLiveWindow(liveWindowStart: string): void {
     dayNotes: new Map(),
     overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
     sollstunden: 8,
+    targetHoursPerDay: [],
     todayIso: '2026-06-05',
     todayLiveWindowStart: liveWindowStart,
   }
@@ -77,6 +78,7 @@ function stubSummaries(): void {
     dayNotes: new Map(),
     overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
     sollstunden: 8,
+    targetHoursPerDay: [],
     todayIso: '2026-06-05',
     todayLiveWindowStart: undefined,
   }
@@ -233,6 +235,7 @@ describe('TableView', () => {
         dayNotes: new Map(),
         overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
         sollstunden: 8,
+        targetHoursPerDay: [],
         todayIso: '2026-06-05',
         todayLiveWindowStart: undefined,
       })

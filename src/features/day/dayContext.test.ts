@@ -56,15 +56,18 @@ describe('composeDayContext', () => {
   })
 
   describe('config defaults', () => {
-    it('uses DEFAULT_APP_CONFIG.sollstunden when config is undefined', () => {
+    it('uses default weekdayHours when config is undefined — date is Thursday (2026-06-05)', () => {
+      // 2026-06-05 is a Thursday, DEFAULT_WEEKDAY_HOURS[4] = 8
       const result = composeDayContext(date, makeMonthData(), undefined, today)
-      expect(result.sollstunden).toBe(DEFAULT_APP_CONFIG.sollstunden)
+      expect(result.sollstunden).toBe(8)
     })
 
-    it('uses config.sollstunden when provided', () => {
-      const config = { ...DEFAULT_APP_CONFIG, sollstunden: 7 }
+    it('uses weekdayHours from config for the given date', () => {
+      // 2026-06-05 is Friday (JS weekday 5)
+      const weekdayHours: [number, number, number, number, number, number, number] = [0, 6, 6, 6, 6, 7, 0]
+      const config = { ...DEFAULT_APP_CONFIG, weekdayHours }
       const result = composeDayContext(date, makeMonthData(), config, today)
-      expect(result.sollstunden).toBe(7)
+      expect(result.sollstunden).toBe(7) // Friday = index 5 = 7h
     })
 
     it('defaults effectiveLocation to Remote when no day location and no config default', () => {

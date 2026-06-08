@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { LocalExcelSettings } from './LocalExcelSettings'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
 vi.mock('../excel/localExcelService', () => ({
@@ -12,17 +13,7 @@ vi.mock('../excel/localExcelService', () => ({
 
 import { listLocalXlsxFiles, listLocalSheets } from '../excel/localExcelService'
 
-const defaultConfig: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-  sharepointUrl: null,
-  targetSheet: null,
-  categoryMapping: {},
-}
+const defaultConfig = DEFAULT_APP_CONFIG
 
 function setup(config: Partial<AppConfig> = {}) {
   const repo = new InMemoryConfigRepository({ ...defaultConfig, ...config })

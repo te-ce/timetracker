@@ -14,15 +14,10 @@ export interface OvertimeToDate {
   priorOvertime: number
 }
 
-export function calculateMonthStats(
-  workedHoursPerDay: number[],
-  _workDayCount: number,
-  sollstunden: number,
-): MonthStats {
+export function calculateMonthStats(workedHoursPerDay: number[], targetHoursPerDay: number[]): MonthStats {
   const totalHours = workedHoursPerDay.reduce((sum, h) => sum + h, 0)
-  // Only count days with tracked hours toward target
-  const trackedDayCount = workedHoursPerDay.filter((h) => h > 0).length
-  const targetHours = trackedDayCount * sollstunden
+  // Only count target for days with tracked hours
+  const targetHours = workedHoursPerDay.reduce((sum, h, i) => (h > 0 ? sum + (targetHoursPerDay[i] ?? 0) : sum), 0)
   const overtime = totalHours - targetHours
   const fulfillmentPercent = targetHours === 0 ? 100 : (totalHours / targetHours) * 100
 
@@ -37,33 +32,33 @@ export function calculateOvertimeToDate(
   workedHoursPerDay: number[],
   dates: string[],
   today: string,
-  sollstunden: number,
+  targetHoursPerDay: number[],
 ): OvertimeToDate {
   let totalWorked = 0
-  let trackedDayCount = 0
+  let targetToDate = 0
   let workedToday = 0
   let priorWorked = 0
-  let priorTrackedDays = 0
+  let priorTarget = 0
 
   for (let i = 0; i < dates.length; i++) {
     const date = dates[i]
     if (date === undefined || date > today) break
     const hours = workedHoursPerDay[i] ?? 0
+    const target = targetHoursPerDay[i] ?? 0
     if (date === today) {
       workedToday = hours
     } else if (hours > 0) {
       priorWorked += hours
-      priorTrackedDays++
+      priorTarget += target
     }
     if (hours > 0) {
       totalWorked += hours
-      trackedDayCount++
+      targetToDate += target
     }
   }
 
-  const targetToDate = trackedDayCount * sollstunden
   const value = totalWorked - targetToDate
-  const priorOvertime = priorWorked - priorTrackedDays * sollstunden
+  const priorOvertime = priorWorked - priorTarget
 
   return { value, workedToday, priorOvertime }
 }

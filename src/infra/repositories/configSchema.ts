@@ -1,14 +1,18 @@
 import { z } from 'zod'
 import type { Day, ActiveTracking, SprintExport } from './types'
+import type { WeekdayHours } from '../../shared/weekdayHours'
 
 const hotkeyConfigSchema = z.object({
   globalToggle: z.string().nullable(),
   inApp: z.record(z.string(), z.string().nullable()),
 })
 
+const weekdayHoursSchema = z.tuple([z.number(), z.number(), z.number(), z.number(), z.number(), z.number(), z.number()])
+
 export const appConfigSchema = z
   .object({
-    sollstunden: z.number(),
+    sollstunden: z.number().optional(),
+    weekdayHours: weekdayHoursSchema.optional(),
     autoCategory: z.string().nullable(),
     federalState: z.string().nullable(),
     sprintLengthDays: z.number(),
@@ -29,6 +33,14 @@ export const appConfigSchema = z
     showOvertimeBar: z.boolean().optional(),
   })
   .passthrough()
+  .transform((raw) => {
+    if (!raw.weekdayHours) {
+      const h = raw.sollstunden ?? 8
+      const migrated: WeekdayHours = [0, h, h, h, h, h, 0]
+      return { ...raw, weekdayHours: migrated }
+    }
+    return raw
+  })
 
 const workPeriodSubtaskSchema = z.object({
   id: z.string(),

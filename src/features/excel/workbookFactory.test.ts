@@ -5,15 +5,9 @@ vi.mock('../../infra/auth/bootstrapConfig', () => ({ isLocalFolderMode: vi.fn().
 
 import { createWorkbookService, buildWorkbookService, isExportReady } from './workbookFactory'
 import { GraphApiWorkbookService } from './workbookService'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
-const BASE_CONFIG = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-}
+const BASE_CONFIG = DEFAULT_APP_CONFIG
 
 describe('isExportReady (cloud mode)', () => {
   it('returns false when config is undefined', () => {

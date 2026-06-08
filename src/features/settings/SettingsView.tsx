@@ -3,7 +3,7 @@ import { OvertimeBarSettings } from './OvertimeBarSettings'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
 import { ClearDataSettings } from './ClearDataSettings'
 import { BundeslandSettings } from './BundeslandSettings'
-import { TargetHoursSettings } from './TargetHoursSettings'
+import { WeeklyScheduleSettings } from './WeeklyScheduleSettings'
 import { CategorySettings } from './CategorySettings'
 import { CloudSyncSettings } from './CloudSyncSettings'
 import { DefaultLocationSettings } from './DefaultLocationSettings'
@@ -26,7 +26,7 @@ export function SettingsView() {
     <div className="flex flex-col gap-8">
       <h2 className="text-xl font-semibold dark:text-gray-100">Settings</h2>
       {!localFolder && <CloudSyncSettings />}
-      <TargetHoursSettings repository={configRepo} />
+      <WeeklyScheduleSettings repository={configRepo} />
       <AutoCategorySettings repository={configRepo} />
       <BundeslandSettings repository={configRepo} />
       <DefaultLocationSettings repository={configRepo} />

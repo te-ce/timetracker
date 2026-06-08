@@ -40,17 +40,9 @@ function resolvedListRows() {
   return (workbookServiceMod as unknown as { __listRows: ReturnType<typeof vi.fn> }).__listRows
 }
 
-const defaultConfig: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-  sharepointUrl: null,
-  targetSheet: null,
-  categoryMapping: {},
-}
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+
+const defaultConfig = DEFAULT_APP_CONFIG
 
 function setup(config: Partial<AppConfig> = {}) {
   const repo = new InMemoryConfigRepository({ ...defaultConfig, ...config })

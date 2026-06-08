@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CategoryReorderPopover } from './CategoryReorderPopover'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
 function makeWrapper() {
@@ -12,17 +13,7 @@ function makeWrapper() {
   }
 }
 
-const baseConfig: AppConfig = {
-  sollstunden: 8,
-  autoCategory: null,
-  federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
-  customCategories: [],
-  sharepointUrl: null,
-  targetSheet: null,
-  categoryMapping: {},
-}
+const baseConfig = DEFAULT_APP_CONFIG
 
 describe('CategoryReorderPopover', () => {
   it('renders the toggle button', async () => {

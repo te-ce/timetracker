@@ -67,13 +67,17 @@ describe('useDayQuery', () => {
 
     it('returns config from configRepo', async () => {
       const monthRepo = new InMemoryMonthRepository({})
-      const configRepo = new InMemoryConfigRepository({ ...DEFAULT_APP_CONFIG, sollstunden: 6 })
+      // DATE = 2026-05-15 = Friday (JS weekday 5), setting Fri=6h
+      const configRepo = new InMemoryConfigRepository({
+        ...DEFAULT_APP_CONFIG,
+        weekdayHours: [0, 8, 8, 8, 8, 6, 0],
+      })
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
       await waitFor(() => expect(result.current.config).toBeDefined())
 
-      expect(result.current.config?.sollstunden).toBe(6)
-      expect(result.current.sollstunden).toBe(6)
+      expect(result.current.config?.weekdayHours).toEqual([0, 8, 8, 8, 8, 6, 0])
+      expect(result.current.sollstunden).toBe(6) // Friday target
     })
 
     it('does not return windows from a different date in the same month', async () => {
@@ -90,12 +94,13 @@ describe('useDayQuery', () => {
   })
 
   describe('config defaults', () => {
-    it('uses DEFAULT_APP_CONFIG sollstunden when config is loading', () => {
+    it('uses DEFAULT_APP_CONFIG weekdayHours for the date when config is loading', () => {
       const monthRepo = new InMemoryMonthRepository({})
       const configRepo = new InMemoryConfigRepository()
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
-      expect(result.current.sollstunden).toBe(DEFAULT_APP_CONFIG.sollstunden)
+      // DATE = 2026-05-15 = Thursday, default = 8h
+      expect(result.current.sollstunden).toBe(8)
     })
 
     it('uses Remote as default work location when config has no override', async () => {

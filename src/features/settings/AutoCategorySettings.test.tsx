@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AutoCategorySettings } from './AutoCategorySettings'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
-import type { AppConfig } from '../../infra/repositories/types'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -12,14 +12,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('AutoCategorySettings', () => {
   it('shows current autoCategory selection', async () => {
-    const config: AppConfig = {
-      sollstunden: 8,
-      autoCategory: '_COREMEDIA',
-      federalState: null,
-      sprintLengthDays: 10,
-      sprintStartDate: null,
-      customCategories: [],
-    }
+    const config = { ...DEFAULT_APP_CONFIG, autoCategory: '_COREMEDIA' }
     const repo = new InMemoryConfigRepository(config)
     render(<AutoCategorySettings repository={repo} />, { wrapper })
     const select = await screen.findByLabelText(/auto category/i)
@@ -36,14 +29,7 @@ describe('AutoCategorySettings', () => {
   })
 
   it('allows clearing autoCategory (none option)', async () => {
-    const config: AppConfig = {
-      sollstunden: 8,
-      autoCategory: '_SUPPORT',
-      federalState: null,
-      sprintLengthDays: 10,
-      sprintStartDate: null,
-      customCategories: [],
-    }
+    const config = { ...DEFAULT_APP_CONFIG, autoCategory: '_SUPPORT' }
     const repo = new InMemoryConfigRepository(config)
     render(<AutoCategorySettings repository={repo} />, { wrapper })
     const select = await screen.findByLabelText(/auto category/i)
@@ -53,14 +39,7 @@ describe('AutoCategorySettings', () => {
   })
 
   it('shows custom categories in the dropdown', async () => {
-    const config: AppConfig = {
-      sollstunden: 8,
-      autoCategory: null,
-      federalState: null,
-      sprintLengthDays: 10,
-      sprintStartDate: null,
-      customCategories: ['ProjectX'],
-    }
+    const config = { ...DEFAULT_APP_CONFIG, customCategories: ['ProjectX'] }
     const repo = new InMemoryConfigRepository(config)
     render(<AutoCategorySettings repository={repo} />, { wrapper })
     const select = await screen.findByLabelText(/auto category/i)

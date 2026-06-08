@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BundeslandSettings } from './BundeslandSettings'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
-import type { AppConfig } from '../../infra/repositories/types'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 function wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -12,14 +12,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 
 describe('BundeslandSettings', () => {
   it('shows current federalState selection', async () => {
-    const config: AppConfig = {
-      sollstunden: 8,
-      autoCategory: null,
-      federalState: 'NW',
-      sprintLengthDays: 10,
-      sprintStartDate: null,
-      customCategories: [],
-    }
+    const config = { ...DEFAULT_APP_CONFIG, federalState: 'NW' }
     const repo = new InMemoryConfigRepository(config)
     render(<BundeslandSettings repository={repo} />, { wrapper })
     const select = await screen.findByLabelText(/bundesland/i)
@@ -36,14 +29,7 @@ describe('BundeslandSettings', () => {
   })
 
   it('allows clearing (none)', async () => {
-    const config: AppConfig = {
-      sollstunden: 8,
-      autoCategory: null,
-      federalState: 'HE',
-      sprintLengthDays: 10,
-      sprintStartDate: null,
-      customCategories: [],
-    }
+    const config = { ...DEFAULT_APP_CONFIG, federalState: 'HE' }
     const repo = new InMemoryConfigRepository(config)
     render(<BundeslandSettings repository={repo} />, { wrapper })
     const select = await screen.findByLabelText(/bundesland/i)

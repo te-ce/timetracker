@@ -12,6 +12,7 @@ import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import { buildMonthSummaries, type DaySummary } from '../month/daySummary'
 import { calculateOvertimeToDate, type OvertimeToDate } from '../month/monthStats'
 import { calculateTotalCategorizedHours } from '../../shared/periodCategories'
+import { targetHoursForDate } from '../../shared/weekdayHours'
 
 export interface DayRawData {
   windows: WorkPeriod[]
@@ -73,9 +74,11 @@ function extractDayFields(dayData: Day | undefined): DayRawData {
   }
 }
 
-function resolveConfigDefaults(config: AppConfig | undefined) {
+function resolveConfigDefaults(config: AppConfig | undefined, date: string) {
+  const weekdayHours = config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours
   return {
-    sollstunden: config?.sollstunden ?? DEFAULT_APP_CONFIG.sollstunden,
+    sollstunden: targetHoursForDate(date, weekdayHours),
+    weekdayHours,
     defaultWorkLocation: config?.defaultWorkLocation ?? 'Remote',
     globalAutoCategory: config?.autoCategory ?? null,
   }
@@ -122,14 +125,15 @@ export function composeDayContext(
   const dayData = monthData[date]
   const daySummary = monthDays.find((d) => d.date === date) ?? FUTURE_SUMMARY
 
-  const { sollstunden, defaultWorkLocation, globalAutoCategory } = resolveConfigDefaults(config)
+  const { sollstunden, weekdayHours, defaultWorkLocation, globalAutoCategory } = resolveConfigDefaults(config, date)
   const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
   const autoCategory = dayData?.autoCategoryOverride ?? globalAutoCategory
+  const targetHoursPerDay = monthDays.map((d) => targetHoursForDate(d.date, weekdayHours))
   const overtimeToDate = calculateOvertimeToDate(
     workedHoursPerDay,
     monthDays.map((d) => d.date),
     todayIso,
-    sollstunden,
+    targetHoursPerDay,
   )
   const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])
 

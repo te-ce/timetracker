@@ -1,7 +1,8 @@
 import type { AppConfig } from '../infra/repositories/types'
+import { DEFAULT_WEEKDAY_HOURS } from './weekdayHours'
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
-  sollstunden: 8,
+  weekdayHours: DEFAULT_WEEKDAY_HOURS,
   autoCategory: null,
   federalState: null,
   sprintLengthDays: 14,

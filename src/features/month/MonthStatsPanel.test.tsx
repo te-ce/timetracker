@@ -7,7 +7,7 @@ describe('MonthStatsPanel', () => {
       <MonthStatsPanel
         workedHoursPerDay={[9]}
         dates={['2024-01-15']}
-        sollstunden={8}
+        targetHoursPerDay={[8]}
         overtimeCarryOver={0}
         today="2024-01-15"
       />,
@@ -20,7 +20,7 @@ describe('MonthStatsPanel', () => {
       <MonthStatsPanel
         workedHoursPerDay={[6]}
         dates={['2024-01-15']}
-        sollstunden={8}
+        targetHoursPerDay={[8]}
         overtimeCarryOver={0}
         today="2024-01-15"
       />,
@@ -33,7 +33,7 @@ describe('MonthStatsPanel', () => {
       <MonthStatsPanel
         workedHoursPerDay={[8]}
         dates={['2024-01-15']}
-        sollstunden={8}
+        targetHoursPerDay={[8]}
         overtimeCarryOver={5}
         today="2024-01-15"
       />,
@@ -46,7 +46,7 @@ describe('MonthStatsPanel', () => {
       <MonthStatsPanel
         workedHoursPerDay={[3]}
         dates={['2024-01-15']}
-        sollstunden={8}
+        targetHoursPerDay={[8]}
         overtimeCarryOver={0}
         today="2024-01-15"
       />,
@@ -59,7 +59,7 @@ describe('MonthStatsPanel', () => {
       <MonthStatsPanel
         workedHoursPerDay={[8]}
         dates={['2024-01-15']}
-        sollstunden={8}
+        targetHoursPerDay={[8]}
         overtimeCarryOver={0}
         today="2024-01-15"
       />,
@@ -72,7 +72,7 @@ describe('MonthStatsPanel', () => {
       <MonthStatsPanel
         workedHoursPerDay={[8]}
         dates={['2024-01-15']}
-        sollstunden={8}
+        targetHoursPerDay={[8]}
         overtimeCarryOver={0}
         today="2024-01-15"
       />,

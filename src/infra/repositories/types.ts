@@ -102,7 +102,7 @@ export interface MonthRepository {
 }
 
 export interface AppConfig {
-  sollstunden: number
+  weekdayHours: import('../../shared/weekdayHours').WeekdayHours
   autoCategory: string | null
   federalState: string | null
   sprintLengthDays: number
