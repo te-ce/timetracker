@@ -12,8 +12,13 @@ vi.mock('./useActiveTracking', () => ({
   useActiveTracking: vi.fn(() => null),
 }))
 
+vi.mock('./timeFormatStore', () => ({
+  useTimeFormatStore: vi.fn(() => ({ format: 'decimal', toggleFormat: vi.fn() })),
+}))
+
 import { useDayQuery } from '../features/day/useDayQuery'
 import { useActiveTracking } from './useActiveTracking'
+import { useTimeFormatStore } from './timeFormatStore'
 import { useRemainingHours, buildReceipt } from './useRemainingHours'
 
 function makeOvertimeToDate(priorOvertime = 0): OvertimeToDate {
@@ -149,10 +154,10 @@ describe('useRemainingHours', () => {
   })
 
   describe('document.title side effect', () => {
-    it('sets title with remaining hours when work remains', () => {
+    it('sets title with remaining hours in decimal format when work remains', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 5 })
       renderHook(() => useRemainingHours())
-      expect(document.title).toBe('(3.0h left) Timetracker')
+      expect(document.title).toBe('(3.00h left) Timetracker')
     })
 
     it('sets title to plain "Timetracker" when goal is reached', () => {
@@ -170,13 +175,21 @@ describe('useRemainingHours', () => {
     it('updates title when remaining changes', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 5 })
       const { rerender } = renderHook(() => useRemainingHours())
-      expect(document.title).toBe('(3.0h left) Timetracker')
+      expect(document.title).toBe('(3.00h left) Timetracker')
 
       stubDayQuery({ sollstunden: 8, workedHours: 8 })
       act(() => {
         rerender()
       })
       expect(document.title).toBe('Timetracker')
+    })
+
+    it('sets title in HH:MM format when hhmm format is active', () => {
+      vi.mocked(useTimeFormatStore).mockReturnValue({ format: 'hhmm', toggleFormat: vi.fn() })
+      stubDayQuery({ sollstunden: 8, workedHours: 5 })
+      renderHook(() => useRemainingHours())
+      expect(document.title).toBe('(3:00 left) Timetracker')
+      vi.mocked(useTimeFormatStore).mockReturnValue({ format: 'decimal', toggleFormat: vi.fn() })
     })
   })
 

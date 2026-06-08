@@ -5,6 +5,7 @@ import { formatHours } from './formatHours'
 import { useActiveTracking } from './useActiveTracking'
 import { findOpenPeriod } from './worktime'
 import type { TimeFormat } from './timeFormatStore'
+import { useTimeFormatStore } from './timeFormatStore'
 
 function nowHHMMFn(): string {
   const d = new Date()
@@ -107,14 +108,15 @@ export function useRemainingHours() {
   const trackingElapsed = activeTrackingStartedAt ? elapsedDecimalHours(activeTrackingStartedAt) : 0
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, currentNow) : 0
 
+  const { format } = useTimeFormatStore()
   const priorOvertime = overtimeToDate.priorOvertime
   const remaining = sollstunden - priorOvertime - workedHours - trackingElapsed - liveElapsed
   const summary = buildSummary(sollstunden, priorOvertime, workedHours)
 
   useEffect(() => {
-    const label = remaining > 0 ? `(${remaining.toFixed(1)}h left) ` : ''
+    const label = remaining > 0 ? `(${formatHours(remaining, format)} left) ` : ''
     document.title = `${label}Timetracker`
-  }, [remaining])
+  }, [remaining, format])
 
   return {
     remaining,
