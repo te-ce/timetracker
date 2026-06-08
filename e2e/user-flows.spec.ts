@@ -65,6 +65,7 @@ test.describe('start period backfill', () => {
     await page.goto(`/?date=${TEST_DATE}`)
     const workSection = page.getByRole('region', { name: 'Work periods' })
 
+    await workSection.getByRole('button', { name: /now/i }).click()
     await workSection.getByLabel('Start').fill('09:00')
     await workSection.getByLabel('End').fill('12:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
@@ -101,6 +102,7 @@ test.describe('break flow', () => {
     await expect(workSection.getByLabel('Stop tracking')).not.toBeVisible()
 
     // Add a new period after the break
+    await workSection.getByRole('button', { name: /now/i }).click()
     await workSection.getByLabel('Start').fill('13:00')
     await workSection.getByLabel('End').fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
@@ -129,11 +131,13 @@ test.describe('live subtask tracking', () => {
 
     // Start first subtask
     await workSection.getByRole('button', { name: '▶ Start tracking subtask' }).click()
+    await workSection.getByRole('button', { name: /now/i }).first().click()
     await workSection.getByLabel('Subtask started at').fill('09:00')
     await workSection.getByRole('button', { name: 'Start', exact: true }).click()
 
     // First subtask is now live — start a second subtask, which should auto-stop the first
     await workSection.getByRole('button', { name: '▶ Start tracking subtask' }).click()
+    await workSection.getByRole('button', { name: /now/i }).first().click()
     await workSection.getByLabel('Subtask started at').fill('10:00')
     await workSection.getByRole('button', { name: 'Start', exact: true }).click()
 
@@ -455,6 +459,7 @@ test.describe('settings global auto-category', () => {
     // Navigate to a day and add a period
     await page.goto(`/?date=${TEST_DATE}`)
     const workSection = page.getByRole('region', { name: 'Work periods' })
+    await workSection.getByRole('button', { name: /now/i }).click()
     await workSection.getByLabel('Start').fill('09:00')
     await workSection.getByLabel('End').fill('17:00')
 

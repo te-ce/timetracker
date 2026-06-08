@@ -36,6 +36,7 @@ test.describe('daily booking', () => {
     await page.goto(`/?date=${TEST_DATE}`)
 
     const workSection = page.getByRole('region', { name: 'Work periods' })
+    await workSection.getByRole('button', { name: /now/i }).click()
     await workSection.getByLabel('Start').fill('09:00')
     await workSection.getByLabel('End').fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
@@ -155,6 +156,7 @@ test.describe('auto category', () => {
     await page.goto(`/?date=${TEST_DATE}`)
 
     const workSection = page.getByRole('region', { name: 'Work periods' })
+    await workSection.getByRole('button', { name: /now/i }).click()
     await workSection.getByLabel('Start').fill('09:00')
     await workSection.getByLabel('End').fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
