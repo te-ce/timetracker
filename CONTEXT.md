@@ -1,53 +1,67 @@
 # Timetracker — Glossary
 
+## WorkPeriod
+
+A tracked block of time on a day during which the user actually worked.  
+Shape: `{ id, start, end: string | null, category: string, subtasks: WorkPeriodSubtask[] }`.  
+`start` and `end` are local ISO time strings (e.g. `"09:00"`).  
+A day may have multiple WorkPeriods stored in `Day.windows`.  
+**WorkedHours** for a day = Σ duration of all WorkPeriods that day.
+
+### Open WorkPeriod
+
+A WorkPeriod with `end: null`. Represents an in-progress work session.  
+Contributes a **live duration** (`now − start`) to WorkedHours, updated on a 1-minute tick.  
+Excluded from duration calculations when `now` is unavailable.  
+At most one open WorkPeriod per day is expected; if multiple exist, the one with the **latest start** is treated as the current session.
+
+### WorkPeriod–Category Tracking link
+
+Starting category tracking automatically opens a WorkPeriod for that day at the current local time — unless an open WorkPeriod already exists for that day (same continuous session, different category).  
+Stopping tracking closes the latest open WorkPeriod by setting `end` to the current local time.
+
+## WorkPeriodSubtask
+
+A carve-out of hours within a WorkPeriod under a different category.  
+Shape: `{ id, category, hours, startedAt?: string, stoppedAt?: string, note?: string }`.  
+The **base period category** gets the remainder: `periodDuration − Σ subtask hours`.  
+`startedAt`/`stoppedAt` are optional wall-clock timestamps for live subtask tracking.  
+Subtasks are displayed and edited inside the WorkPeriod dialog in DayView.
+
 ## TimeEntry
 
-A booking of hours against a category for a specific day.  
-Consists of: **date**, **category**, **duration (decimal hours, e.g. `1.5`)**.  
-Contains no start or end time — only a duration.
+An aggregated `{ id, category, hours }` record produced by `findEntriesByDateRange`.  
+Used for sprint report derivation — not a primary editing unit.  
+Category hours are derived from WorkPeriods via `calculateCategoryHours()`, not stored directly.
 
 ## WorkedHours
 
-Σ duration of all WorkWindows for a day (in decimal hours).  
-Closed WorkWindows contribute their fixed `end − start` duration.  
-Open WorkWindows contribute a live `now − start` duration (updated every minute in DayView).  
-Serves as the basis for the AutoCategory: `Auto = WorkedHours − Σ manual TimeEntries`.  
+Σ duration of all WorkPeriods for a day (in decimal hours).  
+Closed WorkPeriods contribute their fixed `end − start` duration.  
+Open WorkPeriods contribute a live `now − start` duration (updated every minute in DayView).  
 Distinct from **Sollstunden** (the configured daily target).
+
+## UNCATEGORIZED_CATEGORY
+
+The sentinel string `'_UNCATEGORIZED'` assigned to WorkPeriod remainder hours when the period carries no meaningful category.  
+Hours attributed to `_UNCATEGORIZED` are treated as **unaccounted** — the day is not considered balanced.  
+Shown as a warning in reports; does not block export.
 
 ## Sollstunden
 
-Configured daily working-hours target. Used for the hours overview and monthly statistics — not directly for the AutoCategory.
-
-## WorkWindow
-
-A duration block on a day during which the user actually worked.  
-Can be entered as a **start/end time pair** (e.g. 09:00–12:30) from DayView, or as a **plain duration** (decimal hours, e.g. `3.5`) from the MonthGrid WorkedHours column.  
-A day may have multiple WorkWindows.  
-**WorkedHours** for a day = Σ duration of all WorkWindows that day.
-
-### Open WorkWindow
-
-A WorkWindow with a start time but no end (`end: null`). Represents an in-progress work session.  
-Contributes a **live duration** (`now − start`) to WorkedHours, updated on a 1-minute tick.  
-Excluded from duration calculations when `now` is unavailable (e.g. server-side or batch contexts).  
-At most one open WorkWindow per day is expected; if multiple exist, the one with the **latest start** is treated as the current session.
-
-### WorkWindow–Category Tracking link
-
-Starting category tracking (pressing **Start** on a TimeEntry category) automatically opens a WorkWindow for that day at the current local time — unless an open WorkWindow already exists for that day (same continuous session, different category).  
-Stopping category tracking (pressing **Stop**) closes the latest open WorkWindow for that day by setting its end to the current local time.
+Configured daily working-hours target. Used for the hours overview and monthly statistics.
 
 ## Restarbeitszeit
 
 `Sollstunden − WorkedHours` for a day.  
-Displayed once at least one WorkWindow has been recorded.  
+Displayed once at least one WorkPeriod has been recorded.  
 Positive = hours still missing. Negative = overtime.
 
 ## DayType
 
-Classification of a day. Determines whether WorkWindows are expected and whether automatic bookings occur.
+Classification of a day. Determines whether WorkPeriods are expected and whether automatic bookings occur.
 
-| DayType         | WorkWindow expected? | Auto-booking           |
+| DayType         | WorkPeriod expected? | Auto-booking           |
 | --------------- | -------------------- | ---------------------- |
 | `WorkDay`       | Yes                  | —                      |
 | `Weekend`       | No                   | —                      |
@@ -73,48 +87,40 @@ The export state of a sprint with respect to the Excel export.
 ## WorkLocation
 
 An optional per-day label: `Office` or `Remote`.  
-Display/statistics only — no effect on TimeEntries or calculations.
+Display/statistics only — no effect on WorkPeriods or category hours.
 
 ## AutoCategory
 
-The category that automatically receives the remaining hours of a day.  
-A **global default** is set in Settings; can be **overridden per day** from DayView or MonthGrid.  
-Calculation: `WorkedHours − Σ manual TimeEntries`. Cannot be negative; floors at 0.  
-The user may also manually override the auto-computed value. Clearing the override reverts to the computed value.  
-When `Σ all entries (including auto) < WorkedHours`, the day is flagged as having **unaccounted hours**.  
+The **global default category** pre-filled when a new WorkPeriod is created.  
+Set in Settings (`AppConfig.autoCategory`); can be overridden per day via `Day.autoCategoryOverride`.  
+`resolveAutoCategory(date, dayOverrides, globalDefault)` returns the effective category for a given day.  
+No longer absorbs remaining hours automatically — day balance is determined by `UNCATEGORIZED_CATEGORY` hours, not by AutoCategory.  
 Accepts both fixed categories and dynamic categories.
-
-## AutoCategory Override
-
-- Per-day override for AutoCategory is supported via `resolveAutoCategory()` function
-- Override takes precedence over global default setting
-- When cleared, reverts to the computed value from `calculateAutoCategory()`
-- Used in DayView and MonthGrid for per-day configuration
 
 ## DynamicCategory
 
 A user-defined or investment-sourced category beyond the 10 fixed ones.  
 Stored as `customCategories: string[]` in AppConfig.  
-Usable for TimeEntries and as AutoCategory target.  
+Usable as a WorkPeriod category, subtask category, or AutoCategory default.  
 Investment categories are loaded from Excel via Graph API during mapping setup.
 
 ## MonthGrid
 
 A spreadsheet-like view for one month. Rows = days (1–31), columns = all categories.  
-Each cell shows booked hours and is editable inline.  
-A read-only **WorkedHours** column provides context.  
-The AutoCategory column shows computed values (greyed out) but accepts manual overrides.
+Each cell shows hours derived from `calculateCategoryHours()` across all WorkPeriods for that day.  
+Clicking a category cell opens the **WorkPeriod dialog** in DayView for editing.  
+A read-only **WorkedHours** column provides context.
 
 ## AutoFillRule
 
-A recurring rule that materializes real TimeEntries on app load.  
+A recurring rule that materializes WorkPeriod records on app load.  
 Two recurrence patterns:
 
 - `everyWorkday` — fires Mon–Fri, skips non-WorkDay days (holidays, vacation, etc.)
 - `weekly(days, intervalWeeks)` — specific weekday(s) every N weeks, also skips non-WorkDay days
 
 Each rule tracks a `materializedDates` set (ISO strings) — days where the rule was already applied.  
-If a date is in the set, the rule does not re-create the entry (even if the user deleted it).  
+If a date is in the set, the rule does not re-materialize (even if the user deleted the period).  
 Materialization happens on app load: scan from last materialization date to today.
 
 ## BootstrapConfig
@@ -157,43 +163,35 @@ The source for investment row discovery (→ DynamicCategory) and the write targ
 
 ## DayStatus
 
-The display and action status of a single day. Derived from DayType, WorkedHours, TimeEntries, and confirmation state.
+The display and action status of a single day. Derived from DayType, WorkedHours, category hours, and confirmation state.
 
-| Status         | Meaning                                                                                |
-| -------------- | -------------------------------------------------------------------------------------- |
-| `non-working`  | Weekend or PublicHoliday — no work expected                                            |
-| `leave`        | Vacation, SickDay, or Absence — day off                                                |
-| `future`       | Future WorkDay with no hours logged yet                                                |
-| `today`        | Today — display modifier layered on top of actual work status                          |
-| `complete`     | Past WorkDay that needs no action: confirmed, balanced, or AutoCategory covers the gap |
-| `needs-review` | Past or current WorkDay where hours don't add up and user attention is needed          |
-| `untracked`    | Past WorkDay with zero WorkedHours **and** zero TimeEntries                            |
+| Status         | Meaning                                                                           |
+| -------------- | --------------------------------------------------------------------------------- |
+| `non-working`  | Weekend or PublicHoliday — no work expected                                       |
+| `leave`        | Vacation, SickDay, or Absence — day off                                           |
+| `future`       | Future WorkDay with no hours logged yet                                           |
+| `today`        | Today — display modifier layered on top of actual work status                     |
+| `complete`     | Past WorkDay that needs no action: confirmed or balanced (no uncategorized hours) |
+| `needs-review` | Past or current WorkDay with uncategorized hours or other imbalance               |
+| `untracked`    | Past WorkDay with zero WorkedHours and no categorized hours                       |
 
-**`needs-review`** arises from three distinct causes:
+**`needs-review`** arises when `UNCATEGORIZED_CATEGORY` hours > 0.01 h, or categorized hours > WorkedHours, or categorized hours > 0 but WorkedHours = 0.
 
-- **Under-categorized**: WorkedHours > Σ TimeEntries and no AutoCategory set
-- **Over-categorized**: Σ TimeEntries > WorkedHours
-- **Entries without work time**: Σ TimeEntries > 0 but WorkedHours = 0
-
-**`complete`** has multiple sub-causes, all visible in the status reason:
-
-- Explicitly confirmed by the user (confirmation overlays the balance state — misalignment is still shown)
-- Balanced: Σ TimeEntries ≈ WorkedHours (within 0.01 h)
-- AutoCategory absorbs the remaining gap
+**`complete`** when confirmed by the user, or when `uncategorizedHours < 0.01` (all WorkPeriod time is attributed to real categories).
 
 **`today`** is not a standalone status — always resolved to its underlying work status for dot colors and reason text, prefixed with "Today —".
 
 ## DaySummary
 
-The computed state of a single day within a month. Combines raw data (WorkWindows, TimeEntries, DayType overrides) into a single summary:
+The computed state of a single day within a month. Combines raw data (WorkPeriods, DayType overrides) into a single summary:
 
 - **dayType**: resolved DayType (override > classifyDay)
-- **workedHours**: Σ WorkWindow durations
-- **entryTotal**: Σ TimeEntry hours
-- **isEntriesBalanced**: whether entryTotal ≈ workedHours (within 0.01 h)
-- **hasAutoCategory**: whether an AutoCategory is set and absorbs the remaining gap
+- **workedHours**: Σ WorkPeriod durations
+- **entryTotal**: Σ categorized hours (excluding `_UNCATEGORIZED`)
+- **isEntriesBalanced**: `workedHours > 0 && uncategorizedHours < 0.01`
+- **hasAutoCategory**: always `false` — AutoCategory no longer affects day balance
 - **displayStatus**: the DayStatus resolved for display — `today` is collapsed to its underlying work status
-- **statusReason**: human-readable explanation of the status (e.g. "Balanced", "Under-categorized: 1.5 h unaccounted")
+- **statusReason**: human-readable explanation (e.g. "Balanced", "Unaccounted: 1.5 h")
 
 Built via `buildMonthSummaries(year, month, input)` which returns all DaySummaries for a month plus aggregate stats (workDayCount, workedHoursPerDay, hasAnyTrackedHours).
 
@@ -219,5 +217,8 @@ Centralized registry of all TanStack Query cache keys. Lives in `src/shared/quer
 Examples:
 
 - `QUERY_KEYS.config` — app config
-- `QUERY_KEYS.timeEntriesByDate(date)` — entries for a single day
-- `QUERY_KEYS.workWindowsByMonthTagged(year, month, tag)` — work windows for a month with a tag to distinguish between views that query the same month scope (e.g. `'month'` in MonthGrid vs `'dayOvertime'` in DayView)
+- `QUERY_KEYS.month(year, month)` — all WorkPeriods for a month
+- `QUERY_KEYS.monthAll` — invalidates all month queries
+- `QUERY_KEYS.activeTracking` — currently open tracking session
+- `QUERY_KEYS.sprintEntries(index, startDate, lengthDays)` — aggregated sprint TimeEntry records
+- `QUERY_KEYS.sprintExportByIndex(index)` — export status for a sprint
