@@ -989,10 +989,11 @@ interface AddPeriodFormProps {
   openPeriod: WorkPeriod | null
   defaultCategory: string
   categories: string[]
+  categoryDescriptions?: Record<string, string> | undefined
   onAdd: (w: WorkPeriod) => void
 }
 
-function AddPeriodForm({ openPeriod, defaultCategory, categories, onAdd }: AddPeriodFormProps) {
+function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescriptions, onAdd }: AddPeriodFormProps) {
   const [draftStart, setDraftStart] = useState(nowHHMM)
   const [draftEnd, setDraftEnd] = useState('')
   const [category, setCategory] = useState(defaultCategory)
@@ -1039,7 +1040,12 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, onAdd }: AddPe
           aria-label="End"
           className="rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
         />
-        <CategoryPicker value={category} categories={categories} onChange={setCategory} />
+        <CategoryPicker
+          value={category}
+          categories={categories}
+          categoryDescriptions={categoryDescriptions}
+          onChange={setCategory}
+        />
         <button
           onClick={handleAdd}
           disabled={!canSubmit}
@@ -1408,6 +1414,7 @@ export function WorkOverview({
         openPeriod={openPeriod}
         defaultCategory={defaultCategory}
         categories={categories}
+        categoryDescriptions={categoryDescriptions}
         onAdd={handleAdd}
       />
     </div>
