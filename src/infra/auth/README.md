@@ -1,38 +1,27 @@
-# src/auth
+# infra/auth/
 
-Microsoft authentication bootstrap and storage mode detection.
+MSAL bootstrap configuration and MSAL instance initialization. Determines the app's storage/sync mode before any feature code runs.
 
-## Files
+## Contents
 
-### `msalInstance.ts`
+| File                 | Purpose                                                                                       |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| `bootstrapConfig.ts` | Read/write `BootstrapConfig` (`clientId`, `tenantId`) and sync mode flags from `localStorage` |
+| `msalInstance.ts`    | Create and export the `PublicClientApplication` instance; `getAccessToken()` helper           |
 
-Initialises `@azure/msal-browser` `PublicClientApplication` from the stored `BootstrapConfig`. Exports:
-
-- `msalInstance` — the MSAL instance, or `null` if no config is stored (local/offline mode).
-- `getAccessToken()` — acquires a token silently, falling back to redirect. Scopes: `User.Read`, `Files.ReadWrite.All`.
-
-### `bootstrapConfig.ts`
-
-Manages the two pieces of OAuth config (`clientId`, `tenantId`) and the storage mode flag, all in `localStorage`.
-
-| Function                       | Description                                               |
-| ------------------------------ | --------------------------------------------------------- |
-| `readBootstrapConfig()`        | Returns `BootstrapConfig \| null` from localStorage       |
-| `writeBootstrapConfig(config)` | Persists config and reloads the page                      |
-| `isLocalFolderMode()`          | `true` when `'timetracker-local-folder-mode'` flag is set |
-| `setLocalFolderMode()`         | Sets the flag (page reload required to activate)          |
-| `isSetupSkipped()`             | `true` when the user dismissed the setup wizard           |
-| `skipSetup()`                  | Sets the skip flag                                        |
-
-## Startup flow
+## How it works
 
 ```
 main.tsx
   └─ readBootstrapConfig()
-       ├─ has config   → initialise MSAL → cloud mode
-       ├─ local-folder flag  → LocalFolderStorageAdapter
-       ├─ skip flag    → LocalStorageAdapter (offline)
-       └─ neither      → render SetupWizard
+       ├─ has clientId/tenantId → initialise MSAL → cloud/OneDrive mode
+       ├─ local-folder flag set  → LocalFolderStorageAdapter (no MSAL)
+       ├─ skip flag set          → LocalStorageAdapter only (offline)
+       └─ none of the above      → render SetupWizard
 ```
 
-`shared.ts` in `src/repositories/` reads the same flags to select the storage adapter.
+`bootstrapConfig.ts` reads and writes `localStorage` directly — `BootstrapConfig` must be available before MSAL is initialized, so it cannot live in `AppConfig` (which itself requires MSAL to load from OneDrive).
+
+`msalInstance.ts` exports `msalInstance` (the MSAL `PublicClientApplication`, or `null` in local/offline mode) and `getAccessToken()`, which acquires a token silently and falls back to redirect. Scopes: `User.Read`, `Files.ReadWrite.All`.
+
+`infra/repositories/shared.ts` reads the same flags to select the correct `StorageAdapter`.

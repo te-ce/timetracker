@@ -1,0 +1,53 @@
+# features/settings/
+
+SettingsView — all app configuration. Covers MSAL bootstrap, storage mode, categories (fixed + custom + AutoFill rules), sprint config, Excel mapping, display preferences (theme, time format, hotkeys), and data management.
+
+Also contains the **SetupWizard** shown on first launch to choose sync mode.
+
+## Key concepts
+
+- **BootstrapConfig** — `{ clientId, tenantId }` stored in localStorage; required before MSAL init. Set in MSAL settings.
+- **AppConfig** — full app configuration stored in the repository (OneDrive / local folder / localStorage).
+- **AutoFillRule** — recurring rule that materializes WorkPeriods on load (`everyWorkday` or `weekly(days, intervalWeeks)`).
+- **ExcelMapping** — `Record<category, taskId>` linking categories to SharePoint Excel rows.
+- **AutoCategory** — global default category for new WorkPeriods; overridable per day.
+
+## Files
+
+| File                             | Purpose                                                            |
+| -------------------------------- | ------------------------------------------------------------------ |
+| `SettingsView.tsx`               | Root view — tab-based layout of all setting panels                 |
+| `SetupWizard.tsx`                | First-launch wizard to pick sync mode (MSAL / local folder / skip) |
+| `AppDataFolderSettings.tsx`      | Local folder path selection                                        |
+| `CloudSyncSettings.tsx`          | OneDrive sync status and sign-in/out                               |
+| `SharePointSettings.tsx`         | SharePoint URL and sheet selector for Excel export                 |
+| `LocalExcelSettings.tsx`         | Local Excel file picker                                            |
+| `LocalExcelFolderSettings.tsx`   | Local folder picker for Excel files                                |
+| `SheetSelector.tsx`              | Dropdown to pick the target worksheet                              |
+| `CategorySettings.tsx`           | Enable/disable and reorder the fixed categories                    |
+| `CustomCategorySettings.tsx`     | Add/remove dynamic categories                                      |
+| `AutoCategorySettings.tsx`       | Set the global AutoCategory default                                |
+| `AutoCategoryPicker.tsx`         | Category picker component used by AutoCategorySettings             |
+| `AutoCategoryRow.tsx`            | Per-day AutoCategory override row                                  |
+| `ExcelMappingSettings.tsx`       | Map app categories to Excel row Task IDs                           |
+| `BundeslandSettings.tsx`         | German federal state selection (for public holidays)               |
+| `TargetHoursSettings.tsx`        | Configured daily Sollstunden                                       |
+| `OvertimeBarSettings.tsx`        | Overtime bar display thresholds                                    |
+| `HotkeySettings.tsx`             | Keyboard shortcut configuration                                    |
+| `LaunchAtLoginSettings.tsx`      | Electron launch-at-login toggle                                    |
+| `WindowBehaviorSettings.tsx`     | Electron window hide-on-close behavior                             |
+| `ClearDataSettings.tsx`          | Destructive data reset                                             |
+| `autoFillRules.ts`               | AutoFillRule domain logic — materialization, recurrence            |
+| `excelMapping.ts`                | ExcelMapping derivation helpers                                    |
+| `exportStatus.ts`                | ExportStatus derivation from sprint export records                 |
+| `useCategoryMutations.ts`        | Mutations for category config changes                              |
+| `useDayTypeOverrideMutations.ts` | Mutations for per-day DayType overrides                            |
+| `index.ts`                       | Public API barrel                                                  |
+
+## How it works
+
+All settings read from and write to `AppConfig` via TanStack Query mutations. The config repository persists to OneDrive (synced mode) or localStorage/local folder (offline mode).
+
+`SetupWizard` is rendered when `BootstrapConfig` is absent — it writes `clientId`/`tenantId` to localStorage before MSAL is initialized, then reloads the app.
+
+`autoFillRules.ts` is called on app load: it scans from the last materialized date to today and inserts missing WorkPeriod records for any matching rules.

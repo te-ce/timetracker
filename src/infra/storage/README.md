@@ -1,46 +1,49 @@
-# src/storage
+# infra/storage/
 
-Physical storage backends. All implement `StorageAdapter` — a generic key/value interface for typed JSON blobs.
+`StorageAdapter` interface and five implementations. Repositories use this interface to read/write typed JSON blobs by key — they don't know which storage backend is active.
 
-## `StorageAdapter` interface (`adapter.ts`)
+## Contents
 
-```typescript
-get<T>(key: string): Promise<T | null>
-put<T>(key: string, data: T): Promise<void>
-delete(key: string): Promise<void>
+| File                      | Class                       | Purpose                                                               |
+| ------------------------- | --------------------------- | --------------------------------------------------------------------- |
+| `adapter.ts`              | `StorageAdapter`            | Interface definition                                                  |
+| `onedrive-adapter.ts`     | `OneDriveStorageAdapter`    | OneDrive App Folder via Microsoft Graph API                           |
+| `localstorage-adapter.ts` | `LocalStorageAdapter`       | Browser `localStorage`                                                |
+| `local-folder-adapter.ts` | `LocalFolderStorageAdapter` | Local folder via File System Access API                               |
+| `electron-adapter.ts`     | `ElectronStorageAdapter`    | Electron `fs` via IPC preload bridge                                  |
+| `in-memory-adapter.ts`    | `InMemoryStorageAdapter`    | Plain JS Map — tests only                                             |
+| `fallback-adapter.ts`     | `FallbackStorageAdapter`    | Wraps primary + secondary; writes to both, reads primary first        |
+| `folder-handle-store.ts`  | —                           | Persists `FileSystemDirectoryHandle` in IndexedDB across page reloads |
+
+## StorageAdapter interface
+
+```ts
+interface StorageAdapter {
+  get<T>(key: string): Promise<T | null>
+  put<T>(key: string, data: T): Promise<void>
+  delete(key: string): Promise<void>
+}
 ```
 
-Keys map to logical data names (e.g. `'config'`, `'time-entries'`). Each adapter decides the physical format.
+## Which adapter is active
 
-## Adapters
+| Mode                 | Primary                     | Fallback                                           |
+| -------------------- | --------------------------- | -------------------------------------------------- |
+| Signed in (OneDrive) | `OneDriveStorageAdapter`    | `LocalStorageAdapter` via `FallbackStorageAdapter` |
+| Local folder         | `LocalFolderStorageAdapter` | `LocalStorageAdapter`                              |
+| Electron             | `ElectronStorageAdapter`    | —                                                  |
+| Offline / skip       | `LocalStorageAdapter`       | —                                                  |
+| Tests                | `InMemoryStorageAdapter`    | —                                                  |
 
-| File                      | Class                       | Backing store                                               | Used when                                        |
-| ------------------------- | --------------------------- | ----------------------------------------------------------- | ------------------------------------------------ |
-| `in-memory-adapter.ts`    | `InMemoryStorageAdapter`    | `Map<string, string>`                                       | Tests                                            |
-| `localstorage-adapter.ts` | `LocalStorageAdapter`       | `localStorage` with configurable prefix                     | Offline / skip-setup mode                        |
-| `onedrive-adapter.ts`     | `OneDriveStorageAdapter`    | Microsoft Graph API `/me/drive/special/approot`             | Cloud mode (authenticated)                       |
-| `fallback-adapter.ts`     | `FallbackStorageAdapter`    | Primary + secondary                                         | Cloud mode — writes to both, reads primary first |
-| `local-folder-adapter.ts` | `LocalFolderStorageAdapter` | File System Access API (`.json` files in a local directory) | Local folder mode                                |
-
-`FallbackStorageAdapter` wraps OneDrive (primary) + localStorage (secondary). A 404 from OneDrive returns null; other errors propagate. Writes go to both so offline changes survive.
+`FallbackStorageAdapter`: reads try primary first; 404 → return null, other errors propagate. Writes go to both so offline edits survive until the next sync.
 
 ## Folder handle lifecycle (`folder-handle-store.ts`)
 
-Persists `FileSystemDirectoryHandle` objects in IndexedDB (`timetracker-fs` / `handles` store).
+Persists `FileSystemDirectoryHandle` objects across page reloads via IndexedDB (`timetracker-fs` / `handles` store). Two independent slots:
 
-Two independent slots:
-
-| Key              | Exported functions                                       | Purpose                                    |
+| Key              | Functions                                                | Purpose                                    |
 | ---------------- | -------------------------------------------------------- | ------------------------------------------ |
 | `'folder'`       | `saveHandle`, `loadHandle`, `clearHandle`                | App data directory (JSON files)            |
 | `'excel-folder'` | `saveExcelHandle`, `loadExcelHandle`, `clearExcelHandle` | Optional separate Excel workbook directory |
 
 `verifyPermission(handle)` calls `queryPermission` then `requestPermission` with `{ mode: 'readwrite' }`.
-
-`localExcelService.ts` resolves the Excel directory as `(await loadExcelHandle()) ?? (await loadHandle())` — falls back to the app data folder when no separate Excel folder is configured.
-
-## Adding a new adapter
-
-1. Implement `StorageAdapter` from `adapter.ts`.
-2. Export from `index.ts`.
-3. Wire it in `src/repositories/shared.ts` under the appropriate mode check.

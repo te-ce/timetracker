@@ -1,43 +1,45 @@
-# src/repositories
+# infra/repositories/
 
-Data access layer. Interfaces in `types.ts`, two concrete families: `cloud/` (production) and `in-memory/` (tests).
+The data access layer. Features load and persist domain data through repository interfaces injected via `RepositoryContext`. Two implementation sets: `cloud/` (real persistence) and `in-memory/` (tests).
 
-## Interfaces (`types.ts`)
+## Contents
 
-| Interface                        | Key methods                                                                               |
-| -------------------------------- | ----------------------------------------------------------------------------------------- |
-| `TimeEntryRepository`            | `save(entry)`, `findByDateRange(from, to)`, `delete(id)`                                  |
-| `WorkPeriodRepository`           | `save(window)`, `findByDate(date)`, `findByDateRange(from, to)`, `delete(id)`             |
-| `ConfigRepository`               | `get()`, `save(config)`                                                                   |
-| `WorkLocationRepository`         | `save(date, location)`, `findByDate(date)`, `findByDateRange(from, to)`, `delete(date)`   |
-| `DayTypeOverrideRepository`      | `save(date, dayType)`, `findByDate(date)`, `findByDateRange(from, to)`, `delete(date)`    |
-| `AutoCategoryOverrideRepository` | `save(date, category)`, `findByDate(date)`, `findByDateRange(from, to)`, `delete(date)`   |
-| `DayConfirmationRepository`      | `confirm(date)`, `unconfirm(date)`, `isConfirmed(date)`, `findConfirmedInRange(from, to)` |
-| `SprintExportRepository`         | `save(sprintExport)`, `findBySprintIndex(index)`                                          |
-| `TimeTrackingRepository`         | `start(date, category)`, `stop()`, `getActive()`                                          |
+```
+repositories/
+├── RepositoryContext.tsx   — React context providing all repos to the component tree
+├── types.ts                — Repository interface definitions
+├── configSchema.ts         — Zod schema for AppConfig validation on load
+├── shared.ts               — Shared parsing helpers used by both implementation families
+│
+├── cloud/                  — Production implementations (delegate to StorageAdapter)
+│   ├── month-repository.ts
+│   ├── config-repository.ts
+│   ├── time-tracking-repository.ts
+│   ├── sprint-export-repository.ts
+│   ├── json-store.ts       — Low-level read/write cache wrapper over StorageAdapter
+│   └── *.test.ts
+│
+└── in-memory/              — Test implementations (plain JS Maps, no I/O)
+    ├── index.ts            — Factory: createInMemoryRepositories()
+    ├── month-repository.ts
+    ├── config-repository.ts
+    ├── time-tracking-repository.ts
+    └── sprint-export-repository.ts
+```
 
-Entity types: `TimeEntry`, `WorkPeriod`, `AppConfig`, `WorkLocation`, `DayTypeOverride`, `ActiveTracking`, `SprintExport`.
+## Repository interfaces (`types.ts`)
 
-## `shared.ts` — singleton instances
+| Interface                | Data it manages                                                         |
+| ------------------------ | ----------------------------------------------------------------------- |
+| `MonthRepository`        | `Day` records — all WorkPeriods, notes, confirmations, etc. for a month |
+| `ConfigRepository`       | `AppConfig` — full app configuration                                    |
+| `TimeTrackingRepository` | Active tracking session (`ActiveTracking`)                              |
+| `SprintExportRepository` | `ExportStatus` per sprint index                                         |
 
-Exports one instance per repository, wired to the active `StorageAdapter`:
+## How it works
 
-- Cloud mode → `OneDriveStorageAdapter` + localStorage fallback
-- Local folder mode → `LocalFolderStorageAdapter`
-- Offline/skip → `LocalStorageAdapter`
+`RepositoryContext.tsx` creates instances (cloud or in-memory depending on sync mode) and provides them to the component tree. Feature hooks call `useRepository()` to obtain the relevant repository.
 
-`resetAllRepositories()` clears all in-memory caches after login (call it when the storage adapter changes identity).
+Cloud repositories delegate all I/O to `json-store.ts`, which wraps a `StorageAdapter` key with an in-memory cache — first read loads from storage, writes update cache and persist. In-memory repositories hold all state in plain JS Maps; no adapter dependency.
 
-## `cloud/` — production implementations
-
-Backed by `JsonCollectionStore<T>` and `JsonRecordStore<V>` from `cloud/json-store.ts`.
-
-**`json-store.ts`** is the foundation: wraps a `StorageAdapter` key with an in-memory cache. On first read it loads from storage; writes update the cache and persist. Both collection (array) and record (object) shapes are supported.
-
-All cloud repositories follow the same pattern: construct with a `StorageAdapter`, delegate to a store instance, implement the interface.
-
-## `in-memory/` — test implementations
-
-Parallel structure to `cloud/`. Store data in `Map` / `Set` — no persistence, no async I/O beyond `Promise.resolve()`.
-
-**Inject these in tests instead of mocking.** Components accept repositories as props precisely to enable this pattern.
+`configSchema.ts` validates the config JSON on load via Zod, filling in defaults for missing fields so config files from older app versions parse without throwing.

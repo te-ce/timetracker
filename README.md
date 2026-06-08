@@ -1,24 +1,24 @@
 # Timetracker
 
-A time-tracking Progressive Web App that logs working hours against predefined categories and exports data to a SharePoint Excel template via Microsoft Graph API.
+A time-tracking app (PWA + Electron desktop) that logs working hours against categories via timed WorkPeriods and exports sprint data to a SharePoint Excel template via Microsoft Graph API.
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend | React 19 + TypeScript (strict) |
-| Build | Vite + vite-plugin-pwa (PWA / offline) |
-| Routing | TanStack Router (type-safe, file-based) |
-| Async state | TanStack Query |
-| Client state | Zustand (auth state + selected date) |
-| Styling | Tailwind CSS 4 |
-| Auth | MSAL.js (`@azure/msal-browser`) |
-| Cloud persistence | OneDrive App Folder via Microsoft Graph API |
-| Local persistence | localStorage (offline fallback) + File System Access API (local folder mode) |
-| Excel export | Microsoft Graph API (SharePoint) + xlsx (local folder mode) |
-| Unit/component tests | Vitest + React Testing Library |
-| API mocking | Mock Service Worker (MSW) |
-| E2E tests | Playwright |
+| Layer                | Technology                                                                   |
+| -------------------- | ---------------------------------------------------------------------------- |
+| Frontend             | React 19 + TypeScript (strict)                                               |
+| Build                | Vite + vite-plugin-pwa (PWA / offline)                                       |
+| Routing              | TanStack Router (type-safe, file-based)                                      |
+| Async state          | TanStack Query                                                               |
+| Client state         | Zustand (auth state + selected date)                                         |
+| Styling              | Tailwind CSS 4                                                               |
+| Auth                 | MSAL.js (`@azure/msal-browser`)                                              |
+| Cloud persistence    | OneDrive App Folder via Microsoft Graph API                                  |
+| Local persistence    | localStorage (offline fallback) + File System Access API (local folder mode) |
+| Excel export         | Microsoft Graph API (SharePoint) + xlsx (local folder mode)                  |
+| Unit/component tests | Vitest + React Testing Library                                               |
+| API mocking          | Mock Service Worker (MSW)                                                    |
+| E2E tests            | Playwright                                                                   |
 
 ## Prerequisites
 
@@ -36,14 +36,20 @@ npm run preview    # serve dist/ locally
 
 ## Scripts
 
-| Script | Description |
-|---|---|
-| `npm run dev` | Start Vite dev server with HMR |
-| `npm run build` | Type-check and build for production |
-| `npm run preview` | Serve the production build locally |
-| `npm run lint` | Run ESLint |
-| `npm run test` | Run unit/component tests (Vitest) |
-| `npm run e2e` | Run end-to-end tests (Playwright) |
+| Script                   | Description                                  |
+| ------------------------ | -------------------------------------------- |
+| `npm run dev`            | Start Vite dev server with HMR               |
+| `npm run build`          | Type-check and build for production          |
+| `npm run preview`        | Serve the production build locally           |
+| `npm run lint`           | Run oxlint + ESLint                          |
+| `npm run test`           | Run unit/component tests (Vitest)            |
+| `npm run test:coverage`  | Run tests with coverage report               |
+| `npm run test:mutation`  | Run Stryker mutation tests                   |
+| `npm run knip`           | Check for unused exports and files           |
+| `npm run e2e`            | Run end-to-end tests (Playwright)            |
+| `npm run format`         | Format with Prettier                         |
+| `npm start`              | Start Vite + Electron together (desktop app) |
+| `npm run electron:build` | Build Electron distributable                 |
 
 ## Running Tests
 
@@ -62,19 +68,21 @@ npm run e2e
 
 ```
 src/
-├── domain/        # Pure functions, no side effects — fully unit-tested
-├── repositories/  # Data access interfaces + in-memory (test) + cloud implementations
-│   ├── in-memory/ # In-memory adapters for tests and offline use
-│   └── cloud/     # OneDrive-backed JSON store repositories
-├── storage/       # StorageAdapter abstraction (OneDrive, localStorage, local folder, in-memory)
-├── services/      # External integrations behind interfaces (WorkbookService for Excel/Graph API)
-├── hooks/         # Shared React hooks (useMonthQuery, useDayQuery, QUERY_KEYS, mutations)
-├── components/    # Reusable UI components
-├── views/         # Page-level route views — wire repos, queries, and mutations together
-├── stores/        # Zustand stores (auth state, selected date)
-├── auth/          # MSAL initialization and bootstrap config
-├── routes/        # TanStack Router route definitions
-├── types/         # Ambient type declarations extending DOM/third-party types
+├── features/      # Feature verticals — each owns its components, hooks, and domain logic
+│   ├── day/       # DayView, WorkPeriod editing, live tracking, subtasks
+│   ├── month/     # MonthGrid, DaySummary derivation, calendar
+│   ├── table/     # Monthly table view, category hour aggregation
+│   ├── sprint/    # Sprint report, Excel export
+│   ├── settings/  # App config, category mapping, AutoFill rules
+│   └── excel/     # WorkbookService (Graph API + local folder adapters)
+├── shared/        # Cross-cutting utilities used by 2+ features
+├── infra/         # Infrastructure — no feature code
+│   ├── repositories/ # MonthRepository + ConfigRepository (cloud + in-memory)
+│   ├── storage/   # StorageAdapter (OneDrive, localStorage, local folder, in-memory, Electron)
+│   └── auth/      # MSAL bootstrap config and initialization
+├── routes/        # TanStack Router route definitions (thin wiring only)
+├── types/         # Ambient declarations extending DOM / third-party types
+├── test/          # Test utilities and shared setup
 └── mocks/         # MSW handlers for Graph API (used in tests)
 docs/
 ├── adr/           # Architecture Decision Records
@@ -89,23 +97,24 @@ Data is stored as JSON files in the user's **OneDrive App Folder** via Microsoft
 ```
 /Apps/Timetracker/
   config.json
-  time-entries.json
-  work-windows.json
+  months/
+    2025-06.json    ← one file per month; holds all WorkPeriods, location, confirmations, etc.
+    2025-07.json
+    …
+  months-index.json
   sprint-exports.json
-  work-locations.json
-  day-type-overrides.json
-  auto-category-overrides.json
-  day-confirmations.json
+  active-tracking.json
 ```
 
-The `StorageAdapter` interface has four implementations:
+The `StorageAdapter` interface has five implementations:
 
-| Implementation | Used for |
-|---|---|
-| `OneDriveStorageAdapter` | Production cloud sync |
-| `LocalStorageAdapter` | Offline fallback cache |
+| Implementation              | Used for                                   |
+| --------------------------- | ------------------------------------------ |
+| `OneDriveStorageAdapter`    | Production cloud sync                      |
+| `LocalStorageAdapter`       | Offline fallback cache                     |
 | `LocalFolderStorageAdapter` | Local folder mode (File System Access API) |
-| `InMemoryStorageAdapter` | Tests |
+| `ElectronStorageAdapter`    | Electron desktop app                       |
+| `InMemoryStorageAdapter`    | Tests                                      |
 
 See [ADR 0005](docs/adr/0005-onedrive-app-folder-persistence.md) for design details.
 
@@ -141,6 +150,24 @@ Before exporting sprint hours, configure in **Settings**:
 Then open the **Sprint Report** for any sprint and click **Export to SharePoint**.
 
 Microsoft sign-in is required for both OneDrive sync and SharePoint export.
+
+## Repository Map
+
+```
+timetracker/
+├── src/           → all app source code          → src/README.md
+│   ├── features/  → feature verticals            → src/features/README.md
+│   ├── shared/    → cross-cutting utilities      → src/shared/README.md
+│   ├── infra/     → data / auth / storage layer  → src/infra/README.md
+│   ├── routes/    → TanStack Router wiring
+│   ├── types/     → ambient DOM / Electron types
+│   ├── test/      → Vitest setup helpers
+│   └── mocks/     → MSW Graph API handlers
+├── electron/      → Electron main process + IPC  → electron/README.md
+├── e2e/           → Playwright end-to-end tests  → e2e/README.md
+├── docs/          → ADRs + agent workflow docs   → docs/README.md
+└── scripts/       → build helpers (icon gen)
+```
 
 ## Architecture Decision Records
 
