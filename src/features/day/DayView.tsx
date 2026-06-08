@@ -9,7 +9,7 @@ import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
-import { findOpenPeriod } from '../../shared/worktime'
+import { findOpenPeriod, findPlannedStopPeriod } from '../../shared/worktime'
 import { Tooltip } from '../../shared'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
@@ -159,6 +159,10 @@ export function DayView() {
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = findOpenPeriod(windows)?.start
+  const plannedStopTime =
+    selectedDate === todayIso
+      ? (findPlannedStopPeriod(windows, new Date().toTimeString().slice(0, 5))?.end ?? null)
+      : null
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay' || selectedDayType === 'Absence'
   const showOfficeStats = config?.officeStats !== false
   const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
@@ -192,6 +196,7 @@ export function DayView() {
           workedToday={overtimeToDate.workedToday}
           liveWindowStart={liveWindowStart ?? null}
           activeTrackingStartedAt={activeTracking?.startedAt ?? null}
+          plannedStopTime={plannedStopTime}
           onHide={() => hideOvertimeMutation.mutate()}
           {...officeStats}
         />

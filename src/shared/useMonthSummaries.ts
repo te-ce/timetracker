@@ -4,7 +4,7 @@ import { buildMonthSummaries, calculateOvertimeToDate } from '../features/month'
 import { toLocalIso } from './dateUtils'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
-import { findOpenPeriod } from './worktime'
+import { findOpenPeriod, findPlannedStopPeriod } from './worktime'
 import { targetHoursForDate } from './weekdayHours'
 import type { DayTypeOverride, MonthData, WorkLocation } from '../infra/repositories/types'
 
@@ -13,6 +13,11 @@ interface MonthMaps {
   workLocations: Map<string, WorkLocation>
   confirmedDays: Set<string>
   dayNotes: Map<string, string>
+}
+
+function nowHHMM(): string {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 function findTodayLiveWindowStart(
@@ -25,6 +30,18 @@ function findTodayLiveWindowStart(
   const todayMonth = parseInt(todayIso.slice(5, 7))
   if (year !== todayYear || month !== todayMonth) return undefined
   return findOpenPeriod(monthData[todayIso]?.windows ?? [])?.start
+}
+
+function findTodayPlannedStopTime(
+  monthData: MonthData,
+  todayIso: string,
+  year: number,
+  month: number,
+): string | undefined {
+  const todayYear = parseInt(todayIso.slice(0, 4))
+  const todayMonth = parseInt(todayIso.slice(5, 7))
+  if (year !== todayYear || month !== todayMonth) return undefined
+  return findPlannedStopPeriod(monthData[todayIso]?.windows ?? [], nowHHMM())?.end ?? undefined
 }
 
 function extractMonthMaps(monthData: MonthData): MonthMaps {
@@ -75,6 +92,7 @@ export function useMonthSummaries(year: number, month: number) {
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
   const todayLiveWindowStart = findTodayLiveWindowStart(monthData, todayIso, year, month)
+  const todayPlannedStopTime = findTodayPlannedStopTime(monthData, todayIso, year, month)
 
   return {
     config,
@@ -88,5 +106,6 @@ export function useMonthSummaries(year: number, month: number) {
     targetHoursPerDay,
     todayIso,
     todayLiveWindowStart,
+    todayPlannedStopTime,
   }
 }

@@ -72,6 +72,7 @@ export function TableView() {
     overtimeToDate,
     sollstunden,
     todayLiveWindowStart,
+    todayPlannedStopTime,
   } = useMonthSummaries(year, month)
 
   const hideOvertimeMutation = useMutation({
@@ -222,6 +223,7 @@ export function TableView() {
           workedToday={overtimeToDate.workedToday}
           activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           liveWindowStart={todayLiveWindowStart ?? null}
+          plannedStopTime={todayPlannedStopTime ?? null}
           {...(showOfficeStats ? { officeDays, totalWorkDays: trackedWorkDays.length, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />

@@ -3,7 +3,7 @@ import { toLocalIso } from './dateUtils'
 import { useDayQuery } from '../features/day/useDayQuery'
 import { formatHours } from './formatHours'
 import { useActiveTracking } from './useActiveTracking'
-import { findOpenPeriod } from './worktime'
+import { findOpenPeriod, findPlannedStopPeriod } from './worktime'
 import type { TimeFormat } from './timeFormatStore'
 import { useTimeFormatStore } from './timeFormatStore'
 
@@ -84,7 +84,7 @@ export function buildReceipt(
 
 export function useRemainingHours() {
   const todayIso = toLocalIso(new Date())
-  const { sollstunden, workedHours, overtimeToDate, windows, officeDays, totalWorkDays, officePercent } =
+  const { config, sollstunden, workedHours, overtimeToDate, windows, officeDays, totalWorkDays, officePercent } =
     useDayQuery(todayIso)
   const activeTracking = useActiveTracking()
   const activeTrackingStartedAt = activeTracking?.startedAt ?? null
@@ -99,18 +99,46 @@ export function useRemainingHours() {
     return () => clearInterval(id)
   }, [activeTrackingStartedAt])
 
+  const plannedStopPeriod = findPlannedStopPeriod(windows, currentNow)
+  const hasLiveActivity = !!liveWindowStart || !!plannedStopPeriod
+
   useEffect(() => {
-    if (!liveWindowStart) return
+    if (!hasLiveActivity) return
     const id = setInterval(() => setCurrentNow(nowHHMMFn()), 60_000)
     return () => clearInterval(id)
-  }, [liveWindowStart])
+  }, [hasLiveActivity])
 
   const trackingElapsed = activeTrackingStartedAt ? elapsedDecimalHours(activeTrackingStartedAt) : 0
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, currentNow) : 0
 
+  // For a Planned-Stop WorkPeriod: the query's workedHours includes its full planned
+  // duration (end − start). Correct it back to live elapsed for target-hours calculations.
+  const plannedFullDuration = plannedStopPeriod
+    ? liveWindowElapsedHours(plannedStopPeriod.start, plannedStopPeriod.end!)
+    : 0
+  const plannedLiveElapsed = plannedStopPeriod ? liveWindowElapsedHours(plannedStopPeriod.start, currentNow) : 0
+  const correctedWorkedHours = workedHours - plannedFullDuration
+
+  // Projected remaining: uses full planned duration (workedHours already includes it).
+  const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - workedHours - trackingElapsed
+
+  const remainingTimeReference = config?.remainingTimeReference ?? 'planned-stop'
+  const isPlannedStopMode = !!plannedStopPeriod && remainingTimeReference !== 'target-hours'
+  const plannedStopTime = plannedStopPeriod?.end ?? null
+
+  const countdownHours = plannedStopPeriod ? liveWindowElapsedHours(currentNow, plannedStopPeriod.end!) : 0
+
+  const remaining = isPlannedStopMode
+    ? countdownHours
+    : sollstunden -
+      overtimeToDate.priorOvertime -
+      correctedWorkedHours -
+      trackingElapsed -
+      plannedLiveElapsed -
+      liveElapsed
+
   const { format } = useTimeFormatStore()
   const priorOvertime = overtimeToDate.priorOvertime
-  const remaining = sollstunden - priorOvertime - workedHours - trackingElapsed - liveElapsed
   const summary = buildSummary(sollstunden, priorOvertime, workedHours)
 
   useEffect(() => {
@@ -120,6 +148,9 @@ export function useRemainingHours() {
 
   return {
     remaining,
+    projectedRemaining,
+    isPlannedStopMode,
+    plannedStopTime,
     sollstunden,
     workedHours,
     priorOvertime,

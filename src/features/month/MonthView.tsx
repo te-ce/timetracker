@@ -39,8 +39,16 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const { config, summaries, overtimeToDate, workLocations, sollstunden, dayNotes, todayLiveWindowStart } =
-    useMonthSummaries(year, month)
+  const {
+    config,
+    summaries,
+    overtimeToDate,
+    workLocations,
+    sollstunden,
+    dayNotes,
+    todayLiveWindowStart,
+    todayPlannedStopTime,
+  } = useMonthSummaries(year, month)
 
   const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
   const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
@@ -76,6 +84,7 @@ export function MonthView() {
           workedToday={overtimeToDate.workedToday}
           activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           liveWindowStart={todayLiveWindowStart ?? null}
+          plannedStopTime={todayPlannedStopTime ?? null}
           {...(showOfficeStats ? { officeDays, totalWorkDays: trackedWorkDays.length, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />

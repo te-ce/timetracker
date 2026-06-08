@@ -6,6 +6,9 @@ import {
   calcSubtaskHours,
   hasOpenPeriod,
   findOpenPeriod,
+  isPlannedStop,
+  findPlannedStopPeriod,
+  calculateProjectedWorkedHours,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
@@ -135,5 +138,85 @@ describe('calculateRestarbeitszeit', () => {
     const result = calculateRestarbeitszeit(8, 8)
     expect(result.value).toBe(0)
     expect(result.isOvertime).toBe(false)
+  })
+})
+
+describe('isPlannedStop', () => {
+  it('returns false when end is null (open period)', () => {
+    expect(isPlannedStop(makeWindow('09:00', null), '15:00')).toBe(false)
+  })
+
+  it('returns false when end is in the past relative to now', () => {
+    expect(isPlannedStop(makeWindow('09:00', '14:00'), '15:00')).toBe(false)
+  })
+
+  it('returns false when end equals now', () => {
+    expect(isPlannedStop(makeWindow('09:00', '15:00'), '15:00')).toBe(false)
+  })
+
+  it('returns true when end is in the future relative to now', () => {
+    expect(isPlannedStop(makeWindow('09:00', '17:00'), '15:00')).toBe(true)
+  })
+
+  it('returns true when end is one minute ahead', () => {
+    expect(isPlannedStop(makeWindow('09:00', '15:01'), '15:00')).toBe(true)
+  })
+})
+
+describe('findPlannedStopPeriod', () => {
+  it('returns undefined when windows is empty', () => {
+    expect(findPlannedStopPeriod([], '15:00')).toBeUndefined()
+  })
+
+  it('returns undefined when no period has a future end', () => {
+    const windows = [makeWindow('09:00', '12:00'), makeWindow('13:00', null)]
+    expect(findPlannedStopPeriod(windows, '15:00')).toBeUndefined()
+  })
+
+  it('returns the period whose end is in the future', () => {
+    const planned = makeWindow('09:00', '17:00')
+    expect(findPlannedStopPeriod([makeWindow('07:00', '08:00'), planned], '15:00')).toBe(planned)
+  })
+})
+
+describe('calculateProjectedWorkedHours', () => {
+  it('returns 0 for empty windows', () => {
+    expect(calculateProjectedWorkedHours([], '15:00')).toBe(0)
+  })
+
+  it('uses end − start for closed past periods', () => {
+    expect(calculateProjectedWorkedHours([makeWindow('09:00', '12:00')], '15:00')).toBe(3)
+  })
+
+  it('uses end − start (full planned duration) for a planned-stop period', () => {
+    // Period runs 09:00–17:00, now is 15:00 → projected = 8h
+    expect(calculateProjectedWorkedHours([makeWindow('09:00', '17:00')], '15:00')).toBe(8)
+  })
+
+  it('uses now for an open period (no planned stop)', () => {
+    // Period started 09:00, now 15:00 → projected live = 6h
+    expect(calculateProjectedWorkedHours([makeWindow('09:00', null)], '15:00')).toBe(6)
+  })
+
+  it('sums closed period plus full planned duration', () => {
+    // Closed: 09:00–12:00 = 3h, planned: 13:00–17:00 = 4h → 7h
+    const windows = [makeWindow('09:00', '12:00'), makeWindow('13:00', '17:00')]
+    expect(calculateProjectedWorkedHours(windows, '15:00')).toBe(7)
+  })
+})
+
+describe('calculateWorkedHours with future end times', () => {
+  it('treats a future end as live (uses now) when now is provided', () => {
+    // Period started 09:00, planned end 17:00, now 15:00 → worked 6h (not 8h)
+    expect(calculateWorkedHours([makeWindow('09:00', '17:00')], '15:00')).toBe(6)
+  })
+
+  it('still uses past end as fixed duration when end is in the past', () => {
+    expect(calculateWorkedHours([makeWindow('09:00', '12:00')], '15:00')).toBe(3)
+  })
+
+  it('treats a future end as full duration when no now is provided', () => {
+    // Without now: no knowledge of "future", uses end − start as-is
+    expect(calculateWorkedHours([makeWindow('09:00', '17:00')])).toBe(8)
   })
 })

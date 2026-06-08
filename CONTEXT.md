@@ -10,10 +10,19 @@ A day may have multiple WorkPeriods stored in `Day.windows`.
 
 ### Open WorkPeriod
 
-A WorkPeriod with `end: null`. Represents an in-progress work session.  
+A WorkPeriod with `end: null`. Represents an in-progress work session with no declared stop point.  
 Contributes a **live duration** (`now − start`) to WorkedHours, updated on a 1-minute tick.  
 Excluded from duration calculations when `now` is unavailable.  
 At most one open WorkPeriod per day is expected; if multiple exist, the one with the **latest start** is treated as the current session.
+
+### Planned-Stop WorkPeriod
+
+A WorkPeriod whose `end` is an HH:MM string referring to a time still in the future on the same day.  
+Represents an in-progress session where the user has declared in advance when they intend to stop.  
+Contributes a **live duration** (`now − start`) to WorkedHours, exactly like an Open WorkPeriod.  
+Contributes its **full planned duration** (`end − start`) to **projected** overtime/undertime calculations.  
+When `now` crosses `end`, the period transitions automatically to a closed, fixed-duration WorkPeriod — no explicit user action is required.  
+Only the currently running WorkPeriod may carry a future `end`; fully-future periods (start also in the future) are not supported.
 
 ### WorkPeriod–Category Tracking link
 
@@ -37,9 +46,17 @@ Category hours are derived from WorkPeriods via `calculateCategoryHours()`, not 
 ## WorkedHours
 
 Σ duration of all WorkPeriods for a day (in decimal hours).  
-Closed WorkPeriods contribute their fixed `end − start` duration.  
-Open WorkPeriods contribute a live `now − start` duration (updated every minute in DayView).  
+Closed WorkPeriods (past `end`) contribute their fixed `end − start` duration.  
+Open WorkPeriods (`end: null`) contribute a live `now − start` duration (updated every minute in DayView).  
+Planned-Stop WorkPeriods (`end` in the future) also contribute a live `now − start` duration — identical to open periods, until `end` passes and they become closed.  
 Distinct from **Sollstunden** (the configured daily target).
+
+## ProjectedWorkedHours
+
+The anticipated WorkedHours for today assuming the user works until every planned stop.  
+= WorkedHours (closed + live) + planned remaining (`end − now`) for each Planned-Stop WorkPeriod.  
+Used by the overtime badge and OvertimeBar to show a projected end-of-day balance rather than the current live balance.  
+Distinct from WorkedHours, which only counts time already elapsed.
 
 ## UNCATEGORIZED_CATEGORY
 
@@ -56,6 +73,16 @@ Configured daily working-hours target. Used for the hours overview and monthly s
 `Sollstunden − WorkedHours` for a day.  
 Displayed once at least one WorkPeriod has been recorded.  
 Positive = hours still missing. Negative = overtime.
+
+When a Planned-Stop WorkPeriod is active, the overtime badge and OvertimeBar switch to a **projected** mode:
+
+- **Badge / tab title**: shows time remaining until the planned stop (`end − now`) rather than remaining target hours.
+- **OvertimeBar**: shows the projected overtime/undertime at the planned stop (`ProjectedWorkedHours − Sollstunden`), with a visual indicator that this is a projection.
+
+The `remainingTimeReference` setting (Settings page) controls the badge and tab-title display:
+
+- `'planned-stop'` (default when a Planned-Stop WorkPeriod exists) — show countdown to `end`.
+- `'target-hours'` — always show `Sollstunden − WorkedHours`, ignoring any planned stop.
 
 ## DayType
 

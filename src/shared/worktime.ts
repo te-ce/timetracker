@@ -20,9 +20,43 @@ function parseMinutes(time: string): number {
   return h * 60 + m
 }
 
+/**
+ * Returns true when the period has a non-null end that is still in the future
+ * relative to nowHHMM (i.e. the period is a Planned-Stop WorkPeriod).
+ */
+export function isPlannedStop(period: WorkPeriod, nowHHMM: string): boolean {
+  if (period.end === null) return false
+  return parseMinutes(period.end) > parseMinutes(nowHHMM)
+}
+
+/**
+ * Returns the first WorkPeriod whose end is a future time (Planned-Stop WorkPeriod).
+ */
+export function findPlannedStopPeriod(windows: WorkPeriod[], nowHHMM: string): WorkPeriod | undefined {
+  return windows.find((w) => isPlannedStop(w, nowHHMM))
+}
+
+/**
+ * Calculates projected total worked hours for today.
+ * Planned-Stop periods contribute their full planned duration (end − start).
+ * Open periods (end: null) contribute live elapsed (now − start).
+ * Closed past periods contribute their fixed duration.
+ */
+export function calculateProjectedWorkedHours(windows: WorkPeriod[], nowHHMM: string): number {
+  return windows.reduce((total, w) => {
+    const endTime = w.end ?? nowHHMM
+    const start = parseMinutes(w.start)
+    let end = parseMinutes(endTime)
+    if (end < start) end += 24 * 60
+    return total + (end - start) / 60
+  }, 0)
+}
+
 export function calculateWorkedHours(windows: WorkPeriod[], now?: string): number {
   return windows.reduce((total, w) => {
-    const endTime = w.end ?? now
+    // When now is provided, treat a future end as live (use now instead of end).
+    const isFuturePlannedStop = w.end !== null && now !== undefined && parseMinutes(w.end) > parseMinutes(now)
+    const endTime = w.end === null || isFuturePlannedStop ? now : w.end
     if (endTime == null) return total
     const start = parseMinutes(w.start)
     let end = parseMinutes(endTime)

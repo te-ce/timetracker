@@ -32,6 +32,7 @@ export const appConfigSchema = z
     hotkeys: hotkeyConfigSchema.optional(),
     showOvertimeBar: z.boolean().optional(),
     officeStats: z.boolean().optional(),
+    remainingTimeReference: z.enum(['planned-stop', 'target-hours']).optional(),
   })
   .passthrough()
   .transform((raw) => {

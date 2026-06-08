@@ -13,6 +13,7 @@ interface Props {
   officeDays?: number
   totalWorkDays?: number
   officePercent?: number
+  plannedStopTime?: string | null
   onHide?: () => void
 }
 
@@ -109,6 +110,7 @@ function buildBarData(
   fmt: TimeFormat,
   activeTrackingStartedAt: string | null | undefined,
   liveWindowStart: string | null | undefined,
+  plannedStopTime: string | null | undefined,
 ): BarData {
   const hasOvertime = priorOvertime >= 0
   const remaining = sollstunden - priorOvertime - workedToday - trackingElapsed - liveElapsed
@@ -118,7 +120,8 @@ function buildBarData(
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
   const trackingPart = activeTrackingStartedAt ? `, ${formatElapsed(activeTrackingStartedAt)} tracking` : ''
   const currentPart = liveWindowStart ? `, ${formatHours(liveElapsed, fmt)} current` : ''
-  const summary = `${formatHours(sollstunden, fmt)} target, ${formatHours(Math.abs(priorOvertime), fmt)} ${overtimeLabel} carry-over, ${formatHours(workedToday, fmt)} worked today${trackingPart}${currentPart} — ${remainingLabel}`
+  const projectedPart = plannedStopTime ? `, projected at ${plannedStopTime}` : ''
+  const summary = `${formatHours(sollstunden, fmt)} target, ${formatHours(Math.abs(priorOvertime), fmt)} ${overtimeLabel} carry-over, ${formatHours(workedToday, fmt)} worked today${trackingPart}${currentPart}${projectedPart} — ${remainingLabel}`
   const resultClass = remaining <= 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'
   return { remainingLabel, overtimeLabel, overtimeSign, overtimeClass, summary, resultClass }
 }
@@ -146,6 +149,7 @@ export function OvertimeBar({
   officeDays,
   totalWorkDays,
   officePercent,
+  plannedStopTime,
   onHide,
 }: Props) {
   const [, setTick] = useState(0)
@@ -171,6 +175,7 @@ export function OvertimeBar({
     timeFormat,
     activeTrackingStartedAt,
     liveWindowStart,
+    plannedStopTime,
   )
 
   return (
@@ -196,6 +201,11 @@ export function OvertimeBar({
           </span>
           {liveWindowStart && <LiveWindowBadge elapsed={liveElapsed} fmt={timeFormat} />}
           {activeTrackingStartedAt && <TrackingBadge startedAt={activeTrackingStartedAt} />}
+          {plannedStopTime && (
+            <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400">
+              projected at {plannedStopTime}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-lg font-bold tabular-nums ${resultClass}`} aria-hidden="true">

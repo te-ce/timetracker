@@ -59,6 +59,7 @@ function stubSummariesWithLiveWindow(liveWindowStart: string): void {
     targetHoursPerDay: [],
     todayIso: '2026-06-05',
     todayLiveWindowStart: liveWindowStart,
+    todayPlannedStopTime: undefined,
   }
   vi.mocked(useMonthSummaries).mockReturnValue(stub)
 }
@@ -81,6 +82,7 @@ function stubSummaries(): void {
     targetHoursPerDay: [],
     todayIso: '2026-06-05',
     todayLiveWindowStart: undefined,
+    todayPlannedStopTime: undefined,
   }
   vi.mocked(useMonthSummaries).mockReturnValue(stub)
 }
@@ -238,6 +240,7 @@ describe('TableView', () => {
         targetHoursPerDay: [],
         todayIso: '2026-06-05',
         todayLiveWindowStart: undefined,
+        todayPlannedStopTime: undefined,
       })
       render(<TableView />, { wrapper: makeWrapper() })
       expect(screen.queryByRole('status')).not.toBeInTheDocument()

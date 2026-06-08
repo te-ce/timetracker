@@ -268,3 +268,128 @@ describe('buildReceipt', () => {
     expect(lines.some((l) => l.label === 'Current tracking')).toBe(false)
   })
 })
+
+// ─── Helpers for planned-stop tests ─────────────────────────────────────────
+
+function hhmmFromNow(offsetMinutes: number): string {
+  const d = new Date(Date.now() + offsetMinutes * 60 * 1000)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function makePlannedStopWindow(startOffsetMins: number, endOffsetMins: number) {
+  return {
+    id: 'ps-1',
+    start: hhmmFromNow(startOffsetMins),
+    end: hhmmFromNow(endOffsetMins),
+    category: 'Work',
+    subtasks: [],
+  }
+}
+
+describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
+  describe('planned-stop mode (default when plannedStopPeriod exists)', () => {
+    it('returns countdown to planned stop as remaining', () => {
+      // Start 2h ago, end 1h from now → countdown = ~1h
+      const ps = makePlannedStopWindow(-120, 60)
+      const fullDuration = 3 // 2h worked + 1h remaining = 3h total
+      stubDayQuery({ sollstunden: 8, workedHours: fullDuration, windows: [ps] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(1, 0)
+    })
+
+    it('remaining is positive (countdown) even when projected overtime', () => {
+      // Start 9h ago, end 1h from now → planned = 10h total, target = 8h → projected OT
+      // Countdown should still show 1h
+      const ps = makePlannedStopWindow(-540, 60)
+      stubDayQuery({ sollstunden: 8, workedHours: 10, windows: [ps] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(1, 0)
+    })
+
+    it('sets isPlannedStopMode to true when planned stop is active', () => {
+      const ps = makePlannedStopWindow(-60, 60)
+      stubDayQuery({ sollstunden: 8, workedHours: 2, windows: [ps] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.isPlannedStopMode).toBe(true)
+    })
+
+    it('exposes plannedStopTime as the end HH:MM string', () => {
+      const ps = makePlannedStopWindow(-60, 60)
+      stubDayQuery({ sollstunden: 8, workedHours: 2, windows: [ps] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.plannedStopTime).toBe(ps.end)
+    })
+
+    it('exposes projectedRemaining based on full planned duration', () => {
+      // Start 2h ago, end 2h from now → full planned = 4h, target = 8h → projected remaining = 4h
+      const ps = makePlannedStopWindow(-120, 120)
+      stubDayQuery({ sollstunden: 8, workedHours: 4, windows: [ps] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.projectedRemaining).toBeCloseTo(4, 0)
+    })
+
+    it('shows projected overtime in projectedRemaining when planned > target', () => {
+      // Start 7h ago, end 2h from now → full planned = 9h, target = 8h → projected = -1h (OT)
+      const ps = makePlannedStopWindow(-420, 120)
+      stubDayQuery({ sollstunden: 8, workedHours: 9, windows: [ps] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.projectedRemaining).toBeCloseTo(-1, 0)
+    })
+
+    it('sets tab title to countdown when planned stop is active', () => {
+      const ps = makePlannedStopWindow(-120, 60)
+      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [ps] })
+      renderHook(() => useRemainingHours())
+      expect(document.title).toMatch(/left.*Timetracker/)
+    })
+  })
+
+  describe('target-hours mode (when remainingTimeReference = target-hours)', () => {
+    it('uses target-based remaining when remainingTimeReference is target-hours', () => {
+      const ps = makePlannedStopWindow(-120, 60)
+      // Full planned = 3h, but only 2h actually worked; target = 8h
+      // Remaining = 8 - 2 = 6h (approx)
+      const fullDuration = 3
+      stubDayQuery({
+        sollstunden: 8,
+        workedHours: fullDuration,
+        windows: [ps],
+        config: { ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' },
+      })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(6, 0)
+    })
+
+    it('sets isPlannedStopMode to false when remainingTimeReference is target-hours', () => {
+      const ps = makePlannedStopWindow(-60, 60)
+      stubDayQuery({
+        sollstunden: 8,
+        workedHours: 2,
+        windows: [ps],
+        config: { ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' },
+      })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.isPlannedStopMode).toBe(false)
+    })
+  })
+
+  describe('no planned stop', () => {
+    it('isPlannedStopMode is false when no period has a future end', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.isPlannedStopMode).toBe(false)
+    })
+
+    it('plannedStopTime is null when no planned stop', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.plannedStopTime).toBeNull()
+    })
+
+    it('remaining uses target-based formula when no planned stop', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(5)
+    })
+  })
+})

@@ -83,3 +83,25 @@ describe('OvertimeBar', () => {
     })
   })
 })
+
+describe('Planned-Stop projection mode', () => {
+  it('shows a projection indicator when plannedStopTime is provided', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={8} plannedStopTime="17:00" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('projected'))
+  })
+
+  it('does not show projection indicator when plannedStopTime is absent', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={8} />)
+    expect(screen.getByRole('status')).not.toHaveAttribute('aria-label', expect.stringContaining('projected'))
+  })
+
+  it('shows the planned stop time in the aria-label', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={8} plannedStopTime="17:00" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('17:00'))
+  })
+
+  it('renders a visible projection badge', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={8} plannedStopTime="17:00" />)
+    expect(screen.getByText(/projected/i)).toBeInTheDocument()
+  })
+})
