@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
-import type { WorkPeriod } from '../../infra/repositories/types'
+import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
+import { useUndoStore } from '../../shared/undoStore'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -64,6 +65,113 @@ describe('useWorkPeriodMutations', () => {
 
       const data = await repo.getMonth(2026, 5)
       expect(data[date]?.windows ?? []).toHaveLength(0)
+    })
+  })
+
+  describe('undo/redo', () => {
+    beforeEach(() => {
+      useUndoStore.setState({ past: [], future: [], canUndo: false, canRedo: false })
+    })
+
+    it('save registers an undo command that restores the previous state', async () => {
+      const repo = makeRepo()
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.save.mutate({ date, window: period('a', '09:00', '10:00') })
+        await flush()
+      })
+
+      expect(useUndoStore.getState().canUndo).toBe(true)
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows ?? []).toHaveLength(0)
+    })
+
+    it('save undo then redo re-applies the saved period', async () => {
+      const repo = makeRepo()
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.save.mutate({ date, window: period('a', '09:00', '10:00') })
+        await flush()
+      })
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+      await act(async () => {
+        await useUndoStore.getState().redo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      const windows = data[date]?.windows ?? []
+      expect(windows).toHaveLength(1)
+      expect(windows[0]?.id).toBe('a')
+    })
+
+    it('remove registers an undo command that restores the deleted period', async () => {
+      const repo = makeRepo([period('a', '09:00', '10:00')])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.remove.mutate({ date, id: 'a' })
+        await flush()
+      })
+
+      expect(useUndoStore.getState().canUndo).toBe(true)
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows ?? []).toHaveLength(1)
+    })
+
+    it('setPeriodCategory undo restores the previous category', async () => {
+      const p = { ...period('a', '09:00', '10:00'), category: 'Alpha' }
+      const repo = makeRepo([p])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.setPeriodCategory.mutate({ date, periodId: 'a', category: 'Beta' })
+        await flush()
+      })
+
+      expect(useUndoStore.getState().canUndo).toBe(true)
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows[0]?.category).toBe('Alpha')
+    })
+
+    it('deleteSubtask undo restores the removed subtask', async () => {
+      const subtask: WorkPeriodSubtask = { id: 's1', category: 'Alpha', hours: 1 }
+      const p: WorkPeriod = { ...period('a', '09:00', '10:00'), subtasks: [subtask] }
+      const repo = makeRepo([p])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.deleteSubtask.mutate({ date, periodId: 'a', subtaskId: 's1' })
+        await flush()
+      })
+
+      expect(useUndoStore.getState().canUndo).toBe(true)
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows[0]?.subtasks).toHaveLength(1)
     })
   })
 

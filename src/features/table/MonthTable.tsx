@@ -18,6 +18,7 @@ import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { Tooltip } from '../../shared'
+import { useUndoStore } from '../../shared/undoStore'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
 
@@ -281,17 +282,62 @@ export function MonthGrid({
 
   const gridConfirmMutation = useMutation({
     mutationFn: (row: MonthTableRow) => confirmDayInRepo(repository, row.date),
-    onSuccess: invalidate,
+    onSuccess: (_, row) => {
+      const { date } = row
+      useUndoStore.getState().push({
+        description: 'Confirm day',
+        undo: async () => {
+          await repository.updateDay(date, (d) => ({ ...d, confirmed: false }))
+          invalidate()
+        },
+        redo: async () => {
+          await confirmDayInRepo(repository, date)
+          invalidate()
+        },
+      })
+      invalidate()
+    },
   })
 
   const gridUnconfirmMutation = useMutation({
     mutationFn: (date: string) => repository.updateDay(date, (day) => ({ ...day, confirmed: false })),
-    onSuccess: invalidate,
+    onSuccess: (_, date) => {
+      useUndoStore.getState().push({
+        description: 'Unconfirm day',
+        undo: async () => {
+          await confirmDayInRepo(repository, date)
+          invalidate()
+        },
+        redo: async () => {
+          await repository.updateDay(date, (d) => ({ ...d, confirmed: false }))
+          invalidate()
+        },
+      })
+      invalidate()
+    },
   })
 
   const dayTypeMutation = useMutation({
     mutationFn: ({ date, value }: { date: string; value: string }) => saveDayTypeInRepo(repository, date, value),
-    onSuccess: invalidate,
+    onMutate: ({ date }) => {
+      const prev = monthData[date]
+      return { prevDayTypeOverride: prev?.dayTypeOverride }
+    },
+    onSuccess: (_, { date, value }, context) => {
+      const prevValue = context.prevDayTypeOverride ?? 'WorkDay'
+      useUndoStore.getState().push({
+        description: 'Change day type',
+        undo: async () => {
+          await saveDayTypeInRepo(repository, date, prevValue)
+          invalidate()
+        },
+        redo: async () => {
+          await saveDayTypeInRepo(repository, date, value)
+          invalidate()
+        },
+      })
+      invalidate()
+    },
   })
 
   const locationMutation = useMutation({
@@ -304,7 +350,39 @@ export function MonthGrid({
         }
         return { ...day, location }
       }),
-    onSuccess: invalidate,
+    onMutate: ({ date }) => {
+      const prev = monthData[date]
+      return { prevLocation: prev?.location ?? null }
+    },
+    onSuccess: (_, { date, location }, context) => {
+      const prevLocation = context.prevLocation
+      useUndoStore.getState().push({
+        description: 'Change location',
+        undo: async () => {
+          await repository.updateDay(date, (day) => {
+            if (!prevLocation) {
+              const updated = { ...day }
+              delete updated.location
+              return updated
+            }
+            return { ...day, location: prevLocation }
+          })
+          invalidate()
+        },
+        redo: async () => {
+          await repository.updateDay(date, (day) => {
+            if (!location) {
+              const updated = { ...day }
+              delete updated.location
+              return updated
+            }
+            return { ...day, location }
+          })
+          invalidate()
+        },
+      })
+      invalidate()
+    },
   })
 
   const rows = buildMonthTable({ year, month, monthData, dayTypes })

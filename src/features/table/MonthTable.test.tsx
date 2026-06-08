@@ -1,10 +1,11 @@
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, within, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory'
 import { MonthGrid } from './MonthTable'
 import { DEFAULT_CATEGORIES, UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import type { MonthData, WorkPeriod } from '../../infra/repositories/types'
+import { useUndoStore } from '../../shared/undoStore'
 
 function w(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
   return { id, start, end, category, subtasks: [] }
@@ -755,6 +756,67 @@ describe('MonthGrid', () => {
       setup({ expanded: true })
       const scrollContainer = screen.getByTestId('table-scroll-container')
       expect(scrollContainer.parentElement?.className).toContain('h-full')
+    })
+  })
+
+  describe('undo/redo', () => {
+    beforeEach(() => {
+      useUndoStore.setState({ past: [], future: [], canUndo: false, canRedo: false })
+    })
+
+    it('confirming a day registers an undo command that unconfirms it', async () => {
+      const { repo } = setup({
+        monthData: { '2026-05-04': { windows: [w('w1', '09:00', '17:00')] } },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      await userEvent.click(within(row).getByRole('cell', { name: 'Confirm 2026-05-04' }))
+
+      await waitFor(() => expect(useUndoStore.getState().canUndo).toBe(true))
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data['2026-05-04']?.confirmed).toBeFalsy()
+    })
+
+    it('unconfirming a day registers an undo command that reconfirms it', async () => {
+      const { repo } = setup({
+        confirmedDays: new Set(['2026-05-04']),
+        monthData: { '2026-05-04': { windows: [], confirmed: true } },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      await userEvent.click(within(row).getByRole('cell', { name: 'Unconfirm 2026-05-04' }))
+
+      await waitFor(() => expect(useUndoStore.getState().canUndo).toBe(true))
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data['2026-05-04']?.confirmed).toBe(true)
+    })
+
+    it('changing day type registers an undo command that restores the previous type', async () => {
+      const { repo } = setup()
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      await userEvent.click(within(row).getByRole('cell', { name: /day status/i }))
+      await screen.findByText('Day type')
+      await userEvent.click(screen.getByRole('button', { name: 'Vacation' }))
+
+      await waitFor(() => expect(useUndoStore.getState().canUndo).toBe(true))
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data['2026-05-04']?.dayTypeOverride).toBeUndefined()
     })
   })
 })
