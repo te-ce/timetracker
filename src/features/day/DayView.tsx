@@ -118,7 +118,6 @@ export function DayView() {
     config,
     windows,
     autoCategoryOverride,
-    dayTypeOverride,
     isConfirmed,
     dayNote,
     autoCategory,
@@ -204,7 +203,7 @@ export function DayView() {
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-4 shrink-0">
-          <DayTypePicker date={selectedDate} override={dayTypeOverride} repository={monthRepo} />
+          <DayTypePicker date={selectedDate} dayType={selectedDayType} repository={monthRepo} />
           {showOfficeStats && (
             <button
               onClick={() => dayMutations.toggleLocation.mutate()}

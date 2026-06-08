@@ -1,33 +1,35 @@
-import type { MonthRepository, DayTypeOverride } from '../../infra/repositories/types'
+import type { MonthRepository } from '../../infra/repositories/types'
+import type { DayType } from './dayType'
 import { useDayTypeOverrideMutations } from '../settings'
 import { isDayTypeOverride } from './dayType'
 
 interface Props {
   date: string
-  override: DayTypeOverride | undefined
+  dayType: DayType
   repository: MonthRepository
 }
 
 const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'WorkDay', label: 'WorkDay' },
+  { value: 'Weekend', label: 'Weekend' },
   { value: 'PublicHoliday', label: 'PublicHoliday' },
   { value: 'Vacation', label: 'Vacation' },
   { value: 'SickDay', label: 'SickDay' },
   { value: 'Absence', label: 'Absence' },
 ]
 
-export function DayTypePicker({ date, override, repository }: Props) {
+export function DayTypePicker({ date, dayType, repository }: Props) {
   const { save: saveMutation, remove: removeMutation } = useDayTypeOverrideMutations(repository)
 
   function handleChange(value: string) {
-    if (value === 'WorkDay') {
+    if (value === 'WorkDay' || value === 'Weekend') {
       removeMutation.mutate(date)
     } else if (isDayTypeOverride(value)) {
       saveMutation.mutate({ date, dayType: value })
     }
   }
 
-  const currentValue = override ?? 'WorkDay'
+  const currentValue = dayType
 
   return (
     <select
