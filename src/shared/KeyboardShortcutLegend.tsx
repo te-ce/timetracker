@@ -51,7 +51,7 @@ export function KeyboardShortcutLegend({ onClose }: Props) {
           <p className="text-sm font-semibold">Keyboard shortcuts</p>
           <button
             onClick={onClose}
-            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-xl leading-none p-1 rounded"
             aria-label="Close"
           >
             ×

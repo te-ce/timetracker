@@ -205,7 +205,7 @@ export function OvertimeBar({
             <button
               onClick={onHide}
               aria-label="Hide overtime bar"
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 leading-none"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 leading-none p-1 rounded"
             >
               ×
             </button>

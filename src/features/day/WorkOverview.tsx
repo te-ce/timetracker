@@ -510,7 +510,7 @@ function LiveSubtaskBanner({
           e.stopPropagation()
           setStopping(true)
         }}
-        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
+        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base leading-none shrink-0 p-1 rounded"
         aria-label="Stop live subtask"
       >
         ×
@@ -835,7 +835,7 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
           e.stopPropagation()
           setConfirmingDelete(true)
         }}
-        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
+        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base leading-none shrink-0 p-1 rounded"
         aria-label={`Remove ${sl.category} subtask`}
       >
         ×
@@ -1232,7 +1232,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
             )}
             <button
               onClick={() => setConfirmingDelete(true)}
-              className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none"
+              className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-lg leading-none p-1 rounded"
               aria-label="Remove period"
             >
               ×

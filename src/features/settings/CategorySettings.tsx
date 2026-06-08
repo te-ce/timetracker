@@ -284,7 +284,7 @@ function CategorySettingsRow({
       <button
         aria-label={`Remove ${cat}`}
         onClick={() => onRemove(idx)}
-        className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium"
+        className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs font-medium p-1 rounded"
       >
         ✕
       </button>

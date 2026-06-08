@@ -144,7 +144,7 @@ export function CustomCategorySettings({ repository }: Props) {
             <button
               aria-label={`Remove ${cat}`}
               onClick={() => handleRemove(idx)}
-              className="text-red-500 hover:text-red-700 text-xs font-medium"
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs font-medium p-1 rounded"
             >
               ✕
             </button>

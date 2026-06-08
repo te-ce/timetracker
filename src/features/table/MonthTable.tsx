@@ -153,7 +153,7 @@ function ClearCell({ date, onClearDay }: { date: string; onClearDay?: ((date: st
     <td className="w-8 text-center border-l border-gray-200 dark:border-gray-700">
       <button
         onClick={() => onClearDay(date)}
-        className="w-full py-1 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+        className="w-full py-1 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded"
         aria-label={`Clear ${date}`}
         data-tooltip="Clear all data for this day"
       >
@@ -750,7 +750,7 @@ export function MonthGrid({
                 </div>
                 <button
                   onClick={() => closeDialog()}
-                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none"
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 text-xl leading-none p-1 rounded"
                   aria-label="Close"
                 >
                   ×
