@@ -353,7 +353,7 @@ test.describe('review flow', () => {
     },
   }
 
-  test('needs-review day shows yellow dot in month view', async ({ page }) => {
+  test('needs-review day shows red dot in month view', async ({ page }) => {
     await page.addInitScript((seed: Record<string, string>) => {
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
     }, seedMonth(NEEDS_REVIEW_SEED))
@@ -361,7 +361,7 @@ test.describe('review flow', () => {
     await page.goto('/month?year=2026&month=5')
 
     const dayCell = page.getByRole('button', { name: /26 May 2026/ })
-    await expect(dayCell.locator('span.bg-yellow-400')).toBeVisible()
+    await expect(dayCell.locator('span.bg-red-400')).toBeVisible()
   })
 
   test('confirming a needs-review day turns it green in month view', async ({ page }) => {
@@ -372,7 +372,7 @@ test.describe('review flow', () => {
     // Start on MonthView — addInitScript runs only for this initial goto
     await page.goto('/month?year=2026&month=5')
     const dayCell = page.getByRole('button', { name: /26 May 2026/ })
-    await expect(dayCell.locator('span.bg-yellow-400')).toBeVisible()
+    await expect(dayCell.locator('span.bg-red-400')).toBeVisible()
 
     // Click day cell → client-side navigation (no addInitScript re-run)
     await dayCell.click()
