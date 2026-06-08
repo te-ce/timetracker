@@ -416,10 +416,16 @@ function LiveSubtaskBanner({
   return (
     <div
       data-testid="live-subtask-banner"
+      aria-label="Edit subtask"
       className={`flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700 ${!isEditing ? 'cursor-pointer' : ''}`}
       onClick={() => {
         if (!isEditing) setEditingCategory(true)
       }}
+      onKeyDown={(e) => {
+        if (!isEditing && (e.key === 'Enter' || e.key === ' ')) setEditingCategory(true)
+      }}
+      role="button"
+      tabIndex={0}
     >
       <span className="w-12 text-right font-mono text-sm tabular-nums shrink-0 flex items-center justify-end gap-1">
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
@@ -431,7 +437,6 @@ function LiveSubtaskBanner({
           onBlur={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) setEditingCategory(false)
           }}
-          onClick={(e) => e.stopPropagation()}
         >
           <CategoryPicker
             value={subtask.category}
@@ -451,9 +456,7 @@ function LiveSubtaskBanner({
         </>
       )}
       {editingStart ? (
-        <span onClick={(e) => e.stopPropagation()}>
-          <EditStartTimeForm current={subtask.startedAt} onSave={changeStart} onCancel={() => setEditingStart(false)} />
-        </span>
+        <EditStartTimeForm current={subtask.startedAt} onSave={changeStart} onCancel={() => setEditingStart(false)} />
       ) : (
         <button
           onClick={(e) => {
@@ -479,7 +482,6 @@ function LiveSubtaskBanner({
           onBlur={saveNote}
           aria-label="Subtask note"
           className="text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 flex-1 min-w-0"
-          onClick={(e) => e.stopPropagation()}
         />
       ) : subtask.note ? (
         <button
@@ -1295,16 +1297,14 @@ function AutoCategoryRow({
       data-testid="auto-category-row"
       aria-label="Edit category"
       className={`grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
-      onClick={!editing ? () => setEditing(true) : undefined}
-      onKeyDown={
-        !editing
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') setEditing(true)
-            }
-          : undefined
-      }
-      role={!editing ? 'button' : undefined}
-      tabIndex={!editing ? 0 : undefined}
+      onClick={() => {
+        if (!editing) setEditing(true)
+      }}
+      onKeyDown={(e) => {
+        if (!editing && (e.key === 'Enter' || e.key === ' ')) setEditing(true)
+      }}
+      role="button"
+      tabIndex={0}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setEditing(false)
       }}
