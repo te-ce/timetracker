@@ -443,7 +443,7 @@ function LiveSubtaskBanner({
     return (
       <div
         data-testid="live-subtask-banner"
-        className="flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700"
+        className="flex items-center gap-2 text-sm min-h-[2.625rem] mb-2 pb-2 border-b dark:border-gray-700"
       >
         <span className="w-12 text-right font-mono text-sm tabular-nums shrink-0 flex items-center justify-end gap-1">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
@@ -473,7 +473,7 @@ function LiveSubtaskBanner({
     <div
       data-testid="live-subtask-banner"
       aria-label="Edit subtask"
-      className={`flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700 ${!isEditing ? 'cursor-pointer' : ''}`}
+      className={`flex items-center gap-2 text-sm min-h-[2.625rem] mb-2 pb-2 border-b dark:border-gray-700 ${!isEditing ? 'cursor-pointer' : ''}`}
       onClick={() => {
         if (!isEditing) {
           resetCatPending()
@@ -665,6 +665,7 @@ interface SubtaskRowProps {
   categories: string[]
   mutations: ReturnType<typeof useWorkPeriodMutations>
   categoryDescriptions?: Record<string, string> | undefined
+  overlaps?: boolean
 }
 
 function resolveSubtaskEdit(
@@ -763,7 +764,7 @@ function SubtaskEditForm({
   return (
     <div
       data-testid="subtask-row"
-      className={`relative flex items-center gap-2 text-sm min-h-[2.5rem] flex-wrap ${stripeBg}`}
+      className={`relative flex items-center gap-2 text-sm min-h-[2.625rem] flex-wrap ${stripeBg}`}
       onBlur={handleBlur}
       onFocus={handleFocus}
     >
@@ -842,7 +843,16 @@ function SubtaskEditForm({
   )
 }
 
-function SubtaskRow({ sl, index, periodId, date, categories, mutations, categoryDescriptions }: SubtaskRowProps) {
+function SubtaskRow({
+  sl,
+  index,
+  periodId,
+  date,
+  categories,
+  mutations,
+  categoryDescriptions,
+  overlaps,
+}: SubtaskRowProps) {
   const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const timed = isTimedSubtask(sl)
@@ -868,7 +878,7 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
     <div
       data-testid="subtask-row"
       aria-label={`Edit ${sl.category} subtask`}
-      className={`flex items-center gap-2 text-sm group/slice min-h-[2.5rem] ${stripeBg} cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded`}
+      className={`flex items-center gap-2 text-sm group/slice min-h-[2.625rem] ${stripeBg} cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded`}
       onClick={() => setEditing(true)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') setEditing(true)
@@ -884,7 +894,10 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
         <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[sl.category]})</span>
       )}
       {timed && (
-        <span className="text-sm text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
+        <span
+          className={`text-sm tabular-nums whitespace-nowrap shrink-0 ${overlaps ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}
+          title={overlaps ? 'Overlaps with another subtask' : undefined}
+        >
           {sl.startedAt} – {sl.stoppedAt}
         </span>
       )}
@@ -1359,7 +1372,7 @@ function AutoCategoryRow({
     <div
       data-testid="auto-category-row"
       aria-label="Edit category"
-      className={`relative grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 min-h-[2.875rem] ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
+      className={`relative grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-1.5 min-h-[2.625rem] ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
       onClick={() => {
         if (!editing) {
           reset()
@@ -1438,6 +1451,22 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
   const remainder = Math.max(0, duration - slicedHours)
   const overbooked = !isRunning && slicedHours > duration + 0.001
 
+  const timedSubtasks = completedSubtasks.filter(isTimedSubtask)
+  const overlappingIds = new Set<string>()
+  timedSubtasks.forEach((a, i) => {
+    timedSubtasks.slice(i + 1).forEach((b) => {
+      const aStart = minutesFrom(a.startedAt)
+      const aEnd = minutesFrom(a.stoppedAt)
+      const bStart = minutesFrom(b.startedAt)
+      const bEnd = minutesFrom(b.stoppedAt)
+      if (aStart < bEnd && bStart < aEnd) {
+        overlappingIds.add(a.id)
+        overlappingIds.add(b.id)
+      }
+    })
+  })
+  const hasOverlap = overlappingIds.size > 0
+
   const liveElapsedHours = (() => {
     if (!liveSubtask) return 0
     let startMins = minutesFrom(liveSubtask.startedAt)
@@ -1482,6 +1511,7 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
             categories={categories}
             mutations={mutations}
             categoryDescriptions={categoryDescriptions}
+            overlaps={overlappingIds.has(sl.id)}
           />
         ))}
 
@@ -1495,6 +1525,12 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
             mutations={mutations}
             categoryDescriptions={categoryDescriptions}
           />
+        )}
+
+        {hasOverlap && (
+          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+            Subtasks overlap in time — check start/stop times for conflicts.
+          </p>
         )}
 
         {overbooked && (

@@ -1532,6 +1532,98 @@ describe('WorkOverview', () => {
     })
   })
 
+  describe('subtask overlap warnings', () => {
+    function periodWithTimedSubtasks(
+      id: string,
+      start: string,
+      end: string,
+      subtasks: { id: string; category: string; sliceStart: string; sliceEnd: string }[],
+    ): WorkPeriod {
+      return {
+        id,
+        start,
+        end,
+        category: subtasks[0]?.category ?? 'Work',
+        subtasks: subtasks.map((s) => {
+          const hours =
+            (new Date(`2000-01-01T${s.sliceEnd}`).getTime() - new Date(`2000-01-01T${s.sliceStart}`).getTime()) /
+            3_600_000
+          return { id: s.id, category: s.category, hours, startedAt: s.sliceStart, stoppedAt: s.sliceEnd }
+        }),
+      }
+    }
+
+    it('shows overlap warning when two timed subtasks overlap', async () => {
+      setup([
+        periodWithTimedSubtasks('a', '09:00', '17:00', [
+          { id: 'sl-1', category: 'Work', sliceStart: '09:00', sliceEnd: '11:00' },
+          { id: 'sl-2', category: 'Meeting', sliceStart: '10:00', sliceEnd: '12:00' },
+        ]),
+      ])
+      expect(await screen.findByText(/subtasks overlap in time/i)).toBeInTheDocument()
+    })
+
+    it('does not show overlap warning when timed subtasks are adjacent but not overlapping', async () => {
+      setup([
+        periodWithTimedSubtasks('a', '09:00', '17:00', [
+          { id: 'sl-1', category: 'Work', sliceStart: '09:00', sliceEnd: '11:00' },
+          { id: 'sl-2', category: 'Meeting', sliceStart: '11:00', sliceEnd: '12:00' },
+        ]),
+      ])
+      await screen.findAllByTestId('subtask-row')
+      expect(screen.queryByText(/subtasks overlap in time/i)).not.toBeInTheDocument()
+    })
+
+    it('does not show overlap warning for decimal-only subtasks', async () => {
+      setup([
+        periodWithSubtasks('a', '09:00', '17:00', [
+          { category: 'Work', hours: 2 },
+          { category: 'Meeting', hours: 2 },
+        ]),
+      ])
+      await screen.findAllByTestId('subtask-row')
+      expect(screen.queryByText(/subtasks overlap in time/i)).not.toBeInTheDocument()
+    })
+
+    it('highlights the time range of overlapping subtask rows in red', async () => {
+      setup([
+        periodWithTimedSubtasks('a', '09:00', '17:00', [
+          { id: 'sl-1', category: 'Work', sliceStart: '09:00', sliceEnd: '11:00' },
+          { id: 'sl-2', category: 'Meeting', sliceStart: '10:00', sliceEnd: '12:00' },
+        ]),
+      ])
+      const rows = await screen.findAllByTestId('subtask-row')
+      const timeRanges = rows.map((row) => within(row).getByTitle(/overlaps with another subtask/i))
+      expect(timeRanges).toHaveLength(2)
+    })
+
+    it('does not highlight time range when subtasks do not overlap', async () => {
+      setup([
+        periodWithTimedSubtasks('a', '09:00', '17:00', [
+          { id: 'sl-1', category: 'Work', sliceStart: '09:00', sliceEnd: '10:00' },
+          { id: 'sl-2', category: 'Meeting', sliceStart: '10:30', sliceEnd: '12:00' },
+        ]),
+      ])
+      await screen.findAllByTestId('subtask-row')
+      expect(screen.queryByTitle(/overlaps with another subtask/i)).not.toBeInTheDocument()
+    })
+
+    it('highlights only the rows that overlap, not the non-overlapping one', async () => {
+      setup([
+        periodWithTimedSubtasks('a', '09:00', '17:00', [
+          { id: 'sl-1', category: 'Work', sliceStart: '09:00', sliceEnd: '11:00' },
+          { id: 'sl-2', category: 'Meeting', sliceStart: '10:00', sliceEnd: '12:00' },
+          { id: 'sl-3', category: 'Work', sliceStart: '14:00', sliceEnd: '15:00' },
+        ]),
+      ])
+      const rows = await screen.findAllByTestId('subtask-row')
+      expect(rows).toHaveLength(3)
+      expect(within(rows[0]!).getByTitle(/overlaps with another subtask/i)).toBeInTheDocument()
+      expect(within(rows[1]!).getByTitle(/overlaps with another subtask/i)).toBeInTheDocument()
+      expect(within(rows[2]!).queryByTitle(/overlaps with another subtask/i)).not.toBeInTheDocument()
+    })
+  })
+
   describe('auto-merge on add — async repo (race condition regression)', () => {
     function setupCloud(initialWindows: WorkPeriod[] = []) {
       const storage = new InMemoryStorageAdapter()
