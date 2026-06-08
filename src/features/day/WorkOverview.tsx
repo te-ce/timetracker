@@ -411,10 +411,15 @@ function LiveSubtaskBanner({
     )
   }
 
+  const isEditing = editingCategory || editingStart || editingNote
+
   return (
     <div
       data-testid="live-subtask-banner"
-      className="flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700"
+      className={`flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700 ${!isEditing ? 'cursor-pointer' : ''}`}
+      onClick={() => {
+        if (!isEditing) setEditingCategory(true)
+      }}
     >
       <span className="w-12 text-right font-mono text-sm tabular-nums shrink-0 flex items-center justify-end gap-1">
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
@@ -426,6 +431,7 @@ function LiveSubtaskBanner({
           onBlur={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget)) setEditingCategory(false)
           }}
+          onClick={(e) => e.stopPropagation()}
         >
           <CategoryPicker
             value={subtask.category}
@@ -438,20 +444,22 @@ function LiveSubtaskBanner({
         </span>
       ) : (
         <>
-          <button
-            onClick={() => setEditingCategory(true)}
-            className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
-          >
+          <span data-testid="live-subtask-category" className="font-medium text-gray-700 dark:text-gray-300 shrink-0">
             {subtask.category}
-          </button>
+          </span>
           {description && <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
         </>
       )}
       {editingStart ? (
-        <EditStartTimeForm current={subtask.startedAt} onSave={changeStart} onCancel={() => setEditingStart(false)} />
+        <span onClick={(e) => e.stopPropagation()}>
+          <EditStartTimeForm current={subtask.startedAt} onSave={changeStart} onCancel={() => setEditingStart(false)} />
+        </span>
       ) : (
         <button
-          onClick={() => setEditingStart(true)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setEditingStart(true)
+          }}
           className="text-sm text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
           aria-label="Edit subtask start time"
         >
@@ -471,10 +479,14 @@ function LiveSubtaskBanner({
           onBlur={saveNote}
           aria-label="Subtask note"
           className="text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 flex-1 min-w-0"
+          onClick={(e) => e.stopPropagation()}
         />
       ) : subtask.note ? (
         <button
-          onClick={() => setEditingNote(true)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setEditingNote(true)
+          }}
           className="text-sm text-gray-500 dark:text-gray-400 italic truncate flex-1 text-left hover:text-indigo-600 dark:hover:text-indigo-400"
         >
           {subtask.note}
@@ -483,13 +495,19 @@ function LiveSubtaskBanner({
         <span className="flex-1" />
       )}
       <button
-        onClick={() => setStopping(true)}
+        onClick={(e) => {
+          e.stopPropagation()
+          setStopping(true)
+        }}
         className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-2 py-1 shrink-0"
       >
         Stop subtask
       </button>
       <button
-        onClick={() => setStopping(true)}
+        onClick={(e) => {
+          e.stopPropagation()
+          setStopping(true)
+        }}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
         aria-label="Stop live subtask"
       >
@@ -782,32 +800,28 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
   }
 
   return (
-    <div data-testid="subtask-row" className={`flex items-center gap-2 text-sm group/slice min-h-[2.5rem] ${stripeBg}`}>
-      <button
-        onClick={() => setEditing(true)}
-        className="w-12 text-right font-mono text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums shrink-0 whitespace-nowrap"
-        aria-label={`Edit ${sl.category} hours`}
-      >
+    <div
+      data-testid="subtask-row"
+      aria-label={`Edit ${sl.category} subtask`}
+      className={`flex items-center gap-2 text-sm group/slice min-h-[2.5rem] ${stripeBg} cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded`}
+      onClick={() => setEditing(true)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') setEditing(true)
+      }}
+      role="button"
+      tabIndex={0}
+    >
+      <span className="w-12 text-right font-mono text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0 whitespace-nowrap">
         {formatHours(sl.hours, timeFormat)}
-      </button>
-      <button
-        onClick={() => setEditing(true)}
-        className="font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 shrink-0"
-        aria-label={`Edit ${sl.category} subtask`}
-      >
-        {sl.category}
-      </button>
+      </span>
+      <span className="font-medium text-gray-700 dark:text-gray-300 shrink-0">{sl.category}</span>
       {categoryDescriptions?.[sl.category] && (
         <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[sl.category]})</span>
       )}
       {timed && (
-        <button
-          onClick={() => setEditing(true)}
-          className="text-sm text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
-          aria-label={`Edit ${sl.category} time range`}
-        >
+        <span className="text-sm text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
           {sl.startedAt} – {sl.stoppedAt}
-        </button>
+        </span>
       )}
       {sl.note ? (
         <span className="text-sm text-gray-500 dark:text-gray-400 italic truncate flex-1">{sl.note}</span>
@@ -815,7 +829,10 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
         <span className="flex-1" />
       )}
       <button
-        onClick={() => setConfirmingDelete(true)}
+        onClick={(e) => {
+          e.stopPropagation()
+          setConfirmingDelete(true)
+        }}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
         aria-label={`Remove ${sl.category} subtask`}
       >
@@ -1276,7 +1293,18 @@ function AutoCategoryRow({
   return (
     <div
       data-testid="auto-category-row"
-      className={`grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg}`}
+      aria-label="Edit category"
+      className={`grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
+      onClick={!editing ? () => setEditing(true) : undefined}
+      onKeyDown={
+        !editing
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') setEditing(true)
+            }
+          : undefined
+      }
+      role={!editing ? 'button' : undefined}
+      tabIndex={!editing ? 0 : undefined}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setEditing(false)
       }}
@@ -1301,14 +1329,10 @@ function AutoCategoryRow({
           categoryDescriptions={categoryDescriptions}
         />
       ) : (
-        <button
-          onClick={() => setEditing(true)}
-          aria-label="Edit category"
-          className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left truncate"
-        >
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 text-left truncate">
           {category}
           {description && <span className="text-gray-400 dark:text-gray-500"> ({description})</span>}
-        </button>
+        </span>
       )}
       <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded px-1.5 py-0.5 font-medium shrink-0 select-none">
         main

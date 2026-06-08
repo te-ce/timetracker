@@ -744,16 +744,14 @@ describe('WorkOverview', () => {
 
     it('clicking a timed subtask shows start and end time inputs', async () => {
       setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
-      await screen.findByRole('button', { name: /edit Work subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      await userEvent.click(await screen.findByTestId('subtask-row'))
       expect(screen.getByLabelText(/subtask start time/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/subtask end time/i)).toBeInTheDocument()
     })
 
     it('editing end time and saving recomputes hours and preserves start/end', async () => {
       const { repo } = setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '10:00')])
-      await screen.findByRole('button', { name: /edit Work subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      await userEvent.click(await screen.findByTestId('subtask-row'))
       const endInput = screen.getByLabelText(/subtask end time/i)
       await userEvent.clear(endInput)
       await userEvent.type(endInput, '11:30')
@@ -768,8 +766,7 @@ describe('WorkOverview', () => {
 
     it('"use decimal" converts timed subtask to decimal on save', async () => {
       const { repo } = setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
-      await screen.findByRole('button', { name: /edit Work subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      await userEvent.click(await screen.findByTestId('subtask-row'))
       await userEvent.click(screen.getByRole('button', { name: /use decimal/i }))
       expect(screen.queryByLabelText(/subtask start time/i)).not.toBeInTheDocument()
       await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
@@ -783,11 +780,11 @@ describe('WorkOverview', () => {
   })
 
   describe('live subtask category editing', () => {
-    it('clicking the live subtask category name shows a category picker', async () => {
+    it('clicking the live subtask row shows a category picker', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await screen.findByRole('button', { name: /stop subtask/i })
       const banner = screen.getByTestId('live-subtask-banner')
-      await userEvent.click(within(banner).getByRole('button', { name: /^Work/i }))
+      await userEvent.click(within(banner).getByTestId('live-subtask-category'))
       expect(banner.querySelector('select')).toBeInTheDocument()
     })
 
@@ -795,7 +792,7 @@ describe('WorkOverview', () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await screen.findByRole('button', { name: /stop subtask/i })
       const banner = screen.getByTestId('live-subtask-banner')
-      await userEvent.click(within(banner).getByRole('button', { name: /^Work/i }))
+      await userEvent.click(within(banner).getByTestId('live-subtask-category'))
       await userEvent.selectOptions(banner.querySelector('select')!, 'Meeting')
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -926,15 +923,13 @@ describe('WorkOverview', () => {
 
     it('editing a subtask prefills note input with existing note', async () => {
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1, 'Initial note')])
-      await screen.findByRole('button', { name: /edit Work subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      await userEvent.click(await screen.findByTestId('subtask-row'))
       expect(screen.getByLabelText<HTMLInputElement>(/subtask note/i).value).toBe('Initial note')
     })
 
     it('editing a subtask updates the note in the repository', async () => {
       const { repo } = setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1, 'Old note')])
-      await screen.findByRole('button', { name: /edit Work subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      await userEvent.click(await screen.findByTestId('subtask-row'))
       const noteInput = screen.getByLabelText(/subtask note/i)
       await userEvent.clear(noteInput)
       await userEvent.type(noteInput, 'New note')
@@ -947,8 +942,7 @@ describe('WorkOverview', () => {
 
     it('note input keeps focus while typing (no focus steal)', async () => {
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)])
-      await screen.findByRole('button', { name: /edit Work subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      await userEvent.click(await screen.findByTestId('subtask-row'))
       const noteInput = screen.getByLabelText(/subtask note/i)
       noteInput.focus()
       await userEvent.type(noteInput, 'abc')
@@ -1020,26 +1014,27 @@ describe('WorkOverview', () => {
       setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
       expect(within(row).queryByRole('combobox', { name: /category/i })).not.toBeInTheDocument()
-      expect(within(row).getByRole('button', { name: /edit category/i })).toBeInTheDocument()
+      expect(within(row).getByText('Work')).toBeInTheDocument()
     })
 
     it('auto-category row label shows description in parentheses when available', async () => {
       setup([period('a', '09:00', '11:00', 'Work')], null, { Work: 'deep work' })
       const row = await screen.findByTestId('auto-category-row')
-      expect(within(row).getByRole('button', { name: /edit category/i })).toHaveTextContent('Work (deep work)')
+      expect(within(row).getByText('Work')).toBeInTheDocument()
+      expect(within(row).getByText('(deep work)')).toBeInTheDocument()
     })
 
     it('clicking the category label shows the dropdown in edit mode', async () => {
       setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
-      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
+      await userEvent.click(row)
       expect(within(row).getByRole('combobox', { name: /category/i })).toBeInTheDocument()
     })
 
     it('auto-category row can change main category by clicking label then selecting', async () => {
       const { repo } = setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
-      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
+      await userEvent.click(row)
       const picker = within(row).getByRole('combobox', { name: /category/i })
       await userEvent.selectOptions(picker, 'Meeting')
       await waitFor(async () => {
@@ -1050,7 +1045,7 @@ describe('WorkOverview', () => {
     it('selecting a category in edit mode exits edit mode and shows label again', async () => {
       setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
-      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
+      await userEvent.click(row)
       await userEvent.selectOptions(within(row).getByRole('combobox', { name: /category/i }), 'Meeting')
       await waitFor(() => {
         expect(within(row).queryByRole('combobox', { name: /category/i })).not.toBeInTheDocument()
@@ -1151,12 +1146,12 @@ describe('WorkOverview', () => {
       expect(within(row).getByText(/09:00\s*–\s*11:00/)).toBeInTheDocument()
     })
 
-    it('hours button appears before the category name button in DOM', async () => {
+    it('hours appear before the category name in DOM', async () => {
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1.5)])
       const row = await screen.findByTestId('subtask-row')
-      const hoursBtn = within(row).getByRole('button', { name: /edit Work hours/i })
-      const catBtn = within(row).getByRole('button', { name: /edit Work subtask/i })
-      expect(hoursBtn.compareDocumentPosition(catBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      const hours = within(row).getByText('1.50h')
+      const catLabel = within(row).getByText('Work')
+      expect(hours.compareDocumentPosition(catLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
     it('category description shown in parentheses after category name in view mode', async () => {
@@ -1166,20 +1161,19 @@ describe('WorkOverview', () => {
       expect(within(row).getByText('(Deep work sessions)')).toBeInTheDocument()
     })
 
-    it('category description appears after category button in DOM', async () => {
+    it('category description appears after category name in DOM', async () => {
       const descriptions = { Work: 'Deep work sessions' }
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
       const row = await screen.findByTestId('subtask-row')
-      const catBtn = within(row).getByRole('button', { name: /edit Work subtask/i })
+      const catLabel = within(row).getByText('Work')
       const desc = within(row).getByText('(Deep work sessions)')
-      expect(catBtn.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(catLabel.compareDocumentPosition(desc) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
     it('category description hidden in edit mode (shown in dropdown instead)', async () => {
       const descriptions = { Work: 'Deep work sessions' }
       setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)], null, descriptions)
-      await screen.findByRole('button', { name: /edit Work subtask/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit Work subtask/i }))
+      await userEvent.click(await screen.findByTestId('subtask-row'))
       const row = screen.getByTestId('subtask-row')
       const nonOptionDescs = Array.from(row.querySelectorAll('*')).filter(
         (el) => el.tagName !== 'OPTION' && el.textContent === '(Deep work sessions)',
@@ -1208,18 +1202,18 @@ describe('WorkOverview', () => {
       }
     }
 
-    it('clicking the time range button enters edit mode with start and end inputs', async () => {
+    it('clicking the row enters edit mode with start and end inputs', async () => {
       setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
       const row = await screen.findByTestId('subtask-row')
-      await userEvent.click(within(row).getByRole('button', { name: /edit Work time range/i }))
+      await userEvent.click(row)
       expect(screen.getByLabelText(/subtask start time/i)).toBeInTheDocument()
       expect(screen.getByLabelText(/subtask end time/i)).toBeInTheDocument()
     })
 
-    it('editing via time range button saves updated start time to repository', async () => {
+    it('editing via start time input saves updated start time to repository', async () => {
       const { repo } = setup([periodWithTimedSubtask('a', '09:00', '17:00', 'Work', '09:00', '11:00')])
       const row = await screen.findByTestId('subtask-row')
-      await userEvent.click(within(row).getByRole('button', { name: /edit Work time range/i }))
+      await userEvent.click(row)
       const startInput = screen.getByLabelText(/subtask start time/i)
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '09:30')
@@ -1314,9 +1308,9 @@ describe('WorkOverview', () => {
     it('category name appears before the time range in DOM', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       const banner = await screen.findByTestId('live-subtask-banner')
-      const catBtn = within(banner).getByRole('button', { name: /^Work/i })
+      const catLabel = within(banner).getByTestId('live-subtask-category')
       const timeRange = within(banner).getByText(/09:30\s*–\s*--:--/)
-      expect(catBtn.compareDocumentPosition(timeRange) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(catLabel.compareDocumentPosition(timeRange) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
 
@@ -1324,7 +1318,7 @@ describe('WorkOverview', () => {
     it('main badge appears after the category label in display mode', async () => {
       setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
-      const label = within(row).getByRole('button', { name: /edit category/i })
+      const label = within(row).getByText('Work')
       const badge = within(row).getByText('main')
       expect(label.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
@@ -1332,7 +1326,7 @@ describe('WorkOverview', () => {
     it('main badge appears after the dropdown in edit mode', async () => {
       setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
-      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
+      await userEvent.click(row)
       const picker = within(row).getByRole('combobox', { name: /category/i })
       const badge = within(row).getByText('main')
       expect(picker.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
