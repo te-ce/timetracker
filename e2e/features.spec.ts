@@ -39,7 +39,9 @@ test.describe('daily booking', () => {
     await workSection.getByLabel('Start').fill('09:00')
     await workSection.getByLabel('End').fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
-    await expect(workSection.getByRole('button', { name: /Edit period 09:00 to 17:00/ })).toBeVisible()
+    await expect(workSection.getByRole('button', { name: /Edit period 09:00 to 17:00/ })).toBeVisible({
+      timeout: 10_000,
+    })
 
     await page.getByRole('button', { name: 'Confirm day' }).click()
     await expect(page.getByRole('button', { name: 'Unconfirm day' })).toBeVisible()

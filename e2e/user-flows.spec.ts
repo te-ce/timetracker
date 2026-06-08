@@ -199,6 +199,8 @@ test.describe('work location toggle', () => {
     const locationBtn = page.getByRole('button', { name: /Work location:/i })
     const before = await locationBtn.textContent()
     await locationBtn.click()
+    // mutation is async — wait for UI to reflect the toggle before reading after
+    await expect(locationBtn).not.toHaveText(before ?? '')
     const after = await locationBtn.textContent()
 
     await page.reload()
