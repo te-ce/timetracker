@@ -32,6 +32,10 @@ body {
   margin: 0;
 }
 
+button:not(:disabled) {
+  cursor: pointer;
+}
+
 [data-tooltip] {
   position: relative;
 }
