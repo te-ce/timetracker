@@ -101,9 +101,15 @@ export function MonthCalendar({
                 onClick={() => onSelectDate(iso)}
                 aria-label={label}
                 aria-current={isToday ? 'date' : undefined}
-                className={`relative w-full rounded-lg px-2 pb-3 pt-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors${isToday || status === 'today' ? ' ring-2 ring-orange-400 dark:ring-orange-500' : ''}`}
+                className={`relative w-full rounded-lg px-2 pb-3 pt-2 text-center text-sm ${STATUS_CELL[status]} border transition-colors`}
               >
-                {date.getDate()}
+                {isToday ? (
+                  <span className="relative z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-400 font-bold text-white dark:bg-orange-500">
+                    {date.getDate()}
+                  </span>
+                ) : (
+                  date.getDate()
+                )}
                 {displayStatus === 'confirmed' && (
                   <span
                     className="absolute top-0.5 right-1 text-[9px] font-bold leading-none text-emerald-600 dark:text-emerald-400"

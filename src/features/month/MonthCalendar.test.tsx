@@ -43,9 +43,8 @@ describe('MonthCalendar', () => {
     // Saturday + Sunday get non-working style (gray)
     expect(day17.className).toContain('bg-gray-100')
     expect(day18.className).toContain('bg-gray-100')
-    // Tuesday (today) gets white bg + orange ring
+    // Tuesday (today status) gets white bg
     expect(day19.className).toContain('bg-white')
-    expect(day19.className).toContain('ring-2')
     // Tracked gets emerald
     expect(day15.className).toContain('bg-emerald-100')
     // Untracked gets blue
@@ -54,14 +53,14 @@ describe('MonthCalendar', () => {
     expect(day20.className).toContain('bg-white')
   })
 
-  it('applies today ring indicator', () => {
-    const dayStatusMap: Record<string, DayStatus> = {
-      '2026-05-19': 'today',
-    }
-    render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
+  it('actual today gets orange circle indicator', () => {
+    // Render the current month (June 2026) — day 8 is actual today
+    render(<MonthCalendar year={2026} month={5} onSelectDate={vi.fn()} />)
 
-    const day19 = screen.getByText('19')
-    expect(day19.className).toContain('ring-2')
+    const circle = screen.getByText('8')
+    expect(circle.tagName).toBe('SPAN')
+    expect(circle.className).toContain('rounded-full')
+    expect(circle.className).toContain('bg-orange-400')
   })
 
   it('uses local date for onSelectDate regardless of timezone', async () => {

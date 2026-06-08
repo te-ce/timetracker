@@ -211,7 +211,7 @@ test.describe('month calendar navigation', () => {
     await expect(page.getByRole('region', { name: 'Work periods' })).toBeVisible()
   })
 
-  test("today's date cell has orange ring indicator", async ({ page }) => {
+  test("today's date cell has orange circle indicator", async ({ page }) => {
     const d = new Date()
     const year = d.getFullYear()
     const month = d.getMonth() + 1
@@ -220,7 +220,7 @@ test.describe('month calendar navigation', () => {
 
     const todayCell = page.locator('[aria-current="date"]')
     await expect(todayCell).toBeVisible()
-    await expect(todayCell).toHaveClass(/ring-orange-400/)
+    await expect(todayCell.locator('span.rounded-full.bg-orange-400')).toBeVisible()
   })
 })
 
