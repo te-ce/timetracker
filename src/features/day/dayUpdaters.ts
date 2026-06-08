@@ -64,13 +64,12 @@ export function stopLiveSubtask(day: Day, periodId: string, subtaskId: string, s
     ...day,
     windows: day.windows.map((w) => {
       if (w.id !== periodId) return w
-      return {
-        ...w,
-        subtasks: w.subtasks.map((s) => {
-          if (s.id !== subtaskId || !s.startedAt) return s
-          return { ...s, hours: calcSubtaskHours(s.startedAt, stoppedAt), stoppedAt }
-        }),
-      }
+      const updatedSubtasks = w.subtasks.map((s) => {
+        if (s.id !== subtaskId || !s.startedAt) return s
+        return { ...s, hours: calcSubtaskHours(s.startedAt, stoppedAt), stoppedAt }
+      })
+      const newEnd = w.end !== null && stoppedAt > w.end ? stoppedAt : w.end
+      return { ...w, subtasks: updatedSubtasks, end: newEnd }
     }),
   }
 }

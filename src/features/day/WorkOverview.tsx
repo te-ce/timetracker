@@ -4,7 +4,7 @@ import { NowChip } from './NowChip'
 import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import { mergeAdjacentInto } from './workPeriodMerge'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
-import { calculateWorkedHours, calcSubtaskHours, findOpenPeriod } from '../../shared/worktime'
+import { calculateWorkedHours, calcSubtaskHours, findOpenPeriod, isPlannedStop } from '../../shared/worktime'
 import { getAllCategories } from '../../shared/categories'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
@@ -945,7 +945,7 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
 // ─── Period Card Footer ───────────────────────────────────────────────────────
 
 interface PeriodCardFooterProps {
-  isRunning: boolean
+  canStartLiveSubtask: boolean
   periodId: string
   date: string
   categories: string[]
@@ -955,7 +955,7 @@ interface PeriodCardFooterProps {
 }
 
 function PeriodCardFooter({
-  isRunning,
+  canStartLiveSubtask,
   periodId,
   date,
   categories,
@@ -991,7 +991,7 @@ function PeriodCardFooter({
         />
       ) : (
         <div className="flex items-center gap-3 w-full justify-end">
-          {isRunning && (
+          {canStartLiveSubtask && (
             <Tooltip content="Start live tracking for a subtask within this period">
               <button
                 onClick={() => setStartingSubtask(true)}
@@ -1356,6 +1356,7 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   const isRunning = w.end === null
+  const canStartLiveSubtask = w.end === null || isPlannedStop(w, nowTime)
   const liveSubtask = w.subtasks.find(isLiveSubtask)
   const completedSubtasks = w.subtasks.filter((s) => !isLiveSubtask(s))
 
@@ -1431,7 +1432,7 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
         )}
 
         <PeriodCardFooter
-          isRunning={isRunning}
+          canStartLiveSubtask={canStartLiveSubtask}
           periodId={w.id}
           date={date}
           categories={categories}

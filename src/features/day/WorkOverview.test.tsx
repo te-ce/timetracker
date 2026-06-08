@@ -564,10 +564,54 @@ describe('WorkOverview', () => {
       expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
     })
 
-    it('does not show Start subtask button on closed period', async () => {
-      setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period/i })
-      expect(screen.queryByRole('button', { name: /start tracking subtask/i })).not.toBeInTheDocument()
+    it('does not show Start tracking subtask button when period end is in the past', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-04T18:00:00'))
+      try {
+        setup([period('a', '09:00', '17:00')]) // 17:00 is in the past at 18:00
+        await screen.findByRole('button', { name: /edit period/i })
+        expect(screen.queryByRole('button', { name: /start tracking subtask/i })).not.toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('shows Start tracking subtask button when period end is in the future', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-04T10:00:00'))
+      try {
+        setup([period('a', '09:00', '14:00')]) // 14:00 is in the future at 10:00
+        expect(await screen.findByRole('button', { name: /start tracking subtask/i })).toBeInTheDocument()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('stops a live subtask and extends period end when stoppedAt is after period end', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-04T10:00:00'))
+      try {
+        const p: WorkPeriod = {
+          id: 'a',
+          start: '09:00',
+          end: '11:00',
+          category: 'Work',
+          subtasks: [{ id: 'sl-live', category: 'Work', hours: 0, startedAt: '09:30' }],
+        }
+        const { repo } = setup([p])
+        await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+        const stopInput = screen.getByLabelText(/subtask stopped at/i)
+        await userEvent.clear(stopInput)
+        await userEvent.type(stopInput, '11:30')
+        await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+        await waitFor(async () => {
+          const saved = await getWindows(repo)
+          expect(saved[0]?.subtasks[0]?.stoppedAt).toBe('11:30')
+          expect(saved[0]?.end).toBe('11:30')
+        })
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
     it('Start subtask persists a live slice in the repository', async () => {

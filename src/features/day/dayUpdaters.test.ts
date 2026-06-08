@@ -161,6 +161,33 @@ describe('startLiveSubtask', () => {
 })
 
 describe('stopLiveSubtask', () => {
+  it('extends period end when stoppedAt is after the period end', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', '17:00'), subtasks: [liveSubtask('s1', '_SUPPORT', '09:00')] }],
+    }
+    const result = stopLiveSubtask(day, 'w1', 's1', '17:30')
+    expect(result.windows[0]?.end).toBe('17:30')
+  })
+
+  it('does not change period end when stoppedAt is before the period end', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', '17:00'), subtasks: [liveSubtask('s1', '_SUPPORT', '09:00')] }],
+    }
+    const result = stopLiveSubtask(day, 'w1', 's1', '16:00')
+    expect(result.windows[0]?.end).toBe('17:00')
+  })
+
+  it('does not change period end when period has no end (null)', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', null), subtasks: [liveSubtask('s1', '_SUPPORT', '09:00')] }],
+    }
+    const result = stopLiveSubtask(day, 'w1', 's1', '10:30')
+    expect(result.windows[0]?.end).toBeNull()
+  })
+
   it('fills hours and sets stoppedAt on the matching slice', () => {
     const day = {
       ...emptyDay(),
