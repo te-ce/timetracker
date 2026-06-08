@@ -460,7 +460,10 @@ describe('WorkOverview', () => {
     it('stop period form dismisses when focus moves to an element outside the form', async () => {
       setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+      // change the time so isDirty = true
+      const input = screen.getByLabelText(/period ended at/i)
+      await userEvent.clear(input)
+      await userEvent.type(input, '17:30')
       // first click away shows the warning hint; the form stays open
       await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
       expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
@@ -742,7 +745,10 @@ describe('WorkOverview', () => {
     it('stop subtask form dismisses when focus moves to an element outside the form', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+      // change the time so isDirty = true
+      const input = screen.getByLabelText(/subtask stopped at/i)
+      await userEvent.clear(input)
+      await userEvent.type(input, '10:15')
       // first click away shows the warning hint; the form stays open
       await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
       expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
@@ -1384,6 +1390,145 @@ describe('WorkOverview', () => {
       const picker = within(row).getByRole('combobox', { name: /category/i })
       const badge = within(row).getByText('main')
       expect(picker.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+  })
+
+  describe('blur cancel only shown when there are unsaved changes', () => {
+    describe('SubtaskEditForm (logged subtask edit)', () => {
+      it('clicking away without changes cancels immediately with no hint', async () => {
+        setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)])
+        await userEvent.click(await screen.findByTestId('subtask-row'))
+        const hoursInput = screen.getByLabelText(/subtask hours/i)
+        expect(hoursInput).toBeInTheDocument()
+        // blur without touching anything — should cancel immediately
+        fireEvent.blur(hoursInput)
+        expect(screen.queryByLabelText(/subtask hours/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
+      })
+
+      it('clicking away after editing a field shows the cancel hint', async () => {
+        setup([periodWithSubtask('a', '09:00', '11:00', 'Work', 1)])
+        await userEvent.click(await screen.findByTestId('subtask-row'))
+        await userEvent.clear(screen.getByLabelText(/subtask hours/i))
+        await userEvent.type(screen.getByLabelText(/subtask hours/i), '2')
+        await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+        expect(screen.getByLabelText(/subtask hours/i)).toBeInTheDocument()
+        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      })
+    })
+
+    describe('StopPeriodForm', () => {
+      it('clicking away without changing the time cancels immediately with no hint', async () => {
+        setup([period('a', '09:00', null)])
+        await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+        const input = screen.getByLabelText(/period ended at/i)
+        expect(input).toBeInTheDocument()
+        fireEvent.blur(input)
+        expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
+      })
+
+      it('clicking away after changing the time shows the cancel hint', async () => {
+        setup([period('a', '09:00', null)])
+        await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+        const input = screen.getByLabelText(/period ended at/i)
+        await userEvent.clear(input)
+        await userEvent.type(input, '17:30')
+        await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+        expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      })
+    })
+
+    describe('StopSubtaskForm', () => {
+      it('clicking away without changing the time cancels immediately with no hint', async () => {
+        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+        await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+        const input = screen.getByLabelText(/subtask stopped at/i)
+        expect(input).toBeInTheDocument()
+        fireEvent.blur(input)
+        expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
+      })
+
+      it('clicking away after changing the time shows the cancel hint', async () => {
+        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+        await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+        const input = screen.getByLabelText(/subtask stopped at/i)
+        await userEvent.clear(input)
+        await userEvent.type(input, '10:15')
+        await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+        expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      })
+    })
+
+    describe('SubtaskForm (log subtask)', () => {
+      it('clicking away without entering a duration cancels immediately with no hint', async () => {
+        setup([period('a', '09:00', '11:00')])
+        await userEvent.click(await screen.findByRole('button', { name: /log subtask/i }))
+        const durationInput = screen.getByLabelText(/subtask duration/i)
+        expect(durationInput).toBeInTheDocument()
+        fireEvent.blur(durationInput)
+        expect(screen.queryByLabelText(/subtask duration/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
+      })
+
+      it('clicking away after entering a duration shows the cancel hint', async () => {
+        setup([period('a', '09:00', '11:00')])
+        await userEvent.click(await screen.findByRole('button', { name: /log subtask/i }))
+        await userEvent.type(screen.getByLabelText(/subtask duration/i), '1')
+        fireEvent.blur(screen.getByLabelText(/subtask duration/i))
+        expect(screen.getByLabelText(/subtask duration/i)).toBeInTheDocument()
+        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      })
+    })
+
+    describe('StartSubtaskForm (start tracking subtask)', () => {
+      it('clicking away without changes cancels immediately with no hint', async () => {
+        setup([period('a', '09:00', null)])
+        await userEvent.click(await screen.findByRole('button', { name: /start tracking subtask/i }))
+        const noteInput = screen.getByLabelText(/subtask note/i)
+        expect(noteInput).toBeInTheDocument()
+        // category select is focused; blur the note input (which is in the same container)
+        fireEvent.blur(noteInput)
+        expect(screen.queryByLabelText(/subtask note/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
+      })
+
+      it('clicking away after typing a note shows the cancel hint', async () => {
+        setup([period('a', '09:00', null)])
+        await userEvent.click(await screen.findByRole('button', { name: /start tracking subtask/i }))
+        await userEvent.type(screen.getByLabelText(/subtask note/i), 'some note')
+        fireEvent.blur(screen.getByLabelText(/subtask note/i))
+        expect(screen.getByLabelText(/subtask note/i)).toBeInTheDocument()
+        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      })
+    })
+
+    describe('EditStartTimeForm (live subtask start time)', () => {
+      it('clicking away without changing the time cancels immediately with no hint', async () => {
+        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+        const banner = await screen.findByTestId('live-subtask-banner')
+        await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+        const input = screen.getByLabelText(/subtask started at/i)
+        expect(input).toBeInTheDocument()
+        fireEvent.blur(input)
+        expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
+      })
+
+      it('clicking away after changing the time shows the cancel hint', async () => {
+        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+        const banner = await screen.findByTestId('live-subtask-banner')
+        await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+        const input = screen.getByLabelText(/subtask started at/i)
+        await userEvent.clear(input)
+        await userEvent.type(input, '08:45')
+        fireEvent.blur(input)
+        expect(screen.getByLabelText(/subtask started at/i)).toBeInTheDocument()
+        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      })
     })
   })
 

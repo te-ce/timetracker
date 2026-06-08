@@ -70,11 +70,13 @@ function useNow(): string {
 
 // ─── Blur-cancel warning ──────────────────────────────────────────────────────
 
-function useBlurWarning(onCancel: () => void) {
+function useBlurWarning(onCancel: () => void, isDirty: boolean) {
   const [pendingCancel, setPendingCancel] = useState(false)
   const containerRef = useRef<Element | null>(null)
   const onCancelRef = useRef(onCancel)
   onCancelRef.current = onCancel
+  const isDirtyRef = useRef(isDirty)
+  isDirtyRef.current = isDirty
 
   useEffect(() => {
     if (!pendingCancel) return
@@ -92,6 +94,10 @@ function useBlurWarning(onCancel: () => void) {
 
   function handleBlur(e: React.FocusEvent) {
     if (!e.currentTarget.contains(e.relatedTarget)) {
+      if (!isDirtyRef.current) {
+        onCancelRef.current()
+        return
+      }
       containerRef.current = e.currentTarget
       setPendingCancel(true)
     }
@@ -175,7 +181,9 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
   const [stoppedAt, setStoppedAt] = useState(nowHHMM)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
+  const initialStoppedAt = useRef(stoppedAt)
+  const isDirty = stoppedAt !== initialStoppedAt.current
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -243,7 +251,9 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
   const [stopTime, setStopTime] = useState(nowHHMM)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
+  const initialStopTime = useRef(stopTime)
+  const isDirty = stopTime !== initialStopTime.current
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -323,7 +333,7 @@ function EditStartTimeForm({
   const [value, setValue] = useState(current)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, value !== current)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -399,7 +409,7 @@ function LiveSubtaskBanner({
     handleBlur: catHandleBlur,
     handleFocus: catHandleFocus,
     reset: resetCatPending,
-  } = useBlurWarning(() => setEditingCategory(false))
+  } = useBlurWarning(() => setEditingCategory(false), false)
 
   useEffect(() => {
     if (editingNote) noteInputRef.current?.focus()
@@ -587,7 +597,8 @@ function StartSubtaskForm({
   const [category, setCategory] = useState(defaultCategory)
   const [startedAt, setStartedAt] = useState('')
   const [note, setNote] = useState('')
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
+  const isDirty = category !== defaultCategory || startedAt !== '' || note !== ''
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
 
   function handleStart() {
     const time = startedAt || nowHHMM()
@@ -706,7 +717,13 @@ function SubtaskEditForm({
   const hoursInputRef = useRef<HTMLInputElement>(null)
   const endInputRef = useRef<HTMLInputElement>(null)
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onDone)
+  const isDirty =
+    editCategory !== sl.category ||
+    editNote !== (sl.note ?? '') ||
+    editHours !== String(sl.hours) ||
+    editStart !== (sl.startedAt ?? '') ||
+    editEnd !== (sl.stoppedAt ?? '')
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onDone, isDirty)
 
   useEffect(() => {
     if (submode === 'timed') endInputRef.current?.focus()
@@ -917,7 +934,8 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
   const [durationRaw, setDurationRaw] = useState('')
   const [note, setNote] = useState('')
   const durationInputRef = useRef<HTMLInputElement>(null)
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
+  const isDirty = durationRaw !== '' || note !== ''
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
   useEffect(() => {
     durationInputRef.current?.focus()
   }, [])
@@ -1329,7 +1347,7 @@ function AutoCategoryRow({
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
   const [editing, setEditing] = useState(false)
   const description = categoryDescriptions?.[category]
-  const { pendingCancel, handleBlur, handleFocus, reset } = useBlurWarning(() => setEditing(false))
+  const { pendingCancel, handleBlur, handleFocus, reset } = useBlurWarning(() => setEditing(false), false)
 
   function handleChange(cat: string) {
     mutations.setPeriodCategory.mutate({ date, periodId, category: cat })
