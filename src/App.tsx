@@ -420,7 +420,7 @@ function App() {
   }, [handleKeyDown])
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <div className="flex h-screen flex-col overflow-hidden bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
       <nav
         className="sticky top-0 z-50 flex items-center gap-1 border-b border-gray-200 bg-white px-4 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-800"
         aria-label="Main navigation"
@@ -481,7 +481,7 @@ function App() {
       </nav>
       {legendOpen && <KeyboardShortcutLegend onClose={() => setLegendOpen(false)} />}
 
-      <main className="flex-1 p-6">
+      <main className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto w-full max-w-6xl">
           <Outlet />
         </div>
