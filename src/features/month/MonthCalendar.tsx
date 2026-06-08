@@ -1,7 +1,7 @@
 import React from 'react'
 import { toLocalIso } from '../../shared/dateUtils'
 import type { DayStatus } from '../../shared/dayStatus'
-import { STATUS_CELL, STATUS_DOT, STATUS_LABEL, TODAY_DOT } from '../../shared/statusColors'
+import { STATUS_CELL, STATUS_DOT, STATUS_LABEL } from '../../shared/statusColors'
 import type { DisplayStatus } from '../../shared/statusColors'
 import { Tooltip } from '../../shared'
 
@@ -50,7 +50,7 @@ function buildTooltipContent(reason: string | undefined, note: string | undefine
 
 function buildDots(status: DayStatus, displayStatus: DisplayStatus | undefined): string[] {
   if (status === 'today') {
-    return displayStatus ? [TODAY_DOT, STATUS_DOT[displayStatus]] : [TODAY_DOT]
+    return displayStatus ? [STATUS_DOT[displayStatus]] : []
   }
   return [STATUS_DOT[status]]
 }

@@ -99,7 +99,7 @@ describe('MonthCalendar', () => {
       expect(dots[0]!.className).toContain('bg-emerald-500')
     })
 
-    it('today shows two dots — orange then displayStatus color', () => {
+    it('today shows only the displayStatus dot', () => {
       const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
       const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'untracked' }
       render(
@@ -112,12 +112,11 @@ describe('MonthCalendar', () => {
         />,
       )
       const dots = dotsIn(screen.getByText('15'))
-      expect(dots).toHaveLength(2)
-      expect(dots[0]!.className).toContain('bg-orange-400')
-      expect(dots[1]!.className).toContain('bg-blue-300')
+      expect(dots).toHaveLength(1)
+      expect(dots[0]!.className).toContain('bg-blue-300')
     })
 
-    it('today shows two dots when displayStatus is complete', () => {
+    it('today shows displayStatus dot when displayStatus is complete', () => {
       const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
       const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'complete' }
       render(
@@ -130,9 +129,8 @@ describe('MonthCalendar', () => {
         />,
       )
       const dots = dotsIn(screen.getByText('15'))
-      expect(dots).toHaveLength(2)
-      expect(dots[0]!.className).toContain('bg-orange-400')
-      expect(dots[1]!.className).toContain('bg-emerald-500')
+      expect(dots).toHaveLength(1)
+      expect(dots[0]!.className).toContain('bg-emerald-500')
     })
 
     it('days without a status map entry show a future dot', () => {
@@ -146,7 +144,7 @@ describe('MonthCalendar', () => {
       const cases: [DayStatus & DisplayStatus, string][] = [
         ['confirmed', 'bg-emerald-500'],
         ['complete', 'bg-emerald-500'],
-        ['needs-review', 'bg-yellow-400'],
+        ['needs-review', 'bg-red-400'],
         ['leave', 'bg-purple-400'],
         ['non-working', 'bg-gray-400'],
         ['untracked', 'bg-blue-300'],
@@ -205,12 +203,11 @@ describe('MonthCalendar', () => {
       expect(screen.getByText('15').textContent).toContain('✓')
     })
 
-    it('today without dayDisplayStatusMap shows only the orange dot', () => {
+    it('today without dayDisplayStatusMap shows no dot', () => {
       const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
       render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
       const dots = dotsIn(screen.getByText('15'))
-      expect(dots).toHaveLength(1)
-      expect(dots[0]!.className).toContain('bg-orange-400')
+      expect(dots).toHaveLength(0)
     })
 
     it('non-confirmed displayStatus does not show checkmark', () => {

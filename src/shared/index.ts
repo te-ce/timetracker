@@ -33,15 +33,7 @@ export {
   invalidateSprintExport,
   QUERY_KEYS,
 } from './queryKeys'
-export {
-  type DisplayStatus,
-  STATUS_LABEL,
-  TODAY_DOT,
-  STATUS_DOT,
-  STATUS_CELL,
-  STATUS_BADGE,
-  STATUS_ROW_BG,
-} from './statusColors'
+export { type DisplayStatus, STATUS_LABEL, STATUS_DOT, STATUS_CELL, STATUS_BADGE, STATUS_ROW_BG } from './statusColors'
 export { useThemeStore } from './themeStore'
 export { type TimeFormat, useTimeFormatStore } from './timeFormatStore'
 export { useUndoStore } from './undoStore'
