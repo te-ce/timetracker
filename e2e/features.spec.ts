@@ -233,7 +233,7 @@ test.describe('settings persistence', () => {
     }, seedBase())
     await page.reload()
 
-    const input = page.getByLabel('Target hours per day')
+    const input = page.getByLabel('Monday')
     await expect(input).toHaveValue('8')
 
     await input.fill('6')
@@ -245,8 +245,8 @@ test.describe('settings persistence', () => {
       try {
         const data: unknown = JSON.parse(raw)
         if (typeof data !== 'object' || data === null) return false
-        const value: unknown = Reflect.get(data, 'sollstunden')
-        return value === 6
+        const hours: unknown = Reflect.get(data, 'weekdayHours')
+        return Array.isArray(hours) && hours[1] === 6
       } catch {
         return false
       }
@@ -254,7 +254,7 @@ test.describe('settings persistence', () => {
 
     await page.reload()
 
-    await expect(page.getByLabel('Target hours per day')).toHaveValue('6')
+    await expect(page.getByLabel('Monday')).toHaveValue('6')
   })
 })
 
