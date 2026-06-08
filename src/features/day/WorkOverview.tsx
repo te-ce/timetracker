@@ -706,6 +706,7 @@ function SubtaskEditForm({
   const hoursInputRef = useRef<HTMLInputElement>(null)
   const endInputRef = useRef<HTMLInputElement>(null)
   const timeFormat = useTimeFormatStore((s) => s.format)
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onDone)
 
   useEffect(() => {
     if (submode === 'timed') endInputRef.current?.focus()
@@ -745,11 +746,11 @@ function SubtaskEditForm({
   return (
     <div
       data-testid="subtask-row"
-      className={`flex items-center gap-2 text-sm min-h-[2.5rem] flex-wrap ${stripeBg}`}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) commit()
-      }}
+      className={`relative flex items-center gap-2 text-sm min-h-[2.5rem] flex-wrap ${stripeBg}`}
+      onBlur={handleBlur}
+      onFocus={handleFocus}
     >
+      {pendingCancel && <BlurCancelHint />}
       {submode === 'timed' ? (
         <span className="w-12 text-right font-mono text-sm tabular-nums text-gray-500 dark:text-gray-400 shrink-0 whitespace-nowrap">
           {formatHours(calcSubtaskHours(editStart, editEnd), timeFormat)}
