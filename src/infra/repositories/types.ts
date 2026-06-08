@@ -50,7 +50,7 @@ export interface WorkPeriod {
 
 export type WorkLocation = 'Office' | 'Remote'
 
-export type DayTypeOverride = 'PublicHoliday' | 'Vacation' | 'SickDay' | 'Absence'
+export type DayTypeOverride = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'SickDay' | 'Absence'
 
 export interface Day {
   windows: WorkPeriod[]

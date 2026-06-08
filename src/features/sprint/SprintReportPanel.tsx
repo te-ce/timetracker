@@ -60,8 +60,8 @@ export function SprintReportPanel({
             >
               <span className="text-sm font-medium">{category}</span>
               <span className={`font-mono text-sm font-bold ${hours === 0 ? 'text-gray-300 dark:text-gray-600' : ''}`}>
-                {formatHours(hours, 'hhmm')}{' '}
-                <span className="font-normal text-gray-400 dark:text-gray-500">· {formatHours(hours, 'decimal')}</span>
+                {formatHours(hours, 'decimal')}{' '}
+                <span className="font-normal text-gray-400 dark:text-gray-500">· {formatHours(hours, 'hhmm')}</span>
               </span>
             </li>
           )
@@ -69,8 +69,8 @@ export function SprintReportPanel({
       </ul>
 
       <div className="rounded-lg border bg-indigo-50 dark:bg-indigo-900/40 dark:border-indigo-700 px-4 py-3 text-right text-sm font-semibold">
-        Total: <span>{formatHours(total, 'hhmm')}</span>{' '}
-        <span className="font-normal text-gray-500 dark:text-gray-400">· {formatHours(total, 'decimal')}</span>
+        Total: <span>{formatHours(total, 'decimal')}</span>{' '}
+        <span className="font-normal text-gray-500 dark:text-gray-400">· {formatHours(total, 'hhmm')}</span>
       </div>
 
       {exportStatus === 'pending' && onExport && (

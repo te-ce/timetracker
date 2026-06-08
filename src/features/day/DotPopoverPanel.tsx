@@ -3,6 +3,7 @@ import { STATUS_DOT, STATUS_LABEL } from '../../shared/statusColors'
 
 const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'WorkDay', label: 'Work Day' },
+  { value: 'Weekend', label: 'Weekend' },
   { value: 'Vacation', label: 'Vacation' },
   { value: 'SickDay', label: 'Sick Day' },
   { value: 'PublicHoliday', label: 'Public Holiday' },

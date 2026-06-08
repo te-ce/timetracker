@@ -26,8 +26,14 @@ async function confirmDayInRepo(repository: MonthRepository, date: string): Prom
   await repository.updateDay(date, (day) => ({ ...day, confirmed: true }))
 }
 
+function calendarBase(date: string): 'WorkDay' | 'Weekend' {
+  const [y = 0, m = 0, d = 0] = date.split('-').map(Number)
+  const dow = new Date(y, m - 1, d).getDay()
+  return dow === 0 || dow === 6 ? 'Weekend' : 'WorkDay'
+}
+
 function saveDayTypeInRepo(repository: MonthRepository, date: string, value: string): Promise<void> {
-  if (value === 'WorkDay') {
+  if (value === calendarBase(date)) {
     return repository.updateDay(date, (day) => {
       const updated = { ...day }
       delete updated.dayTypeOverride
@@ -326,7 +332,7 @@ export function MonthGrid({
       return { prevDayTypeOverride: prev?.dayTypeOverride }
     },
     onSuccess: (_, { date, value }, context) => {
-      const prevValue = context.prevDayTypeOverride ?? 'WorkDay'
+      const prevValue = context.prevDayTypeOverride ?? calendarBase(date)
       useUndoStore.getState().push({
         description: 'Change day type',
         undo: async () => {
@@ -404,7 +410,7 @@ export function MonthGrid({
 
   function handleDotClick(e: React.MouseEvent<HTMLElement>, row: MonthTableRow) {
     const rect = e.currentTarget.getBoundingClientRect()
-    const currentDayType = row.dayType === 'Weekend' ? 'WorkDay' : (dayTypes.get(row.date) ?? 'WorkDay')
+    const currentDayType = dayTypes.get(row.date) ?? row.dayType
     const { displayStatus, reason } = classifyRow(row, autoCategory, confirmedDays, todayIso)
     setDotPopover({
       date: row.date,

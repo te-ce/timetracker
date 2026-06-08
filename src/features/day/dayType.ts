@@ -2,7 +2,7 @@ export type DayType = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'Si
 
 import type { DayTypeOverride } from '../../infra/repositories/types'
 
-const DAY_TYPE_OVERRIDES: readonly string[] = ['PublicHoliday', 'Vacation', 'SickDay', 'Absence']
+const DAY_TYPE_OVERRIDES: readonly string[] = ['WorkDay', 'Weekend', 'PublicHoliday', 'Vacation', 'SickDay', 'Absence']
 export function isDayTypeOverride(v: string): v is DayTypeOverride {
   return DAY_TYPE_OVERRIDES.includes(v)
 }
