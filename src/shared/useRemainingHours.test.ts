@@ -8,8 +8,13 @@ vi.mock('../features/day/useDayQuery', () => ({
   useDayQuery: vi.fn(),
 }))
 
+vi.mock('./useActiveTracking', () => ({
+  useActiveTracking: vi.fn(() => null),
+}))
+
 import { useDayQuery } from '../features/day/useDayQuery'
-import { useRemainingHours } from './useRemainingHours'
+import { useActiveTracking } from './useActiveTracking'
+import { useRemainingHours, buildReceipt } from './useRemainingHours'
 
 function makeOvertimeToDate(priorOvertime = 0): OvertimeToDate {
   return { value: priorOvertime, workedToday: 0, priorOvertime }
@@ -173,5 +178,80 @@ describe('useRemainingHours', () => {
       })
       expect(document.title).toBe('Timetracker')
     })
+  })
+
+  describe('live tracking', () => {
+    it('subtracts active tracking elapsed from remaining', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3 })
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+      vi.mocked(useActiveTracking).mockReturnValue({ startedAt: oneHourAgo, category: 'Work', date: '2026-06-08' })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(4, 0)
+    })
+
+    it('subtracts live window elapsed from remaining', () => {
+      const now = new Date()
+      const thirtyMinsAgoHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(Math.max(0, now.getMinutes() - 30)).padStart(2, '0')}`
+      stubDayQuery({
+        sollstunden: 8,
+        workedHours: 3,
+        windows: [{ id: '1', start: thirtyMinsAgoHHMM, end: null, category: 'Work', subtasks: [] }],
+      })
+      vi.mocked(useActiveTracking).mockReturnValue(null)
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(4.5, 0)
+    })
+
+    it('remaining excludes live tracking when no tracking active', () => {
+      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
+      vi.mocked(useActiveTracking).mockReturnValue(null)
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(5)
+    })
+  })
+})
+
+describe('buildReceipt', () => {
+  it('includes target, carry-over, worked, and remaining lines', () => {
+    const lines = buildReceipt(8, 1, 3, 0, 0, 'decimal')
+    expect(lines.find((l) => l.label === 'Target')?.value).toBe('8.00h')
+    expect(lines.find((l) => l.label.includes('carry'))?.value).toContain('1')
+    expect(lines.find((l) => l.label === 'Worked today')?.value).toContain('3')
+    const total = lines.find((l) => l.isTotal)
+    expect(total?.label).toBe('Remaining')
+    expect(total?.value).toContain('4')
+  })
+
+  it('shows overtime when remaining is negative', () => {
+    const lines = buildReceipt(8, 0, 10, 0, 0, 'decimal')
+    const total = lines.find((l) => l.isTotal)
+    expect(total?.label).toBe('Overtime')
+    expect(total?.value).toContain('2.00')
+  })
+
+  it('shows Done when remaining is exactly 0', () => {
+    const lines = buildReceipt(8, 0, 8, 0, 0, 'decimal')
+    const total = lines.find((l) => l.isTotal)
+    expect(total?.label).toBe('Done')
+  })
+
+  it('includes tracking line when trackingElapsed > 0', () => {
+    const lines = buildReceipt(8, 0, 3, 1, 0, 'decimal')
+    expect(lines.some((l) => l.label === 'Tracking')).toBe(true)
+  })
+
+  it('omits tracking line when trackingElapsed is 0', () => {
+    const lines = buildReceipt(8, 0, 3, 0, 0, 'decimal')
+    expect(lines.some((l) => l.label === 'Tracking')).toBe(false)
+  })
+
+  it('includes current window line when liveElapsed > 0', () => {
+    const lines = buildReceipt(8, 0, 3, 0, 0.5, 'decimal')
+    expect(lines.some((l) => l.label === 'Current tracking')).toBe(true)
+  })
+
+  it('omits current window line when liveElapsed is 0', () => {
+    const lines = buildReceipt(8, 0, 3, 0, 0, 'decimal')
+    expect(lines.some((l) => l.label === 'Current tracking')).toBe(false)
   })
 })

@@ -7,7 +7,7 @@ import { useThemeStore } from './shared/themeStore'
 import { useTimeFormatStore } from './shared/timeFormatStore'
 import { formatHours } from './shared/formatHours'
 import { useUndoStore } from './shared/undoStore'
-import { useRemainingHours } from './shared/useRemainingHours'
+import { useRemainingHours, buildReceipt } from './shared/useRemainingHours'
 import { useElectronTraySync } from './shared/useElectronTraySync'
 import { useGoalNotification } from './shared/useGoalNotification'
 import { usePrefetchCurrentMonth } from './shared/usePrefetchCurrentMonth'
@@ -244,7 +244,7 @@ function UndoButton() {
 }
 
 function RemainingHoursBadge() {
-  const { remaining, summary } = useRemainingHours()
+  const { remaining, sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   let label: string
@@ -263,8 +263,27 @@ function RemainingHoursBadge() {
       'hidden sm:inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
   }
 
+  const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed, timeFormat)
+  const tooltipContent = (
+    <div className="space-y-0.5 text-xs">
+      {receiptLines.map((line, i) =>
+        line.isTotal ? (
+          <div key={i} className="flex justify-between gap-4 border-t border-gray-500 pt-0.5 font-semibold">
+            <span>{line.label}</span>
+            {line.value && <span className="tabular-nums">{line.value}</span>}
+          </div>
+        ) : (
+          <div key={i} className="flex justify-between gap-4">
+            <span>{line.label}</span>
+            <span className="tabular-nums">{line.value}</span>
+          </div>
+        ),
+      )}
+    </div>
+  )
+
   return (
-    <Tooltip content={summary} placement="bottom">
+    <Tooltip content={tooltipContent} placement="bottom">
       <span className={badgeClass}>{label}</span>
     </Tooltip>
   )
