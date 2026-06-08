@@ -290,7 +290,10 @@ function RemainingHoursBadge() {
 }
 
 function OfficeStatsBadge() {
+  const { configRepo } = useRepositories()
+  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => configRepo.get() })
   const { officeDays, totalWorkDays, officePercent } = useRemainingHours()
+  if (config?.officeStats === false) return null
   if (totalWorkDays === 0) return null
   const tooltipContent = `${officeDays}/${totalWorkDays} days in office this month`
   return (

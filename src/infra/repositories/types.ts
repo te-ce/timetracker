@@ -121,6 +121,7 @@ export interface AppConfig {
   closeToTray?: boolean | undefined
   hotkeys?: import('../../shared/hotkeyConfig').HotkeyConfig | undefined
   showOvertimeBar?: boolean | undefined
+  officeStats?: boolean | undefined
 }
 
 export interface ConfigRepository {

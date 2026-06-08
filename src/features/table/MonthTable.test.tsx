@@ -28,6 +28,7 @@ function setup(
     sprintLengthDays?: number
     customCategories?: string[]
     expanded?: boolean
+    showOfficeStats?: boolean
   } = {},
 ) {
   const repo = new InMemoryMonthRepository(opts.monthData ? { '2026-05': opts.monthData } : {})
@@ -53,6 +54,7 @@ function setup(
         sprintStartDate={opts.sprintStartDate}
         sprintLengthDays={opts.sprintLengthDays}
         expanded={opts.expanded}
+        showOfficeStats={opts.showOfficeStats}
       />
     </QueryClientProvider>,
   )
@@ -817,6 +819,25 @@ describe('MonthGrid', () => {
 
       const data = await repo.getMonth(2026, 5)
       expect(data['2026-05-04']?.dayTypeOverride).toBeUndefined()
+    })
+  })
+
+  describe('office stats visibility', () => {
+    it('shows location column header by default', async () => {
+      setup()
+      expect(await screen.findByRole('columnheader', { name: /location/i })).toBeInTheDocument()
+    })
+
+    it('hides location column header when showOfficeStats=false', async () => {
+      setup({ showOfficeStats: false })
+      await screen.findByRole('columnheader', { name: /worked/i })
+      expect(screen.queryByRole('columnheader', { name: /location/i })).not.toBeInTheDocument()
+    })
+
+    it('hides location toggle buttons when showOfficeStats=false', async () => {
+      setup({ showOfficeStats: false })
+      await screen.findByRole('columnheader', { name: /worked/i })
+      expect(screen.queryByRole('button', { name: /^Location /i })).not.toBeInTheDocument()
     })
   })
 })

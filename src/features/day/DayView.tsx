@@ -160,7 +160,8 @@ export function DayView() {
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = findOpenPeriod(windows)?.start
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay' || selectedDayType === 'Absence'
-  const officeStats = totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
+  const showOfficeStats = config?.officeStats !== false
+  const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
   const showOvertimeBar = config?.showOvertimeBar !== false
 
   function prevDay() {
@@ -199,13 +200,15 @@ export function DayView() {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-4 shrink-0">
           <DayTypePicker date={selectedDate} override={dayTypeOverride} repository={monthRepo} />
-          <button
-            onClick={() => dayMutations.toggleLocation.mutate()}
-            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-            aria-label={`Work location: ${effectiveLocation}. Click to switch to ${locationToggle}`}
-          >
-            <span aria-hidden="true">{locationIcon}</span> {effectiveLocation}
-          </button>
+          {showOfficeStats && (
+            <button
+              onClick={() => dayMutations.toggleLocation.mutate()}
+              className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
+              aria-label={`Work location: ${effectiveLocation}. Click to switch to ${locationToggle}`}
+            >
+              <span aria-hidden="true">{locationIcon}</span> {effectiveLocation}
+            </button>
+          )}
         </div>
         <div className="flex-1 min-w-0 self-stretch flex items-center">
           <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />

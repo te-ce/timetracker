@@ -111,6 +111,7 @@ export function TableView() {
   })
 
   const showOvertimeBar = config?.showOvertimeBar !== false
+  const showOfficeStats = config?.officeStats !== false
   const gridConfig = resolveTableConfig(config)
 
   const table = (
@@ -130,6 +131,7 @@ export function TableView() {
       workLocations={workLocations}
       defaultWorkLocation={gridConfig.defaultWorkLocation}
       dayNotes={dayNotes}
+      showOfficeStats={showOfficeStats}
       onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
       onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
@@ -220,9 +222,7 @@ export function TableView() {
           workedToday={overtimeToDate.workedToday}
           activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           liveWindowStart={todayLiveWindowStart ?? null}
-          officeDays={officeDays}
-          totalWorkDays={trackedWorkDays.length}
-          officePercent={officePercent}
+          {...(showOfficeStats ? { officeDays, totalWorkDays: trackedWorkDays.length, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />
       )}

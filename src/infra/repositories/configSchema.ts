@@ -31,6 +31,7 @@ export const appConfigSchema = z
     closeToTray: z.boolean().optional(),
     hotkeys: hotkeyConfigSchema.optional(),
     showOvertimeBar: z.boolean().optional(),
+    officeStats: z.boolean().optional(),
   })
   .passthrough()
   .transform((raw) => {

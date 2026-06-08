@@ -117,6 +117,18 @@ describe('DayView', () => {
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.queryByText(/office/i)).not.toBeInTheDocument()
     })
+
+    it('hides location toggle button when officeStats disabled in config', () => {
+      stubQuery({ config: { ...DEFAULT_APP_CONFIG, officeStats: false }, effectiveLocation: 'Remote' })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.queryByRole('button', { name: /work location/i })).not.toBeInTheDocument()
+    })
+
+    it('shows location toggle button when officeStats enabled', () => {
+      stubQuery({ config: { ...DEFAULT_APP_CONFIG, officeStats: true }, effectiveLocation: 'Remote' })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.getByRole('button', { name: /work location/i })).toBeInTheDocument()
+    })
   })
 
   describe('OvertimeBar placement', () => {

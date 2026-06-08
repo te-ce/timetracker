@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { WorkPeriod, WorkPeriodSubtask, MonthRepository } from '../../infra/repositories/types'
+import { NowChip } from './NowChip'
 import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import { mergeAdjacentInto } from './workPeriodMerge'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
@@ -516,11 +517,12 @@ function StartSubtaskForm({
   categoryDescriptions,
 }: StartSubtaskFormProps) {
   const [category, setCategory] = useState(defaultCategory)
-  const [startedAt, setStartedAt] = useState(nowHHMM)
+  const [startedAt, setStartedAt] = useState('')
   const [note, setNote] = useState('')
 
   function handleStart() {
-    onStart({ id: crypto.randomUUID(), category, hours: 0, startedAt, note: note.trim() || undefined })
+    const time = startedAt || nowHHMM()
+    onStart({ id: crypto.randomUUID(), category, hours: 0, startedAt: time, note: note.trim() || undefined })
   }
 
   const inputClass =
@@ -541,16 +543,13 @@ function StartSubtaskForm({
         focusOnMount
         categoryDescriptions={categoryDescriptions}
       />
-      <input
-        type="time"
-        value={startedAt}
-        onChange={(e) => setStartedAt(e.target.value)}
+      <NowChip
+        aria-label="Subtask started at"
+        onChange={setStartedAt}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleStart()
           if (e.key === 'Escape') onCancel()
         }}
-        aria-label="Subtask started at"
-        className={`${inputClass} w-24 font-mono`}
       />
       <input
         type="text"
@@ -994,10 +993,11 @@ interface AddPeriodFormProps {
 }
 
 function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescriptions, onAdd }: AddPeriodFormProps) {
-  const [draftStart, setDraftStart] = useState(nowHHMM)
+  const [draftStart, setDraftStart] = useState('')
   const [draftEnd, setDraftEnd] = useState('')
   const [category, setCategory] = useState(defaultCategory)
   const [prevDefaultCategory, setPrevDefaultCategory] = useState(defaultCategory)
+  const [startResetKey, setStartResetKey] = useState(0)
 
   if (prevDefaultCategory !== defaultCategory) {
     setPrevDefaultCategory(defaultCategory)
@@ -1011,7 +1011,8 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescri
     if (!canSubmit) return
     const start = draftStart || nowHHMM()
     onAdd({ id: crypto.randomUUID(), start, end: draftEnd || null, category, subtasks: [] })
-    setDraftStart(nowHHMM())
+    setDraftStart('')
+    setStartResetKey((k) => k + 1)
     setDraftEnd('')
     setCategory(defaultCategory)
   }
@@ -1019,15 +1020,13 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescri
   return (
     <div className="border-t dark:border-gray-700 pt-3">
       <div className="flex items-center gap-2 flex-wrap">
-        <input
-          type="time"
-          value={draftStart}
-          onChange={(e) => setDraftStart(e.target.value)}
+        <NowChip
+          key={startResetKey}
+          aria-label="Start"
+          onChange={setDraftStart}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleAdd()
           }}
-          aria-label="Start"
-          className="rounded-lg border px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
         />
         <span className="text-gray-400 text-sm">–</span>
         <input

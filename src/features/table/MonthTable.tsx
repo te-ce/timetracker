@@ -76,6 +76,7 @@ interface Props {
   onSelectDate?: ((isoDate: string) => void) | undefined
   onClearDay?: ((date: string) => void) | undefined
   expanded?: boolean | undefined
+  showOfficeStats?: boolean | undefined
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
@@ -194,6 +195,7 @@ export function MonthGrid({
   onSelectDate,
   onClearDay,
   expanded,
+  showOfficeStats = true,
 }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
@@ -493,13 +495,15 @@ export function MonthGrid({
               <th className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-center w-16 border-b dark:border-gray-700">
                 Worked
               </th>
-              <th
-                className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700"
-                data-tooltip="Work location — click to toggle Office / Remote"
-              >
-                <span aria-hidden="true">📍</span>
-                <span className="sr-only">Location</span>
-              </th>
+              {showOfficeStats && (
+                <th
+                  className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700"
+                  data-tooltip="Work location — click to toggle Office / Remote"
+                >
+                  <span aria-hidden="true">📍</span>
+                  <span className="sr-only">Location</span>
+                </th>
+              )}
               <th className="w-px border-l border-b border-gray-300 dark:border-gray-600"></th>
               {allCategories.map((cat, catIdx) => (
                 <CategoryColumnHeader
@@ -577,16 +581,18 @@ export function MonthGrid({
                       categoryDescriptions={categoryDescriptions}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
                     />
-                    <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">
-                      <button
-                        onClick={() => cycleLocation(row.date)}
-                        className="w-full h-full text-xs hover:bg-gray-100 dark:hover:bg-gray-700 py-1"
-                        aria-label={`Location ${row.date}`}
-                        data-tooltip={loc}
-                      >
-                        {locIcon}
-                      </button>
-                    </td>
+                    {showOfficeStats && (
+                      <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={() => cycleLocation(row.date)}
+                          className="w-full h-full text-xs hover:bg-gray-100 dark:hover:bg-gray-700 py-1"
+                          aria-label={`Location ${row.date}`}
+                          data-tooltip={loc}
+                        >
+                          {locIcon}
+                        </button>
+                      </td>
+                    )}
                     <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
                     {allCategories.map((cat) => {
                       const isAutoTarget = cat === autoCategory

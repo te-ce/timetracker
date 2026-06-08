@@ -57,6 +57,7 @@ export function MonthView() {
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
 
   const showOvertimeBar = config?.showOvertimeBar !== false
+  const showOfficeStats = config?.officeStats !== false
   const hideOvertimeMutation = useMutation({
     mutationFn: async () => {
       const cfg = await configRepo.get()
@@ -75,9 +76,7 @@ export function MonthView() {
           workedToday={overtimeToDate.workedToday}
           activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           liveWindowStart={todayLiveWindowStart ?? null}
-          officeDays={officeDays}
-          totalWorkDays={trackedWorkDays.length}
-          officePercent={officePercent}
+          {...(showOfficeStats ? { officeDays, totalWorkDays: trackedWorkDays.length, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />
       )}

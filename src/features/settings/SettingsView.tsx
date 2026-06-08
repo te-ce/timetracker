@@ -1,5 +1,6 @@
 import { AutoCategorySettings } from './AutoCategorySettings'
 import { OvertimeBarSettings } from './OvertimeBarSettings'
+import { OfficeStatsSettings } from './OfficeStatsSettings'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
 import { ClearDataSettings } from './ClearDataSettings'
 import { BundeslandSettings } from './BundeslandSettings'
@@ -17,12 +18,16 @@ import { SheetSelector } from './SheetSelector'
 import { SettingsTabs } from './SettingsTabs'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
+import { useQuery } from '@tanstack/react-query'
+import { QUERY_KEYS } from '../../shared/queryKeys'
 
 const localFolder = isLocalFolderMode()
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI
 
 export function SettingsView() {
   const { configRepo } = useRepositories()
+  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => configRepo.get() })
+  const showOfficeStats = config?.officeStats !== false
   return (
     <div className="flex flex-col gap-6">
       <h2 className="text-xl font-semibold dark:text-gray-100">Settings</h2>
@@ -40,7 +45,8 @@ export function SettingsView() {
             return (
               <>
                 <AutoCategorySettings repository={configRepo} />
-                <DefaultLocationSettings repository={configRepo} />
+                <OfficeStatsSettings repository={configRepo} />
+                {showOfficeStats && <DefaultLocationSettings repository={configRepo} />}
                 <OvertimeBarSettings repository={configRepo} />
                 <CategorySettings repository={configRepo} />
               </>

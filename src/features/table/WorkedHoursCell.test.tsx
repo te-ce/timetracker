@@ -63,7 +63,9 @@ describe('WorkedHoursCell', () => {
   it('user can add a duration entry via from/to inputs', async () => {
     const { repo } = setup()
     await userEvent.click(screen.getByText('8.00'))
-    const startInput = await screen.findByLabelText(/start/i)
+    // NowChip renders as a button initially; click it to switch to time input
+    await userEvent.click(await screen.findByRole('button', { name: /now/i }))
+    const startInput = screen.getByLabelText(/^start$/i)
     await userEvent.clear(startInput)
     await userEvent.type(startInput, '09:00')
     await userEvent.type(screen.getByLabelText(/end/i), '13:30')
@@ -218,10 +220,11 @@ describe('WorkedHoursCell', () => {
     it('pressing Escape closes the modal from the start input', async () => {
       setup()
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByLabelText(/start/i)
+      // NowChip renders as a button; click it to switch to time input
+      await userEvent.click(await screen.findByRole('button', { name: /now/i }))
       await userEvent.keyboard('{Escape}')
       await waitFor(() => {
-        expect(screen.queryByLabelText(/start/i)).not.toBeInTheDocument()
+        expect(screen.queryByLabelText(/^start$/i)).not.toBeInTheDocument()
       })
     })
   })

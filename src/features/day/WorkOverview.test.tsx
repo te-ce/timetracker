@@ -115,6 +115,7 @@ async function getWindows(repo: InMemoryMonthRepository): Promise<WorkPeriod[]> 
 
 async function addPeriod(start: string, end?: string) {
   if (start) {
+    await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
     const startInput = screen.getByLabelText(/^start$/i)
     await userEvent.clear(startInput)
     await userEvent.type(startInput, start)
@@ -139,9 +140,7 @@ describe('WorkOverview', () => {
   it('adds a period and persists it in the repository', async () => {
     const { repo } = setup()
     await screen.findByText(/no periods recorded yet/i)
-    await userEvent.type(screen.getByLabelText(/start/i), '09:00')
-    await userEvent.type(screen.getByLabelText(/end/i), '10:00')
-    await userEvent.click(screen.getByRole('button', { name: /add period/i }))
+    await addPeriod('09:00', '10:00')
     await waitFor(async () => {
       expect(await getWindows(repo)).toHaveLength(1)
     })
@@ -274,6 +273,7 @@ describe('WorkOverview', () => {
     it('pressing Enter in start input submits the form', async () => {
       const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
+      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       await userEvent.type(screen.getByLabelText(/^start$/i), '09:00{Enter}')
       await waitFor(async () => {
         expect(await getWindows(repo)).toHaveLength(1)
@@ -283,6 +283,7 @@ describe('WorkOverview', () => {
     it('pressing Enter in end input submits the form', async () => {
       const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
+      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       await userEvent.type(screen.getByLabelText(/^start$/i), '09:00')
       await userEvent.type(screen.getByLabelText(/^end$/i), '17:00{Enter}')
       await waitFor(async () => {
@@ -293,10 +294,22 @@ describe('WorkOverview', () => {
   })
 
   describe('add period form', () => {
-    it('prefills start input with current time', async () => {
+    it('shows now chip for start time by default', async () => {
       setup()
       await screen.findByText(/no periods recorded yet/i)
-      expect(screen.getByLabelText(/^start$/i)).toHaveDisplayValue(/^\d{2}:\d{2}$/)
+      expect(screen.getByRole('button', { name: /now \(\d{2}:\d{2}\)/i })).toBeInTheDocument()
+      expect(screen.queryByLabelText(/^start$/i)).not.toBeInTheDocument()
+    })
+
+    it('now chip resets to now mode after adding a period', async () => {
+      setup()
+      await screen.findByText(/no periods recorded yet/i)
+      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
+      expect(screen.getByLabelText(/^start$/i)).toBeInTheDocument()
+      await addPeriod('', '10:00')
+      await screen.findByRole('button', { name: /edit period/i })
+      expect(screen.getByRole('button', { name: /now \(\d{2}:\d{2}\)/i })).toBeInTheDocument()
+      expect(screen.queryByLabelText(/^start$/i)).not.toBeInTheDocument()
     })
 
     it('defaults category dropdown to autoCategory when provided', async () => {
@@ -308,6 +321,7 @@ describe('WorkOverview', () => {
     it('Start tracking creates a live period with end null', async () => {
       const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
+      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       const startInput = screen.getByLabelText(/^start$/i)
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '09:00')
@@ -328,6 +342,7 @@ describe('WorkOverview', () => {
     it('Add period button is enabled even when an open period exists', async () => {
       const { repo } = setup([period('a', '09:00', null)])
       await screen.findByRole('button', { name: /stop tracking/i })
+      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       await userEvent.type(screen.getByLabelText(/^start$/i), '07:00')
       await userEvent.type(screen.getByLabelText(/^end$/i), '08:00')
       await userEvent.click(screen.getByRole('button', { name: /add period/i }))
@@ -495,6 +510,15 @@ describe('WorkOverview', () => {
     it('shows Start subtask button on running period', async () => {
       setup([period('a', '09:00', null)])
       expect(await screen.findByRole('button', { name: /start tracking subtask/i })).toBeInTheDocument()
+    })
+
+    it('shows now chip for subtask start time', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /start tracking subtask/i }))
+      // Both add-period and start-subtask forms show chips; check subtask chip via label
+      const chips = screen.getAllByRole('button', { name: /now \(\d{2}:\d{2}\)/i })
+      expect(chips.length).toBeGreaterThanOrEqual(1)
+      expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
     })
 
     it('does not show Start subtask button on closed period', async () => {
