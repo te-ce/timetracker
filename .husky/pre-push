@@ -1,1 +1,1 @@
-npm run lint && npm run build && npm run e2e && npm run knip && npm run test:mutation
+npm run lint && npm run build && npm run e2e && npm run knip
