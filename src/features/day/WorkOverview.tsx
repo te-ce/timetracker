@@ -17,6 +17,7 @@ interface Props {
   customCategories?: string[] | undefined
   categoryOrder?: string[] | undefined
   categoryDescriptions?: Record<string, string> | undefined | undefined
+  initialCategory?: string | undefined
 }
 
 type LiveSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt?: undefined }
@@ -1329,12 +1330,13 @@ export function WorkOverview({
   customCategories = [],
   categoryOrder,
   categoryDescriptions,
+  initialCategory,
 }: Props) {
   const mutations = useWorkPeriodMutations(repository)
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
   const openPeriod = findOpenPeriod(windows) ?? null
   const categories = getAllCategories(customCategories, categoryOrder)
-  const defaultCategory = autoCategory ?? UNCATEGORIZED_CATEGORY
+  const defaultCategory = initialCategory ?? autoCategory ?? UNCATEGORIZED_CATEGORY
   const nowTime = useNow()
 
   function handleAdd(incoming: WorkPeriod) {

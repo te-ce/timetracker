@@ -697,6 +697,26 @@ describe('MonthGrid', () => {
       })
     })
 
+    it('clicking a category cell pre-selects that category in the AddPeriodForm', async () => {
+      // autoCategory defaults to '_COREMEDIA'; cell[5] = '_LEAVE' (first category column)
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
+        },
+      })
+
+      const row = await screen.findByRole('row', { name: /2026-05-04/ })
+      const cells = within(row).getAllByRole('cell')
+      await userEvent.click(cells[5]!)
+
+      await screen.findByText('Work periods')
+
+      // Last combobox is the AddPeriodForm category select
+      const selects = screen.getAllByRole('combobox')
+      const addFormSelect = selects[selects.length - 1]!
+      expect(addFormSelect).toHaveValue('_LEAVE')
+    })
+
     it('category cells have no tooltip', async () => {
       setup({
         monthData: {

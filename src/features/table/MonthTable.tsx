@@ -204,7 +204,13 @@ export function MonthGrid({
   const [editingCat, setEditingCat] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [activeDialogDate, setActiveDialogDate] = useState<string | null>(null)
+  const [activeDialogCategory, setActiveDialogCategory] = useState<string | null>(null)
   const categoryDialogRef = useRef<HTMLDivElement>(null)
+
+  function closeDialog() {
+    setActiveDialogDate(null)
+    setActiveDialogCategory(null)
+  }
 
   const todayIso = toLocalIso(new Date())
 
@@ -212,11 +218,11 @@ export function MonthGrid({
     if (!activeDialogDate) return
     function handleMouseDown(e: MouseEvent) {
       if (categoryDialogRef.current && e.target instanceof Node && !categoryDialogRef.current.contains(e.target)) {
-        setActiveDialogDate(null)
+        closeDialog()
       }
     }
     function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setActiveDialogDate(null)
+      if (e.key === 'Escape') closeDialog()
     }
     document.addEventListener('mousedown', handleMouseDown)
     document.addEventListener('keydown', handleKey)
@@ -511,7 +517,10 @@ export function MonthGrid({
                         <td
                           key={cat}
                           className={`px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem] cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
-                          onClick={() => setActiveDialogDate(row.date)}
+                          onClick={() => {
+                            setActiveDialogDate(row.date)
+                            setActiveDialogCategory(cat)
+                          }}
                         >
                           <span className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-600 dark:text-gray-300">
                             {val}
@@ -656,7 +665,7 @@ export function MonthGrid({
                   </p>
                 </div>
                 <button
-                  onClick={() => setActiveDialogDate(null)}
+                  onClick={() => closeDialog()}
                   className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-xl leading-none"
                   aria-label="Close"
                 >
@@ -672,6 +681,7 @@ export function MonthGrid({
                   customCategories={customCategories}
                   categoryOrder={categoryOrder}
                   categoryDescriptions={categoryDescriptions}
+                  initialCategory={activeDialogCategory ?? undefined}
                 />
               </div>
             </div>
