@@ -414,6 +414,83 @@ describe('WorkOverview', () => {
     })
   })
 
+  describe('live subtask note', () => {
+    it('start subtask form has a note input', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /start tracking subtask/i }))
+      expect(screen.getByLabelText(/subtask note/i)).toBeInTheDocument()
+    })
+
+    it('starts a live subtask with a note and persists it', async () => {
+      const { repo } = setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /start tracking subtask/i }))
+      await userEvent.type(screen.getByLabelText(/subtask note/i), 'Working on auth')
+      await userEvent.click(screen.getByRole('button', { name: /^start$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.subtasks[0]?.note).toBe('Working on auth')
+      })
+    })
+
+    it('starts a live subtask without a note leaves note undefined', async () => {
+      const { repo } = setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /start tracking subtask/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^start$/i }))
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.subtasks[0]?.note).toBeUndefined()
+      })
+    })
+
+    it('live subtask banner shows note when set', async () => {
+      const p: WorkPeriod = {
+        id: 'a',
+        start: '09:00',
+        end: null,
+        category: 'Work',
+        subtasks: [{ id: 'sl-live', category: 'Work', hours: 0, startedAt: '09:30', note: 'Fixing auth' }],
+      }
+      setup([p])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      expect(within(banner).getByText('Fixing auth')).toBeInTheDocument()
+    })
+
+    it('live subtask banner note can be clicked to edit inline', async () => {
+      const p: WorkPeriod = {
+        id: 'a',
+        start: '09:00',
+        end: null,
+        category: 'Work',
+        subtasks: [{ id: 'sl-live', category: 'Work', hours: 0, startedAt: '09:30', note: 'Fixing auth' }],
+      }
+      setup([p])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByText('Fixing auth'))
+      expect(within(banner).getByLabelText(/subtask note/i)).toBeInTheDocument()
+    })
+
+    it('editing live subtask note persists to repository', async () => {
+      const p: WorkPeriod = {
+        id: 'a',
+        start: '09:00',
+        end: null,
+        category: 'Work',
+        subtasks: [{ id: 'sl-live', category: 'Work', hours: 0, startedAt: '09:30', note: 'Old note' }],
+      }
+      const { repo } = setup([p])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByText('Old note'))
+      const noteInput = within(banner).getByLabelText(/subtask note/i)
+      await userEvent.clear(noteInput)
+      await userEvent.type(noteInput, 'New note')
+      await userEvent.keyboard('{Enter}')
+      await waitFor(async () => {
+        const saved = await getWindows(repo)
+        expect(saved[0]?.subtasks[0]?.note).toBe('New note')
+      })
+    })
+  })
+
   describe('live subtask tracking', () => {
     it('shows Start subtask button on running period', async () => {
       setup([period('a', '09:00', null)])

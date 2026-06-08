@@ -93,7 +93,7 @@ function CategoryPicker({
   }, [focusOnMount])
 
   const selectClass = compact
-    ? 'text-xs rounded border px-1 py-0.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[10rem]'
+    ? 'text-sm rounded border px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[10rem]'
     : 'text-sm rounded-lg border px-2 py-1.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[8rem] max-w-[14rem]'
 
   return (
@@ -146,7 +146,7 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
         if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
       }}
     >
-      <span className="text-xs text-gray-500 dark:text-gray-400">Stopped at</span>
+      <span className="text-sm text-gray-500 dark:text-gray-400">Stopped at</span>
       <input
         ref={inputRef}
         type="text"
@@ -161,7 +161,7 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
           if (e.key === 'Escape') onCancel()
         }}
         aria-label="Subtask stopped at"
-        className={`rounded border px-1.5 py-0.5 text-xs w-16 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
+        className={`rounded border px-1.5 py-1 text-sm w-20 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
       {error && (
         <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
@@ -170,13 +170,13 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
       )}
       <button
         onClick={onCancel}
-        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5"
+        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1"
       >
         Cancel
       </button>
       <button
         onClick={handleStop}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-0.5"
+        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1"
       >
         Confirm
       </button>
@@ -218,7 +218,7 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
         if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
       }}
     >
-      <span className="text-xs text-gray-500 dark:text-gray-400">Ended at</span>
+      <span className="text-sm text-gray-500 dark:text-gray-400">Ended at</span>
       <input
         ref={inputRef}
         type="text"
@@ -233,7 +233,7 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
           if (e.key === 'Escape') onCancel()
         }}
         aria-label="Period ended at"
-        className={`rounded border px-1.5 py-0.5 text-xs w-16 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
+        className={`rounded border px-1.5 py-1 text-sm w-20 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
       {error && (
         <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
@@ -242,13 +242,13 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
       )}
       <button
         onClick={onCancel}
-        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5"
+        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1"
       >
         Cancel
       </button>
       <button
         onClick={handleStop}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-0.5"
+        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1"
       >
         Confirm
       </button>
@@ -314,9 +314,9 @@ function EditStartTimeForm({
           if (e.key === 'Escape') onCancel()
         }}
         aria-label="Subtask started at"
-        className={`rounded border px-1.5 py-0.5 text-xs w-16 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
+        className={`rounded border px-1.5 py-1 text-sm w-20 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
-      <span className="text-xs text-gray-400">– --:--</span>
+      <span className="text-sm text-gray-400">– --:--</span>
       {error && (
         <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
           Must be HH:MM
@@ -324,13 +324,13 @@ function EditStartTimeForm({
       )}
       <button
         onClick={onCancel}
-        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5"
+        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1"
       >
         Cancel
       </button>
       <button
         onClick={handleSave}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-0.5"
+        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1"
       >
         Save
       </button>
@@ -350,7 +350,14 @@ function LiveSubtaskBanner({
   const [stopping, setStopping] = useState(false)
   const [editingCategory, setEditingCategory] = useState(false)
   const [editingStart, setEditingStart] = useState(false)
+  const [editingNote, setEditingNote] = useState(false)
+  const [noteValue, setNoteValue] = useState(subtask.note ?? '')
+  const noteInputRef = useRef<HTMLInputElement>(null)
   const timeFormat = useTimeFormatStore((s) => s.format)
+
+  useEffect(() => {
+    if (editingNote) noteInputRef.current?.focus()
+  }, [editingNote])
   const elapsedHours = (() => {
     let startMins = minutesFrom(subtask.startedAt)
     let endMins = minutesFrom(nowTime)
@@ -370,19 +377,24 @@ function LiveSubtaskBanner({
     setEditingStart(false)
   }
 
+  function saveNote() {
+    mutations.addSubtask.mutate({ date, periodId, subtask: { ...subtask, note: noteValue.trim() || undefined } })
+    setEditingNote(false)
+  }
+
   if (stopping) {
     return (
       <div
         data-testid="live-subtask-banner"
-        className="flex items-center gap-2 text-sm min-h-[2rem] mb-2 pb-2 border-b dark:border-gray-700"
+        className="flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700"
       >
-        <span className="w-10 text-right font-mono text-xs tabular-nums shrink-0 flex items-center justify-end gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+        <span className="w-12 text-right font-mono text-sm tabular-nums shrink-0 flex items-center justify-end gap-1">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
           <span className="text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">{elapsed}</span>
         </span>
         <span className="font-medium text-gray-700 dark:text-gray-300 shrink-0">{subtask.category}</span>
-        {description && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
-        <span className="text-xs text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
+        {description && <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
+        <span className="text-sm text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
           {subtask.startedAt} – --:--
         </span>
         <span className="flex-1" />
@@ -401,10 +413,10 @@ function LiveSubtaskBanner({
   return (
     <div
       data-testid="live-subtask-banner"
-      className="flex items-center gap-2 text-sm min-h-[2rem] mb-2 pb-2 border-b dark:border-gray-700"
+      className="flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700"
     >
-      <span className="w-10 text-right font-mono text-xs tabular-nums shrink-0 flex items-center justify-end gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+      <span className="w-12 text-right font-mono text-sm tabular-nums shrink-0 flex items-center justify-end gap-1">
+        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
         <span className="text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">{elapsed}</span>
       </span>
       {editingCategory ? (
@@ -431,7 +443,7 @@ function LiveSubtaskBanner({
           >
             {subtask.category}
           </button>
-          {description && <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
+          {description && <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
         </>
       )}
       {editingStart ? (
@@ -439,16 +451,39 @@ function LiveSubtaskBanner({
       ) : (
         <button
           onClick={() => setEditingStart(true)}
-          className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
+          className="text-sm text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
           aria-label="Edit subtask start time"
         >
           {subtask.startedAt} – --:--
         </button>
       )}
-      <span className="flex-1" />
+      {editingNote ? (
+        <input
+          ref={noteInputRef}
+          type="text"
+          value={noteValue}
+          onChange={(e) => setNoteValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') saveNote()
+            if (e.key === 'Escape') setEditingNote(false)
+          }}
+          onBlur={saveNote}
+          aria-label="Subtask note"
+          className="text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 flex-1 min-w-0"
+        />
+      ) : subtask.note ? (
+        <button
+          onClick={() => setEditingNote(true)}
+          className="text-sm text-gray-500 dark:text-gray-400 italic truncate flex-1 text-left hover:text-indigo-600 dark:hover:text-indigo-400"
+        >
+          {subtask.note}
+        </button>
+      ) : (
+        <span className="flex-1" />
+      )}
       <button
         onClick={() => setStopping(true)}
-        className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-1.5 py-0.5 shrink-0"
+        className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-2 py-1 shrink-0"
       >
         Stop subtask
       </button>
@@ -482,13 +517,14 @@ function StartSubtaskForm({
 }: StartSubtaskFormProps) {
   const [category, setCategory] = useState(defaultCategory)
   const [startedAt, setStartedAt] = useState(nowHHMM)
+  const [note, setNote] = useState('')
 
   function handleStart() {
-    onStart({ id: crypto.randomUUID(), category, hours: 0, startedAt })
+    onStart({ id: crypto.randomUUID(), category, hours: 0, startedAt, note: note.trim() || undefined })
   }
 
   const inputClass =
-    'text-xs rounded border px-2 py-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
+    'text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
 
   return (
     <div
@@ -502,11 +538,9 @@ function StartSubtaskForm({
         categories={categories}
         onChange={setCategory}
         compact
+        focusOnMount
         categoryDescriptions={categoryDescriptions}
       />
-      {categoryDescriptions?.[category] && (
-        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[category]})</span>
-      )}
       <input
         type="time"
         value={startedAt}
@@ -518,16 +552,27 @@ function StartSubtaskForm({
         aria-label="Subtask started at"
         className={`${inputClass} w-24 font-mono`}
       />
-      <span className="flex-1" />
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleStart()
+          if (e.key === 'Escape') onCancel()
+        }}
+        placeholder="Note (optional)"
+        aria-label="Subtask note"
+        className={`${inputClass} flex-1 min-w-0 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
+      />
       <button
         onClick={handleStart}
-        className="text-xs text-green-600 dark:text-green-400 font-medium hover:text-green-800 dark:hover:text-green-300 border border-green-200 dark:border-green-800 rounded px-2 py-0.5 shrink-0"
+        className="text-sm text-green-600 dark:text-green-400 font-medium hover:text-green-800 dark:hover:text-green-300 border border-green-200 dark:border-green-800 rounded px-2 py-1 shrink-0"
       >
         Start
       </button>
       <button
         onClick={onCancel}
-        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5 shrink-0"
+        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 shrink-0"
       >
         Cancel
       </button>
@@ -627,7 +672,7 @@ function SubtaskEditForm({
   }
 
   const inputClass =
-    'text-xs rounded border px-2 py-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
+    'text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
   const kd = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') commit()
     if (e.key === 'Escape') onDone()
@@ -636,13 +681,13 @@ function SubtaskEditForm({
   return (
     <div
       data-testid="subtask-row"
-      className={`flex items-center gap-2 text-sm min-h-[2rem] flex-wrap ${stripeBg}`}
+      className={`flex items-center gap-2 text-sm min-h-[2.5rem] flex-wrap ${stripeBg}`}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) commit()
       }}
     >
       {submode === 'timed' ? (
-        <span className="w-10 text-right font-mono text-xs tabular-nums text-gray-500 dark:text-gray-400 shrink-0 whitespace-nowrap">
+        <span className="w-12 text-right font-mono text-sm tabular-nums text-gray-500 dark:text-gray-400 shrink-0 whitespace-nowrap">
           {formatHours(calcSubtaskHours(editStart, editEnd), timeFormat)}
         </span>
       ) : (
@@ -653,7 +698,7 @@ function SubtaskEditForm({
           onKeyDown={kd}
           aria-label="Subtask hours"
           ref={hoursInputRef}
-          className={`${inputClass} w-10 text-right`}
+          className={`${inputClass} w-12 text-right`}
         />
       )}
       <CategoryPicker
@@ -671,9 +716,9 @@ function SubtaskEditForm({
             onChange={(e) => setEditStart(e.target.value)}
             onKeyDown={kd}
             aria-label="Subtask start time"
-            className={`${inputClass} w-16`}
+            className={`${inputClass} w-20`}
           />
-          <span className="text-xs text-gray-400">–</span>
+          <span className="text-sm text-gray-400">–</span>
           <input
             type="text"
             value={editEnd}
@@ -681,12 +726,12 @@ function SubtaskEditForm({
             onKeyDown={kd}
             aria-label="Subtask end time"
             ref={endInputRef}
-            className={`${inputClass} w-16`}
+            className={`${inputClass} w-20`}
           />
           {timed && (
             <button
               onClick={switchToDecimal}
-              className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 shrink-0"
+              className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 shrink-0"
             >
               use decimal
             </button>
@@ -704,11 +749,11 @@ function SubtaskEditForm({
       />
       <button
         onClick={commit}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 shrink-0"
+        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 shrink-0"
       >
         Save
       </button>
-      <button onClick={onDone} className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
+      <button onClick={onDone} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
         Cancel
       </button>
     </div>
@@ -737,10 +782,10 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
   }
 
   return (
-    <div data-testid="subtask-row" className={`flex items-center gap-2 text-sm group/slice min-h-[2rem] ${stripeBg}`}>
+    <div data-testid="subtask-row" className={`flex items-center gap-2 text-sm group/slice min-h-[2.5rem] ${stripeBg}`}>
       <button
         onClick={() => setEditing(true)}
-        className="w-10 text-right font-mono text-xs text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums shrink-0 whitespace-nowrap"
+        className="w-12 text-right font-mono text-sm text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums shrink-0 whitespace-nowrap"
         aria-label={`Edit ${sl.category} hours`}
       >
         {formatHours(sl.hours, timeFormat)}
@@ -753,19 +798,19 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
         {sl.category}
       </button>
       {categoryDescriptions?.[sl.category] && (
-        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[sl.category]})</span>
+        <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[sl.category]})</span>
       )}
       {timed && (
         <button
           onClick={() => setEditing(true)}
-          className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
+          className="text-sm text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
           aria-label={`Edit ${sl.category} time range`}
         >
           {sl.startedAt} – {sl.stoppedAt}
         </button>
       )}
       {sl.note ? (
-        <span className="text-xs text-gray-500 dark:text-gray-400 italic truncate flex-1">{sl.note}</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400 italic truncate flex-1">{sl.note}</span>
       ) : (
         <span className="flex-1" />
       )}
@@ -807,7 +852,7 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
   }
 
   const inputClass =
-    'text-xs rounded border px-2 py-0.5 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
+    'text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
   const kd = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleSubmit()
     if (e.key === 'Escape') onCancel()
@@ -828,7 +873,7 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
         onKeyDown={kd}
         aria-label="Subtask duration"
         ref={durationInputRef}
-        className={`${inputClass} w-16 text-right`}
+        className={`${inputClass} w-20 text-right`}
       />
       <CategoryPicker
         value={category}
@@ -838,7 +883,7 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
         categoryDescriptions={categoryDescriptions}
       />
       {categoryDescriptions?.[category] && (
-        <span className="text-xs text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[category]})</span>
+        <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[category]})</span>
       )}
       <input
         type="text"
@@ -851,13 +896,13 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
       />
       <button
         onClick={handleSubmit}
-        className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-0.5 shrink-0"
+        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1 shrink-0"
       >
         Add
       </button>
       <button
         onClick={onCancel}
-        className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-0.5 shrink-0"
+        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 shrink-0"
       >
         Cancel
       </button>
@@ -890,7 +935,7 @@ function PeriodCardFooter({
   const [startingSubtask, setStartingSubtask] = useState(false)
 
   return (
-    <div className="min-h-[1.75rem] flex items-center">
+    <div className="min-h-[2rem] flex items-center">
       {startingSubtask ? (
         <StartSubtaskForm
           categories={categories}
@@ -918,7 +963,7 @@ function PeriodCardFooter({
             <Tooltip content="Start live tracking for a subtask within this period">
               <button
                 onClick={() => setStartingSubtask(true)}
-                className="text-xs text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
+                className="text-sm text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
               >
                 ▶ Start tracking subtask
               </button>
@@ -927,7 +972,7 @@ function PeriodCardFooter({
           <Tooltip content="Log a completed subtask for this period">
             <button
               onClick={() => setAddingSubtask(true)}
-              className="text-xs text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+              className="text-sm text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
             >
               + Log subtask
             </button>
@@ -1044,10 +1089,10 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
 
   return (
     <div data-testid="period-card-header" className={`px-4 py-3 ${headerBg(isRunning)}`}>
-      <div className="relative flex items-center justify-center min-h-[1.75rem]">
+      <div className="relative flex items-center justify-center min-h-[2rem]">
         <span
           data-testid="period-duration"
-          className="absolute left-0 w-10 font-mono text-xs font-medium tabular-nums text-right text-gray-500 dark:text-gray-400"
+          className="absolute left-0 w-12 font-mono text-sm font-medium tabular-nums text-right text-gray-500 dark:text-gray-400"
         >
           {formatHours(duration, timeFormat)}
         </span>
@@ -1097,7 +1142,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
                 setEditEnd(w.end ?? '')
                 setEditingTime(true)
               }}
-              className="group/time flex items-center gap-1.5 font-mono text-sm font-semibold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 whitespace-nowrap"
+              className="group/time flex items-center gap-1.5 font-mono text-base font-semibold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 whitespace-nowrap"
               aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
             >
               {w.start} – {w.end ?? '--:--'}
@@ -1139,7 +1184,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
               <button
                 onClick={() => setStoppingPeriod(true)}
                 aria-label="Stop tracking"
-                className="text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-1.5 py-0.5"
+                className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-2 py-1"
               >
                 Stop
               </button>
@@ -1189,12 +1234,10 @@ function AutoCategoryRow({
   return (
     <div
       data-testid="auto-category-row"
-      className={`grid grid-cols-[2.5rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-1.5 ${stripeBg}`}
+      className={`grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg}`}
     >
-      <span className="font-mono text-xs tabular-nums text-right flex items-center justify-end gap-1">
-        {isRunning && !hasLiveSubtask && (
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
-        )}
+      <span className="font-mono text-sm tabular-nums text-right flex items-center justify-end gap-1">
+        {isRunning && !hasLiveSubtask && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
         <span
           className={
             isRunning ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-gray-500 dark:text-gray-400'
