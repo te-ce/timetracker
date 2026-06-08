@@ -68,6 +68,54 @@ function useNow(): string {
   return now
 }
 
+// ─── Blur-cancel warning ──────────────────────────────────────────────────────
+
+function useBlurWarning(onCancel: () => void) {
+  const [pendingCancel, setPendingCancel] = useState(false)
+  const containerRef = useRef<Element | null>(null)
+  const onCancelRef = useRef(onCancel)
+  onCancelRef.current = onCancel
+
+  useEffect(() => {
+    if (!pendingCancel) return
+
+    function handleMouseDown(e: MouseEvent) {
+      if (!(e.target instanceof Node)) return
+      const inside = containerRef.current?.contains(e.target) ?? false
+      setPendingCancel(false)
+      if (!inside) onCancelRef.current()
+    }
+
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [pendingCancel])
+
+  function handleBlur(e: React.FocusEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      containerRef.current = e.currentTarget
+      setPendingCancel(true)
+    }
+  }
+
+  function handleFocus() {
+    setPendingCancel(false)
+  }
+
+  function reset() {
+    setPendingCancel(false)
+  }
+
+  return { pendingCancel, handleBlur, handleFocus, reset }
+}
+
+function BlurCancelHint() {
+  return (
+    <span className="absolute bottom-full left-0 mb-0.5 text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-700 rounded px-2 py-0.5 whitespace-nowrap z-20 pointer-events-none shadow-sm select-none">
+      Click outside again to cancel
+    </span>
+  )
+}
+
 // ─── Category Picker ──────────────────────────────────────────────────────────
 
 interface CategoryPickerProps {
@@ -127,6 +175,7 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
   const [stoppedAt, setStoppedAt] = useState(nowHHMM)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -141,12 +190,8 @@ function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskForm
   }
 
   return (
-    <div
-      className="relative flex items-center gap-2"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
-      }}
-    >
+    <div className="relative flex items-center gap-2" onBlur={handleBlur} onFocus={handleFocus}>
+      {pendingCancel && <BlurCancelHint />}
       <span className="text-sm text-gray-500 dark:text-gray-400">Stopped at</span>
       <input
         ref={inputRef}
@@ -198,6 +243,7 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
   const [stopTime, setStopTime] = useState(nowHHMM)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -213,12 +259,8 @@ function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeri
   }
 
   return (
-    <div
-      className="relative flex items-center gap-2"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
-      }}
-    >
+    <div className="relative flex items-center gap-2" onBlur={handleBlur} onFocus={handleFocus}>
+      {pendingCancel && <BlurCancelHint />}
       <span className="text-sm text-gray-500 dark:text-gray-400">Ended at</span>
       <input
         ref={inputRef}
@@ -281,6 +323,7 @@ function EditStartTimeForm({
   const [value, setValue] = useState(current)
   const [error, setError] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -295,12 +338,8 @@ function EditStartTimeForm({
   }
 
   return (
-    <span
-      className="relative flex items-center gap-1"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
-      }}
-    >
+    <span className="relative flex items-center gap-1" onBlur={handleBlur} onFocus={handleFocus}>
+      {pendingCancel && <BlurCancelHint />}
       <input
         ref={inputRef}
         type="text"
@@ -355,6 +394,12 @@ function LiveSubtaskBanner({
   const [noteValue, setNoteValue] = useState(subtask.note ?? '')
   const noteInputRef = useRef<HTMLInputElement>(null)
   const timeFormat = useTimeFormatStore((s) => s.format)
+  const {
+    pendingCancel: catPendingCancel,
+    handleBlur: catHandleBlur,
+    handleFocus: catHandleFocus,
+    reset: resetCatPending,
+  } = useBlurWarning(() => setEditingCategory(false))
 
   useEffect(() => {
     if (editingNote) noteInputRef.current?.focus()
@@ -371,6 +416,7 @@ function LiveSubtaskBanner({
   function changeCategory(cat: string) {
     mutations.addSubtask.mutate({ date, periodId, subtask: { ...subtask, category: cat } })
     setEditingCategory(false)
+    resetCatPending()
   }
 
   function changeStart(startedAt: string) {
@@ -419,10 +465,16 @@ function LiveSubtaskBanner({
       aria-label="Edit subtask"
       className={`flex items-center gap-2 text-sm min-h-[2.75rem] mb-2 pb-2 border-b dark:border-gray-700 ${!isEditing ? 'cursor-pointer' : ''}`}
       onClick={() => {
-        if (!isEditing) setEditingCategory(true)
+        if (!isEditing) {
+          resetCatPending()
+          setEditingCategory(true)
+        }
       }}
       onKeyDown={(e) => {
-        if (!isEditing && (e.key === 'Enter' || e.key === ' ')) setEditingCategory(true)
+        if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
+          resetCatPending()
+          setEditingCategory(true)
+        }
       }}
       role="button"
       tabIndex={0}
@@ -432,12 +484,8 @@ function LiveSubtaskBanner({
         <span className="text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">{elapsed}</span>
       </span>
       {editingCategory ? (
-        <span
-          className="flex items-center gap-2"
-          onBlur={(e) => {
-            if (!e.currentTarget.contains(e.relatedTarget)) setEditingCategory(false)
-          }}
-        >
+        <span className="relative flex items-center gap-2" onBlur={catHandleBlur} onFocus={catHandleFocus}>
+          {catPendingCancel && <BlurCancelHint />}
           <CategoryPicker
             value={subtask.category}
             categories={categories}
@@ -539,6 +587,7 @@ function StartSubtaskForm({
   const [category, setCategory] = useState(defaultCategory)
   const [startedAt, setStartedAt] = useState('')
   const [note, setNote] = useState('')
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
 
   function handleStart() {
     const time = startedAt || nowHHMM()
@@ -549,12 +598,8 @@ function StartSubtaskForm({
     'text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
 
   return (
-    <div
-      className="flex items-center gap-2 flex-wrap w-full"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
-      }}
-    >
+    <div className="relative flex items-center gap-2 flex-wrap w-full" onBlur={handleBlur} onFocus={handleFocus}>
+      {pendingCancel && <BlurCancelHint />}
       <CategoryPicker
         value={category}
         categories={categories}
@@ -871,6 +916,7 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
   const [durationRaw, setDurationRaw] = useState('')
   const [note, setNote] = useState('')
   const durationInputRef = useRef<HTMLInputElement>(null)
+  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel)
   useEffect(() => {
     durationInputRef.current?.focus()
   }, [])
@@ -891,12 +937,8 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
   }
 
   return (
-    <div
-      className="flex items-center gap-2 flex-wrap w-full"
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) onCancel()
-      }}
-    >
+    <div className="relative flex items-center gap-2 flex-wrap w-full" onBlur={handleBlur} onFocus={handleFocus}>
+      {pendingCancel && <BlurCancelHint />}
       <input
         type="text"
         placeholder="1.5 or 1:30"
@@ -1286,29 +1328,41 @@ function AutoCategoryRow({
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
   const [editing, setEditing] = useState(false)
   const description = categoryDescriptions?.[category]
+  const { pendingCancel, handleBlur, handleFocus, reset } = useBlurWarning(() => setEditing(false))
 
   function handleChange(cat: string) {
     mutations.setPeriodCategory.mutate({ date, periodId, category: cat })
     setEditing(false)
+    reset()
   }
 
   return (
     <div
       data-testid="auto-category-row"
       aria-label="Edit category"
-      className={`grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
+      className={`relative grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg} ${!editing ? 'cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded' : ''}`}
       onClick={() => {
-        if (!editing) setEditing(true)
+        if (!editing) {
+          reset()
+          setEditing(true)
+        }
       }}
       onKeyDown={(e) => {
-        if (!editing && (e.key === 'Enter' || e.key === ' ')) setEditing(true)
+        if (!editing && (e.key === 'Enter' || e.key === ' ')) {
+          reset()
+          setEditing(true)
+        }
       }}
       role="button"
       tabIndex={0}
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setEditing(false)
+        if (editing) handleBlur(e)
+      }}
+      onFocus={() => {
+        if (editing) handleFocus()
       }}
     >
+      {pendingCancel && editing && <BlurCancelHint />}
       <span className="font-mono text-sm tabular-nums text-right flex items-center justify-end gap-1">
         {isRunning && !hasLiveSubtask && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
         <span

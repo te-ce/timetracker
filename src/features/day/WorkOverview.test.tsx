@@ -461,7 +461,12 @@ describe('WorkOverview', () => {
       setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
       expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+      // first click away shows the warning hint; the form stays open
       await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+      expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      // second mousedown outside cancels
+      fireEvent.mouseDown(document.body)
       expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
     })
 
@@ -738,7 +743,12 @@ describe('WorkOverview', () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
       expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+      // first click away shows the warning hint; the form stays open
       await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
+      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+      expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+      // second mousedown outside cancels
+      fireEvent.mouseDown(document.body)
       expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
     })
 
