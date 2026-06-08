@@ -1016,13 +1016,44 @@ describe('WorkOverview', () => {
       expect(screen.getByText('main')).toBeInTheDocument()
     })
 
-    it('auto-category row has a category dropdown to change main category', async () => {
+    it('auto-category row shows a label with the category name instead of a dropdown', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')])
+      const row = await screen.findByTestId('auto-category-row')
+      expect(within(row).queryByRole('combobox', { name: /category/i })).not.toBeInTheDocument()
+      expect(within(row).getByRole('button', { name: /edit category/i })).toBeInTheDocument()
+    })
+
+    it('auto-category row label shows description in parentheses when available', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')], null, { Work: 'deep work' })
+      const row = await screen.findByTestId('auto-category-row')
+      expect(within(row).getByRole('button', { name: /edit category/i })).toHaveTextContent('Work (deep work)')
+    })
+
+    it('clicking the category label shows the dropdown in edit mode', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')])
+      const row = await screen.findByTestId('auto-category-row')
+      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
+      expect(within(row).getByRole('combobox', { name: /category/i })).toBeInTheDocument()
+    })
+
+    it('auto-category row can change main category by clicking label then selecting', async () => {
       const { repo } = setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
+      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
       const picker = within(row).getByRole('combobox', { name: /category/i })
       await userEvent.selectOptions(picker, 'Meeting')
       await waitFor(async () => {
         expect(await getWindows(repo)).toContainEqual(expect.objectContaining({ category: 'Meeting' }))
+      })
+    })
+
+    it('selecting a category in edit mode exits edit mode and shows label again', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')])
+      const row = await screen.findByTestId('auto-category-row')
+      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
+      await userEvent.selectOptions(within(row).getByRole('combobox', { name: /category/i }), 'Meeting')
+      await waitFor(() => {
+        expect(within(row).queryByRole('combobox', { name: /category/i })).not.toBeInTheDocument()
       })
     })
 
@@ -1290,9 +1321,18 @@ describe('WorkOverview', () => {
   })
 
   describe('auto-category row layout', () => {
-    it('main badge appears after the category dropdown', async () => {
+    it('main badge appears after the category label in display mode', async () => {
       setup([period('a', '09:00', '11:00', 'Work')])
       const row = await screen.findByTestId('auto-category-row')
+      const label = within(row).getByRole('button', { name: /edit category/i })
+      const badge = within(row).getByText('main')
+      expect(label.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    })
+
+    it('main badge appears after the dropdown in edit mode', async () => {
+      setup([period('a', '09:00', '11:00', 'Work')])
+      const row = await screen.findByTestId('auto-category-row')
+      await userEvent.click(within(row).getByRole('button', { name: /edit category/i }))
       const picker = within(row).getByRole('combobox', { name: /category/i })
       const badge = within(row).getByText('main')
       expect(picker.compareDocumentPosition(badge) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()

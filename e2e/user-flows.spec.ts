@@ -301,6 +301,7 @@ test.describe('per-day auto category', () => {
 
     await page.goto(`/?date=${TEST_DATE}`)
     const row = page.getByTestId('auto-category-row').first()
+    await row.getByLabel('Edit category').click()
     const picker = row.getByLabel('Category')
     await picker.selectOption('_OTHER')
 
@@ -470,6 +471,7 @@ test.describe('settings global auto-category', () => {
     await workSection.getByRole('button', { name: 'Add period' }).click()
 
     const row = page.getByTestId('auto-category-row').first()
+    await row.getByLabel('Edit category').click()
     await expect(row.getByLabel('Category')).toHaveValue(CATEGORY)
   })
 

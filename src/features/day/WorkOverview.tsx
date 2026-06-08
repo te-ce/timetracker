@@ -1265,11 +1265,21 @@ function AutoCategoryRow({
 }) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
+  const [editing, setEditing] = useState(false)
+  const description = categoryDescriptions?.[category]
+
+  function handleChange(cat: string) {
+    mutations.setPeriodCategory.mutate({ date, periodId, category: cat })
+    setEditing(false)
+  }
 
   return (
     <div
       data-testid="auto-category-row"
       className={`grid grid-cols-[3rem_minmax(7rem,1fr)_auto] items-center gap-2 text-sm py-2 ${stripeBg}`}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setEditing(false)
+      }}
     >
       <span className="font-mono text-sm tabular-nums text-right flex items-center justify-end gap-1">
         {isRunning && !hasLiveSubtask && <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />}
@@ -1281,13 +1291,25 @@ function AutoCategoryRow({
           {formatHours(hours, timeFormat)}
         </span>
       </span>
-      <CategoryPicker
-        value={category}
-        categories={categories}
-        onChange={(cat) => mutations.setPeriodCategory.mutate({ date, periodId, category: cat })}
-        compact
-        categoryDescriptions={categoryDescriptions}
-      />
+      {editing ? (
+        <CategoryPicker
+          value={category}
+          categories={categories}
+          onChange={handleChange}
+          compact
+          focusOnMount
+          categoryDescriptions={categoryDescriptions}
+        />
+      ) : (
+        <button
+          onClick={() => setEditing(true)}
+          aria-label="Edit category"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-left truncate"
+        >
+          {category}
+          {description && <span className="text-gray-400 dark:text-gray-500"> ({description})</span>}
+        </button>
+      )}
       <span className="text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded px-1.5 py-0.5 font-medium shrink-0 select-none">
         main
       </span>
