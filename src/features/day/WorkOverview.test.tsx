@@ -146,12 +146,55 @@ describe('WorkOverview', () => {
     })
   })
 
-  it('removes a period when × is clicked', async () => {
+  it('clicking Remove period shows a confirm dialog', async () => {
+    setup([period('a', '09:00', '10:00')])
+    await userEvent.click(await screen.findByRole('button', { name: /remove period/i }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('confirming the delete dialog removes the period', async () => {
     const { repo } = setup([period('a', '09:00', '10:00')])
-    await screen.findByRole('button', { name: /remove period/i })
-    await userEvent.click(screen.getByRole('button', { name: /remove period/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /remove period/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
     await waitFor(async () => {
       expect(await getWindows(repo)).toHaveLength(0)
+    })
+  })
+
+  it('canceling the delete dialog keeps the period', async () => {
+    const { repo } = setup([period('a', '09:00', '10:00')])
+    await userEvent.click(await screen.findByRole('button', { name: /remove period/i }))
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(async () => {
+      expect(await getWindows(repo)).toHaveLength(1)
+    })
+  })
+
+  it('clicking Remove subtask shows a confirm dialog', async () => {
+    setup([periodWithSubtask('a', '09:00', '10:00', 'Work', 1)])
+    await userEvent.click(await screen.findByRole('button', { name: /remove work subtask/i }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+  })
+
+  it('confirming the subtask delete dialog removes the subtask', async () => {
+    const { repo } = setup([periodWithSubtask('a', '09:00', '10:00', 'Work', 1)])
+    await userEvent.click(await screen.findByRole('button', { name: /remove work subtask/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
+    await waitFor(async () => {
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.windows[0]?.subtasks).toHaveLength(0)
+    })
+  })
+
+  it('canceling the subtask delete dialog keeps the subtask', async () => {
+    const { repo } = setup([periodWithSubtask('a', '09:00', '10:00', 'Work', 1)])
+    await userEvent.click(await screen.findByRole('button', { name: /remove work subtask/i }))
+    await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await waitFor(async () => {
+      const data = await repo.getMonth(YEAR, MONTH)
+      expect(data[DATE]?.windows[0]?.subtasks).toHaveLength(1)
     })
   })
 

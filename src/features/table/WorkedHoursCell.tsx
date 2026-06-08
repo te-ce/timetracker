@@ -41,6 +41,7 @@ export function WorkedHoursCell({
   useEffect(() => {
     if (!open) return
     function handleMouseDown(e: MouseEvent) {
+      if (e.target instanceof Node && document.querySelector('[role="dialog"]')?.contains(e.target)) return
       if (modalRef.current && e.target instanceof Node && !modalRef.current.contains(e.target)) {
         setOpen(false)
       }

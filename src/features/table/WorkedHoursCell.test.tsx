@@ -83,7 +83,8 @@ describe('WorkedHoursCell', () => {
     const { repo } = setup([makeWindow('w1', '09:00', '13:00')])
     await userEvent.click(screen.getByText('8.00'))
     await screen.findByText('09:00 – 13:00')
-    await userEvent.click(screen.getByRole('button', { name: /remove/i }))
+    await userEvent.click(screen.getByRole('button', { name: /remove period/i }))
+    await userEvent.click(await screen.findByRole('button', { name: /^delete$/i }))
 
     await waitFor(async () => {
       const windows = await getWindows(repo)

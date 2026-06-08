@@ -8,7 +8,7 @@ import { calculateWorkedHours, calcSubtaskHours, findOpenPeriod } from '../../sh
 import { getAllCategories } from '../../shared/categories'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
-import { Tooltip } from '../../shared'
+import { Tooltip, ConfirmDialog } from '../../shared'
 
 interface Props {
   date: string
@@ -761,6 +761,7 @@ function SubtaskEditForm({
 
 function SubtaskRow({ sl, index, periodId, date, categories, mutations, categoryDescriptions }: SubtaskRowProps) {
   const [editing, setEditing] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const timed = isTimedSubtask(sl)
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
   const timeFormat = useTimeFormatStore((s) => s.format)
@@ -814,12 +815,25 @@ function SubtaskRow({ sl, index, periodId, date, categories, mutations, category
         <span className="flex-1" />
       )}
       <button
-        onClick={() => mutations.deleteSubtask.mutate({ date, periodId, subtaskId: sl.id })}
+        onClick={() => setConfirmingDelete(true)}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-base leading-none shrink-0"
         aria-label={`Remove ${sl.category} subtask`}
       >
         ×
       </button>
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Delete subtask?"
+          message={`Are you sure you want to delete the ${sl.category} subtask?`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => {
+            mutations.deleteSubtask.mutate({ date, periodId, subtaskId: sl.id })
+            setConfirmingDelete(false)
+          }}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   )
 }
@@ -1078,6 +1092,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
   const [editStart, setEditStart] = useState(w.start)
   const [editEnd, setEditEnd] = useState(w.end ?? '')
   const [stoppingPeriod, setStoppingPeriod] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const startInputRef = useRef<HTMLInputElement>(null)
   const timeFormat = useTimeFormatStore((s) => s.format)
 
@@ -1093,118 +1108,133 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
   const showStopButton = isRunning && !stoppingPeriod
 
   return (
-    <div data-testid="period-card-header" className={`px-4 py-3 ${headerBg(isRunning)}`}>
-      <div className="relative flex items-center justify-center min-h-[2rem]">
-        <span
-          data-testid="period-duration"
-          className="absolute left-0 w-12 font-mono text-sm font-medium tabular-nums text-right text-gray-500 dark:text-gray-400"
-        >
-          {formatHours(duration, timeFormat)}
-        </span>
-        <div className="min-w-0 flex justify-center">
-          {editingTime ? (
-            <div
-              className="flex items-center gap-1 flex-wrap"
-              onBlur={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget)) saveTime()
-              }}
-            >
-              <input
-                type="time"
-                value={editStart}
-                onChange={(e) => setEditStart(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveTime()
-                  if (e.key === 'Escape') setEditingTime(false)
-                }}
-                aria-label="Edit start time"
-                ref={startInputRef}
-                className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-              />
-              <span className="text-gray-400 text-sm">–</span>
-              <input
-                type="time"
-                value={editEnd}
-                onChange={(e) => setEditEnd(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') saveTime()
-                  if (e.key === 'Escape') setEditingTime(false)
-                }}
-                aria-label="Edit end time"
-                className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-              />
-              <button onClick={saveTime} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1">
-                Save
-              </button>
-              <button onClick={() => setEditingTime(false)} className="text-xs text-gray-400 ml-1">
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => {
-                setEditStart(w.start)
-                setEditEnd(w.end ?? '')
-                setEditingTime(true)
-              }}
-              className="group/time flex items-center gap-1.5 font-mono text-base font-semibold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 whitespace-nowrap"
-              aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
-            >
-              {w.start} – {w.end ?? '--:--'}
-              <svg
-                className="h-3 w-3 text-gray-400 group-hover/time:text-indigo-500 shrink-0"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
-          )}
-        </div>
-        <div className="absolute right-0 flex items-center gap-2">
-          {stoppingPeriod ? (
-            <StopPeriodForm
-              periodStart={w.start}
-              liveSubtask={liveSubtask}
-              onStop={(stopTime) => {
-                mutations.stopPeriod.mutate({
-                  date,
-                  periodId: w.id,
-                  endTime: stopTime,
-                  liveSubtaskId: liveSubtask?.id,
-                  stoppedAt: liveSubtask ? stopTime : undefined,
-                })
-                setStoppingPeriod(false)
-              }}
-              onCancel={() => setStoppingPeriod(false)}
-            />
-          ) : (
-            showStopButton && (
-              <button
-                onClick={() => setStoppingPeriod(true)}
-                aria-label="Stop tracking"
-                className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-2 py-1"
-              >
-                Stop
-              </button>
-            )
-          )}
-          <button
-            onClick={() => mutations.remove.mutate({ date, id: w.id })}
-            className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none"
-            aria-label="Remove period"
+    <>
+      <div data-testid="period-card-header" className={`px-4 py-3 ${headerBg(isRunning)}`}>
+        <div className="relative flex items-center justify-center min-h-[2rem]">
+          <span
+            data-testid="period-duration"
+            className="absolute left-0 w-12 font-mono text-sm font-medium tabular-nums text-right text-gray-500 dark:text-gray-400"
           >
-            ×
-          </button>
+            {formatHours(duration, timeFormat)}
+          </span>
+          <div className="min-w-0 flex justify-center">
+            {editingTime ? (
+              <div
+                className="flex items-center gap-1 flex-wrap"
+                onBlur={(e) => {
+                  if (!e.currentTarget.contains(e.relatedTarget)) saveTime()
+                }}
+              >
+                <input
+                  type="time"
+                  value={editStart}
+                  onChange={(e) => setEditStart(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveTime()
+                    if (e.key === 'Escape') setEditingTime(false)
+                  }}
+                  aria-label="Edit start time"
+                  ref={startInputRef}
+                  className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                />
+                <span className="text-gray-400 text-sm">–</span>
+                <input
+                  type="time"
+                  value={editEnd}
+                  onChange={(e) => setEditEnd(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveTime()
+                    if (e.key === 'Escape') setEditingTime(false)
+                  }}
+                  aria-label="Edit end time"
+                  className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                />
+                <button onClick={saveTime} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1">
+                  Save
+                </button>
+                <button onClick={() => setEditingTime(false)} className="text-xs text-gray-400 ml-1">
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  setEditStart(w.start)
+                  setEditEnd(w.end ?? '')
+                  setEditingTime(true)
+                }}
+                className="group/time flex items-center gap-1.5 font-mono text-base font-semibold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 whitespace-nowrap"
+                aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
+              >
+                {w.start} – {w.end ?? '--:--'}
+                <svg
+                  className="h-3 w-3 text-gray-400 group-hover/time:text-indigo-500 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <div className="absolute right-0 flex items-center gap-2">
+            {stoppingPeriod ? (
+              <StopPeriodForm
+                periodStart={w.start}
+                liveSubtask={liveSubtask}
+                onStop={(stopTime) => {
+                  mutations.stopPeriod.mutate({
+                    date,
+                    periodId: w.id,
+                    endTime: stopTime,
+                    liveSubtaskId: liveSubtask?.id,
+                    stoppedAt: liveSubtask ? stopTime : undefined,
+                  })
+                  setStoppingPeriod(false)
+                }}
+                onCancel={() => setStoppingPeriod(false)}
+              />
+            ) : (
+              showStopButton && (
+                <button
+                  onClick={() => setStoppingPeriod(true)}
+                  aria-label="Stop tracking"
+                  className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-2 py-1"
+                >
+                  Stop
+                </button>
+              )
+            )}
+            <button
+              onClick={() => setConfirmingDelete(true)}
+              className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 text-lg leading-none"
+              aria-label="Remove period"
+            >
+              ×
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Delete period?"
+          message={`Are you sure you want to delete the period ${w.start} – ${w.end ?? '--:--'}?`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => {
+            mutations.remove.mutate({ date, id: w.id })
+            setConfirmingDelete(false)
+          }}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
+    </>
   )
 }
 
