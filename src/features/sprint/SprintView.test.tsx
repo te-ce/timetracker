@@ -160,8 +160,8 @@ describe('SprintView', () => {
 
     it('shows category hours from entries within the sprint', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG, MONTH_DATA) })
-      await waitFor(() => expect(screen.getByText('3:00')).toBeInTheDocument())
-      expect(screen.getByText('2:00')).toBeInTheDocument()
+      await waitFor(() => expect(screen.getByText('3.00h')).toBeInTheDocument())
+      expect(screen.getByText('2.00h')).toBeInTheDocument()
     })
 
     it('shows correct sprint total', async () => {

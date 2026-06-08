@@ -33,24 +33,21 @@ describe('MonthCalendar', () => {
     }
     render(<MonthCalendar year={2026} month={4} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
 
-    const day17 = screen.getByText('17')
-    const day18 = screen.getByText('18')
-    const day19 = screen.getByText('19')
-    const day15 = screen.getByText('15')
-    const day16 = screen.getByText('16')
-    const day20 = screen.getByText('20')
+    function btn(text: string) {
+      return screen.getByText(text).closest('button')!
+    }
 
     // Saturday + Sunday get non-working style (gray)
-    expect(day17.className).toContain('bg-gray-100')
-    expect(day18.className).toContain('bg-gray-100')
+    expect(btn('17').className).toContain('bg-gray-100')
+    expect(btn('18').className).toContain('bg-gray-100')
     // Tuesday (today status) gets white bg
-    expect(day19.className).toContain('bg-white')
+    expect(btn('19').className).toContain('bg-white')
     // Tracked gets emerald
-    expect(day15.className).toContain('bg-emerald-100')
+    expect(btn('15').className).toContain('bg-emerald-100')
     // Untracked gets blue
-    expect(day16.className).toContain('bg-blue-100')
+    expect(btn('16').className).toContain('bg-blue-100')
     // Future gets white
-    expect(day20.className).toContain('bg-white')
+    expect(btn('20').className).toContain('bg-white')
   })
 
   it('actual today gets orange circle indicator', () => {
@@ -77,8 +74,9 @@ describe('MonthCalendar', () => {
   })
 
   describe('status dots', () => {
-    function dotsIn(button: HTMLElement) {
-      return button.querySelectorAll('span.rounded-full')
+    function dotsIn(el: HTMLElement) {
+      const button = el instanceof HTMLButtonElement ? el : (el.closest('button') ?? el)
+      return button.querySelectorAll('span.h-1.rounded-full')
     }
 
     it('every day shows one dot for its status color', () => {
@@ -179,7 +177,7 @@ describe('MonthCalendar', () => {
           dayDisplayStatusMap={dayDisplayStatusMap}
         />,
       )
-      const button = screen.getByText('15')
+      const button = screen.getByText('15').closest('button')!
       expect(button.className).toContain('bg-emerald-100')
       expect(button.textContent).toContain('✓')
       const dots = dotsIn(button)
@@ -199,7 +197,7 @@ describe('MonthCalendar', () => {
           dayDisplayStatusMap={dayDisplayStatusMap}
         />,
       )
-      expect(screen.getByText('15').textContent).toContain('✓')
+      expect(screen.getByText('15').closest('button')!.textContent).toContain('✓')
     })
 
     it('today without dayDisplayStatusMap shows no dot', () => {
