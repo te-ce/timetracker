@@ -115,6 +115,7 @@ export function useElectronTraySync() {
       windows,
       isTracking: !!activeTracking,
       startedAt: activeTracking?.startedAt ?? null,
+      remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
     })
 
     window.electronAPI.tray.sync(trayState)

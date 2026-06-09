@@ -33,6 +33,7 @@ export const appConfigSchema = z
     showOvertimeBar: z.boolean().optional(),
     officeStats: z.boolean().optional(),
     remainingTimeReference: z.enum(['planned-stop', 'target-hours']).optional(),
+    remainingTimeMode: z.enum(['until-zero-overtime', 'until-daily-target']).optional(),
   })
   .passthrough()
   .transform((raw) => {

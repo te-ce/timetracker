@@ -123,6 +123,7 @@ export function useRemainingHours() {
   const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - workedHours - trackingElapsed
 
   const remainingTimeReference = config?.remainingTimeReference ?? 'planned-stop'
+  const remainingTimeMode = config?.remainingTimeMode ?? 'until-zero-overtime'
   const isPlannedStopMode = !!plannedStopPeriod && remainingTimeReference !== 'target-hours'
   const plannedStopTime = plannedStopPeriod?.end ?? null
 
@@ -130,12 +131,14 @@ export function useRemainingHours() {
 
   const remaining = isPlannedStopMode
     ? countdownHours
-    : sollstunden -
-      overtimeToDate.priorOvertime -
-      correctedWorkedHours -
-      trackingElapsed -
-      plannedLiveElapsed -
-      liveElapsed
+    : remainingTimeMode === 'until-daily-target'
+      ? sollstunden - correctedWorkedHours - trackingElapsed - plannedLiveElapsed - liveElapsed
+      : sollstunden -
+        overtimeToDate.priorOvertime -
+        correctedWorkedHours -
+        trackingElapsed -
+        plannedLiveElapsed -
+        liveElapsed
 
   const { format } = useTimeFormatStore()
   const priorOvertime = overtimeToDate.priorOvertime

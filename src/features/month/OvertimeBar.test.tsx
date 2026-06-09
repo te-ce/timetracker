@@ -28,6 +28,20 @@ describe('OvertimeBar', () => {
     expect(status).toHaveAttribute('aria-label', expect.stringContaining('undertime'))
   })
 
+  it('accounts for priorOvertime in remaining by default', () => {
+    // sollstunden=8, priorOvertime=2, workedToday=3 → remaining = 8 - 2 - 3 = 3
+    render(<OvertimeBar sollstunden={8} priorOvertime={2} workedToday={3} />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-label', expect.stringContaining('3'))
+  })
+
+  it('ignores priorOvertime when remainingTimeMode is until-daily-target', () => {
+    // sollstunden=8, priorOvertime=2, workedToday=3 → remaining = 8 - 3 = 5 (ignore carry-over)
+    render(<OvertimeBar sollstunden={8} priorOvertime={2} workedToday={3} remainingTimeMode="until-daily-target" />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-label', expect.stringContaining('5'))
+  })
+
   it('includes "current" in aria-label when liveWindowStart is provided', () => {
     render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
     expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('current'))

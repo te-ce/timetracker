@@ -57,6 +57,16 @@ describe('buildTrayState', () => {
       expect(result.badgeLabel).toBe('3.00h left')
     })
 
+    it('ignores priorOvertime when remainingTimeMode is until-daily-target', () => {
+      const result = buildTrayState({ ...baseInput, priorOvertime: 2, remainingTimeMode: 'until-daily-target' })
+      expect(result.badgeLabel).toBe('5.00h left')
+    })
+
+    it('uses priorOvertime when remainingTimeMode is until-zero-overtime', () => {
+      const result = buildTrayState({ ...baseInput, priorOvertime: 2, remainingTimeMode: 'until-zero-overtime' })
+      expect(result.badgeLabel).toBe('3.00h left')
+    })
+
     it('accounts for trackingElapsed in remaining', () => {
       const result = buildTrayState({ ...baseInput, trackingElapsed: 1 })
       expect(result.badgeLabel).toBe('4.00h left')

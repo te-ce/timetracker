@@ -196,6 +196,7 @@ export function DayView() {
           liveWindowStart={liveWindowStart ?? null}
           activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           plannedStopTime={plannedStopTime}
+          remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
           onHide={() => hideOvertimeMutation.mutate()}
           {...officeStats}
         />

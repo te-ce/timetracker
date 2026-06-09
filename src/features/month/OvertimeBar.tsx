@@ -15,6 +15,7 @@ interface Props {
   officePercent?: number
   plannedStopTime?: string | null
   onHide?: () => void
+  remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
 }
 
 function nowHHMMFn() {
@@ -111,9 +112,13 @@ function buildBarData(
   activeTrackingStartedAt: string | null | undefined,
   liveWindowStart: string | null | undefined,
   plannedStopTime: string | null | undefined,
+  remainingTimeMode: 'until-zero-overtime' | 'until-daily-target' | undefined,
 ): BarData {
   const hasOvertime = priorOvertime >= 0
-  const remaining = sollstunden - priorOvertime - workedToday - trackingElapsed - liveElapsed
+  const remaining =
+    remainingTimeMode === 'until-daily-target'
+      ? sollstunden - workedToday - trackingElapsed - liveElapsed
+      : sollstunden - priorOvertime - workedToday - trackingElapsed - liveElapsed
   const remainingLabel = formatRemaining(remaining, fmt)
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'
   const overtimeSign = hasOvertime ? '−' : '+'
@@ -151,6 +156,7 @@ export function OvertimeBar({
   officePercent,
   plannedStopTime,
   onHide,
+  remainingTimeMode,
 }: Props) {
   const [, setTick] = useState(0)
   const timeFormat = useTimeFormatStore((s) => s.format)
@@ -176,6 +182,7 @@ export function OvertimeBar({
     activeTrackingStartedAt,
     liveWindowStart,
     plannedStopTime,
+    remainingTimeMode,
   )
 
   return (

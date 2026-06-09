@@ -9,6 +9,7 @@ import { CategorySettings } from './CategorySettings'
 import { CloudSyncSettings } from './CloudSyncSettings'
 import { DefaultLocationSettings } from './DefaultLocationSettings'
 import { RemainingTimeSettings } from './RemainingTimeSettings'
+import { RemainingTimeModeSettings } from './RemainingTimeModeSettings'
 import { HotkeySettings } from './HotkeySettings'
 import { LaunchAtLoginSettings } from './LaunchAtLoginSettings'
 import { WindowBehaviorSettings } from './WindowBehaviorSettings'
@@ -50,6 +51,7 @@ export function SettingsView() {
                 {showOfficeStats && <DefaultLocationSettings repository={configRepo} />}
                 <OvertimeBarSettings repository={configRepo} />
                 <RemainingTimeSettings repository={configRepo} />
+                <RemainingTimeModeSettings repository={configRepo} />
                 <CategorySettings repository={configRepo} />
               </>
             )

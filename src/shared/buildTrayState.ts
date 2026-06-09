@@ -20,6 +20,7 @@ export interface TrayStateInput {
   windows: WorkPeriod[]
   isTracking: boolean
   startedAt: string | null
+  remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
 }
 
 export interface TrayState {
@@ -92,7 +93,11 @@ function findLiveSubtaskCategory(windows: WorkPeriod[]): string | null {
 
 export function buildTrayState(input: TrayStateInput): TrayState {
   const { sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed, timeFormat } = input
-  const remaining = sollstunden - priorOvertime - workedHours - trackingElapsed - liveElapsed
+  const mode = input.remainingTimeMode ?? 'until-zero-overtime'
+  const remaining =
+    mode === 'until-daily-target'
+      ? sollstunden - workedHours - trackingElapsed - liveElapsed
+      : sollstunden - priorOvertime - workedHours - trackingElapsed - liveElapsed
 
   const receiptLines = buildReceiptLines(
     sollstunden,
