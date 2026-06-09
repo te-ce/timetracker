@@ -59,9 +59,13 @@ export function calculateWorkedHours(windows: WorkPeriod[], now?: string): numbe
     const endTime = w.end === null || isFuturePlannedStop ? now : w.end
     if (endTime == null) return total
     const start = parseMinutes(w.start)
-    let end = parseMinutes(endTime)
-    if (end < start) end += 24 * 60 // midnight-spanning
-    return total + (end - start) / 60
+    const end = parseMinutes(endTime)
+    const diff = end - start
+    // If now is slightly behind the period's start (minute-boundary race between
+    // nowTime tick and work period creation), treat as zero rather than wrapping.
+    if (diff < 0 && diff > -5) return total
+    const adjusted = diff < 0 ? diff + 24 * 60 : diff // true midnight-spanning
+    return total + adjusted / 60
   }, 0)
 }
 

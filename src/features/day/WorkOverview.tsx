@@ -397,10 +397,12 @@ function LiveSubtaskBanner({
     if (editingNote) noteInputRef.current?.focus()
   }, [editingNote])
   const elapsedHours = (() => {
-    let startMins = minutesFrom(subtask.startedAt)
-    let endMins = minutesFrom(nowTime)
-    if (endMins < startMins) endMins += 24 * 60
-    return (endMins - startMins) / 60
+    const startMins = minutesFrom(subtask.startedAt)
+    const endMins = minutesFrom(nowTime)
+    const diff = endMins - startMins
+    if (diff < 0 && diff > -5) return 0
+    const adjusted = diff < 0 ? diff + 24 * 60 : diff
+    return adjusted / 60
   })()
   const elapsed = formatHours(elapsedHours, timeFormat)
   const description = categoryDescriptions?.[subtask.category]

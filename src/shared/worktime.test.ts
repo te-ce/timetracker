@@ -60,6 +60,17 @@ describe('calculateWorkedHours', () => {
     const windows = [makeWindow('09:00', '12:00'), makeWindow('13:00', null)]
     expect(calculateWorkedHours(windows, '15:00')).toBe(5)
   })
+
+  it('returns 0 for open period when now is 1 minute behind start (minute-boundary race)', () => {
+    // Race: work period starts at 13:47, but nowTime tick is still 13:46
+    const windows = [makeWindow('13:47', null)]
+    expect(calculateWorkedHours(windows, '13:46')).toBe(0)
+  })
+
+  it('returns 0 for open period when now equals start (no elapsed)', () => {
+    const windows = [makeWindow('13:47', null)]
+    expect(calculateWorkedHours(windows, '13:47')).toBe(0)
+  })
 })
 
 describe('calcSubtaskHours', () => {
