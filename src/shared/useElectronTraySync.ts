@@ -118,6 +118,11 @@ export function useElectronTraySync() {
       remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
     })
 
+    if (config.showWorkedHoursInTray === false) {
+      trayState.receiptLines = []
+      trayState.badgeLabel = ''
+    }
+
     window.electronAPI.tray.sync(trayState)
   }, [
     config,
