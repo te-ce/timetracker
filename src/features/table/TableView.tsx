@@ -6,6 +6,7 @@ import type { ConfigRepository } from '../../infra/repositories/types'
 import { renameCategoryAcrossAllMonths } from './categoryMutations'
 import { MonthGrid } from './MonthTable'
 import { MonthNav, OvertimeBar, StatusLegend } from '../month'
+import { DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { QUERY_KEYS, invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
@@ -133,6 +134,7 @@ export function TableView() {
       defaultWorkLocation={gridConfig.defaultWorkLocation}
       dayNotes={dayNotes}
       showOfficeStats={showOfficeStats}
+      weekdayHours={config?.weekdayHours ?? DEFAULT_WEEKDAY_HOURS}
       onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
       onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}

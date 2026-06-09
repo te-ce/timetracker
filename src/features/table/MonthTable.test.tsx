@@ -638,8 +638,8 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      // first category cell is after: day, status, worked, location, separator (index 5)
-      await userEvent.click(cells[5]!)
+      // first category cell is after: day, status, worked, ±, location, separator (index 6)
+      await userEvent.click(cells[6]!)
 
       expect(await screen.findByText('Work periods')).toBeInTheDocument()
     })
@@ -653,7 +653,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[5]!)
+      await userEvent.click(cells[6]!)
 
       await screen.findByText('Work periods')
       // date label is rendered in a <p> below the heading
@@ -671,7 +671,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[5]!)
+      await userEvent.click(cells[6]!)
       await screen.findByText('Work periods')
 
       await userEvent.keyboard('{Escape}')
@@ -690,7 +690,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[5]!)
+      await userEvent.click(cells[6]!)
       await screen.findByText('Work periods')
 
       await userEvent.click(screen.getByRole('button', { name: 'Close' }))
@@ -701,7 +701,7 @@ describe('MonthGrid', () => {
     })
 
     it('clicking a category cell pre-selects that category in the AddPeriodForm', async () => {
-      // autoCategory defaults to '_COREMEDIA'; cell[5] = '_LEAVE' (first category column)
+      // autoCategory defaults to '_COREMEDIA'; cell[6] = '_LEAVE' (first category column)
       setup({
         monthData: {
           '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
@@ -710,7 +710,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[5]!)
+      await userEvent.click(cells[6]!)
 
       await screen.findByText('Work periods')
 
@@ -729,8 +729,8 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      expect(cells[5]).not.toHaveAttribute('data-tooltip')
-      expect(cells[5]!.querySelector('[data-tooltip]')).toBeNull()
+      expect(cells[6]).not.toHaveAttribute('data-tooltip')
+      expect(cells[6]!.querySelector('[data-tooltip]')).toBeNull()
     })
   })
 

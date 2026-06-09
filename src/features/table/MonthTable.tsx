@@ -17,6 +17,7 @@ import type { MonthTableRow } from './buildMonthTable'
 import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
+import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { Tooltip } from '../../shared'
 import { useUndoStore } from '../../shared/undoStore'
 
@@ -83,6 +84,7 @@ interface Props {
   onClearDay?: ((date: string) => void) | undefined
   expanded?: boolean | undefined
   showOfficeStats?: boolean | undefined
+  weekdayHours?: WeekdayHours | undefined
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
@@ -202,6 +204,7 @@ export function MonthGrid({
   onClearDay,
   expanded,
   showOfficeStats = true,
+  weekdayHours = DEFAULT_WEEKDAY_HOURS,
 }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
@@ -393,7 +396,7 @@ export function MonthGrid({
     },
   })
 
-  const rows = buildMonthTable({ year, month, monthData, dayTypes })
+  const rows = buildMonthTable({ year, month, monthData, dayTypes, weekdayHours, today: todayIso })
 
   function getCellValue(row: MonthTableRow, category: string): string {
     const manual = row.entries[category] ?? 0
@@ -478,8 +481,8 @@ export function MonthGrid({
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, resolveSprintStart(sprintStartDate, year), sprintLengthDays)
 
-  // day + status + worked + location + separator + categories + confirm + note + (clear?)
-  const colCount = allCategories.length + 7 + Number(!!onClearDay)
+  // day + status + worked + overtime + location + separator + categories + confirm + note + (clear?)
+  const colCount = allCategories.length + 8 + Number(!!onClearDay)
 
   let globalRowIdx = 0
 
@@ -500,6 +503,12 @@ export function MonthGrid({
               </th>
               <th className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-center w-16 border-b dark:border-gray-700">
                 Worked
+              </th>
+              <th
+                className="px-1 py-1.5 text-center w-14 border-b border-l border-gray-200 dark:border-gray-700 text-xs"
+                data-tooltip="Accumulated over/undertime up to this date"
+              >
+                ±
               </th>
               {showOfficeStats && (
                 <th
@@ -587,6 +596,22 @@ export function MonthGrid({
                       categoryDescriptions={categoryDescriptions}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
                     />
+                    <td className="px-1 py-0.5 w-14 text-right text-xs border-l border-gray-200 dark:border-gray-700 tabular-nums">
+                      {row.accumulatedOvertime !== null && row.workedHours > 0 && (
+                        <span
+                          className={
+                            row.accumulatedOvertime > 0
+                              ? 'text-green-600 dark:text-green-400'
+                              : row.accumulatedOvertime < 0
+                                ? 'text-red-600 dark:text-red-400'
+                                : 'text-gray-400 dark:text-gray-500'
+                          }
+                        >
+                          {row.accumulatedOvertime > 0 ? '+' : ''}
+                          {formatHoursCompact(row.accumulatedOvertime, timeFormat)}
+                        </span>
+                      )}
+                    </td>
                     {showOfficeStats && (
                       <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">
                         <button
@@ -676,6 +701,7 @@ export function MonthGrid({
                         {formatHoursCompact(sprintWorked, timeFormat)}
                       </td>
                       <td></td>
+                      <td></td>
                       <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
                       {allCategories.map((cat) => {
                         const catTotal = group.rows.reduce((sum, row) => {
@@ -711,6 +737,7 @@ export function MonthGrid({
               >
                 {formatHoursCompact(totalWorked, timeFormat)}
               </td>
+              <td className="w-14 border-l border-gray-200 dark:border-gray-700"></td>
               <td></td>
               <td className="w-px border-l border-gray-300 dark:border-gray-600"></td>
               {allCategories.map((cat) => {

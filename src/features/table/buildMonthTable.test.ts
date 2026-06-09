@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildMonthTable } from './buildMonthTable'
 import type { MonthData, WorkPeriod } from '../../infra/repositories/types'
+import type { WeekdayHours } from '../../shared/weekdayHours'
 
 function win(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
   return { id, start, end, category, subtasks: [] }
@@ -140,6 +141,93 @@ describe('buildMonthTable', () => {
     const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
 
     expect(rows[0]!.hasUnaccountedHours).toBe(false)
+  })
+
+  describe('accumulatedOvertime', () => {
+    // May 2026: May 1=Thu, May 2=Sat, May 3=Sun, May 4=Mon, May 5=Tue
+    // DEFAULT_WEEKDAY_HOURS: Mon-Fri=8h, Sat-Sun=0h
+    const STD: WeekdayHours = [0, 8, 8, 8, 8, 8, 0]
+
+    it('accumulates overtime across workdays up to today', () => {
+      // May 1 (Thu): 10h worked → +2h; May 4 (Mon): 6h worked → +2-2=0h
+      const monthData: MonthData = {
+        '2026-05-01': { windows: [win('1', '08:00', '18:00')] }, // 10h
+        '2026-05-04': { windows: [win('2', '09:00', '15:00')] }, // 6h
+      }
+      const rows = buildMonthTable({
+        year: 2026,
+        month: 5,
+        monthData,
+        dayTypes: new Map(),
+        weekdayHours: STD,
+        today: '2026-05-04',
+      })
+      expect(rows[0]!.accumulatedOvertime).toBeCloseTo(2) // May 1: +2h
+      expect(rows[1]!.accumulatedOvertime).toBeCloseTo(2) // May 2 (Sat, 0h): no change
+      expect(rows[2]!.accumulatedOvertime).toBeCloseTo(2) // May 3 (Sun, 0h): no change
+      expect(rows[3]!.accumulatedOvertime).toBeCloseTo(0) // May 4: +2-2=0
+    })
+
+    it('future dates (after today) have null accumulatedOvertime', () => {
+      const monthData: MonthData = {
+        '2026-05-01': { windows: [win('1', '08:00', '16:00')] }, // 8h
+      }
+      const rows = buildMonthTable({
+        year: 2026,
+        month: 5,
+        monthData,
+        dayTypes: new Map(),
+        weekdayHours: STD,
+        today: '2026-05-01',
+      })
+      expect(rows[0]!.accumulatedOvertime).toBeCloseTo(0) // May 1 = today, 8h-8h=0
+      expect(rows[1]!.accumulatedOvertime).toBeNull() // May 2 = future
+      expect(rows[4]!.accumulatedOvertime).toBeNull() // May 5 = future
+    })
+
+    it('untracked past days (0h) carry forward prior accumulated without adding target', () => {
+      // May 1 (Thu): 0h → target not counted, accumulated=0
+      // May 4 (Mon): 10h → accumulated=+2h
+      // May 5 (Tue): 0h → accumulated stays +2h
+      const monthData: MonthData = {
+        '2026-05-04': { windows: [win('1', '08:00', '18:00')] }, // 10h
+      }
+      const rows = buildMonthTable({
+        year: 2026,
+        month: 5,
+        monthData,
+        dayTypes: new Map(),
+        weekdayHours: STD,
+        today: '2026-05-05',
+      })
+      expect(rows[0]!.accumulatedOvertime).toBeCloseTo(0) // May 1: 0h, no change
+      expect(rows[3]!.accumulatedOvertime).toBeCloseTo(2) // May 4: +2h
+      expect(rows[4]!.accumulatedOvertime).toBeCloseTo(2) // May 5: 0h, carries +2h
+    })
+
+    it('hours worked on a non-WorkDay count as pure overtime (target=0)', () => {
+      // May 2 (Sat, Weekend): 4h worked, target=0 → +4h
+      const monthData: MonthData = {
+        '2026-05-02': { windows: [win('1', '10:00', '14:00')] }, // 4h on Saturday
+      }
+      const rows = buildMonthTable({
+        year: 2026,
+        month: 5,
+        monthData,
+        dayTypes: new Map(),
+        weekdayHours: STD,
+        today: '2026-05-02',
+      })
+      expect(rows[0]!.accumulatedOvertime).toBeCloseTo(0) // May 1: 0h
+      expect(rows[1]!.accumulatedOvertime).toBeCloseTo(4) // May 2 (Sat): +4h overtime
+    })
+
+    it('defaults weekdayHours and today so existing callers get accumulatedOvertime without crash', () => {
+      const rows = buildMonthTable({ year: 2026, month: 5, monthData: {}, dayTypes: new Map() })
+      // All rows should have a numeric accumulatedOvertime (today defaults to far future → no nulls)
+      expect(rows[0]!.accumulatedOvertime).toBe(0)
+      expect(rows[30]!.accumulatedOvertime).toBe(0)
+    })
   })
 
   it('sets hasUnaccountedHours false when uncategorized hours are at or below 0.001', () => {

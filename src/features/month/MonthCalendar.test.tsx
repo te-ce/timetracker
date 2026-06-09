@@ -51,10 +51,10 @@ describe('MonthCalendar', () => {
   })
 
   it('actual today gets orange circle indicator', () => {
-    // Render the current month (June 2026) — day 8 is actual today
-    render(<MonthCalendar year={2026} month={5} onSelectDate={vi.fn()} />)
+    const today = new Date()
+    render(<MonthCalendar year={today.getFullYear()} month={today.getMonth()} onSelectDate={vi.fn()} />)
 
-    const circle = screen.getByText('8')
+    const circle = screen.getByText(String(today.getDate()))
     expect(circle.tagName).toBe('SPAN')
     expect(circle.className).toContain('rounded-full')
     expect(circle.className).toContain('bg-orange-400')

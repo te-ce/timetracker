@@ -2,6 +2,7 @@ import type { DayType } from '../day'
 import type { Day, MonthData } from '../../infra/repositories/types'
 import { calculateWorkedHours } from '../../shared/worktime'
 import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
+import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 
 export interface MonthTableRow {
   date: string
@@ -11,6 +12,8 @@ export interface MonthTableRow {
   autoCategoryHours: number
   autoCategoryOverride: number | null
   hasUnaccountedHours: boolean
+  /** Running over/undertime total up to this date. null for future dates. */
+  accumulatedOvertime: number | null
 }
 
 export interface MonthTableInput {
@@ -18,6 +21,8 @@ export interface MonthTableInput {
   month: number
   monthData: MonthData
   dayTypes: Map<string, DayType>
+  weekdayHours?: WeekdayHours
+  today?: string
 }
 
 function padDay(year: number, month: number, day: number): string {
@@ -31,6 +36,8 @@ function classifyWeekday(year: number, month: number, day: number): DayType {
   return dow === 0 || dow === 6 ? 'Weekend' : 'WorkDay'
 }
 
+type BaseRow = Omit<MonthTableRow, 'accumulatedOvertime'>
+
 function buildDayRow(
   date: string,
   day: number,
@@ -38,7 +45,7 @@ function buildDayRow(
   month: number,
   dayData: Day | undefined,
   dayTypes: Map<string, DayType>,
-): MonthTableRow {
+): BaseRow {
   const workedHours = calculateWorkedHours(dayData?.windows ?? [])
   const categoryHours = calculateCategoryHours(dayData?.windows ?? [])
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
@@ -59,12 +66,22 @@ function buildDayRow(
 }
 
 export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
-  const { year, month, monthData, dayTypes } = input
+  const { year, month, monthData, dayTypes, weekdayHours = DEFAULT_WEEKDAY_HOURS, today = '9999-12-31' } = input
   const totalDays = new Date(year, month, 0).getDate()
   const rows: MonthTableRow[] = []
+  let runningOvertime = 0
   for (let d = 1; d <= totalDays; d++) {
     const date = padDay(year, month, d)
-    rows.push(buildDayRow(date, d, year, month, monthData[date], dayTypes))
+    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes)
+    if (date > today) {
+      rows.push({ ...base, accumulatedOvertime: null })
+    } else {
+      if (base.workedHours > 0) {
+        const target = base.dayType === 'WorkDay' ? (weekdayHours[new Date(year, month - 1, d).getDay()] ?? 0) : 0
+        runningOvertime += base.workedHours - target
+      }
+      rows.push({ ...base, accumulatedOvertime: runningOvertime })
+    }
   }
   return rows
 }
