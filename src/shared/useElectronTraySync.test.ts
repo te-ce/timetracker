@@ -43,13 +43,19 @@ describe('handleStartSubtask', () => {
     )
   })
 
+  it('uses HH:MM format for startedAt', async () => {
+    const repo = makeMockMonthRepo()
+    const windows = [makeWindow()]
+    await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
+    const subtask = vi.mocked(repo.startLiveSubtask).mock.calls[0]?.[2]
+    expect(subtask?.startedAt).toMatch(/^\d{2}:\d{2}$/)
+  })
+
   it('stops existing live subtask before starting new one', async () => {
     const repo = makeMockMonthRepo()
-    const windows = [
-      makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '2026-06-09T10:00:00Z' }] }),
-    ]
+    const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
     await handleStartSubtask('_INFRA', repo, '2026-06-09', windows)
-    expect(repo.stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.any(String))
+    expect(repo.stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.stringMatching(/^\d{2}:\d{2}$/))
     expect(repo.startLiveSubtask).toHaveBeenCalled()
   })
 
@@ -64,9 +70,7 @@ describe('handleStartSubtask', () => {
 describe('handleStopSubtask', () => {
   it('stops the live subtask on the open period', async () => {
     const repo = makeMockMonthRepo()
-    const windows = [
-      makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '2026-06-09T10:00:00Z' }] }),
-    ]
+    const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
     await handleStopSubtask(repo, '2026-06-09', windows)
     expect(repo.stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.any(String))
   })
@@ -83,9 +87,7 @@ describe('handleStopAll', () => {
   it('stops live subtask, work period, and active tracking', async () => {
     const repo = makeMockMonthRepo()
     const stopTracking = vi.fn().mockResolvedValue(null)
-    const windows = [
-      makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '2026-06-09T10:00:00Z' }] }),
-    ]
+    const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
     await handleStopAll(repo, '2026-06-09', windows, stopTracking)
     expect(repo.stopLiveSubtask).toHaveBeenCalled()
     expect(repo.stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))

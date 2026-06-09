@@ -11,6 +11,11 @@ import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
+function nowHHMM(): string {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 export async function handleStartSubtask(
   category: string,
   monthRepo: MonthRepository,
@@ -20,10 +25,12 @@ export async function handleStartSubtask(
   const openPeriod = windows.find((w) => w.end === null)
   if (!openPeriod) return
 
+  const now = nowHHMM()
+
   // Stop any existing live subtask first
   const liveSubtask = openPeriod.subtasks.find((s) => s.startedAt && !s.stoppedAt)
   if (liveSubtask) {
-    await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, new Date().toISOString())
+    await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, now)
   }
 
   // Start the new subtask
@@ -32,7 +39,7 @@ export async function handleStartSubtask(
     id: subtaskId,
     category,
     hours: 0,
-    startedAt: new Date().toISOString(),
+    startedAt: now,
   })
 }
 
@@ -46,7 +53,7 @@ export async function handleStopSubtask(
 
   const liveSubtask = openPeriod.subtasks.find((s) => s.startedAt && !s.stoppedAt)
   if (liveSubtask) {
-    await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, new Date().toISOString())
+    await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, nowHHMM())
   }
 }
 
@@ -56,15 +63,16 @@ export async function handleStopAll(
   windows: WorkPeriod[],
   stopTracking: () => Promise<unknown>,
 ): Promise<void> {
+  const now = nowHHMM()
+
   // Stop live subtask if any
   const openPeriod = windows.find((w) => w.end === null)
   if (openPeriod) {
     const liveSubtask = openPeriod.subtasks.find((s) => s.startedAt && !s.stoppedAt)
     if (liveSubtask) {
-      await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, new Date().toISOString())
+      await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, now)
     }
-    const nowHHMM = new Date().toTimeString().slice(0, 5)
-    await monthRepo.stopWorkPeriod(today, openPeriod.id, nowHHMM)
+    await monthRepo.stopWorkPeriod(today, openPeriod.id, now)
   }
 
   // Stop active tracking session

@@ -145,7 +145,7 @@ function buildTrayMenu() {
     const isAutoSelected = !activeSubtaskCategory
     autoCategoryItems.push({
       label: `● ${autoCategory}`,
-      type: 'radio',
+      type: 'checkbox',
       checked: isAutoSelected,
       click: () => {
         // Clicking auto category when a subtask is active → stop subtask
@@ -162,7 +162,7 @@ function buildTrayMenu() {
     .filter((cat) => cat !== autoCategory)
     .map((cat) => ({
       label: cat,
-      type: 'radio',
+      type: 'checkbox',
       checked: cat === activeSubtaskCategory,
       click: () => {
         if (cat === activeSubtaskCategory) {
