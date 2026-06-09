@@ -1,6 +1,7 @@
 import { AutoCategorySettings } from './AutoCategorySettings'
 import { OvertimeBarSettings } from './OvertimeBarSettings'
 import { OfficeStatsSettings } from './OfficeStatsSettings'
+import { WorkedHoursNavSettings } from './WorkedHoursNavSettings'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
 import { ClearDataSettings } from './ClearDataSettings'
 import { BundeslandSettings } from './BundeslandSettings'
@@ -50,6 +51,7 @@ export function SettingsView() {
                 <OfficeStatsSettings repository={configRepo} />
                 {showOfficeStats && <DefaultLocationSettings repository={configRepo} />}
                 <OvertimeBarSettings repository={configRepo} />
+                <WorkedHoursNavSettings repository={configRepo} />
                 <RemainingTimeSettings repository={configRepo} />
                 <RemainingTimeModeSettings repository={configRepo} />
                 <CategorySettings repository={configRepo} />

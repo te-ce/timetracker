@@ -32,6 +32,7 @@ export const appConfigSchema = z
     hotkeys: hotkeyConfigSchema.optional(),
     showOvertimeBar: z.boolean().optional(),
     officeStats: z.boolean().optional(),
+    showWorkedHoursInNav: z.boolean().optional(),
     remainingTimeReference: z.enum(['planned-stop', 'target-hours']).optional(),
     remainingTimeMode: z.enum(['until-zero-overtime', 'until-daily-target']).optional(),
   })

@@ -122,6 +122,7 @@ export interface AppConfig {
   hotkeys?: import('../../shared/hotkeyConfig').HotkeyConfig | undefined
   showOvertimeBar?: boolean | undefined
   officeStats?: boolean | undefined
+  showWorkedHoursInNav?: boolean | undefined
   remainingTimeReference?: 'planned-stop' | 'target-hours' | undefined
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target' | undefined
 }

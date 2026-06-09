@@ -244,8 +244,12 @@ function UndoButton() {
 }
 
 function RemainingHoursBadge() {
+  const { configRepo } = useRepositories()
+  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => configRepo.get() })
   const { remaining, sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
+
+  if (config?.showWorkedHoursInNav === false) return null
 
   let label: string
   let badgeClass: string
