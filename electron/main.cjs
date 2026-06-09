@@ -141,39 +141,47 @@ function buildTrayMenu() {
 
   // Auto category item (first, separated)
   const autoCategoryItems = []
-  if (autoCategory) {
+  if (autoCategory && isTracking) {
     const isAutoSelected = !activeSubtaskCategory
     autoCategoryItems.push({
       label: `● ${autoCategory}`,
       type: 'checkbox',
       checked: isAutoSelected,
       click: () => {
-        // Clicking auto category when a subtask is active → stop subtask
-        if (activeSubtaskCategory) {
-          mainWindow.webContents.send('tray:stopSubtask')
-        }
+        // Clicking auto category while tracking → stop subtasks and work period
+        mainWindow.webContents.send('tray:stopAll')
       },
     })
     autoCategoryItems.push({ type: 'separator' })
   }
 
-  // Other category items
-  const categoryItems = categories
-    .filter((cat) => cat !== autoCategory)
-    .map((cat) => ({
-      label: cat,
-      type: 'checkbox',
-      checked: cat === activeSubtaskCategory,
-      click: () => {
-        if (cat === activeSubtaskCategory) {
-          // Clicking same subtask category → stop it
-          mainWindow.webContents.send('tray:stopSubtask')
-        } else {
-          // Clicking different category → start subtask
-          mainWindow.webContents.send('tray:startSubtask', cat)
-        }
-      },
-    }))
+  // Other category items (only shown while tracking — subtask switching)
+  const categoryItems = isTracking
+    ? categories
+        .filter((cat) => cat !== autoCategory)
+        .map((cat) => ({
+          label: cat,
+          type: 'checkbox',
+          checked: cat === activeSubtaskCategory,
+          click: () => {
+            if (cat === activeSubtaskCategory) {
+              mainWindow.webContents.send('tray:stopSubtask')
+            } else {
+              mainWindow.webContents.send('tray:startSubtask', cat)
+            }
+          },
+        }))
+    : []
+
+  // When not tracking: show all categories to start a new work period
+  const startWorkPeriodItems = !isTracking
+    ? categories.map((cat) => ({
+        label: cat,
+        click: () => {
+          mainWindow.webContents.send('tray:startWorkPeriod', cat)
+        },
+      }))
+    : []
 
   // Stop button
   const stopItem = isTracking
@@ -195,6 +203,7 @@ function buildTrayMenu() {
     { type: 'separator' },
     ...autoCategoryItems,
     ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
+    ...(startWorkPeriodItems.length > 0 ? [...startWorkPeriodItems, { type: 'separator' }] : []),
     ...stopItem,
     {
       label: 'Quit',

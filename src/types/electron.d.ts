@@ -20,6 +20,8 @@ interface Window {
       offStopSubtask(cb: () => void): void
       onStopAll(cb: () => void): void
       offStopAll(cb: () => void): void
+      onStartWorkPeriod(cb: (category: string) => void): void
+      offStartWorkPeriod(cb: (category: string) => void): void
     }
     hotkey: {
       onToggle(cb: () => void): void

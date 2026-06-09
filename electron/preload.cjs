@@ -13,6 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     offStopSubtask: (cb) => ipcRenderer.removeListener('tray:stopSubtask', cb),
     onStopAll: (cb) => ipcRenderer.on('tray:stopAll', () => cb()),
     offStopAll: (cb) => ipcRenderer.removeListener('tray:stopAll', cb),
+    onStartWorkPeriod: (cb) => ipcRenderer.on('tray:startWorkPeriod', (_, cat) => cb(cat)),
+    offStartWorkPeriod: (cb) => ipcRenderer.removeListener('tray:startWorkPeriod', cb),
   },
   hotkey: {
     onToggle: (cb) => ipcRenderer.on('hotkey:toggle', cb),

@@ -9,11 +9,19 @@ import { useActiveTracking } from './useActiveTracking'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
-import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
+import type { MonthRepository, TimeTrackingRepository, WorkPeriod } from '../infra/repositories/types'
 
 function nowHHMM(): string {
   const d = new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+export async function handleStartWorkPeriod(
+  category: string,
+  timeTrackingRepo: TimeTrackingRepository,
+  today: string,
+): Promise<void> {
+  await timeTrackingRepo.start(today, category)
 }
 
 export async function handleStartSubtask(
@@ -140,6 +148,15 @@ export function useElectronTraySync() {
     await invalidateActiveTracking(queryClient)
   }, [monthRepo, todayIso, windows, timeTrackingRepo, queryClient])
 
+  const onStartWorkPeriod = useCallback(
+    async (category: string) => {
+      await handleStartWorkPeriod(category, timeTrackingRepo, todayIso)
+      await invalidateActiveTracking(queryClient)
+      invalidateMonth(queryClient, todayIso)
+    },
+    [timeTrackingRepo, todayIso, queryClient],
+  )
+
   useEffect(() => {
     const api = window.electronAPI
     if (!api) return
@@ -152,15 +169,20 @@ export function useElectronTraySync() {
     const stopAllListener = () => {
       void onStopAll()
     }
+    const startWorkPeriodListener = (cat: string) => {
+      void onStartWorkPeriod(cat)
+    }
     api.tray.onStartSubtask(startListener)
     api.tray.onStopSubtask(stopListener)
     api.tray.onStopAll(stopAllListener)
+    api.tray.onStartWorkPeriod(startWorkPeriodListener)
     return () => {
       api.tray.offStartSubtask(startListener)
       api.tray.offStopSubtask(stopListener)
       api.tray.offStopAll(stopAllListener)
+      api.tray.offStartWorkPeriod(startWorkPeriodListener)
     }
-  }, [onStartSubtask, onStopSubtask, onStopAll])
+  }, [onStartSubtask, onStopSubtask, onStopAll, onStartWorkPeriod])
 
   useEffect(() => {
     const api = window.electronAPI

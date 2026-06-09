@@ -31,6 +31,8 @@ beforeEach(() => {
       offStopSubtask: () => {},
       onStopAll: () => {},
       offStopAll: () => {},
+      onStartWorkPeriod: () => {},
+      offStartWorkPeriod: () => {},
     },
     hotkey: { onToggle: () => {}, offToggle: () => {}, setGlobal: () => Promise.resolve() },
     storage: stub,

@@ -3,9 +3,10 @@ import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
-import { handleStartSubtask, handleStopSubtask, handleStopAll } from './useElectronTraySync'
+import { handleStartSubtask, handleStopSubtask, handleStopAll, handleStartWorkPeriod } from './useElectronTraySync'
 import type { WorkPeriod } from '../infra/repositories/types'
 import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
+import { InMemoryTimeTrackingRepository } from '../infra/repositories/in-memory/time-tracking-repository'
 
 vi.mock('../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -118,6 +119,22 @@ describe('handleStopAll', () => {
   })
 })
 
+describe('handleStartWorkPeriod', () => {
+  it('starts a new work period with the given category', async () => {
+    const repo = new InMemoryTimeTrackingRepository()
+    vi.spyOn(repo, 'start')
+    await handleStartWorkPeriod('_SUPPORT', repo, '2026-06-09')
+    expect(repo.start).toHaveBeenCalledWith('2026-06-09', '_SUPPORT')
+  })
+
+  it('starts a new work period for a different category', async () => {
+    const repo = new InMemoryTimeTrackingRepository()
+    vi.spyOn(repo, 'start')
+    await handleStartWorkPeriod('_INFRA', repo, '2026-06-09')
+    expect(repo.start).toHaveBeenCalledWith('2026-06-09', '_INFRA')
+  })
+})
+
 // ─── Hook integration tests ────────────────────────────────────────────────
 
 function makeElectronAPI() {
@@ -131,6 +148,8 @@ function makeElectronAPI() {
       offStopSubtask: vi.fn(),
       onStopAll: vi.fn(),
       offStopAll: vi.fn(),
+      onStartWorkPeriod: vi.fn(),
+      offStartWorkPeriod: vi.fn(),
     },
     hotkey: {
       onToggle: vi.fn(),
@@ -173,10 +192,12 @@ describe('useElectronTraySync hook', () => {
     expect(api.tray.onStartSubtask).toHaveBeenCalledOnce()
     expect(api.tray.onStopSubtask).toHaveBeenCalledOnce()
     expect(api.tray.onStopAll).toHaveBeenCalledOnce()
+    expect(api.tray.onStartWorkPeriod).toHaveBeenCalledOnce()
     unmount()
     expect(api.tray.offStartSubtask).toHaveBeenCalledOnce()
     expect(api.tray.offStopSubtask).toHaveBeenCalledOnce()
     expect(api.tray.offStopAll).toHaveBeenCalledOnce()
+    expect(api.tray.offStartWorkPeriod).toHaveBeenCalledOnce()
   })
 
   it('registers and cleans up hotkey.onToggle listener', async () => {

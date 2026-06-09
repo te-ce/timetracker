@@ -44,6 +44,8 @@ describe('dispatchGoalNotification', () => {
         offStopSubtask: () => {},
         onStopAll: () => {},
         offStopAll: () => {},
+        onStartWorkPeriod: () => {},
+        offStartWorkPeriod: () => {},
       },
       hotkey: { onToggle: () => {}, offToggle: () => {}, setGlobal: vi.fn().mockResolvedValue(undefined) },
       storage: {
