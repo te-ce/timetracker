@@ -272,6 +272,11 @@ function RemainingHoursBadge() {
             <span>{line.label}</span>
             {line.value && <span className="tabular-nums">{line.value}</span>}
           </div>
+        ) : line.isSubItem ? (
+          <div key={i} className="flex justify-between gap-4 pl-3 text-gray-400 dark:text-gray-500">
+            <span>{line.label}</span>
+            <span className="tabular-nums">{line.value}</span>
+          </div>
         ) : (
           <div key={i} className="flex justify-between gap-4">
             <span>{line.label}</span>
