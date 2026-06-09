@@ -3,6 +3,7 @@ import { OvertimeBarSettings } from './OvertimeBarSettings'
 import { OfficeStatsSettings } from './OfficeStatsSettings'
 import { WorkedHoursNavSettings } from './WorkedHoursNavSettings'
 import { WorkedHoursTraySettings } from './WorkedHoursTraySettings'
+import { WorkedHoursTaskMenuSettings } from './WorkedHoursTaskMenuSettings'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
 import { ClearDataSettings } from './ClearDataSettings'
 import { BundeslandSettings } from './BundeslandSettings'
@@ -84,6 +85,7 @@ export function SettingsView() {
                 {isElectron && <LaunchAtLoginSettings repository={configRepo} />}
                 {isElectron && <WindowBehaviorSettings repository={configRepo} />}
                 {isElectron && <WorkedHoursTraySettings repository={configRepo} />}
+                {isElectron && <WorkedHoursTaskMenuSettings repository={configRepo} />}
                 <HotkeySettings repository={configRepo} />
               </>
             )

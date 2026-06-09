@@ -118,12 +118,14 @@ export function useElectronTraySync() {
       remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
     })
 
+    const dockMenuLines = config.showWorkedHoursInTaskMenu !== false ? [...trayState.receiptLines] : []
+
     if (config.showWorkedHoursInTray === false) {
       trayState.receiptLines = []
       trayState.badgeLabel = ''
     }
 
-    window.electronAPI.tray.sync(trayState)
+    window.electronAPI.tray.sync({ ...trayState, dockMenuLines })
   }, [
     config,
     activeTracking,

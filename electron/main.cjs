@@ -10,6 +10,7 @@ let tray = null
 let elapsedTimer = null
 let trayState = {
   receiptLines: [],
+  dockMenuLines: [],
   badgeLabel: '',
   autoCategory: null,
   activeSubtaskCategory: null,
@@ -111,6 +112,24 @@ function updateTrayDisplay() {
     }
   }
   tray.setToolTip(lines.join('\n'))
+}
+
+function buildDockMenu() {
+  const lines = trayState.dockMenuLines || []
+  if (lines.length === 0) return null
+
+  const items = []
+  for (const line of lines) {
+    if (line.isTotal) {
+      items.push({ type: 'separator' })
+      items.push({ label: line.value ? `${line.value}  ${line.label}` : line.label, enabled: false })
+    } else if (line.isSubItem) {
+      items.push({ label: `  ${line.value}  ${line.label}`, enabled: false })
+    } else {
+      items.push({ label: `${line.value}  ${line.label}`, enabled: false })
+    }
+  }
+  return Menu.buildFromTemplate(items)
 }
 
 function buildTrayMenu() {
@@ -341,6 +360,11 @@ ipcMain.on('tray:sync', (_, data) => {
 
   tray.setContextMenu(buildTrayMenu())
   updateTrayDisplay()
+
+  if (app.dock) {
+    const dockMenu = buildDockMenu()
+    app.dock.setMenu(dockMenu)
+  }
 
   if (elapsedTimer) clearInterval(elapsedTimer)
   if (data.isTracking && data.startedAt) {
