@@ -115,7 +115,6 @@ async function getWindows(repo: InMemoryMonthRepository): Promise<WorkPeriod[]> 
 
 async function addPeriod(start: string, end?: string) {
   if (start) {
-    await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
     const startInput = screen.getByLabelText(/^start$/i)
     await userEvent.clear(startInput)
     await userEvent.type(startInput, start)
@@ -316,7 +315,6 @@ describe('WorkOverview', () => {
     it('pressing Enter in start input submits the form', async () => {
       const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
-      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       await userEvent.type(screen.getByLabelText(/^start$/i), '09:00{Enter}')
       await waitFor(async () => {
         expect(await getWindows(repo)).toHaveLength(1)
@@ -326,7 +324,6 @@ describe('WorkOverview', () => {
     it('pressing Enter in end input submits the form', async () => {
       const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
-      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       await userEvent.type(screen.getByLabelText(/^start$/i), '09:00')
       await userEvent.type(screen.getByLabelText(/^end$/i), '17:00{Enter}')
       await waitFor(async () => {
@@ -337,22 +334,21 @@ describe('WorkOverview', () => {
   })
 
   describe('add period form', () => {
-    it('shows now chip for start time by default', async () => {
+    it('shows now chip active and start input by default', async () => {
       setup()
       await screen.findByText(/no periods recorded yet/i)
-      expect(screen.getByRole('button', { name: /now \(\d{2}:\d{2}\)/i })).toBeInTheDocument()
-      expect(screen.queryByLabelText(/^start$/i)).not.toBeInTheDocument()
+      expect(screen.getByLabelText(/^start$/i)).toBeInTheDocument()
+      const nowBtn = screen.getAllByRole('button', { name: /now/i })[0]
+      expect(nowBtn).toHaveAttribute('aria-pressed', 'true')
     })
 
     it('now chip resets to now mode after adding a period', async () => {
       setup()
       await screen.findByText(/no periods recorded yet/i)
-      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
-      expect(screen.getByLabelText(/^start$/i)).toBeInTheDocument()
       await addPeriod('', '10:00')
       await screen.findByRole('button', { name: /edit period/i })
-      expect(screen.getByRole('button', { name: /now \(\d{2}:\d{2}\)/i })).toBeInTheDocument()
-      expect(screen.queryByLabelText(/^start$/i)).not.toBeInTheDocument()
+      const nowBtn = screen.getAllByRole('button', { name: /now/i })[0]
+      expect(nowBtn).toHaveAttribute('aria-pressed', 'true')
     })
 
     it('defaults category dropdown to autoCategory when provided', async () => {
@@ -364,7 +360,6 @@ describe('WorkOverview', () => {
     it('Start tracking creates a live period with end null', async () => {
       const { repo } = setup()
       await screen.findByText(/no periods recorded yet/i)
-      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       const startInput = screen.getByLabelText(/^start$/i)
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '09:00')
@@ -385,7 +380,6 @@ describe('WorkOverview', () => {
     it('Add period button is enabled even when an open period exists', async () => {
       const { repo } = setup([period('a', '09:00', null)])
       await screen.findByRole('button', { name: /stop tracking/i })
-      await userEvent.click(screen.getByRole('button', { name: /now \(/i }))
       await userEvent.type(screen.getByLabelText(/^start$/i), '07:00')
       await userEvent.type(screen.getByLabelText(/^end$/i), '08:00')
       await userEvent.click(screen.getByRole('button', { name: /add period/i }))
@@ -473,10 +467,35 @@ describe('WorkOverview', () => {
       expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
     })
 
-    it('stop period time input is a plain text field not a native time picker', async () => {
+    it('stop period form shows now pill active and time input by default', async () => {
       setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      expect(screen.getByLabelText(/period ended at/i)).toHaveAttribute('type', 'text')
+      expect(screen.getByLabelText(/period ended at/i)).toHaveAttribute('type', 'time')
+      const nowBtns = screen.getAllByRole('button', { name: /now/i })
+      expect(nowBtns.every((btn) => btn.getAttribute('aria-pressed') === 'true')).toBe(true)
+    })
+
+    it('Stop period: confirming without editing stops at current time', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-04T14:32:00'))
+      try {
+        const { repo } = setup([period('a', '09:00', null)])
+        await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+        await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+        await waitFor(async () => {
+          expect((await getWindows(repo))[0]?.end).toBe('14:32')
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('Stop period: editing stop time deactivates now pill', async () => {
+      setup([period('a', '09:00', null)])
+      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+      fireEvent.change(screen.getByLabelText(/period ended at/i), { target: { value: '17:00' } })
+      const nowBtns = screen.getAllByRole('button', { name: /now/i })
+      expect(nowBtns.some((btn) => btn.getAttribute('aria-pressed') === 'false')).toBe(true)
     })
   })
 
@@ -563,13 +582,12 @@ describe('WorkOverview', () => {
       expect(await screen.findByRole('button', { name: /start tracking subtask/i })).toBeInTheDocument()
     })
 
-    it('shows now chip for subtask start time', async () => {
+    it('shows now chip active for subtask start time', async () => {
       setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /start tracking subtask/i }))
-      // Both add-period and start-subtask forms show chips; check subtask chip via label
-      const chips = screen.getAllByRole('button', { name: /now \(\d{2}:\d{2}\)/i })
-      expect(chips.length).toBeGreaterThanOrEqual(1)
-      expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
+      expect(screen.getByLabelText(/subtask started at/i)).toBeInTheDocument()
+      const nowBtns = screen.getAllByRole('button', { name: /now/i })
+      expect(nowBtns.some((btn) => btn.getAttribute('aria-pressed') === 'true')).toBe(true)
     })
 
     it('does not show Start tracking subtask button when period end is in the past', async () => {
@@ -647,6 +665,37 @@ describe('WorkOverview', () => {
       expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
       expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+    })
+
+    it('stop subtask form shows now pill active and time input by default', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      expect(screen.getByLabelText(/subtask stopped at/i)).toHaveAttribute('type', 'time')
+      const nowBtns = screen.getAllByRole('button', { name: /now/i })
+      expect(nowBtns.some((btn) => btn.getAttribute('aria-pressed') === 'true')).toBe(true)
+    })
+
+    it('Stop subtask: confirming without editing stops at current time', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-04T10:30:00'))
+      try {
+        const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+        await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+        await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+        await waitFor(async () => {
+          expect((await getWindows(repo))[0]?.subtasks[0]?.stoppedAt).toBe('10:30')
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('Stop subtask: editing stop time deactivates now pill', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+      fireEvent.change(screen.getByLabelText(/subtask stopped at/i), { target: { value: '11:00' } })
+      const nowBtns = screen.getAllByRole('button', { name: /now/i })
+      expect(nowBtns.some((btn) => btn.getAttribute('aria-pressed') === 'false')).toBe(true)
     })
 
     it('stop form hides Stop subtask and × buttons while open', async () => {
@@ -758,10 +807,10 @@ describe('WorkOverview', () => {
       expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
     })
 
-    it('stop subtask time input is a plain text field not a native time picker', async () => {
+    it('stop subtask time input is a native time picker', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      expect(screen.getByLabelText(/subtask stopped at/i)).toHaveAttribute('type', 'text')
+      expect(screen.getByLabelText(/subtask stopped at/i)).toHaveAttribute('type', 'time')
     })
 
     it('Stop all (from period header) stops live slice and sets period end', async () => {

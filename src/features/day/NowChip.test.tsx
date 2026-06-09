@@ -13,36 +13,52 @@ afterEach(() => {
 })
 
 describe('NowChip', () => {
-  it('shows now pill with current time', () => {
+  it('shows time input immediately without any click', () => {
     render(<NowChip aria-label="Start" onChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /now \(14:32\)/i })).toBeInTheDocument()
+    expect(screen.getByLabelText('Start')).toHaveAttribute('type', 'time')
   })
 
-  it('ticks to new time after 60 seconds', async () => {
+  it('shows "now" pill in active state by default', () => {
     render(<NowChip aria-label="Start" onChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /now \(14:32\)/i })).toBeInTheDocument()
+    const pill = screen.getByRole('button', { name: /now/i })
+    expect(pill).toBeInTheDocument()
+    expect(pill).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('input value equals current time when now is active', () => {
+    render(<NowChip aria-label="Start" onChange={vi.fn()} />)
+    expect(screen.getByLabelText('Start')).toHaveValue('14:32')
+  })
+
+  it('input tracks ticking clock while now is active', async () => {
+    render(<NowChip aria-label="Start" onChange={vi.fn()} />)
+    expect(screen.getByLabelText('Start')).toHaveValue('14:32')
     await act(async () => {
       vi.advanceTimersByTime(60_000)
     })
-    // Date advanced 60s from 14:32 → interval fires at 14:33
-    expect(screen.getByRole('button', { name: /now \(14:33\)/i })).toBeInTheDocument()
+    expect(screen.getByLabelText('Start')).toHaveValue('14:33')
   })
 
-  it('clicking pill replaces it with a time input pre-filled with current time', () => {
+  it('editing input deactivates now pill', () => {
     render(<NowChip aria-label="Start" onChange={vi.fn()} />)
-    fireEvent.click(screen.getByRole('button', { name: /now \(14:32\)/i }))
-    expect(screen.queryByRole('button', { name: /now/i })).not.toBeInTheDocument()
-    const input = screen.getByLabelText('Start')
-    expect(input).toHaveAttribute('type', 'time')
-    expect(input).toHaveValue('14:32')
+    fireEvent.change(screen.getByLabelText('Start'), { target: { value: '09:00' } })
+    expect(screen.getByRole('button', { name: /now/i })).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('changing time input calls onChange with new value', () => {
+  it('editing input calls onChange with new value', () => {
     const onChange = vi.fn()
     render(<NowChip aria-label="Start" onChange={onChange} />)
-    fireEvent.click(screen.getByRole('button', { name: /now \(14:32\)/i }))
-    const input = screen.getByLabelText('Start')
-    fireEvent.change(input, { target: { value: '09:00' } })
+    fireEvent.change(screen.getByLabelText('Start'), { target: { value: '09:00' } })
     expect(onChange).toHaveBeenCalledWith('09:00')
+  })
+
+  it('clicking inactive now pill reactivates it and restores current time', () => {
+    const onChange = vi.fn()
+    render(<NowChip aria-label="Start" onChange={onChange} />)
+    fireEvent.change(screen.getByLabelText('Start'), { target: { value: '09:00' } })
+    fireEvent.click(screen.getByRole('button', { name: /now/i }))
+    expect(screen.getByRole('button', { name: /now/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Start')).toHaveValue('14:32')
+    expect(onChange).toHaveBeenLastCalledWith('14:32')
   })
 })

@@ -178,44 +178,35 @@ interface StopSubtaskFormProps {
 }
 
 function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskFormProps) {
-  const [stoppedAt, setStoppedAt] = useState(nowHHMM)
+  const [stoppedAt, setStoppedAt] = useState('')
   const [error, setError] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const initialStoppedAt = useRef(stoppedAt)
-  const isDirty = stoppedAt !== initialStoppedAt.current
+  const isDirty = stoppedAt !== ''
   const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
-
   function handleStop() {
-    if (!stoppedAt || minutesFrom(stoppedAt) < minutesFrom(subtaskStartedAt)) {
+    const time = stoppedAt || nowHHMM()
+    if (minutesFrom(time) < minutesFrom(subtaskStartedAt)) {
       setError(true)
       return
     }
-    onStop(stoppedAt)
+    onStop(time)
   }
 
   return (
     <div className="relative flex items-center gap-2" onBlur={handleBlur} onFocus={handleFocus}>
       {pendingCancel && <BlurCancelHint />}
       <span className="text-sm text-gray-500 dark:text-gray-400">Stopped at</span>
-      <input
-        ref={inputRef}
-        type="text"
-        value={stoppedAt}
-        placeholder="HH:MM"
-        onChange={(e) => {
-          setStoppedAt(e.target.value)
+      <NowChip
+        aria-label="Subtask stopped at"
+        focusOnMount
+        onChange={(v) => {
+          setStoppedAt(v)
           setError(false)
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleStop()
           if (e.key === 'Escape') onCancel()
         }}
-        aria-label="Subtask stopped at"
-        className={`rounded border px-1.5 py-1 text-sm w-20 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
       {error && (
         <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
@@ -248,45 +239,36 @@ interface StopPeriodFormProps {
 }
 
 function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeriodFormProps) {
-  const [stopTime, setStopTime] = useState(nowHHMM)
+  const [stopTime, setStopTime] = useState('')
   const [error, setError] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const initialStopTime = useRef(stopTime)
-  const isDirty = stopTime !== initialStopTime.current
+  const isDirty = stopTime !== ''
   const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
 
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
-
   function handleStop() {
+    const time = stopTime || nowHHMM()
     const baseTime = liveSubtask && isAfter(liveSubtask.startedAt, periodStart) ? liveSubtask.startedAt : periodStart
-    if (!stopTime || !isAfter(stopTime, baseTime)) {
+    if (!isAfter(time, baseTime)) {
       setError(true)
       return
     }
-    onStop(stopTime)
+    onStop(time)
   }
 
   return (
     <div className="relative flex items-center gap-2" onBlur={handleBlur} onFocus={handleFocus}>
       {pendingCancel && <BlurCancelHint />}
       <span className="text-sm text-gray-500 dark:text-gray-400">Ended at</span>
-      <input
-        ref={inputRef}
-        type="text"
-        value={stopTime}
-        placeholder="HH:MM"
-        onChange={(e) => {
-          setStopTime(e.target.value)
+      <NowChip
+        aria-label="Period ended at"
+        focusOnMount
+        onChange={(v) => {
+          setStopTime(v)
           setError(false)
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleStop()
           if (e.key === 'Escape') onCancel()
         }}
-        aria-label="Period ended at"
-        className={`rounded border px-1.5 py-1 text-sm w-20 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
       />
       {error && (
         <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
