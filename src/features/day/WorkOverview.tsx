@@ -380,6 +380,7 @@ function LiveSubtaskBanner({
   categoryDescriptions,
 }: LiveSubtaskBannerProps) {
   const [stopping, setStopping] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [editingCategory, setEditingCategory] = useState(false)
   const [editingStart, setEditingStart] = useState(false)
   const [editingNote, setEditingNote] = useState(false)
@@ -550,13 +551,26 @@ function LiveSubtaskBanner({
       <button
         onClick={(e) => {
           e.stopPropagation()
-          setStopping(true)
+          setConfirmingDelete(true)
         }}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base leading-none shrink-0 p-1 rounded"
-        aria-label="Stop live subtask"
+        aria-label="Delete live subtask"
       >
         ×
       </button>
+      {confirmingDelete && (
+        <ConfirmDialog
+          title="Delete subtask?"
+          message={`Are you sure you want to delete the ${subtask.category} subtask?`}
+          confirmLabel="Delete"
+          danger
+          onConfirm={() => {
+            mutations.deleteSubtask.mutate({ date, periodId, subtaskId: subtask.id })
+            setConfirmingDelete(false)
+          }}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
     </div>
   )
 }

@@ -752,33 +752,29 @@ describe('WorkOverview', () => {
       })
     })
 
-    it('× on live subtask opens the stop form instead of deleting', async () => {
+    it('× on live subtask opens a delete confirmation dialog', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      await userEvent.click(await screen.findByRole('button', { name: /stop live subtask/i }))
-      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+      await userEvent.click(await screen.findByRole('button', { name: /delete live subtask/i }))
+      expect(screen.getByText(/delete subtask\?/i)).toBeInTheDocument()
       expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^delete$/i })).toBeInTheDocument()
     })
 
-    it('× on live subtask: Cancel restores Stop subtask and × buttons', async () => {
+    it('× on live subtask: Cancel dismisses dialog and restores Stop subtask and × buttons', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      await userEvent.click(await screen.findByRole('button', { name: /stop live subtask/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /delete live subtask/i }))
       await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
       expect(await screen.findByRole('button', { name: /stop subtask/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /stop live subtask/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /delete live subtask/i })).toBeInTheDocument()
     })
 
-    it('× on live subtask: Confirm stops the subtask and saves to repository', async () => {
+    it('× on live subtask: Confirm deletes the subtask from the repository', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:00')])
-      await userEvent.click(await screen.findByRole('button', { name: /stop live subtask/i }))
-      const stopInput = screen.getByLabelText(/subtask stopped at/i)
-      await userEvent.clear(stopInput)
-      await userEvent.type(stopInput, '10:00')
-      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /delete live subtask/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^delete$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
-        expect(saved[0]?.subtasks[0]?.stoppedAt).toBe('10:00')
-        expect(saved[0]?.subtasks[0]?.hours).toBe(1)
+        expect(saved[0]?.subtasks).toHaveLength(0)
       })
     })
 
