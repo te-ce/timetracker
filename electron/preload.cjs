@@ -7,8 +7,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   tray: {
     sync: (data) => ipcRenderer.send('tray:sync', data),
-    onSetCategory: (cb) => ipcRenderer.on('tray:setCategory', (_, cat) => cb(cat)),
-    offSetCategory: (cb) => ipcRenderer.removeListener('tray:setCategory', cb),
+    onStartSubtask: (cb) => ipcRenderer.on('tray:startSubtask', (_, cat) => cb(cat)),
+    offStartSubtask: (cb) => ipcRenderer.removeListener('tray:startSubtask', cb),
+    onStopSubtask: (cb) => ipcRenderer.on('tray:stopSubtask', () => cb()),
+    offStopSubtask: (cb) => ipcRenderer.removeListener('tray:stopSubtask', cb),
+    onStopAll: (cb) => ipcRenderer.on('tray:stopAll', () => cb()),
+    offStopAll: (cb) => ipcRenderer.removeListener('tray:stopAll', cb),
   },
   hotkey: {
     onToggle: (cb) => ipcRenderer.on('hotkey:toggle', cb),

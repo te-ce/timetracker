@@ -8,25 +8,14 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 let mainWindow = null
 let tray = null
 let elapsedTimer = null
-let trayState = { activeCategory: null, categories: [], startedAt: null, workedHours: 0, remaining: 0, sollstunden: 8, priorOvertime: 0 }
-
-const DEFAULT_CATEGORIES = [
-  '_LEAVE', '_OTHER', '_COREMEDIA', '_RELEASE', '_SUPPORT',
-  '_GUILDS', '_MAINT', '_INFRA', '_ARCH', '_TESTWATCH',
-]
-
-function getAllCategoriesLocal(customCategories, categoryOrder) {
-  const defaultSet = new Set(DEFAULT_CATEGORIES)
-  const unique = customCategories.filter((c) => !defaultSet.has(c))
-  const all = [...DEFAULT_CATEGORIES, ...unique]
-  if (categoryOrder && categoryOrder.length > 0) {
-    const allSet = new Set(all)
-    const ordered = categoryOrder.filter((c) => allSet.has(c))
-    const orderedSet = new Set(ordered)
-    for (const c of all) { if (!orderedSet.has(c)) ordered.push(c) }
-    return ordered
-  }
-  return all
+let trayState = {
+  receiptLines: [],
+  badgeLabel: '',
+  autoCategory: null,
+  activeSubtaskCategory: null,
+  categories: [],
+  isTracking: false,
+  startedAt: null,
 }
 
 const autoLauncher = new AutoLaunch({ name: 'Timetracker' })
@@ -53,7 +42,9 @@ function saveWindowState() {
   saveWindowTimer = setTimeout(() => {
     try {
       fs.writeFileSync(windowStatePath(), JSON.stringify(mainWindow.getBounds()))
-    } catch { /* non-critical: window state save failure is silent */ }
+    } catch {
+      /* non-critical: window state save failure is silent */
+    }
   }, 400)
 }
 
@@ -79,7 +70,11 @@ ipcMain.handle('storage:put', (_, key, data) => {
 })
 
 ipcMain.handle('storage:delete', (_, key) => {
-  try { fs.unlinkSync(storagePath(key)) } catch { /* non-critical: file may not exist */ }
+  try {
+    fs.unlinkSync(storagePath(key))
+  } catch {
+    /* non-critical: file may not exist */
+  }
 })
 
 // ── Tray helpers ──────────────────────────────────────────────────────────────
@@ -98,64 +93,116 @@ function elapsedHours(startedAt) {
 
 function updateTrayDisplay() {
   if (!tray) return
-  const { activeCategory, startedAt, workedHours, remaining } = trayState
+  const { badgeLabel, isTracking, startedAt } = trayState
 
-  if (activeCategory && startedAt) {
-    tray.setTitle(formatHHMM(elapsedHours(startedAt)))
-    tray.setContextMenu(buildTrayMenu())
-  } else {
-    tray.setTitle('')
-  }
+  // Tray title: show badge label (remaining / overtime / done)
+  tray.setTitle(badgeLabel || '')
 
-  const lines = [`Timetracker`]
-  if (activeCategory && startedAt) {
-    lines.push(`Tracking: ${activeCategory} (${formatHHMM(elapsedHours(startedAt))})`)
+  // Tooltip: receipt-style breakdown
+  const lines = ['Timetracker']
+  for (const line of trayState.receiptLines) {
+    if (line.isTotal) {
+      lines.push(`─── ${line.label}: ${line.value}`)
+    } else {
+      lines.push(`${line.label}: ${line.value}`)
+    }
   }
-  lines.push(`Worked today: ${formatHHMM(workedHours)}`)
-  lines.push(`Remaining: ${formatHHMM(remaining)}`)
   tray.setToolTip(lines.join('\n'))
 }
 
 function buildTrayMenu() {
-  const { activeCategory, categories, startedAt, workedHours, sollstunden, priorOvertime } = trayState
-
-  const hoursNeeded = sollstunden - priorOvertime
-  let hoursNeededLabel
-  if (Math.abs(priorOvertime) < 0.01) {
-    hoursNeededLabel = `${formatHHMM(sollstunden)} needed today`
-  } else if (priorOvertime > 0) {
-    hoursNeededLabel = `${formatHHMM(sollstunden)} − ${formatHHMM(priorOvertime)} = ${formatHHMM(Math.max(0, hoursNeeded))} needed`
-  } else {
-    hoursNeededLabel = `${formatHHMM(sollstunden)} + ${formatHHMM(-priorOvertime)} = ${formatHHMM(hoursNeeded)} needed`
-  }
-
-  const elapsed = startedAt ? elapsedHours(startedAt) : 0
-  const totalWorked = workedHours + elapsed
-  const remaining = Math.max(0, hoursNeeded - totalWorked)
-  const workedLabel = `${formatHHMM(totalWorked)} worked = ${formatHHMM(remaining)} remaining`
+  const { receiptLines, autoCategory, activeSubtaskCategory, categories, isTracking, startedAt } = trayState
 
   const openItem = {
     label: 'Open Timetracker',
-    click: () => { mainWindow.show(); mainWindow.focus() },
+    click: () => {
+      mainWindow.show()
+      mainWindow.focus()
+    },
   }
 
-  const categoryItems = categories.map((cat) => ({
-    label: cat,
-    type: 'radio',
-    checked: cat === activeCategory,
-    click: () => {
-      if (mainWindow) mainWindow.webContents.send('tray:setCategory', cat)
-    },
+  // Receipt lines as disabled info labels
+  const receiptItems = receiptLines.map((line) => ({
+    label: line.isTotal ? `${line.label}: ${line.value}` : `  ${line.label}  ${line.value}`,
+    enabled: false,
+    ...(line.isTotal ? { type: 'separator' } : {}),
   }))
+
+  // Build receipt section: show each line, then separator before total
+  const infoItems = []
+  for (const line of receiptLines) {
+    if (line.isTotal) {
+      infoItems.push({ type: 'separator' })
+      infoItems.push({ label: `${line.label}: ${line.value}`, enabled: false })
+    } else {
+      infoItems.push({ label: `${line.label}  ${line.value}`, enabled: false })
+    }
+  }
+
+  // Auto category item (first, separated)
+  const autoCategoryItems = []
+  if (autoCategory) {
+    const isAutoSelected = !activeSubtaskCategory
+    autoCategoryItems.push({
+      label: `● ${autoCategory}`,
+      type: 'radio',
+      checked: isAutoSelected,
+      click: () => {
+        // Clicking auto category when a subtask is active → stop subtask
+        if (activeSubtaskCategory) {
+          mainWindow.webContents.send('tray:stopSubtask')
+        }
+      },
+    })
+    autoCategoryItems.push({ type: 'separator' })
+  }
+
+  // Other category items
+  const categoryItems = categories
+    .filter((cat) => cat !== autoCategory)
+    .map((cat) => ({
+      label: cat,
+      type: 'radio',
+      checked: cat === activeSubtaskCategory,
+      click: () => {
+        if (cat === activeSubtaskCategory) {
+          // Clicking same subtask category → stop it
+          mainWindow.webContents.send('tray:stopSubtask')
+        } else {
+          // Clicking different category → start subtask
+          mainWindow.webContents.send('tray:startSubtask', cat)
+        }
+      },
+    }))
+
+  // Stop button
+  const stopItem = isTracking
+    ? [
+        { type: 'separator' },
+        {
+          label: '⏹ Stop All',
+          click: () => {
+            mainWindow.webContents.send('tray:stopAll')
+          },
+        },
+      ]
+    : []
 
   return Menu.buildFromTemplate([
     openItem,
     { type: 'separator' },
-    { label: hoursNeededLabel, enabled: false },
-    { label: workedLabel, enabled: false },
+    ...infoItems,
     { type: 'separator' },
+    ...autoCategoryItems,
     ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
-    { label: 'Quit', click: () => { app.isQuitting = true; app.quit() } },
+    ...stopItem,
+    {
+      label: 'Quit',
+      click: () => {
+        app.isQuitting = true
+        app.quit()
+      },
+    },
   ])
 }
 
@@ -163,16 +210,8 @@ function createTray() {
   const iconPath = path.join(__dirname, 'icons/tray.png')
   const icon = nativeImage.createFromPath(iconPath)
   tray = new Tray(icon)
-  tray.setTitle('…')
+  tray.setTitle('')
   tray.setToolTip('Timetracker — loading…')
-
-  try {
-    const raw = fs.readFileSync(storagePath('config.json'), 'utf8')
-    const config = JSON.parse(raw)
-    trayState.categories = getAllCategoriesLocal(config.customCategories ?? [], config.categoryOrder)
-    if (typeof config.sollstunden === 'number') trayState.sollstunden = config.sollstunden
-  } catch { /* no stored config yet — use defaults */ }
-
   tray.setContextMenu(buildTrayMenu())
 }
 
@@ -220,7 +259,7 @@ function registerGlobalHotkey(accelerator) {
   if (!accelerator) return
   globalShortcut.register(accelerator, () => {
     if (!mainWindow) return
-    if (trayState.activeCategory) {
+    if (trayState.isTracking) {
       mainWindow.webContents.send('hotkey:toggle')
     } else {
       mainWindow.show()
@@ -240,9 +279,7 @@ function loadConfig() {
 
 function loadGlobalHotkey() {
   const config = loadConfig()
-  return config?.hotkeys?.globalToggle !== undefined
-    ? config.hotkeys.globalToggle
-    : DEFAULT_GLOBAL_HOTKEY
+  return config?.hotkeys?.globalToggle !== undefined ? config.hotkeys.globalToggle : DEFAULT_GLOBAL_HOTKEY
 }
 
 async function syncAutoLaunch() {
@@ -267,7 +304,10 @@ app.whenReady().then(async () => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
-    else { mainWindow.show(); mainWindow.focus() }
+    else {
+      mainWindow.show()
+      mainWindow.focus()
+    }
   })
 })
 
@@ -286,9 +326,7 @@ ipcMain.handle('hotkey:setGlobal', (_, accelerator) => {
 })
 
 ipcMain.handle('autolaunch:get', () => autoLauncher.isEnabled())
-ipcMain.handle('autolaunch:set', (_, enabled) =>
-  enabled ? autoLauncher.enable() : autoLauncher.disable()
-)
+ipcMain.handle('autolaunch:set', (_, enabled) => (enabled ? autoLauncher.enable() : autoLauncher.disable()))
 
 ipcMain.on('tray:sync', (_, data) => {
   if (!tray) return
@@ -298,7 +336,7 @@ ipcMain.on('tray:sync', (_, data) => {
   updateTrayDisplay()
 
   if (elapsedTimer) clearInterval(elapsedTimer)
-  if (data.activeCategory && data.startedAt) {
+  if (data.isTracking && data.startedAt) {
     elapsedTimer = setInterval(updateTrayDisplay, 60_000)
   }
 })

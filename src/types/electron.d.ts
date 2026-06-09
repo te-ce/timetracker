@@ -6,16 +6,20 @@ interface Window {
     }
     tray: {
       sync(data: {
-        activeCategory: string | null
+        receiptLines: Array<{ label: string; value: string; isTotal?: boolean }>
+        badgeLabel: string
+        autoCategory: string | null
+        activeSubtaskCategory: string | null
         categories: string[]
+        isTracking: boolean
         startedAt: string | null
-        workedHours: number
-        remaining: number
-        sollstunden: number
-        priorOvertime: number
       }): void
-      onSetCategory(cb: (category: string) => void): void
-      offSetCategory(cb: (category: string) => void): void
+      onStartSubtask(cb: (category: string) => void): void
+      offStartSubtask(cb: (category: string) => void): void
+      onStopSubtask(cb: () => void): void
+      offStopSubtask(cb: () => void): void
+      onStopAll(cb: () => void): void
+      offStopAll(cb: () => void): void
     }
     hotkey: {
       onToggle(cb: () => void): void

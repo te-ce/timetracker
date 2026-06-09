@@ -36,7 +36,15 @@ describe('dispatchGoalNotification', () => {
     const goalReached = vi.fn()
     window.electronAPI = {
       autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
-      tray: { sync: () => {}, onSetCategory: () => {}, offSetCategory: () => {} },
+      tray: {
+        sync: () => {},
+        onStartSubtask: () => {},
+        offStartSubtask: () => {},
+        onStopSubtask: () => {},
+        offStopSubtask: () => {},
+        onStopAll: () => {},
+        offStopAll: () => {},
+      },
       hotkey: { onToggle: () => {}, offToggle: () => {}, setGlobal: vi.fn().mockResolvedValue(undefined) },
       storage: {
         get: () => Promise.resolve(null),

@@ -1,53 +1,114 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
-import { applyCategorySwitch } from './useElectronTraySync'
-import { CloudTimeTrackingRepository } from '../infra/repositories/cloud/time-tracking-repository'
-import { InMemoryStorageAdapter } from '../infra/storage/in-memory-adapter'
+import { handleStartSubtask, handleStopSubtask, handleStopAll } from './useElectronTraySync'
+import type { WorkPeriod } from '../infra/repositories/types'
+import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
 
 vi.mock('../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
   msalInstance: null,
 }))
 
-function makeRepo() {
-  return new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
+function makeWindow(overrides: Partial<WorkPeriod> = {}): WorkPeriod {
+  return {
+    id: 'wp1',
+    start: '09:00',
+    end: null,
+    category: '_COREMEDIA',
+    subtasks: [],
+    ...overrides,
+  }
 }
 
-describe('applyCategorySwitch', () => {
-  it('starts tracking when no active session exists', async () => {
-    const repo = makeRepo()
-    await applyCategorySwitch('_COREMEDIA', repo, '2026-05-25')
-    const active = await repo.getActive()
-    expect(active?.category).toBe('_COREMEDIA')
-    expect(active?.date).toBe('2026-05-25')
+function makeMockMonthRepo() {
+  const repo = new InMemoryMonthRepository()
+  vi.spyOn(repo, 'startLiveSubtask')
+  vi.spyOn(repo, 'stopLiveSubtask')
+  vi.spyOn(repo, 'stopWorkPeriod')
+  return repo
+}
+
+describe('handleStartSubtask', () => {
+  it('starts a new subtask on the open period', async () => {
+    const repo = makeMockMonthRepo()
+    const windows = [makeWindow()]
+    await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
+    expect(repo.startLiveSubtask).toHaveBeenCalledWith(
+      '2026-06-09',
+      'wp1',
+      expect.objectContaining({ category: '_SUPPORT', hours: 0 }),
+    )
   })
 
-  it('stops tracking when clicking the already active category', async () => {
-    const repo = makeRepo()
-    await repo.start('2026-05-25', '_COREMEDIA')
-    await applyCategorySwitch('_COREMEDIA', repo, '2026-05-25')
-    const active = await repo.getActive()
-    expect(active).toBeNull()
+  it('stops existing live subtask before starting new one', async () => {
+    const repo = makeMockMonthRepo()
+    const windows = [
+      makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '2026-06-09T10:00:00Z' }] }),
+    ]
+    await handleStartSubtask('_INFRA', repo, '2026-06-09', windows)
+    expect(repo.stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.any(String))
+    expect(repo.startLiveSubtask).toHaveBeenCalled()
   })
 
-  it('switches to new category when a different one is active', async () => {
-    const repo = makeRepo()
-    await repo.start('2026-05-25', '_COREMEDIA')
-    await applyCategorySwitch('_SUPPORT', repo, '2026-05-25')
-    const active = await repo.getActive()
-    expect(active?.category).toBe('_SUPPORT')
+  it('does nothing when no open period exists', async () => {
+    const repo = makeMockMonthRepo()
+    const windows = [makeWindow({ end: '17:00' })]
+    await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
+    expect(repo.startLiveSubtask).not.toHaveBeenCalled()
+  })
+})
+
+describe('handleStopSubtask', () => {
+  it('stops the live subtask on the open period', async () => {
+    const repo = makeMockMonthRepo()
+    const windows = [
+      makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '2026-06-09T10:00:00Z' }] }),
+    ]
+    await handleStopSubtask(repo, '2026-06-09', windows)
+    expect(repo.stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.any(String))
   })
 
-  it('stops previous session before starting new one', async () => {
-    const repo = makeRepo()
-    await repo.start('2026-05-25', '_COREMEDIA')
-    await applyCategorySwitch('_SUPPORT', repo, '2026-05-25')
-    // only one active session at a time
-    const active = await repo.getActive()
-    expect(active?.category).toBe('_SUPPORT')
+  it('does nothing when no live subtask exists', async () => {
+    const repo = makeMockMonthRepo()
+    const windows = [makeWindow()]
+    await handleStopSubtask(repo, '2026-06-09', windows)
+    expect(repo.stopLiveSubtask).not.toHaveBeenCalled()
+  })
+})
+
+describe('handleStopAll', () => {
+  it('stops live subtask, work period, and active tracking', async () => {
+    const repo = makeMockMonthRepo()
+    const stopTracking = vi.fn().mockResolvedValue(null)
+    const windows = [
+      makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '2026-06-09T10:00:00Z' }] }),
+    ]
+    await handleStopAll(repo, '2026-06-09', windows, stopTracking)
+    expect(repo.stopLiveSubtask).toHaveBeenCalled()
+    expect(repo.stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))
+    expect(stopTracking).toHaveBeenCalled()
+  })
+
+  it('stops work period even without live subtask', async () => {
+    const repo = makeMockMonthRepo()
+    const stopTracking = vi.fn().mockResolvedValue(null)
+    const windows = [makeWindow()]
+    await handleStopAll(repo, '2026-06-09', windows, stopTracking)
+    expect(repo.stopLiveSubtask).not.toHaveBeenCalled()
+    expect(repo.stopWorkPeriod).toHaveBeenCalled()
+    expect(stopTracking).toHaveBeenCalled()
+  })
+
+  it('only stops tracking when no open period', async () => {
+    const repo = makeMockMonthRepo()
+    const stopTracking = vi.fn().mockResolvedValue(null)
+    const windows = [makeWindow({ end: '17:00' })]
+    await handleStopAll(repo, '2026-06-09', windows, stopTracking)
+    expect(repo.stopWorkPeriod).not.toHaveBeenCalled()
+    expect(stopTracking).toHaveBeenCalled()
   })
 })
 
@@ -58,8 +119,12 @@ function makeElectronAPI() {
     autolaunch: { get: vi.fn().mockResolvedValue(false), set: vi.fn().mockResolvedValue(undefined) },
     tray: {
       sync: vi.fn(),
-      onSetCategory: vi.fn(),
-      offSetCategory: vi.fn(),
+      onStartSubtask: vi.fn(),
+      offStartSubtask: vi.fn(),
+      onStopSubtask: vi.fn(),
+      offStopSubtask: vi.fn(),
+      onStopAll: vi.fn(),
+      offStopAll: vi.fn(),
     },
     hotkey: {
       onToggle: vi.fn(),
@@ -86,26 +151,29 @@ describe('useElectronTraySync hook', () => {
     delete window.electronAPI
   })
 
-  it('does not call tray.sync when window.electronAPI is absent', async () => {
+  it('does not throw when window.electronAPI is absent', async () => {
     delete window.electronAPI
     const { useElectronTraySync } = await import('./useElectronTraySync')
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    // Should not throw
     renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
   })
 
-  it('registers and cleans up onSetCategory listener when electronAPI is present', async () => {
+  it('registers and cleans up tray listeners when electronAPI is present', async () => {
     const api = makeElectronAPI()
     window.electronAPI = api
     const { useElectronTraySync } = await import('./useElectronTraySync')
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { unmount } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
-    expect(api.tray.onSetCategory).toHaveBeenCalledOnce()
+    expect(api.tray.onStartSubtask).toHaveBeenCalledOnce()
+    expect(api.tray.onStopSubtask).toHaveBeenCalledOnce()
+    expect(api.tray.onStopAll).toHaveBeenCalledOnce()
     unmount()
-    expect(api.tray.offSetCategory).toHaveBeenCalledOnce()
+    expect(api.tray.offStartSubtask).toHaveBeenCalledOnce()
+    expect(api.tray.offStopSubtask).toHaveBeenCalledOnce()
+    expect(api.tray.offStopAll).toHaveBeenCalledOnce()
   })
 
-  it('registers and cleans up hotkey.onToggle listener when electronAPI is present', async () => {
+  it('registers and cleans up hotkey.onToggle listener', async () => {
     const api = makeElectronAPI()
     window.electronAPI = api
     const { useElectronTraySync } = await import('./useElectronTraySync')
@@ -114,19 +182,5 @@ describe('useElectronTraySync hook', () => {
     expect(api.hotkey.onToggle).toHaveBeenCalledOnce()
     unmount()
     expect(api.hotkey.offToggle).toHaveBeenCalledOnce()
-  })
-
-  it('calls tray.sync with null activeCategory when no tracking is active', async () => {
-    const api = makeElectronAPI()
-    window.electronAPI = api
-    const { useElectronTraySync } = await import('./useElectronTraySync')
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { unmount } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0))
-    })
-    // Unmount before afterEach deletes window.electronAPI so cleanup closures still work
-    unmount()
-    expect(api.tray.onSetCategory).toHaveBeenCalled()
   })
 })
