@@ -124,7 +124,6 @@ export interface AppConfig {
   officeStats?: boolean | undefined
   showWorkedHoursInNav?: boolean | undefined
   showWorkedHoursInTray?: boolean | undefined
-  showWorkedHoursInTaskMenu?: boolean | undefined
   remainingTimeReference?: 'planned-stop' | 'target-hours' | undefined
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target' | undefined
 }
