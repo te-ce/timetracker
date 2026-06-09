@@ -98,13 +98,16 @@ function updateTrayDisplay() {
   // Tray title: show badge label (remaining / overtime / done)
   tray.setTitle(badgeLabel || '')
 
-  // Tooltip: receipt-style breakdown
+  // Tooltip: receipt-style breakdown (value first, sub-items indented)
   const lines = ['Timetracker']
   for (const line of trayState.receiptLines) {
     if (line.isTotal) {
-      lines.push(`─── ${line.label}: ${line.value}`)
+      lines.push('─────────────')
+      lines.push(line.value ? `${line.value}  ${line.label}` : line.label)
+    } else if (line.isSubItem) {
+      lines.push(`  ${line.value}  ${line.label}`)
     } else {
-      lines.push(`${line.label}: ${line.value}`)
+      lines.push(`${line.value}  ${line.label}`)
     }
   }
   tray.setToolTip(lines.join('\n'))
@@ -121,21 +124,16 @@ function buildTrayMenu() {
     },
   }
 
-  // Receipt lines as disabled info labels
-  const receiptItems = receiptLines.map((line) => ({
-    label: line.isTotal ? `${line.label}: ${line.value}` : `  ${line.label}  ${line.value}`,
-    enabled: false,
-    ...(line.isTotal ? { type: 'separator' } : {}),
-  }))
-
-  // Build receipt section: show each line, then separator before total
+  // Build receipt section: value first, sub-items indented, total after separator
   const infoItems = []
   for (const line of receiptLines) {
     if (line.isTotal) {
       infoItems.push({ type: 'separator' })
-      infoItems.push({ label: `${line.label}: ${line.value}`, enabled: false })
+      infoItems.push({ label: line.value ? `${line.value}  ${line.label}` : line.label, enabled: false })
+    } else if (line.isSubItem) {
+      infoItems.push({ label: `  ${line.value}  ${line.label}`, enabled: false })
     } else {
-      infoItems.push({ label: `${line.label}  ${line.value}`, enabled: false })
+      infoItems.push({ label: `${line.value}  ${line.label}`, enabled: false })
     }
   }
 

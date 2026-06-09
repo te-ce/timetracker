@@ -74,19 +74,37 @@ describe('buildTrayState', () => {
   })
 
   describe('receiptLines', () => {
-    it('returns receipt-style lines with target, worked, and total', () => {
+    it('returns Required as first line with target minus carry-over', () => {
+      // baseInput: sollstunden=8, priorOvertime=0, workedHours=3 → required=8
       const result = buildTrayState(baseInput)
-      expect(result.receiptLines[0]).toEqual({ label: 'Target', value: '8.00h' })
-      const workedLine = result.receiptLines.find((l) => l.label === 'Worked today')
-      expect(workedLine).toEqual({ label: 'Worked today', value: '-3.00h' })
+      expect(result.receiptLines[0]).toMatchObject({ label: 'Required', value: '8.00h' })
+    })
+
+    it('marks Target and carry-over as sub-items', () => {
+      const result = buildTrayState(baseInput)
+      expect(result.receiptLines.find((l) => l.label === 'Target')).toMatchObject({ isSubItem: true })
+      expect(result.receiptLines.find((l) => l.label.includes('carry'))).toMatchObject({ isSubItem: true })
+    })
+
+    it('shows Worked with totalWorked value and Past as sub-item', () => {
+      const result = buildTrayState(baseInput)
+      const workedLine = result.receiptLines.find((l) => l.label === 'Worked')
+      expect(workedLine?.value).toContain('3')
+      expect(result.receiptLines.find((l) => l.label === 'Past')).toMatchObject({ isSubItem: true, value: '3.00h' })
+    })
+
+    it('shows total line as isTotal', () => {
+      const result = buildTrayState(baseInput)
       const totalLine = result.receiptLines.find((l) => l.isTotal)
       expect(totalLine).toMatchObject({ label: 'Remaining', isTotal: true })
     })
 
-    it('includes tracking line when trackingElapsed > 0', () => {
+    it('includes Tracking sub-item when trackingElapsed > 0', () => {
       const result = buildTrayState({ ...baseInput, trackingElapsed: 1.5 })
-      const trackingLine = result.receiptLines.find((l) => l.label === 'Tracking')
-      expect(trackingLine).toEqual({ label: 'Tracking', value: '-1.50h' })
+      expect(result.receiptLines.find((l) => l.label === 'Tracking')).toMatchObject({
+        isSubItem: true,
+        value: '1.50h',
+      })
     })
   })
 

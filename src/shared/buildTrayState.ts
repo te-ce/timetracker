@@ -6,6 +6,7 @@ export interface ReceiptLine {
   label: string
   value: string
   isTotal?: boolean
+  isSubItem?: boolean
 }
 
 export interface TrayStateInput {
@@ -46,23 +47,28 @@ function buildReceiptLines(
   trackingElapsed: number,
   liveElapsed: number,
   fmt: TimeFormat,
+  remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target',
 ): ReceiptLine[] {
-  const remaining = sollstunden - priorOvertime - workedHours - trackingElapsed - liveElapsed
+  const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
+  const totalWorked = workedHours + trackingElapsed + liveElapsed
+  const remaining = requiredToday - totalWorked
   const hasOvertime = priorOvertime >= 0
   const carrySign = hasOvertime ? '-' : '+'
   const carryLabel = hasOvertime ? 'Overtime carry-over' : 'Undertime carry-over'
 
   const lines: ReceiptLine[] = [
-    { label: 'Target', value: formatHours(sollstunden, fmt) },
-    { label: carryLabel, value: `${carrySign}${formatHours(Math.abs(priorOvertime), fmt)}` },
-    { label: 'Worked today', value: `-${formatHours(workedHours, fmt)}` },
+    { label: 'Required', value: formatHours(requiredToday, fmt) },
+    { label: 'Target', value: formatHours(sollstunden, fmt), isSubItem: true },
+    { label: carryLabel, value: `${carrySign}${formatHours(Math.abs(priorOvertime), fmt)}`, isSubItem: true },
+    { label: 'Worked', value: `-${formatHours(totalWorked, fmt)}` },
+    { label: 'Past', value: formatHours(workedHours, fmt), isSubItem: true },
   ]
 
   if (trackingElapsed > 0) {
-    lines.push({ label: 'Tracking', value: `-${formatHours(trackingElapsed, fmt)}` })
+    lines.push({ label: 'Tracking', value: formatHours(trackingElapsed, fmt), isSubItem: true })
   }
   if (liveElapsed > 0) {
-    lines.push({ label: 'Current tracking', value: `-${formatHours(liveElapsed, fmt)}` })
+    lines.push({ label: 'Current', value: formatHours(liveElapsed, fmt), isSubItem: true })
   }
 
   if (remaining > 0) {
@@ -106,6 +112,7 @@ export function buildTrayState(input: TrayStateInput): TrayState {
     trackingElapsed,
     liveElapsed,
     timeFormat,
+    mode,
   )
   const badgeLabel = buildBadgeLabel(remaining, timeFormat)
   const activeSubtaskCategory = findLiveSubtaskCategory(input.windows)
