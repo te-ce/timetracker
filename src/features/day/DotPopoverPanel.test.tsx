@@ -10,7 +10,9 @@ const state: DotPopoverState = {
   top: 100,
   left: 200,
   displayStatus: 'complete',
-  reason: 'All hours booked',
+  reason: '8.0 h worked',
+  workedHours: 8.0,
+  categoryBreakdown: { ProjectX: 5.0, Support: 3.0 },
 }
 
 function setup(stateOverride: DotPopoverState | null = state) {
@@ -26,13 +28,13 @@ describe('DotPopoverPanel', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
-  it('renders all 5 day type buttons', () => {
+  it('renders all day type buttons (no Absence)', () => {
     setup()
     expect(screen.getByRole('button', { name: /work day/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /vacation/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /sick day/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /public holiday/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /absence/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /absence/i })).not.toBeInTheDocument()
   })
 
   it('active day type button has highlighted class', () => {
@@ -56,8 +58,44 @@ describe('DotPopoverPanel', () => {
     expect(screen.getByText('Complete')).toBeInTheDocument()
   })
 
-  it('shows reason text', () => {
+  it('shows reason text inline with status', () => {
     setup()
-    expect(screen.getByText('All hours booked')).toBeInTheDocument()
+    expect(screen.getByText('8.0 h worked')).toBeInTheDocument()
+  })
+
+  it('shows total worked hours in summary', () => {
+    setup()
+    expect(screen.getByText(/8\.00 total/i)).toBeInTheDocument()
+  })
+
+  it('shows per-category hours', () => {
+    setup()
+    expect(screen.getByText('ProjectX')).toBeInTheDocument()
+    expect(screen.getByText('5.00')).toBeInTheDocument()
+    expect(screen.getByText('Support')).toBeInTheDocument()
+    expect(screen.getByText('3.00')).toBeInTheDocument()
+  })
+
+  it('shows category description in parentheses when provided', () => {
+    setup({ ...state, categoryDescriptions: { ProjectX: 'Client work' } })
+    expect(screen.getByText('ProjectX (Client work)')).toBeInTheDocument()
+  })
+
+  it('hides hours section when no hours worked', () => {
+    setup({ ...state, workedHours: 0, categoryBreakdown: {} })
+    expect(screen.queryByText(/total/i)).not.toBeInTheDocument()
+  })
+
+  it('shows leave type label for vacation in status row (not just as day type button)', () => {
+    setup({ ...state, displayStatus: 'leave', leaveType: 'Vacation', workedHours: 0, categoryBreakdown: {} })
+    const explanations = screen.getAllByText(/vacation/i)
+    // Both the explanation paragraph and the day type button should be present
+    expect(explanations.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('shows leave type label for sick day in status row', () => {
+    setup({ ...state, displayStatus: 'leave', leaveType: 'SickDay', workedHours: 0, categoryBreakdown: {} })
+    const explanations = screen.getAllByText(/sick day/i)
+    expect(explanations.length).toBeGreaterThanOrEqual(2)
   })
 })

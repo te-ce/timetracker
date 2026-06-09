@@ -24,10 +24,21 @@ describe('classifyDay', () => {
     expect(classify({ dayType: 'PublicHoliday', isoDate: '2026-05-01' }).status).toBe('non-working')
   })
 
-  it('returns leave for Vacation, SickDay, Absence', () => {
+  it('returns leave for Vacation and SickDay', () => {
     expect(classify({ dayType: 'Vacation', isoDate: '2026-05-12' }).status).toBe('leave')
     expect(classify({ dayType: 'SickDay', isoDate: '2026-05-12' }).status).toBe('leave')
-    expect(classify({ dayType: 'Absence', isoDate: '2026-05-12' }).status).toBe('leave')
+  })
+
+  it('exposes leaveType for leave days', () => {
+    expect(classify({ dayType: 'Vacation', isoDate: '2026-05-12' }).leaveType).toBe('Vacation')
+    expect(classify({ dayType: 'SickDay', isoDate: '2026-05-12' }).leaveType).toBe('SickDay')
+  })
+
+  it('leaveType is undefined for non-leave days', () => {
+    expect(
+      classify({ dayType: 'WorkDay', workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).leaveType,
+    ).toBeUndefined()
+    expect(classify({ dayType: 'Weekend', isoDate: '2026-05-17' }).leaveType).toBeUndefined()
   })
 
   it('returns complete for past work days with balanced entries', () => {
@@ -159,10 +170,6 @@ describe('classifyDay', () => {
       expect(classify({ dayType: 'SickDay', isoDate: '2026-05-12' }).reason).toBe('Marked as sick day')
     })
 
-    it('returns correct reason for absence', () => {
-      expect(classify({ dayType: 'Absence', isoDate: '2026-05-12' }).reason).toBe('Marked as absence')
-    })
-
     it('returns future reason for future work days', () => {
       expect(classify({ isoDate: '2026-05-20' }).reason).toBe('Future work day — no hours yet')
     })
@@ -180,9 +187,10 @@ describe('classifyDay', () => {
         expect(classify({ workedHours: 0, manualTotal: 3 }).reason).toBe('3.0 h categorized but no work time recorded')
       })
 
-      it('reports fully categorized when worked and manual differ by less than 0.01', () => {
-        expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).reason).toContain(
-          '8.0 h worked and fully categorized',
+      it('reports worked hours without "fully categorized" label when balanced', () => {
+        expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).reason).toContain('8.0 h worked')
+        expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).reason).not.toContain(
+          'categorized',
         )
       })
 

@@ -1,15 +1,15 @@
-export type DayType = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'SickDay' | 'Absence'
+export type DayType = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'SickDay'
 
 import type { DayTypeOverride } from '../../infra/repositories/types'
 
-const DAY_TYPE_OVERRIDES: readonly string[] = ['WorkDay', 'Weekend', 'PublicHoliday', 'Vacation', 'SickDay', 'Absence']
+const DAY_TYPE_OVERRIDES: readonly string[] = ['WorkDay', 'Weekend', 'PublicHoliday', 'Vacation', 'SickDay']
 export function isDayTypeOverride(v: string): v is DayTypeOverride {
   return DAY_TYPE_OVERRIDES.includes(v)
 }
 
 export type AutoBooking = { category: '_LEAVE'; hours: number }
 
-const LEAVE_TYPES = new Set<DayType>(['Vacation', 'SickDay', 'Absence'])
+const LEAVE_TYPES = new Set<DayType>(['Vacation', 'SickDay'])
 
 export function classifyDayType(date: Date, holidayDates?: Set<string>): DayType {
   const dow = date.getDay()

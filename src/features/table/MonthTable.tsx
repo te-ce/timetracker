@@ -226,6 +226,16 @@ export function MonthGrid({
 
   const todayIso = toLocalIso(new Date())
 
+  function nowHHMM() {
+    const d = new Date()
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  }
+  const [liveNow, setLiveNow] = useState(nowHHMM)
+  useEffect(() => {
+    const id = setInterval(() => setLiveNow(nowHHMM()), 60_000)
+    return () => clearInterval(id)
+  }, [])
+
   useEffect(() => {
     if (!activeDialogDate) return
     function handleMouseDown(e: MouseEvent) {
@@ -396,7 +406,7 @@ export function MonthGrid({
     },
   })
 
-  const rows = buildMonthTable({ year, month, monthData, dayTypes, weekdayHours, today: todayIso })
+  const rows = buildMonthTable({ year, month, monthData, dayTypes, weekdayHours, today: todayIso, todayNow: liveNow })
 
   function getCellValue(row: MonthTableRow, category: string): string {
     const manual = row.entries[category] ?? 0
@@ -414,7 +424,11 @@ export function MonthGrid({
   function handleDotClick(e: React.MouseEvent<HTMLElement>, row: MonthTableRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = dayTypes.get(row.date) ?? row.dayType
-    const { displayStatus, reason } = classifyRow(row, autoCategory, confirmedDays, todayIso)
+    const { displayStatus, reason, leaveType } = classifyRow(row, autoCategory, confirmedDays, todayIso)
+    const categoryBreakdown: Record<string, number> = { ...row.entries }
+    if (autoCategory && row.autoCategoryHours > 0.001) {
+      categoryBreakdown[autoCategory] = (categoryBreakdown[autoCategory] ?? 0) + row.autoCategoryHours
+    }
     setDotPopover({
       date: row.date,
       currentDayType,
@@ -422,6 +436,10 @@ export function MonthGrid({
       left: rect.left,
       displayStatus,
       reason,
+      workedHours: row.workedHours,
+      categoryBreakdown,
+      ...(categoryDescriptions !== undefined ? { categoryDescriptions } : {}),
+      ...(leaveType !== undefined ? { leaveType } : {}),
     })
   }
 

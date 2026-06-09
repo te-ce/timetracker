@@ -292,7 +292,7 @@ describe('MonthGrid', () => {
       expect(screen.getByRole('button', { name: 'Vacation' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Sick Day' })).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Public Holiday' })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: 'Absence' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Absence' })).not.toBeInTheDocument()
     })
 
     it('selecting a day type saves the override and closes the popover', async () => {

@@ -253,16 +253,13 @@ describe('DayView', () => {
   })
 
   describe('leave day', () => {
-    it.each(['Vacation', 'SickDay', 'Absence'] as const)(
-      'hides work periods section and shows leave banner for %s',
-      (dayType) => {
-        stubQuery({ selectedDayType: dayType, sollstunden: 8 })
-        render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-        expect(screen.queryByRole('region', { name: /work periods/i })).not.toBeInTheDocument()
-        expect(screen.getByRole('status', { name: /leave day info/i })).toBeInTheDocument()
-        expect(screen.getByText(/8h on leave/i)).toBeInTheDocument()
-      },
-    )
+    it.each(['Vacation', 'SickDay'] as const)('hides work periods section and shows leave banner for %s', (dayType) => {
+      stubQuery({ selectedDayType: dayType, sollstunden: 8 })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      expect(screen.queryByRole('region', { name: /work periods/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('status', { name: /leave day info/i })).toBeInTheDocument()
+      expect(screen.getByText(/8h on leave/i)).toBeInTheDocument()
+    })
 
     it('shows leave banner with configured sollstunden hours', () => {
       stubQuery({ selectedDayType: 'Vacation', sollstunden: 6 })

@@ -4,10 +4,10 @@ import { calculateWorkedHours } from './worktime'
 
 export { UNCATEGORIZED_CATEGORY }
 
-export function calculateCategoryHours(windows: WorkPeriod[]): Record<string, number> {
+export function calculateCategoryHours(windows: WorkPeriod[], now?: string): Record<string, number> {
   const result: Record<string, number> = {}
   for (const w of windows) {
-    const duration = calculateWorkedHours([w])
+    const duration = calculateWorkedHours([w], now)
     const subtaskedHours = w.subtasks.reduce((sum, s) => sum + s.hours, 0)
     const remainder = Math.max(0, duration - subtaskedHours)
     for (const subtask of w.subtasks) {

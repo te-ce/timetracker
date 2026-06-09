@@ -162,7 +162,7 @@ export function DayView() {
     selectedDate === todayIso
       ? (findPlannedStopPeriod(windows, new Date().toTimeString().slice(0, 5))?.end ?? null)
       : null
-  const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay' || selectedDayType === 'Absence'
+  const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config?.officeStats !== false
   const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
   const showOvertimeBar = config?.showOvertimeBar !== false

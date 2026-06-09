@@ -23,6 +23,8 @@ export interface MonthTableInput {
   dayTypes: Map<string, DayType>
   weekdayHours?: WeekdayHours
   today?: string
+  /** Current HH:MM time — passed to today's row so open periods count as live. */
+  todayNow?: string
 }
 
 function padDay(year: number, month: number, day: number): string {
@@ -45,9 +47,10 @@ function buildDayRow(
   month: number,
   dayData: Day | undefined,
   dayTypes: Map<string, DayType>,
+  now?: string,
 ): BaseRow {
-  const workedHours = calculateWorkedHours(dayData?.windows ?? [])
-  const categoryHours = calculateCategoryHours(dayData?.windows ?? [])
+  const workedHours = calculateWorkedHours(dayData?.windows ?? [], now)
+  const categoryHours = calculateCategoryHours(dayData?.windows ?? [], now)
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
   const entries: Record<string, number> = Object.fromEntries(
     Object.entries(categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY),
@@ -66,13 +69,22 @@ function buildDayRow(
 }
 
 export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
-  const { year, month, monthData, dayTypes, weekdayHours = DEFAULT_WEEKDAY_HOURS, today = '9999-12-31' } = input
+  const {
+    year,
+    month,
+    monthData,
+    dayTypes,
+    weekdayHours = DEFAULT_WEEKDAY_HOURS,
+    today = '9999-12-31',
+    todayNow,
+  } = input
   const totalDays = new Date(year, month, 0).getDate()
   const rows: MonthTableRow[] = []
   let runningOvertime = 0
   for (let d = 1; d <= totalDays; d++) {
     const date = padDay(year, month, d)
-    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes)
+    const now = date === today ? todayNow : undefined
+    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes, now)
     if (date > today) {
       rows.push({ ...base, accumulatedOvertime: null })
     } else {

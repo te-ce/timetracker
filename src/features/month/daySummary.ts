@@ -18,6 +18,8 @@ export interface DaySummary {
   dayStatus: DayStatus
   displayStatus: Exclude<DayStatus, 'today'>
   statusReason: string
+  categoryBreakdown: Record<string, number>
+  leaveType?: 'Vacation' | 'SickDay'
 }
 
 export interface MonthSummaryInput {
@@ -56,6 +58,7 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
     status: dayStatus,
     displayStatus,
     reason: statusReason,
+    leaveType,
   } = classifyDay({
     dayType,
     workedHours,
@@ -66,6 +69,10 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
     isoDate: iso,
     today,
   })
+
+  const categoryBreakdown = Object.fromEntries(
+    Object.entries(categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY),
+  )
 
   return {
     date: iso,
@@ -78,6 +85,8 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
     dayStatus,
     displayStatus,
     statusReason,
+    categoryBreakdown,
+    ...(leaveType !== undefined ? { leaveType } : {}),
   }
 }
 

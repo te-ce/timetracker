@@ -37,16 +37,13 @@ describe('isWorkPeriodExpected', () => {
     expect(isWorkPeriodExpected('WorkDay')).toBe(true)
   })
 
-  it.each<DayType>(['Weekend', 'PublicHoliday', 'Vacation', 'SickDay', 'Absence'])(
-    'returns false for %s',
-    (dayType) => {
-      expect(isWorkPeriodExpected(dayType)).toBe(false)
-    },
-  )
+  it.each<DayType>(['Weekend', 'PublicHoliday', 'Vacation', 'SickDay'])('returns false for %s', (dayType) => {
+    expect(isWorkPeriodExpected(dayType)).toBe(false)
+  })
 })
 
 describe('getAutoBooking', () => {
-  it.each<DayType>(['Vacation', 'SickDay', 'Absence'])('books Sollstunden to "On Leave" for %s', (dayType) => {
+  it.each<DayType>(['Vacation', 'SickDay'])('books Sollstunden to "On Leave" for %s', (dayType) => {
     const booking = getAutoBooking(dayType, 8)
     expect(booking).toEqual({ category: '_LEAVE', hours: 8 })
   })

@@ -60,6 +60,7 @@ const FUTURE_SUMMARY: DaySummary = {
   dayStatus: 'future',
   displayStatus: 'future',
   statusReason: '',
+  categoryBreakdown: {},
 }
 
 function extractDayFields(dayData: Day | undefined): DayRawData {

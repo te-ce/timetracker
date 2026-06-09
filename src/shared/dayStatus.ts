@@ -28,6 +28,8 @@ export interface DayClassification {
   displayStatus: Exclude<DayStatus, 'today'>
   /** Human-readable explanation of the status. */
   reason: string
+  /** For leave days: which kind of leave. Undefined for all other statuses. */
+  leaveType?: 'Vacation' | 'SickDay'
 }
 
 function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory: boolean): string {
@@ -35,7 +37,7 @@ function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory
     return `${manualTotal.toFixed(1)} h categorized but no work time recorded`
   }
   if (Math.abs(workedHours - manualTotal) < 0.01) {
-    return `${workedHours.toFixed(1)} h worked and fully categorized`
+    return `${workedHours.toFixed(1)} h worked`
   }
   if (hasAutoCategory && manualTotal <= workedHours) {
     const auto = workedHours - manualTotal
@@ -50,10 +52,9 @@ function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory
 }
 
 function classifyLeaveDay(dayType: DayType): DayClassification | null {
-  if (dayType === 'Vacation' || dayType === 'SickDay' || dayType === 'Absence') {
-    const reason =
-      dayType === 'Vacation' ? 'Marked as vacation' : dayType === 'SickDay' ? 'Marked as sick day' : 'Marked as absence'
-    return { status: 'leave', displayStatus: 'leave', reason }
+  if (dayType === 'Vacation' || dayType === 'SickDay') {
+    const reason = dayType === 'Vacation' ? 'Marked as vacation' : 'Marked as sick day'
+    return { status: 'leave', displayStatus: 'leave', reason, leaveType: dayType }
   }
   return null
 }

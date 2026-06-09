@@ -68,7 +68,7 @@ export const daySchema = z
     confirmed: z.boolean().optional(),
     note: z.string().optional(),
     autoCategoryOverride: z.string().optional(),
-    dayTypeOverride: z.enum(['PublicHoliday', 'Vacation', 'SickDay', 'Absence']).optional(),
+    dayTypeOverride: z.enum(['PublicHoliday', 'Vacation', 'SickDay']).optional(),
   })
   .passthrough()
 

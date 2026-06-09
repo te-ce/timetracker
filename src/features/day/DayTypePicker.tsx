@@ -15,7 +15,6 @@ const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'PublicHoliday', label: 'PublicHoliday' },
   { value: 'Vacation', label: 'Vacation' },
   { value: 'SickDay', label: 'SickDay' },
-  { value: 'Absence', label: 'Absence' },
 ]
 
 export function DayTypePicker({ date, dayType, repository }: Props) {
