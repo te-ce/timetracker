@@ -248,6 +248,7 @@ export function DayView() {
             customCategories={customCategories}
             categoryOrder={categoryOrder}
             categoryDescriptions={categoryDescriptions}
+            timeTrackingRepository={timeTrackingRepo}
           />
         </section>
       )}

@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import type { WorkPeriod, WorkPeriodSubtask, MonthRepository } from '../../infra/repositories/types'
+import type {
+  WorkPeriod,
+  WorkPeriodSubtask,
+  MonthRepository,
+  TimeTrackingRepository,
+} from '../../infra/repositories/types'
 import { NowChip } from './NowChip'
 import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import { mergeAdjacentInto } from './workPeriodMerge'
@@ -19,6 +24,7 @@ interface Props {
   categoryOrder?: string[] | undefined
   categoryDescriptions?: Record<string, string> | undefined | undefined
   initialCategory?: string | undefined
+  timeTrackingRepository?: TimeTrackingRepository | undefined
 }
 
 type LiveSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt?: undefined }
@@ -1567,8 +1573,9 @@ export function WorkOverview({
   categoryOrder,
   categoryDescriptions,
   initialCategory,
+  timeTrackingRepository,
 }: Props) {
-  const mutations = useWorkPeriodMutations(repository)
+  const mutations = useWorkPeriodMutations(repository, timeTrackingRepository)
   const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
   const openPeriod = findOpenPeriod(windows) ?? null
   const categories = getAllCategories(customCategories, categoryOrder)

@@ -1,6 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { WorkPeriod, WorkPeriodSubtask, MonthRepository, Day } from '../../infra/repositories/types'
-import { invalidateMonth } from '../../shared/queryKeys'
+import type {
+  WorkPeriod,
+  WorkPeriodSubtask,
+  MonthRepository,
+  Day,
+  TimeTrackingRepository,
+} from '../../infra/repositories/types'
+import { invalidateMonth, invalidateActiveTracking } from '../../shared/queryKeys'
 import { useUndoStore } from '../../shared/undoStore'
 
 async function snapshotDay(repository: MonthRepository, date: string): Promise<Day> {
@@ -10,7 +16,7 @@ async function snapshotDay(repository: MonthRepository, date: string): Promise<D
   return data[date] ?? { windows: [] }
 }
 
-export function useWorkPeriodMutations(repository: MonthRepository) {
+export function useWorkPeriodMutations(repository: MonthRepository, timeTrackingRepository?: TimeTrackingRepository) {
   const queryClient = useQueryClient()
 
   function invalidate(date: string) {
@@ -38,7 +44,13 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
   })
 
   const remove = useMutation({
-    mutationFn: ({ date, id }: { date: string; id: string }) => repository.removeWorkPeriod(date, id),
+    mutationFn: async ({ date, id }: { date: string; id: string }) => {
+      await repository.removeWorkPeriod(date, id)
+      if (timeTrackingRepository) {
+        const active = await timeTrackingRepository.getActive()
+        if (active?.date === date) await timeTrackingRepository.stop()
+      }
+    },
     onMutate: async ({ date }) => ({ prev: await snapshotDay(repository, date) }),
     onSuccess: (_, { date, id }, context) => {
       const prev = context.prev
@@ -54,6 +66,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
         },
       })
       invalidate(date)
+      if (timeTrackingRepository) invalidateActiveTracking(queryClient)
     },
   })
 
@@ -170,7 +183,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
   })
 
   const stopPeriod = useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       date,
       periodId,
       endTime,
@@ -182,8 +195,17 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       endTime: string
       liveSubtaskId?: string | undefined
       stoppedAt?: string | undefined
-    }) => repository.stopWorkPeriod(date, periodId, endTime, liveSubtaskId, stoppedAt),
-    onSuccess: (_, { date }) => invalidate(date),
+    }) => {
+      await repository.stopWorkPeriod(date, periodId, endTime, liveSubtaskId, stoppedAt)
+      if (timeTrackingRepository) {
+        const active = await timeTrackingRepository.getActive()
+        if (active?.date === date) await timeTrackingRepository.stop()
+      }
+    },
+    onSuccess: (_, { date }) => {
+      invalidate(date)
+      if (timeTrackingRepository) invalidateActiveTracking(queryClient)
+    },
   })
 
   return {
