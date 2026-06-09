@@ -422,5 +422,16 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(5)
     })
+
+    it('does not treat a just-closed period as planned-stop even when its end equals the current minute', () => {
+      // Simulate the bug: a work period closed with end = "now" (current minute).
+      // A stale `currentNow` tick could see this period as a planned stop for up
+      // to 59 seconds. The fix uses nowHHMMFn() directly for detection.
+      const justClosed = makePlannedStopWindow(-60, 0) // end is exactly now (offset = 0 min)
+      stubDayQuery({ sollstunden: 8, workedHours: 1, windows: [justClosed] })
+      const { result } = renderHook(() => useRemainingHours())
+      // end == now is NOT in the future, so isPlannedStopMode must be false
+      expect(result.current.isPlannedStopMode).toBe(false)
+    })
   })
 })

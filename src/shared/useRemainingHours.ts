@@ -104,7 +104,10 @@ export function useRemainingHours() {
     return () => clearInterval(id)
   }, [activeTrackingStartedAt])
 
-  const plannedStopPeriod = findPlannedStopPeriod(windows, currentNow)
+  // Use a fresh real-time value for detection so a just-closed period (whose
+  // `end` equals the current minute) is not mistaken for a planned-stop period
+  // due to a stale `currentNow` tick that hasn't fired yet.
+  const plannedStopPeriod = findPlannedStopPeriod(windows, nowHHMMFn())
   const hasLiveActivity = !!liveWindowStart || !!plannedStopPeriod
 
   useEffect(() => {
