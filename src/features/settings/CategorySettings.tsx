@@ -155,13 +155,22 @@ function CategorySettingsRow({
   const [editingDesc, setEditingDesc] = useState(false)
   const [descValue, setDescValue] = useState('')
 
-  const dragOverClass = dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : ''
+  const dragOverClass =
+    dragOverIdx === idx ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : ''
   const nameClass = `truncate cursor-pointer ${isCustom ? 'text-indigo-700 dark:text-indigo-300' : ''}`
   const nameTitle = isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'
   return (
     <li
       draggable
-      onDragStart={() => onDragStart(idx)}
+      onDragStart={(e) => {
+        const el = e.currentTarget
+        const rect = el.getBoundingClientRect()
+        const dt: unknown = e.dataTransfer
+        if (dt instanceof DataTransfer) {
+          dt.setDragImage(el, e.clientX - rect.left, e.clientY - rect.top)
+        }
+        onDragStart(idx)
+      }}
       onDragOver={(e) => onDragOver(e, idx)}
       onDrop={() => onDrop(idx)}
       onDragEnd={onDragEnd}

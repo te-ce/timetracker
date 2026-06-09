@@ -76,7 +76,8 @@ export function CategoryColumnHeader({
   const isAuto = cat === autoCategory
   const description = categoryDescriptions?.[cat]
   const dragClass = onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''
-  const dragOverClass = colDragOverIdx === catIdx ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''
+  const dragOverClass =
+    colDragOverIdx === catIdx ? 'ring-2 ring-inset ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/40' : ''
   const nameClass = `block truncate text-xs ${onCategoryRename ? 'cursor-text' : ''}`
   const tooltipContent = (
     <div>
@@ -89,7 +90,30 @@ export function CategoryColumnHeader({
   return (
     <th
       draggable={editingCat !== cat && !!onCategoryReorder}
-      onDragStart={() => dragHandlers.onDragStart(catIdx)}
+      onDragStart={(e) => {
+        // Create a standalone ghost div to avoid the browser rendering the full table as the drag image
+        const el = e.currentTarget
+        const ghost = document.createElement('div')
+        ghost.textContent = cat
+        Object.assign(ghost.style, {
+          position: 'fixed',
+          top: '-9999px',
+          width: `${el.offsetWidth}px`,
+          padding: '4px',
+          background: '#f9fafb',
+          border: '1px solid #6366f1',
+          borderRadius: '4px',
+          fontSize: '0.75rem',
+          textAlign: 'center',
+        })
+        document.body.appendChild(ghost)
+        const dt: unknown = e.dataTransfer
+        if (dt instanceof DataTransfer) {
+          dt.setDragImage(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2)
+        }
+        setTimeout(() => document.body.removeChild(ghost), 0)
+        dragHandlers.onDragStart(catIdx)
+      }}
       onDragOver={(e) => dragHandlers.onDragOver(e, catIdx)}
       onDrop={() => dragHandlers.onDrop(catIdx, allCategories)}
       onDragEnd={dragHandlers.onDragEnd}

@@ -89,11 +89,19 @@ export function CategoryReorderPopover({ repository }: Props) {
               <li
                 key={cat}
                 draggable
-                onDragStart={() => handleDragStart(idx)}
+                onDragStart={(e) => {
+                  const el = e.currentTarget
+                  const rect = el.getBoundingClientRect()
+                  const dt: unknown = e.dataTransfer
+                  if (dt instanceof DataTransfer) {
+                    dt.setDragImage(el, e.clientX - rect.left, e.clientY - rect.top)
+                  }
+                  handleDragStart(idx)
+                }}
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={handleDragEnd}
-                className={`flex items-center gap-2 rounded border px-2 py-1 text-xs cursor-grab active:cursor-grabbing select-none ${dragOverIdx === idx ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : 'bg-white dark:bg-gray-800 dark:border-gray-700'}`}
+                className={`flex items-center gap-2 rounded border px-2 py-1 text-xs cursor-grab active:cursor-grabbing select-none ${dragOverIdx === idx ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : 'bg-white dark:bg-gray-800 dark:border-gray-700'}`}
               >
                 <span className="text-gray-300 dark:text-gray-600" aria-hidden>
                   ⠿
