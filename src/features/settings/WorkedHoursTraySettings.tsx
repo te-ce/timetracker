@@ -35,7 +35,8 @@ export function WorkedHoursTraySettings({ repository }: Props) {
         Show worked hours in tray menu
       </label>
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        Display the remaining/overtime hours breakdown in the system tray icon menu.
+        Display the detailed hours breakdown in the tray icon menu. The remaining/overtime badge next to the icon is
+        always shown.
       </p>
       {mutation.isError && (
         <p role="alert" className="text-xs text-red-600 dark:text-red-400">

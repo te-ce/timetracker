@@ -120,7 +120,6 @@ export function useElectronTraySync() {
 
     if (config.showWorkedHoursInTray === false) {
       trayState.receiptLines = []
-      trayState.badgeLabel = ''
     }
 
     window.electronAPI.tray.sync(trayState)
