@@ -98,6 +98,49 @@ describe('OvertimeBar', () => {
   })
 })
 
+describe('required today equation', () => {
+  it('shows target minus overtime as required today in summary', () => {
+    // 8h target − 2h overtime = 6h required
+    render(<OvertimeBar sollstunden={8} priorOvertime={2} workedToday={0} />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('6.00h required today'))
+  })
+
+  it('shows target plus undertime as required today in summary', () => {
+    // 8h target + 2h undertime = 10h required
+    render(<OvertimeBar sollstunden={8} priorOvertime={-2} workedToday={0} />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('10.00h required today'))
+  })
+
+  it('shows required today as sollstunden when in until-daily-target mode', () => {
+    // carry-over is ignored, required = sollstunden
+    render(<OvertimeBar sollstunden={8} priorOvertime={2} workedToday={0} remainingTimeMode="until-daily-target" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('8.00h required today'))
+  })
+
+  it('renders a visible "required" label', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={2} workedToday={0} />)
+    expect(screen.getByText(/required/i)).toBeInTheDocument()
+  })
+})
+
+describe('total worked today', () => {
+  it('shows total worked in summary equal to workedToday when no live or tracking', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('3.00h total'))
+  })
+
+  it('includes live elapsed in total worked', () => {
+    // workedToday=3, liveWindow=1h → total=4h
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('4.00h total'))
+  })
+
+  it('renders a visible "total" label', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} />)
+    expect(screen.getByText(/total/i)).toBeInTheDocument()
+  })
+})
+
 describe('Planned-Stop projection mode', () => {
   it('shows a projection indicator when plannedStopTime is provided', () => {
     render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={8} plannedStopTime="17:00" />)

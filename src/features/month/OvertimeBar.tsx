@@ -68,7 +68,7 @@ function TrackingBadge({ startedAt }: { startedAt: string }) {
   return (
     <>
       <span aria-hidden="true" className="text-gray-300 dark:text-gray-600">
-        −
+        +
       </span>
       <Link
         to="/"
@@ -100,6 +100,8 @@ interface BarData {
   overtimeClass: string
   summary: string
   resultClass: string
+  requiredToday: number
+  totalWorked: number
 }
 
 function buildBarData(
@@ -123,19 +125,41 @@ function buildBarData(
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'
   const overtimeSign = hasOvertime ? '−' : '+'
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
-  const trackingPart = activeTrackingStartedAt ? `, ${formatElapsed(activeTrackingStartedAt)} tracking` : ''
+
+  const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
+  const totalWorked = workedToday + trackingElapsed + liveElapsed
+
+  const trackingPart = activeTrackingStartedAt ? `, ${formatHours(trackingElapsed, fmt)} tracking` : ''
   const currentPart = liveWindowStart ? `, ${formatHours(liveElapsed, fmt)} current` : ''
   const projectedPart = plannedStopTime ? `, projected at ${plannedStopTime}` : ''
-  const summary = `${formatHours(sollstunden, fmt)} target, ${formatHours(Math.abs(priorOvertime), fmt)} ${overtimeLabel} carry-over, ${formatHours(workedToday, fmt)} worked today${trackingPart}${currentPart}${projectedPart} — ${remainingLabel}`
+
+  const equationPart =
+    remainingTimeMode === 'until-daily-target'
+      ? `${formatHours(sollstunden, fmt)} required today`
+      : `${formatHours(sollstunden, fmt)} target ${overtimeSign} ${formatHours(Math.abs(priorOvertime), fmt)} ${overtimeLabel} = ${formatHours(requiredToday, fmt)} required today`
+
+  const workedPart = `${formatHours(workedToday, fmt)} worked${currentPart}${trackingPart}${projectedPart} = ${formatHours(totalWorked, fmt)} total`
+
+  const summary = `${equationPart}, ${workedPart} — ${remainingLabel}`
+
   const resultClass = remaining <= 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'
-  return { remainingLabel, overtimeLabel, overtimeSign, overtimeClass, summary, resultClass }
+  return {
+    remainingLabel,
+    overtimeLabel,
+    overtimeSign,
+    overtimeClass,
+    summary,
+    resultClass,
+    requiredToday,
+    totalWorked,
+  }
 }
 
 function LiveWindowBadge({ elapsed, fmt }: { elapsed: number; fmt: TimeFormat }) {
   return (
     <>
       <span aria-hidden="true" className="text-gray-300 dark:text-gray-600">
-        −
+        +
       </span>
       <span className="font-medium text-green-700 dark:text-green-400 tabular-nums" aria-hidden="true">
         {formatHours(elapsed, fmt)} current
@@ -172,7 +196,16 @@ export function OvertimeBar({
   const trackingElapsed = activeTrackingStartedAt ? elapsedDecimalHours(activeTrackingStartedAt) : 0
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, nowHHMM) : 0
   const officeStats = getOfficeStats(officeDays, totalWorkDays, officePercent)
-  const { remainingLabel, overtimeLabel, overtimeSign, overtimeClass, summary, resultClass } = buildBarData(
+  const {
+    remainingLabel,
+    overtimeLabel,
+    overtimeSign,
+    overtimeClass,
+    summary,
+    resultClass,
+    requiredToday,
+    totalWorked,
+  } = buildBarData(
     sollstunden,
     priorOvertime,
     workedToday,
@@ -202,12 +235,20 @@ export function OvertimeBar({
           <span className={`font-medium ${overtimeClass}`}>
             {formatHours(Math.abs(priorOvertime), timeFormat)} {overtimeLabel}
           </span>
-          <span className="text-gray-300 dark:text-gray-600">−</span>
+          <span className="text-gray-300 dark:text-gray-600">=</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">
+            {formatHours(requiredToday, timeFormat)} required
+          </span>
+          <span className="text-gray-300 dark:text-gray-600">·</span>
           <span className="font-medium text-gray-700 dark:text-gray-200">
             {formatHours(workedToday, timeFormat)} worked
           </span>
           {liveWindowStart && <LiveWindowBadge elapsed={liveElapsed} fmt={timeFormat} />}
           {activeTrackingStartedAt && <TrackingBadge startedAt={activeTrackingStartedAt} />}
+          <span className="text-gray-300 dark:text-gray-600">=</span>
+          <span className="font-medium text-gray-700 dark:text-gray-200">
+            {formatHours(totalWorked, timeFormat)} total
+          </span>
           {plannedStopTime && (
             <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400">
               projected at {plannedStopTime}
