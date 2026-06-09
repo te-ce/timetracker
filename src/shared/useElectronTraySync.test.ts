@@ -51,12 +51,16 @@ describe('handleStartSubtask', () => {
     expect(subtask?.startedAt).toMatch(/^\d{2}:\d{2}$/)
   })
 
-  it('stops existing live subtask before starting new one', async () => {
+  it('relies on startLiveSubtask to settle previous subtask (no separate stop call)', async () => {
     const repo = makeMockMonthRepo()
     const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
     await handleStartSubtask('_INFRA', repo, '2026-06-09', windows)
-    expect(repo.stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.stringMatching(/^\d{2}:\d{2}$/))
-    expect(repo.startLiveSubtask).toHaveBeenCalled()
+    expect(repo.stopLiveSubtask).not.toHaveBeenCalled()
+    expect(repo.startLiveSubtask).toHaveBeenCalledWith(
+      '2026-06-09',
+      'wp1',
+      expect.objectContaining({ category: '_INFRA', startedAt: expect.stringMatching(/^\d{2}:\d{2}$/) }),
+    )
   })
 
   it('does nothing when no open period exists', async () => {

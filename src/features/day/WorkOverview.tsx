@@ -1451,10 +1451,14 @@ function PeriodCard({ w, date, categories, mutations, categoryDescriptions, nowT
 
   const liveElapsedHours = (() => {
     if (!liveSubtask) return 0
-    let startMins = minutesFrom(liveSubtask.startedAt)
-    let endMins = minutesFrom(nowTime)
-    if (endMins < startMins) endMins += 24 * 60
-    return (endMins - startMins) / 60
+    const startMins = minutesFrom(liveSubtask.startedAt)
+    const endMins = minutesFrom(nowTime)
+    const diff = endMins - startMins
+    // If now is slightly behind startedAt (race between nowTime tick and subtask creation),
+    // treat as zero rather than wrapping around midnight.
+    if (diff < 0 && diff > -5) return 0
+    const adjusted = diff < 0 ? diff + 24 * 60 : diff
+    return adjusted / 60
   })()
   const displayRemainder = Math.max(0, remainder - liveElapsedHours)
 

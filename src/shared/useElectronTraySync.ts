@@ -27,13 +27,9 @@ export async function handleStartSubtask(
 
   const now = nowHHMM()
 
-  // Stop any existing live subtask first
-  const liveSubtask = openPeriod.subtasks.find((s) => s.startedAt && !s.stoppedAt)
-  if (liveSubtask) {
-    await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, now)
-  }
-
-  // Start the new subtask
+  // startLiveSubtask already settles any existing live subtask atomically
+  // (using the new subtask's startedAt as the stop time), so no need to
+  // call stopLiveSubtask separately.
   const subtaskId = crypto.randomUUID()
   await monthRepo.startLiveSubtask(today, openPeriod.id, {
     id: subtaskId,
