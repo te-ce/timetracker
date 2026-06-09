@@ -11,6 +11,7 @@ import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { QUERY_KEYS, invalidateConfig, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
+import type { DaySummaryData } from '../../shared/DaySummaryBody'
 
 export function MonthView() {
   const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
@@ -56,15 +57,18 @@ export function MonthView() {
 
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayDisplayStatusMap: Record<string, DisplayStatus> = {}
-  const dayStatusReasonMap: Record<string, string> = {}
-  const dayCategoryBreakdownMap: Record<string, Record<string, number>> = {}
-  const dayLeaveTypeMap: Record<string, 'Vacation' | 'SickDay'> = {}
+  const daySummaryDataMap: Record<string, DaySummaryData> = {}
   for (const day of summaries.days) {
     dayStatusMap[day.date] = day.dayStatus
     dayDisplayStatusMap[day.date] = day.displayStatus
-    dayStatusReasonMap[day.date] = day.statusReason
-    dayCategoryBreakdownMap[day.date] = day.categoryBreakdown
-    if (day.leaveType) dayLeaveTypeMap[day.date] = day.leaveType
+    daySummaryDataMap[day.date] = {
+      displayStatus: day.displayStatus,
+      reason: day.statusReason,
+      workedHours: day.workedHours,
+      categoryBreakdown: day.categoryBreakdown,
+      ...(day.leaveType !== undefined ? { leaveType: day.leaveType } : {}),
+      ...(config?.categoryDescriptions !== undefined ? { categoryDescriptions: config.categoryDescriptions } : {}),
+    }
   }
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
 
@@ -99,12 +103,7 @@ export function MonthView() {
         onSelectDate={onSelectDate}
         dayStatusMap={dayStatusMap}
         dayDisplayStatusMap={dayDisplayStatusMap}
-        dayStatusReasonMap={dayStatusReasonMap}
-        dayCategoryBreakdownMap={dayCategoryBreakdownMap}
-        dayLeaveTypeMap={dayLeaveTypeMap}
-        {...(config?.categoryDescriptions !== undefined
-          ? { dayCategoryDescriptionsMap: config.categoryDescriptions }
-          : {})}
+        daySummaryDataMap={daySummaryDataMap}
         dayNoteMap={dayNoteMap}
       />
       <div className="flex items-center justify-between gap-4">

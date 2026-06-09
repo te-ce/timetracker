@@ -1,13 +1,11 @@
-import { Fragment } from 'react'
 import { toLocalIso } from '../../shared/dateUtils'
 import type { DayStatus } from '../../shared/dayStatus'
 import { STATUS_CELL, STATUS_DOT, STATUS_LABEL } from '../../shared/statusColors'
 import type { DisplayStatus } from '../../shared/statusColors'
 import { Tooltip } from '../../shared'
-import { LEAVE_TYPE_LABEL } from '../day/DotPopoverPanel'
+import { DaySummaryBody } from '../../shared/DaySummaryBody'
+import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
-import { formatHoursCompact } from '../../shared/formatHours'
-import type { TimeFormat } from '../../shared/timeFormatStore'
 
 interface Props {
   year: number
@@ -15,10 +13,7 @@ interface Props {
   onSelectDate: (isoDate: string) => void
   dayStatusMap?: Record<string, DayStatus>
   dayDisplayStatusMap?: Record<string, DisplayStatus>
-  dayStatusReasonMap?: Record<string, string>
-  dayCategoryBreakdownMap?: Record<string, Record<string, number>>
-  dayLeaveTypeMap?: Record<string, 'Vacation' | 'SickDay'>
-  dayCategoryDescriptionsMap?: Record<string, string>
+  daySummaryDataMap?: Record<string, DaySummaryData>
   dayNoteMap?: Record<string, string>
 }
 
@@ -36,50 +31,6 @@ function getDaysInMonth(year: number, month: number): Date[] {
   return days
 }
 
-function buildTooltipContent(
-  status: DayStatus,
-  reason: string | undefined,
-  workedHours: number,
-  categoryBreakdown: Record<string, number>,
-  categoryDescriptions: Record<string, string> | undefined,
-  leaveType: 'Vacation' | 'SickDay' | undefined,
-  note: string | undefined,
-  timeFormat: TimeFormat,
-): React.ReactNode {
-  const hasCategories = Object.keys(categoryBreakdown).length > 0
-  const hasContent = reason || note || workedHours > 0 || hasCategories
-  if (!hasContent) return undefined
-
-  const explanation = leaveType ? (LEAVE_TYPE_LABEL[leaveType] ?? null) : reason || null
-
-  return (
-    <div>
-      <p className="font-semibold">{STATUS_NAME[status]}</p>
-      {explanation && <p className="mt-0.5 text-gray-300">{explanation}</p>}
-      {(workedHours > 0 || hasCategories) && (
-        <div className="mt-1.5 border-t border-gray-600 pt-1.5">
-          <p className="text-gray-300">{formatHoursCompact(workedHours, timeFormat)} total</p>
-          <div className="mt-0.5 grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-gray-400">
-            {Object.entries(categoryBreakdown).map(([cat, hours]) => {
-              const desc = categoryDescriptions?.[cat]
-              return (
-                <Fragment key={cat}>
-                  <span className="text-right tabular-nums">{formatHoursCompact(hours, timeFormat)}</span>
-                  <span>
-                    {cat}
-                    {desc ? ` (${desc})` : ''}
-                  </span>
-                </Fragment>
-              )
-            })}
-          </div>
-        </div>
-      )}
-      {note && <p className="mt-1.5 border-t border-gray-600 pt-1.5 whitespace-pre-wrap text-gray-200">{note}</p>}
-    </div>
-  )
-}
-
 function buildDots(status: DayStatus, displayStatus: DisplayStatus | undefined): string[] {
   if (status === 'today') {
     return displayStatus ? [STATUS_DOT[displayStatus]] : []
@@ -93,10 +44,7 @@ export function MonthCalendar({
   onSelectDate,
   dayStatusMap = {},
   dayDisplayStatusMap = {},
-  dayStatusReasonMap = {},
-  dayCategoryBreakdownMap = {},
-  dayLeaveTypeMap = {},
-  dayCategoryDescriptionsMap,
+  daySummaryDataMap = {},
   dayNoteMap = {},
 }: Props) {
   const days = getDaysInMonth(year, month)
@@ -120,10 +68,7 @@ export function MonthCalendar({
         const iso = toLocalIso(date)
         const status = dayStatusMap[iso] ?? 'future'
         const isToday = iso === todayIso
-        const reason = dayStatusReasonMap[iso]
-        const categoryBreakdown = dayCategoryBreakdownMap[iso] ?? {}
-        const leaveType = dayLeaveTypeMap[iso]
-        const workedHours = Object.values(categoryBreakdown).reduce((s, h) => s + h, 0)
+        const summaryData = daySummaryDataMap[iso]
         const note = dayNoteMap[iso]
         const label = date.toLocaleDateString('en-GB', {
           weekday: 'long',
@@ -133,16 +78,19 @@ export function MonthCalendar({
         })
         const displayStatus = dayDisplayStatusMap[iso]
         const dots = buildDots(status, displayStatus)
-        const tooltipContent = buildTooltipContent(
-          status,
-          reason,
-          workedHours,
-          categoryBreakdown,
-          dayCategoryDescriptionsMap,
-          leaveType,
-          note,
-          timeFormat,
-        )
+
+        const hasTooltipContent = summaryData != null || note != null
+        const tooltipContent = hasTooltipContent ? (
+          <div>
+            {summaryData ? (
+              <DaySummaryBody {...summaryData} timeFormat={timeFormat} dark />
+            ) : (
+              <p className="font-semibold">{STATUS_NAME[status]}</p>
+            )}
+            {note && <p className="mt-1.5 border-t border-gray-600 pt-1.5 whitespace-pre-wrap text-gray-200">{note}</p>}
+          </div>
+        ) : undefined
+
         return (
           <div key={date.getDate()}>
             <Tooltip content={tooltipContent}>

@@ -20,6 +20,8 @@ import { formatHoursCompact } from '../../shared/formatHours'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { Tooltip } from '../../shared'
 import { useUndoStore } from '../../shared/undoStore'
+import type { DaySummaryData } from '../../shared/DaySummaryBody'
+import { DaySummaryBody } from '../../shared/DaySummaryBody'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
 
@@ -585,13 +587,25 @@ export function MonthGrid({
               const groupRows = group.rows.map((row) => {
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const isToday = row.date === todayIso
-                const displayStatus = classifyRow(row, autoCategory, confirmedDays, todayIso).displayStatus
+                const { displayStatus, reason, leaveType } = classifyRow(row, autoCategory, confirmedDays, todayIso)
                 const bgPair = isToday ? TODAY_ROW_BG : STATUS_ROW_BG[displayStatus]
                 const rowBg = bgPair[globalRowIdx % 2]!
                 const loc = resolveWorkLocation(workLocations, row.date, defaultWorkLocation)
                 const locIcon = loc === 'Office' ? '🏢' : '🏠'
                 const rowOpacityClass = isNonWorkDay ? 'opacity-50' : ''
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
+                const rowCategoryBreakdown: Record<string, number> = { ...row.entries }
+                if (autoCategory && row.autoCategoryHours > 0.001) {
+                  rowCategoryBreakdown[autoCategory] = (rowCategoryBreakdown[autoCategory] ?? 0) + row.autoCategoryHours
+                }
+                const daySummaryData: DaySummaryData = {
+                  displayStatus,
+                  reason,
+                  workedHours: row.workedHours,
+                  categoryBreakdown: rowCategoryBreakdown,
+                  ...(categoryDescriptions !== undefined ? { categoryDescriptions } : {}),
+                  ...(leaveType !== undefined ? { leaveType } : {}),
+                }
                 globalRowIdx++
                 return (
                   <tr key={row.date} aria-label={row.date} className={`${rowBg} ${rowOpacityClass}`}>
@@ -612,23 +626,28 @@ export function MonthGrid({
                       customCategories={customCategories}
                       categoryOrder={categoryOrder}
                       categoryDescriptions={categoryDescriptions}
+                      daySummaryData={daySummaryData}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
                     />
                     <td className="px-1 py-0.5 w-14 text-right text-xs border-l border-gray-200 dark:border-gray-700 tabular-nums">
-                      {row.accumulatedOvertime !== null && row.workedHours > 0 && (
-                        <span
-                          className={
-                            row.accumulatedOvertime > 0
-                              ? 'text-green-600 dark:text-green-400'
-                              : row.accumulatedOvertime < 0
-                                ? 'text-red-600 dark:text-red-400'
-                                : 'text-gray-400 dark:text-gray-500'
-                          }
-                        >
-                          {row.accumulatedOvertime > 0 ? '+' : ''}
-                          {formatHoursCompact(row.accumulatedOvertime, timeFormat)}
+                      <Tooltip content={<DaySummaryBody {...daySummaryData} timeFormat={timeFormat} dark />}>
+                        <span className="block w-full text-right">
+                          {row.accumulatedOvertime !== null && row.workedHours > 0 && (
+                            <span
+                              className={
+                                row.accumulatedOvertime > 0
+                                  ? 'text-green-600 dark:text-green-400'
+                                  : row.accumulatedOvertime < 0
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-gray-400 dark:text-gray-500'
+                              }
+                            >
+                              {row.accumulatedOvertime > 0 ? '+' : ''}
+                              {formatHoursCompact(row.accumulatedOvertime, timeFormat)}
+                            </span>
+                          )}
                         </span>
-                      )}
+                      </Tooltip>
                     </td>
                     {showOfficeStats && (
                       <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">

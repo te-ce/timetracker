@@ -4,6 +4,7 @@ import { vi } from 'vitest'
 import { MonthCalendar } from './MonthCalendar'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
+import type { DaySummaryData } from '../../shared/DaySummaryBody'
 
 describe('MonthCalendar', () => {
   it('renders all days of the given month', () => {
@@ -227,16 +228,23 @@ describe('MonthCalendar', () => {
     })
   })
 
-  it('shows a reason tooltip element when dayStatusReasonMap has entry', () => {
+  it('shows a reason tooltip element when daySummaryDataMap has entry', () => {
     const dayStatusMap: Record<string, DayStatus> = { '2024-01-10': 'complete' }
-    const dayStatusReasonMap = { '2024-01-10': 'Holiday: New Year' }
+    const daySummaryDataMap: Record<string, DaySummaryData> = {
+      '2024-01-10': {
+        displayStatus: 'complete',
+        reason: 'Holiday: New Year',
+        workedHours: 8,
+        categoryBreakdown: {},
+      },
+    }
     render(
       <MonthCalendar
         year={2024}
         month={0}
         onSelectDate={vi.fn()}
         dayStatusMap={dayStatusMap}
-        dayStatusReasonMap={dayStatusReasonMap}
+        daySummaryDataMap={daySummaryDataMap}
       />,
     )
     fireEvent.mouseEnter(screen.getByRole('button', { name: /10 january 2024/i }))

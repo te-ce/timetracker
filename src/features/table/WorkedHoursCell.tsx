@@ -4,6 +4,9 @@ import type { WorkPeriod, MonthRepository } from '../../infra/repositories/types
 import { WorkOverview } from '../day'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
+import { Tooltip } from '../../shared'
+import { DaySummaryBody } from '../../shared/DaySummaryBody'
+import type { DaySummaryData } from '../../shared/DaySummaryBody'
 
 interface Props {
   date: string
@@ -14,6 +17,7 @@ interface Props {
   customCategories?: string[] | undefined
   categoryOrder?: string[] | undefined
   categoryDescriptions?: Record<string, string> | undefined
+  daySummaryData?: DaySummaryData | undefined
   className?: string | undefined
 }
 
@@ -26,6 +30,7 @@ export function WorkedHoursCell({
   customCategories,
   categoryOrder,
   categoryDescriptions,
+  daySummaryData,
   className = '',
 }: Props) {
   const [open, setOpen] = useState(false)
@@ -58,13 +63,20 @@ export function WorkedHoursCell({
   }, [open])
 
   if (!open) {
+    const tooltipContent = daySummaryData ? (
+      <DaySummaryBody {...daySummaryData} timeFormat={timeFormat} dark />
+    ) : undefined
     return (
       <td
         className={`px-2 py-1 text-right cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${className}`}
         data-testid="worked-hours"
         onClick={() => setOpen(true)}
       >
-        {workedHours > 0 ? formatHoursCompact(workedHours, timeFormat) : ''}
+        <Tooltip content={tooltipContent}>
+          <span className="block w-full text-right">
+            {workedHours > 0 ? formatHoursCompact(workedHours, timeFormat) : ''}
+          </span>
+        </Tooltip>
       </td>
     )
   }
