@@ -102,19 +102,19 @@ describe('required today equation', () => {
   it('shows target minus overtime as required today in summary', () => {
     // 8h target − 2h overtime = 6h required
     render(<OvertimeBar sollstunden={8} priorOvertime={2} workedToday={0} />)
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('6.00h required today'))
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('6.00h required'))
   })
 
   it('shows target plus undertime as required today in summary', () => {
     // 8h target + 2h undertime = 10h required
     render(<OvertimeBar sollstunden={8} priorOvertime={-2} workedToday={0} />)
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('10.00h required today'))
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('10.00h required'))
   })
 
   it('shows required today as sollstunden when in until-daily-target mode', () => {
     // carry-over is ignored, required = sollstunden
     render(<OvertimeBar sollstunden={8} priorOvertime={2} workedToday={0} remainingTimeMode="until-daily-target" />)
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('8.00h required today'))
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('8.00h required'))
   })
 
   it('renders a visible "required" label', () => {
@@ -124,20 +124,26 @@ describe('required today equation', () => {
 })
 
 describe('total worked today', () => {
-  it('shows total worked in summary equal to workedToday when no live or tracking', () => {
+  it('shows totalWorked as worked value in summary when no live or tracking', () => {
+    // totalWorked = workedToday = 3, shown as "3.00h worked"
     render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} />)
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('3.00h total'))
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('3.00h worked'))
   })
 
-  it('includes live elapsed in total worked', () => {
-    // workedToday=3, liveWindow=1h → total=4h
+  it('shows totalWorked including live elapsed as worked value', () => {
+    // workedToday=3, liveWindow=1h → totalWorked=4h shown as "4.00h worked"
     render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('4.00h total'))
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('4.00h worked'))
   })
 
-  it('renders a visible "total" label', () => {
-    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} />)
-    expect(screen.getByText(/total/i)).toBeInTheDocument()
+  it('shows worked breakdown with past and current when live is active', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('3.00h past'))
+  })
+
+  it('renders a visible "past" label when live window is active', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    expect(screen.getByText(/past/i)).toBeInTheDocument()
   })
 })
 

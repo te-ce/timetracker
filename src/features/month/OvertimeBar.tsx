@@ -66,19 +66,14 @@ function elapsedDecimalHours(startedAt: string): number {
 
 function TrackingBadge({ startedAt }: { startedAt: string }) {
   return (
-    <>
-      <span aria-hidden="true" className="text-gray-300 dark:text-gray-600">
-        +
-      </span>
-      <Link
-        to="/"
-        search={{ date: startedAt.slice(0, 10) }}
-        aria-hidden="true"
-        className="font-medium text-green-700 dark:text-green-400 tabular-nums hover:underline"
-      >
-        {formatElapsed(startedAt)} tracking
-      </Link>
-    </>
+    <Link
+      to="/"
+      search={{ date: startedAt.slice(0, 10) }}
+      aria-hidden="true"
+      className="font-medium text-green-700 dark:text-green-400 tabular-nums hover:underline"
+    >
+      {formatElapsed(startedAt)} tracking
+    </Link>
   )
 }
 
@@ -111,8 +106,6 @@ function buildBarData(
   trackingElapsed: number,
   liveElapsed: number,
   fmt: TimeFormat,
-  activeTrackingStartedAt: string | null | undefined,
-  liveWindowStart: string | null | undefined,
   plannedStopTime: string | null | undefined,
   remainingTimeMode: 'until-zero-overtime' | 'until-daily-target' | undefined,
 ): BarData {
@@ -129,18 +122,24 @@ function buildBarData(
   const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
   const totalWorked = workedToday + trackingElapsed + liveElapsed
 
-  const trackingPart = activeTrackingStartedAt ? `, ${formatHours(trackingElapsed, fmt)} tracking` : ''
-  const currentPart = liveWindowStart ? `, ${formatHours(liveElapsed, fmt)} current` : ''
+  const currentElapsed = liveElapsed + trackingElapsed
+
+  const equationBreakdown =
+    remainingTimeMode === 'until-daily-target'
+      ? ''
+      : ` (${formatHours(sollstunden, fmt)} target ${overtimeSign} ${formatHours(Math.abs(priorOvertime), fmt)} ${overtimeLabel})`
+
+  const workedBreakdownParts: string[] = []
+  if (currentElapsed > 0) {
+    if (workedToday > 0) workedBreakdownParts.push(`${formatHours(workedToday, fmt)} past`)
+    if (liveElapsed > 0) workedBreakdownParts.push(`${formatHours(liveElapsed, fmt)} current`)
+    if (trackingElapsed > 0) workedBreakdownParts.push(`${formatHours(trackingElapsed, fmt)} tracking`)
+  }
+  const workedBreakdown = workedBreakdownParts.length >= 2 ? ` (${workedBreakdownParts.join(' + ')})` : ''
+
   const projectedPart = plannedStopTime ? `, projected at ${plannedStopTime}` : ''
 
-  const equationPart =
-    remainingTimeMode === 'until-daily-target'
-      ? `${formatHours(sollstunden, fmt)} required today`
-      : `${formatHours(sollstunden, fmt)} target ${overtimeSign} ${formatHours(Math.abs(priorOvertime), fmt)} ${overtimeLabel} = ${formatHours(requiredToday, fmt)} required today`
-
-  const workedPart = `${formatHours(workedToday, fmt)} worked${currentPart}${trackingPart}${projectedPart} = ${formatHours(totalWorked, fmt)} total`
-
-  const summary = `${equationPart}, ${workedPart} — ${remainingLabel}`
+  const summary = `${formatHours(requiredToday, fmt)} required${equationBreakdown}, ${formatHours(totalWorked, fmt)} worked${workedBreakdown}${projectedPart} — ${remainingLabel}`
 
   const resultClass = remaining <= 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'
   return {
@@ -157,14 +156,9 @@ function buildBarData(
 
 function LiveWindowBadge({ elapsed, fmt }: { elapsed: number; fmt: TimeFormat }) {
   return (
-    <>
-      <span aria-hidden="true" className="text-gray-300 dark:text-gray-600">
-        +
-      </span>
-      <span className="font-medium text-green-700 dark:text-green-400 tabular-nums" aria-hidden="true">
-        {formatHours(elapsed, fmt)} current
-      </span>
-    </>
+    <span className="font-medium text-green-700 dark:text-green-400 tabular-nums" aria-hidden="true">
+      {formatHours(elapsed, fmt)} current
+    </span>
   )
 }
 
@@ -212,8 +206,6 @@ export function OvertimeBar({
     trackingElapsed,
     liveElapsed,
     timeFormat,
-    activeTrackingStartedAt,
-    liveWindowStart,
     plannedStopTime,
     remainingTimeMode,
   )
@@ -229,26 +221,55 @@ export function OvertimeBar({
           className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400"
           aria-hidden="true"
         >
-          <span className="font-medium text-gray-700 dark:text-gray-200">{formatHours(sollstunden, timeFormat)}</span>
-          <span>target</span>
-          <span className="text-gray-300 dark:text-gray-600">{overtimeSign}</span>
-          <span className={`font-medium ${overtimeClass}`}>
-            {formatHours(Math.abs(priorOvertime), timeFormat)} {overtimeLabel}
-          </span>
-          <span className="text-gray-300 dark:text-gray-600">=</span>
+          {/* Required: X required (target ± overtime) */}
           <span className="font-medium text-gray-700 dark:text-gray-200">
             {formatHours(requiredToday, timeFormat)} required
           </span>
-          <span className="text-gray-300 dark:text-gray-600">·</span>
+          {remainingTimeMode !== 'until-daily-target' && (
+            <>
+              <span className="text-gray-400 dark:text-gray-500">(</span>
+              <span className="font-medium text-gray-500 dark:text-gray-400">
+                {formatHours(sollstunden, timeFormat)}
+              </span>
+              <span>target</span>
+              <span className="text-gray-300 dark:text-gray-600">{overtimeSign}</span>
+              <span className={`font-medium ${overtimeClass}`}>
+                {formatHours(Math.abs(priorOvertime), timeFormat)} {overtimeLabel}
+              </span>
+              <span className="text-gray-400 dark:text-gray-500">)</span>
+            </>
+          )}
+          {/* − separator */}
+          <span className="text-gray-300 dark:text-gray-600">−</span>
+          {/* Worked: totalWorked worked (past + current) */}
           <span className="font-medium text-gray-700 dark:text-gray-200">
-            {formatHours(workedToday, timeFormat)} worked
+            {formatHours(totalWorked, timeFormat)} worked
           </span>
-          {liveWindowStart && <LiveWindowBadge elapsed={liveElapsed} fmt={timeFormat} />}
-          {activeTrackingStartedAt && <TrackingBadge startedAt={activeTrackingStartedAt} />}
+          {(liveWindowStart || activeTrackingStartedAt) && (
+            <>
+              <span className="text-gray-400 dark:text-gray-500">(</span>
+              {workedToday > 0 && (
+                <span className="font-medium text-gray-500 dark:text-gray-400">
+                  {formatHours(workedToday, timeFormat)} past
+                </span>
+              )}
+              {liveWindowStart && (
+                <>
+                  {workedToday > 0 && <span className="text-gray-300 dark:text-gray-600">+</span>}
+                  <LiveWindowBadge elapsed={liveElapsed} fmt={timeFormat} />
+                </>
+              )}
+              {activeTrackingStartedAt && (
+                <>
+                  {(workedToday > 0 || liveWindowStart) && <span className="text-gray-300 dark:text-gray-600">+</span>}
+                  <TrackingBadge startedAt={activeTrackingStartedAt} />
+                </>
+              )}
+              <span className="text-gray-400 dark:text-gray-500">)</span>
+            </>
+          )}
+          {/* = result */}
           <span className="text-gray-300 dark:text-gray-600">=</span>
-          <span className="font-medium text-gray-700 dark:text-gray-200">
-            {formatHours(totalWorked, timeFormat)} total
-          </span>
           {plannedStopTime && (
             <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400">
               projected at {plannedStopTime}
