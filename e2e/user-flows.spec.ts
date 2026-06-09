@@ -256,7 +256,7 @@ test.describe('day type leave', () => {
 
   test('leave day can be confirmed', async ({ page }) => {
     await page.goto(`/?date=${TEST_DATE}`)
-    await page.getByLabel('Day type').selectOption('Absence')
+    await page.getByLabel('Day type').selectOption('Vacation')
     await page.getByRole('button', { name: 'Confirm' }).click()
 
     await expect(page.getByRole('button', { name: /unconfirm day/i })).toBeVisible()
