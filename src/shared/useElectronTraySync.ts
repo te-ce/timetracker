@@ -19,9 +19,11 @@ function nowHHMM(): string {
 export async function handleStartWorkPeriod(
   category: string,
   timeTrackingRepo: TimeTrackingRepository,
+  monthRepo: MonthRepository,
   today: string,
 ): Promise<void> {
   await timeTrackingRepo.start(today, category)
+  await monthRepo.openWorkPeriod(today, category, nowHHMM())
 }
 
 export async function handleStartSubtask(
@@ -150,11 +152,11 @@ export function useElectronTraySync() {
 
   const onStartWorkPeriod = useCallback(
     async (category: string) => {
-      await handleStartWorkPeriod(category, timeTrackingRepo, todayIso)
+      await handleStartWorkPeriod(category, timeTrackingRepo, monthRepo, todayIso)
       await invalidateActiveTracking(queryClient)
       invalidateMonth(queryClient, todayIso)
     },
-    [timeTrackingRepo, todayIso, queryClient],
+    [timeTrackingRepo, monthRepo, todayIso, queryClient],
   )
 
   useEffect(() => {

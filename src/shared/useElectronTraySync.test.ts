@@ -29,6 +29,7 @@ function makeMockMonthRepo() {
   vi.spyOn(repo, 'startLiveSubtask')
   vi.spyOn(repo, 'stopLiveSubtask')
   vi.spyOn(repo, 'stopWorkPeriod')
+  vi.spyOn(repo, 'openWorkPeriod')
   return repo
 }
 
@@ -120,18 +121,31 @@ describe('handleStopAll', () => {
 })
 
 describe('handleStartWorkPeriod', () => {
-  it('starts a new work period with the given category', async () => {
-    const repo = new InMemoryTimeTrackingRepository()
-    vi.spyOn(repo, 'start')
-    await handleStartWorkPeriod('_SUPPORT', repo, '2026-06-09')
-    expect(repo.start).toHaveBeenCalledWith('2026-06-09', '_SUPPORT')
+  it('starts active tracking with the given category', async () => {
+    const trackingRepo = new InMemoryTimeTrackingRepository()
+    const monthRepo = makeMockMonthRepo()
+    vi.spyOn(trackingRepo, 'start')
+    await handleStartWorkPeriod('_SUPPORT', trackingRepo, monthRepo, '2026-06-09')
+    expect(trackingRepo.start).toHaveBeenCalledWith('2026-06-09', '_SUPPORT')
+  })
+
+  it('opens a work period in the month repo', async () => {
+    const trackingRepo = new InMemoryTimeTrackingRepository()
+    const monthRepo = makeMockMonthRepo()
+    await handleStartWorkPeriod('_SUPPORT', trackingRepo, monthRepo, '2026-06-09')
+    expect(monthRepo.openWorkPeriod).toHaveBeenCalledWith(
+      '2026-06-09',
+      '_SUPPORT',
+      expect.stringMatching(/^\d{2}:\d{2}$/),
+    )
   })
 
   it('starts a new work period for a different category', async () => {
-    const repo = new InMemoryTimeTrackingRepository()
-    vi.spyOn(repo, 'start')
-    await handleStartWorkPeriod('_INFRA', repo, '2026-06-09')
-    expect(repo.start).toHaveBeenCalledWith('2026-06-09', '_INFRA')
+    const trackingRepo = new InMemoryTimeTrackingRepository()
+    const monthRepo = makeMockMonthRepo()
+    vi.spyOn(trackingRepo, 'start')
+    await handleStartWorkPeriod('_INFRA', trackingRepo, monthRepo, '2026-06-09')
+    expect(trackingRepo.start).toHaveBeenCalledWith('2026-06-09', '_INFRA')
   })
 })
 
