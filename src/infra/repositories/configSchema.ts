@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Day, ActiveTracking, SprintExport } from './types'
+import type { Day, SprintExport } from './types'
 import type { WeekdayHours } from '../../shared/weekdayHours'
 
 const hotkeyConfigSchema = z.object({
@@ -75,12 +75,6 @@ export const daySchema = z
   })
   .passthrough()
 
-const activeTrackingSchema = z.object({
-  category: z.string(),
-  date: z.string(),
-  startedAt: z.string(),
-})
-
 const sprintExportSchema = z.object({
   sprintIndex: z.number(),
   status: z.enum(['pending', 'exported']),
@@ -95,14 +89,6 @@ export function validateDay(v: unknown): Day | null {
   const data: unknown = r.data
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return data as Day
-}
-
-export function validateActiveTracking(v: unknown): ActiveTracking | null {
-  const r = activeTrackingSchema.safeParse(v)
-  if (!r.success) return null
-  const data: unknown = r.data
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return data as ActiveTracking
 }
 
 export function validateSprintExport(v: unknown): SprintExport | null {

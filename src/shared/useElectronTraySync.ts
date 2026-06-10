@@ -1,28 +1,35 @@
 import { useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS, invalidateActiveTracking, invalidateMonth } from './queryKeys'
+import { QUERY_KEYS, invalidateMonth } from './queryKeys'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { getAllCategories } from './categories'
 import { toLocalIso } from './dateUtils'
 import { useRemainingHours } from './useRemainingHours'
-import { useActiveTracking } from './useActiveTracking'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
-import type { MonthRepository, TimeTrackingRepository, WorkPeriod } from '../infra/repositories/types'
+import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
 function nowHHMM(): string {
   const d = new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string): string | null {
+  if (!period) return null
+  const parts = period.start.split(':').map(Number)
+  const h = parts[0] ?? 0
+  const m = parts[1] ?? 0
+  const d = new Date(todayIso)
+  d.setHours(h, m, 0, 0)
+  return d.toISOString()
+}
+
 export async function handleStartWorkPeriod(
   category: string,
-  timeTrackingRepo: TimeTrackingRepository,
   monthRepo: MonthRepository,
   today: string,
 ): Promise<void> {
-  await timeTrackingRepo.start(today, category)
   await monthRepo.openWorkPeriod(today, category, nowHHMM())
 }
 
@@ -63,12 +70,7 @@ export async function handleStopSubtask(
   }
 }
 
-export async function handleStopAll(
-  monthRepo: MonthRepository,
-  today: string,
-  windows: WorkPeriod[],
-  stopTracking: () => Promise<unknown>,
-): Promise<void> {
+export async function handleStopAll(monthRepo: MonthRepository, today: string, windows: WorkPeriod[]): Promise<void> {
   const now = nowHHMM()
 
   // Stop live subtask if any
@@ -80,19 +82,19 @@ export async function handleStopAll(
     }
     await monthRepo.stopWorkPeriod(today, openPeriod.id, now)
   }
-
-  // Stop active tracking session
-  await stopTracking()
 }
 
 export function useElectronTraySync() {
-  const { configRepo, timeTrackingRepo, monthRepo } = useRepositories()
+  const { configRepo, monthRepo } = useRepositories()
   const queryClient = useQueryClient()
-  const { workedHours, sollstunden, priorOvertime, trackingElapsed, liveElapsed } = useRemainingHours()
-  const activeTracking = useActiveTracking()
+  const { workedHours, sollstunden, priorOvertime, liveElapsed } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
   const todayIso = toLocalIso(new Date())
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
+
+  const openPeriod = windows.find((w) => w.end === null)
+  const isTracking = !!openPeriod
+  const startedAt = openPeriodToISOStart(openPeriod, todayIso)
 
   const { data: config } = useQuery({
     queryKey: QUERY_KEYS.config,
@@ -107,14 +109,13 @@ export function useElectronTraySync() {
       sollstunden,
       priorOvertime,
       workedHours,
-      trackingElapsed,
       liveElapsed,
       timeFormat,
       autoCategory: resolvedAutoCategory,
       categories,
       windows,
-      isTracking: !!activeTracking,
-      startedAt: activeTracking?.startedAt ?? null,
+      isTracking,
+      startedAt,
       remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
       showTotalWorked: config.showTotalWorked === true,
     })
@@ -126,11 +127,11 @@ export function useElectronTraySync() {
     window.electronAPI.tray.sync(trayState)
   }, [
     config,
-    activeTracking,
+    isTracking,
+    startedAt,
     workedHours,
     sollstunden,
     priorOvertime,
-    trackingElapsed,
     liveElapsed,
     timeFormat,
     windows,
@@ -151,18 +152,16 @@ export function useElectronTraySync() {
   }, [monthRepo, todayIso, windows, queryClient])
 
   const onStopAll = useCallback(async () => {
-    await handleStopAll(monthRepo, todayIso, windows, () => timeTrackingRepo.stop())
+    await handleStopAll(monthRepo, todayIso, windows)
     invalidateMonth(queryClient, todayIso)
-    await invalidateActiveTracking(queryClient)
-  }, [monthRepo, todayIso, windows, timeTrackingRepo, queryClient])
+  }, [monthRepo, todayIso, windows, queryClient])
 
   const onStartWorkPeriod = useCallback(
     async (category: string) => {
-      await handleStartWorkPeriod(category, timeTrackingRepo, monthRepo, todayIso)
-      await invalidateActiveTracking(queryClient)
+      await handleStartWorkPeriod(category, monthRepo, todayIso)
       invalidateMonth(queryClient, todayIso)
     },
-    [timeTrackingRepo, monthRepo, todayIso, queryClient],
+    [monthRepo, todayIso, queryClient],
   )
 
   useEffect(() => {
@@ -196,11 +195,11 @@ export function useElectronTraySync() {
     const api = window.electronAPI
     if (!api) return
     const listener = () => {
-      if (activeTracking) void onStopAll()
+      if (isTracking) void onStopAll()
     }
     api.hotkey.onToggle(listener)
     return () => {
       api.hotkey.offToggle(listener)
     }
-  }, [activeTracking, onStopAll])
+  }, [isTracking, onStopAll])
 }

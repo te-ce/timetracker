@@ -4,7 +4,6 @@ import type { StorageAdapter } from '../../storage/adapter'
 import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
-import { CloudTimeTrackingRepository } from './time-tracking-repository'
 import { CloudMonthRepository } from './month-repository'
 
 function adapterWithValue(key: string, value: unknown): StorageAdapter {
@@ -218,54 +217,5 @@ describe('CloudSprintExportRepository', () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudSprintExportRepository(adapter)
     expect(await repo.findBySprintIndex(99)).toBeNull()
-  })
-})
-
-describe('CloudTimeTrackingRepository', () => {
-  it('getActive returns null when nothing is tracked', async () => {
-    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
-    expect(await repo.getActive()).toBeNull()
-  })
-
-  it('start sets active tracking', async () => {
-    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
-    await repo.start('2026-05-25', '_SUPPORT')
-    const active = await repo.getActive()
-    expect(active?.category).toBe('_SUPPORT')
-    expect(active?.date).toBe('2026-05-25')
-  })
-
-  it('stop returns null when nothing is tracked', async () => {
-    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
-    expect(await repo.stop()).toBeNull()
-  })
-
-  it('stop clears active tracking after starting', async () => {
-    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
-    await repo.start('2026-05-25', '_SUPPORT')
-    await repo.stop()
-    expect(await repo.getActive()).toBeNull()
-  })
-
-  it('getActive returns null and warns when stored tracking data is invalid', async () => {
-    const adapter = adapterWithValue('active-tracking.json', { broken: true })
-    const repo = new CloudTimeTrackingRepository(adapter)
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    expect(await repo.getActive()).toBeNull()
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid stored tracking data'), expect.anything())
-    warnSpy.mockRestore()
-  })
-
-  it('stop returns hours when elapsed time is positive', async () => {
-    vi.useFakeTimers()
-    const repo = new CloudTimeTrackingRepository(new InMemoryStorageAdapter())
-    await repo.start('2026-05-25', '_SUPPORT')
-    vi.advanceTimersByTime(30 * 60 * 1000)
-    const result = await repo.stop()
-    expect(result).not.toBeNull()
-    expect(result?.category).toBe('_SUPPORT')
-    expect(result?.date).toBe('2026-05-25')
-    expect(result?.hours).toBeGreaterThan(0)
-    vi.useRealTimers()
   })
 })

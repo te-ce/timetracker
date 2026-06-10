@@ -1,16 +1,15 @@
 import { createContext, useContext } from 'react'
 import type { ReactNode } from 'react'
-import type { MonthRepository, ConfigRepository, SprintExportRepository, TimeTrackingRepository } from './types'
-import { monthRepo, configRepo, sprintExportRepo, timeTrackingRepo } from './shared'
+import type { MonthRepository, ConfigRepository, SprintExportRepository } from './types'
+import { monthRepo, configRepo, sprintExportRepo } from './shared'
 
 export interface Repositories {
   monthRepo: MonthRepository
   configRepo: ConfigRepository
   sprintExportRepo: SprintExportRepository
-  timeTrackingRepo: TimeTrackingRepository
 }
 
-const defaultRepositories: Repositories = { monthRepo, configRepo, sprintExportRepo, timeTrackingRepo }
+const defaultRepositories: Repositories = { monthRepo, configRepo, sprintExportRepo }
 
 const RepositoryContext = createContext<Repositories>(defaultRepositories)
 

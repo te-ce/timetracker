@@ -18,10 +18,6 @@ export function invalidateConfig(client: QueryClient): void {
   void client.invalidateQueries({ queryKey: QUERY_KEYS.config })
 }
 
-export function invalidateActiveTracking(client: QueryClient): void {
-  void client.invalidateQueries({ queryKey: QUERY_KEYS.activeTracking })
-}
-
 export function invalidateSprintExport(client: QueryClient, index: number): void {
   void client.invalidateQueries({ queryKey: QUERY_KEYS.sprintExportByIndex(index) })
 }
@@ -31,8 +27,6 @@ export const QUERY_KEYS = {
 
   month: (year: number, month: number) => ['month', year, month] as const,
   monthAll: ['month'] as const,
-
-  activeTracking: ['activeTracking'] as const,
 
   holidays: (state: string, year: number) => ['holidays', state, year] as const,
 

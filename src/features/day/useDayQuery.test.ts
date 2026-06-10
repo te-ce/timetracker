@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
-import { InMemoryTimeTrackingRepository } from '../../infra/repositories/in-memory/time-tracking-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
 import type { WorkPeriod } from '../../infra/repositories/types'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
@@ -29,7 +28,6 @@ function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo: InMemoryCon
     monthRepo,
     configRepo,
     sprintExportRepo: new InMemorySprintExportRepository(),
-    timeTrackingRepo: new InMemoryTimeTrackingRepository(),
   }
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(

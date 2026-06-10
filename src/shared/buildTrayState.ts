@@ -13,7 +13,6 @@ export interface TrayStateInput {
   sollstunden: number
   priorOvertime: number
   workedHours: number
-  trackingElapsed: number
   liveElapsed: number
   timeFormat: TimeFormat
   autoCategory: string | null
@@ -46,13 +45,12 @@ function buildReceiptLines(
   sollstunden: number,
   priorOvertime: number,
   workedHours: number,
-  trackingElapsed: number,
   liveElapsed: number,
   fmt: TimeFormat,
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target',
 ): ReceiptLine[] {
   const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
-  const totalWorked = workedHours + trackingElapsed + liveElapsed
+  const totalWorked = workedHours + liveElapsed
   const remaining = requiredToday - totalWorked
   const hasOvertime = priorOvertime >= 0
   const carrySign = hasOvertime ? '-' : '+'
@@ -66,9 +64,6 @@ function buildReceiptLines(
     { label: 'Past', value: formatHours(workedHours, fmt), isSubItem: true },
   ]
 
-  if (trackingElapsed > 0) {
-    lines.push({ label: 'Tracking', value: formatHours(trackingElapsed, fmt), isSubItem: true })
-  }
   if (liveElapsed > 0) {
     lines.push({ label: 'Current', value: formatHours(liveElapsed, fmt), isSubItem: true })
   }
@@ -100,23 +95,15 @@ function findLiveSubtaskCategory(windows: WorkPeriod[]): string | null {
 }
 
 export function buildTrayState(input: TrayStateInput): TrayState {
-  const { sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed, timeFormat } = input
+  const { sollstunden, priorOvertime, workedHours, liveElapsed, timeFormat } = input
   const mode = input.remainingTimeMode ?? 'until-zero-overtime'
-  const totalWorked = workedHours + trackingElapsed + liveElapsed
+  const totalWorked = workedHours + liveElapsed
   const remaining =
     mode === 'until-daily-target'
-      ? sollstunden - workedHours - trackingElapsed - liveElapsed
-      : sollstunden - priorOvertime - workedHours - trackingElapsed - liveElapsed
+      ? sollstunden - workedHours - liveElapsed
+      : sollstunden - priorOvertime - workedHours - liveElapsed
 
-  const receiptLines = buildReceiptLines(
-    sollstunden,
-    priorOvertime,
-    workedHours,
-    trackingElapsed,
-    liveElapsed,
-    timeFormat,
-    mode,
-  )
+  const receiptLines = buildReceiptLines(sollstunden, priorOvertime, workedHours, liveElapsed, timeFormat, mode)
   const badgeLabel = buildBadgeLabel(remaining, totalWorked, timeFormat, input.showTotalWorked === true)
   const activeSubtaskCategory = findLiveSubtaskCategory(input.windows)
 

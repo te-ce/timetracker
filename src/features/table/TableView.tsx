@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import { renameCategoryAcrossAllMonths } from './categoryMutations'
@@ -8,7 +8,7 @@ import { MonthGrid } from './MonthTable'
 import { MonthNav, OvertimeBar, StatusLegend } from '../month'
 import { DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
-import { QUERY_KEYS, invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
+import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
 import { resolveTableConfig } from './tableConfig'
 
@@ -28,16 +28,12 @@ async function saveAutoCategory(configRepo: ConfigRepository, category: string):
 }
 
 export function TableView() {
-  const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
+  const { monthRepo, configRepo } = useRepositories()
   const navigate = useNavigate()
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
   const queryClient = useQueryClient()
-  const { data: activeTracking = null } = useQuery({
-    queryKey: QUERY_KEYS.activeTracking,
-    queryFn: () => timeTrackingRepo.getActive(),
-  })
 
   const categoryReorderMutation = useMutation({
     mutationFn: (categoryOrder: string[]) => saveCategoryOrder(configRepo, categoryOrder),
@@ -223,7 +219,6 @@ export function TableView() {
           sollstunden={sollstunden}
           priorOvertime={overtimeToDate.priorOvertime}
           workedToday={overtimeToDate.workedToday}
-          activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           liveWindowStart={todayLiveWindowStart ?? null}
           plannedStopTime={todayPlannedStopTime ?? null}
           remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}

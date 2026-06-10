@@ -8,7 +8,6 @@ import { isLocalFolderMode } from '../auth/bootstrapConfig'
 import type { StorageAdapter } from '../storage/adapter'
 import { CloudConfigRepository } from './cloud/config-repository'
 import { CloudSprintExportRepository } from './cloud/sprint-export-repository'
-import { CloudTimeTrackingRepository } from './cloud/time-tracking-repository'
 import { CloudMonthRepository } from './cloud/month-repository'
 
 function makeStorage(): StorageAdapter {
@@ -22,7 +21,6 @@ const storage: StorageAdapter = makeStorage()
 export const configRepo = new CloudConfigRepository(storage)
 export const monthRepo = new CloudMonthRepository(storage)
 export const sprintExportRepo = new CloudSprintExportRepository(storage)
-export const timeTrackingRepo = new CloudTimeTrackingRepository(storage)
 
 export function resetAllRepositories(): void {
   configRepo.clearCache()

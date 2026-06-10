@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { MonthNav } from './MonthNav'
 import { MonthCalendar } from './MonthCalendar'
 import { OvertimeBar } from './OvertimeBar'
@@ -8,13 +8,13 @@ import { StatusLegend } from './StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
-import { QUERY_KEYS, invalidateConfig, invalidateMonthByYearMonth } from '../../shared/queryKeys'
+import { invalidateConfig, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 
 export function MonthView() {
-  const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
+  const { monthRepo, configRepo } = useRepositories()
   const navigate = useNavigate()
   const { year, month } = useSearch({ from: '/month' })
 
@@ -27,10 +27,6 @@ export function MonthView() {
   }
 
   const queryClient = useQueryClient()
-  const { data: activeTracking = null } = useQuery({
-    queryKey: QUERY_KEYS.activeTracking,
-    queryFn: () => timeTrackingRepo.getActive(),
-  })
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
@@ -90,7 +86,6 @@ export function MonthView() {
           sollstunden={sollstunden}
           priorOvertime={overtimeToDate.priorOvertime}
           workedToday={overtimeToDate.workedToday}
-          activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           liveWindowStart={todayLiveWindowStart ?? null}
           plannedStopTime={todayPlannedStopTime ?? null}
           remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}

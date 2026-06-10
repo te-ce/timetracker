@@ -26,7 +26,6 @@ describe('buildTrayState', () => {
     sollstunden: 8,
     priorOvertime: 0,
     workedHours: 3,
-    trackingElapsed: 0,
     liveElapsed: 0,
     timeFormat: 'decimal' as const,
     autoCategory: '_COREMEDIA',
@@ -67,8 +66,8 @@ describe('buildTrayState', () => {
       expect(result.badgeLabel).toBe('3.00h left')
     })
 
-    it('accounts for trackingElapsed in remaining', () => {
-      const result = buildTrayState({ ...baseInput, trackingElapsed: 1 })
+    it('accounts for liveElapsed in remaining', () => {
+      const result = buildTrayState({ ...baseInput, liveElapsed: 1 })
       expect(result.badgeLabel).toBe('4.00h left')
     })
   })
@@ -99,9 +98,9 @@ describe('buildTrayState', () => {
       expect(totalLine).toMatchObject({ label: 'Remaining', isTotal: true })
     })
 
-    it('includes Tracking sub-item when trackingElapsed > 0', () => {
-      const result = buildTrayState({ ...baseInput, trackingElapsed: 1.5 })
-      expect(result.receiptLines.find((l) => l.label === 'Tracking')).toMatchObject({
+    it('includes Current sub-item when liveElapsed > 0', () => {
+      const result = buildTrayState({ ...baseInput, liveElapsed: 1.5 })
+      expect(result.receiptLines.find((l) => l.label === 'Current')).toMatchObject({
         isSubItem: true,
         value: '1.50h',
       })
@@ -168,14 +167,9 @@ describe('buildTrayState', () => {
       expect(result.badgeLabel).toBe('3.00h worked')
     })
 
-    it('includes trackingElapsed in total worked when showTotalWorked is true', () => {
-      const result = buildTrayState({ ...baseInput, trackingElapsed: 1, showTotalWorked: true })
-      expect(result.badgeLabel).toBe('4.00h worked')
-    })
-
     it('includes liveElapsed in total worked when showTotalWorked is true', () => {
-      const result = buildTrayState({ ...baseInput, liveElapsed: 0.5, showTotalWorked: true })
-      expect(result.badgeLabel).toBe('3.50h worked')
+      const result = buildTrayState({ ...baseInput, liveElapsed: 1, showTotalWorked: true })
+      expect(result.badgeLabel).toBe('4.00h worked')
     })
 
     it('still shows remaining when showTotalWorked is false', () => {

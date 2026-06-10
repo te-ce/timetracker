@@ -144,15 +144,3 @@ export interface SprintExportRepository {
   save(sprintExport: SprintExport): Promise<void>
   findBySprintIndex(sprintIndex: number): Promise<SprintExport | null>
 }
-
-export interface ActiveTracking {
-  category: string
-  date: string
-  startedAt: string
-}
-
-export interface TimeTrackingRepository {
-  start(date: string, category: string): Promise<void>
-  stop(): Promise<{ category: string; date: string; hours: number } | null>
-  getActive(): Promise<ActiveTracking | null>
-}

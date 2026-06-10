@@ -8,7 +8,6 @@ import { DayView } from './DayView'
 import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
-import { InMemoryTimeTrackingRepository } from '../../infra/repositories/in-memory/time-tracking-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
 import type { DayQueryResult } from './useDayQuery'
 import type { OvertimeToDate } from '../month'
@@ -81,7 +80,6 @@ function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo?: InMemoryCo
   const repos = {
     monthRepo,
     configRepo: configRepo ?? new InMemoryConfigRepository(),
-    timeTrackingRepo: new InMemoryTimeTrackingRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
   }
   return function Wrapper({ children }: { children: ReactNode }) {

@@ -246,13 +246,13 @@ function UndoButton() {
 function RemainingHoursBadge() {
   const { configRepo } = useRepositories()
   const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => configRepo.get() })
-  const { remaining, sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed } = useRemainingHours()
+  const { remaining, sollstunden, priorOvertime, workedHours, liveElapsed } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   if (config?.showWorkedHoursInNav === false) return null
 
   const showTotalWorked = config?.showTotalWorked === true
-  const totalWorked = workedHours + trackingElapsed + liveElapsed
+  const totalWorked = workedHours + liveElapsed
 
   let label: string
   let badgeClass: string
@@ -274,7 +274,7 @@ function RemainingHoursBadge() {
       'hidden sm:inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
   }
 
-  const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed, timeFormat)
+  const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, timeFormat)
   const tooltipContent = (
     <div className="space-y-0.5 text-xs">
       {receiptLines.map((line, i) =>

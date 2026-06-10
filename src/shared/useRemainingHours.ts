@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { toLocalIso } from './dateUtils'
 import { useDayQuery } from '../features/day/useDayQuery'
 import { formatHours } from './formatHours'
-import { useActiveTracking } from './useActiveTracking'
 import { findOpenPeriod, findPlannedStopPeriod } from './worktime'
 import type { TimeFormat } from './timeFormatStore'
 import { useTimeFormatStore } from './timeFormatStore'
@@ -22,10 +21,6 @@ function liveWindowElapsedHours(start: string, now: string): number {
   let nowMins = minutesFrom(now)
   if (nowMins < startMins) nowMins += 24 * 60
   return (nowMins - startMins) / 60
-}
-
-function elapsedDecimalHours(startedAt: string): number {
-  return (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60)
 }
 
 function buildSummary(sollstunden: number, priorOvertime: number, workedHours: number): string {
@@ -50,12 +45,11 @@ export function buildReceipt(
   sollstunden: number,
   priorOvertime: number,
   workedHours: number,
-  trackingElapsed: number,
   liveElapsed: number,
   fmt: TimeFormat,
 ): ReceiptLine[] {
   const requiredToday = sollstunden - priorOvertime
-  const totalWorked = workedHours + trackingElapsed + liveElapsed
+  const totalWorked = workedHours + liveElapsed
   const remaining = requiredToday - totalWorked
   const hasOvertime = priorOvertime >= 0
   const carrySign = hasOvertime ? '-' : '+'
@@ -69,9 +63,6 @@ export function buildReceipt(
     { label: 'Past', value: formatHours(workedHours, fmt), isSubItem: true },
   ]
 
-  if (trackingElapsed > 0) {
-    lines.push({ label: 'Tracking', value: formatHours(trackingElapsed, fmt), isSubItem: true })
-  }
   if (liveElapsed > 0) {
     lines.push({ label: 'Current', value: formatHours(liveElapsed, fmt), isSubItem: true })
   }
@@ -91,18 +82,9 @@ export function useRemainingHours() {
   const todayIso = toLocalIso(new Date())
   const { config, sollstunden, workedHours, overtimeToDate, windows, officeDays, totalWorkDays, officePercent } =
     useDayQuery(todayIso)
-  const activeTracking = useActiveTracking()
-  const activeTrackingStartedAt = activeTracking?.startedAt ?? null
   const liveWindowStart = findOpenPeriod(windows)?.start ?? null
 
-  const [, setTick] = useState(0)
   const [currentNow, setCurrentNow] = useState(nowHHMMFn)
-
-  useEffect(() => {
-    if (!activeTrackingStartedAt) return
-    const id = setInterval(() => setTick((t) => t + 1), 1000)
-    return () => clearInterval(id)
-  }, [activeTrackingStartedAt])
 
   // Use a fresh real-time value for detection so a just-closed period (whose
   // `end` equals the current minute) is not mistaken for a planned-stop period
@@ -116,7 +98,6 @@ export function useRemainingHours() {
     return () => clearInterval(id)
   }, [hasLiveActivity])
 
-  const trackingElapsed = activeTrackingStartedAt ? elapsedDecimalHours(activeTrackingStartedAt) : 0
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, currentNow) : 0
 
   // For a Planned-Stop WorkPeriod: the query's workedHours includes its full planned
@@ -128,7 +109,7 @@ export function useRemainingHours() {
   const correctedWorkedHours = workedHours - plannedFullDuration
 
   // Projected remaining: uses full planned duration (workedHours already includes it).
-  const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - workedHours - trackingElapsed
+  const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - workedHours
 
   const remainingTimeReference = config?.remainingTimeReference ?? 'planned-stop'
   const remainingTimeMode = config?.remainingTimeMode ?? 'until-zero-overtime'
@@ -140,13 +121,8 @@ export function useRemainingHours() {
   const remaining = isPlannedStopMode
     ? countdownHours
     : remainingTimeMode === 'until-daily-target'
-      ? sollstunden - correctedWorkedHours - trackingElapsed - plannedLiveElapsed - liveElapsed
-      : sollstunden -
-        overtimeToDate.priorOvertime -
-        correctedWorkedHours -
-        trackingElapsed -
-        plannedLiveElapsed -
-        liveElapsed
+      ? sollstunden - correctedWorkedHours - plannedLiveElapsed - liveElapsed
+      : sollstunden - overtimeToDate.priorOvertime - correctedWorkedHours - plannedLiveElapsed - liveElapsed
 
   const { format } = useTimeFormatStore()
   const priorOvertime = overtimeToDate.priorOvertime
@@ -165,7 +141,6 @@ export function useRemainingHours() {
     sollstunden,
     workedHours,
     priorOvertime,
-    trackingElapsed,
     liveElapsed,
     summary,
     officeDays,

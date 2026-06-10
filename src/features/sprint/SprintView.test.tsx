@@ -8,7 +8,6 @@ import { SprintView } from './SprintView'
 import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
-import { InMemoryTimeTrackingRepository } from '../../infra/repositories/in-memory/time-tracking-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig, MonthData } from '../../infra/repositories/types'
@@ -37,7 +36,6 @@ function makeWrapper(config: AppConfig = DEFAULT_APP_CONFIG, monthData: Record<s
   const repos = {
     monthRepo: new InMemoryMonthRepository(monthData),
     configRepo: new InMemoryConfigRepository(config),
-    timeTrackingRepo: new InMemoryTimeTrackingRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
   }
   return function Wrapper({ children }: { children: ReactNode }) {

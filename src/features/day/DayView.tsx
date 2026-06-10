@@ -1,5 +1,5 @@
 import { DayNoteEditor } from './DayNoteEditor'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { OvertimeBar } from '../month'
@@ -8,7 +8,7 @@ import { DayTypePicker } from './DayTypePicker'
 import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
+import { invalidateConfig } from '../../shared/queryKeys'
 import { findOpenPeriod, findPlannedStopPeriod } from '../../shared/worktime'
 import { Tooltip } from '../../shared'
 import { useDayQuery } from './useDayQuery'
@@ -106,7 +106,7 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
 }
 
 export function DayView() {
-  const { monthRepo, configRepo, timeTrackingRepo } = useRepositories()
+  const { monthRepo, configRepo } = useRepositories()
   const navigate = useNavigate()
   const { date: selectedDate } = useSearch({ from: '/' })
 
@@ -131,11 +131,6 @@ export function DayView() {
     totalWorkDays,
     officePercent,
   } = useDayQuery(selectedDate)
-
-  const { data: activeTracking = null } = useQuery({
-    queryKey: QUERY_KEYS.activeTracking,
-    queryFn: () => timeTrackingRepo.getActive(),
-  })
 
   const dayMutations = useDayMutations({
     date: selectedDate,
@@ -194,7 +189,6 @@ export function DayView() {
           priorOvertime={overtimeToDate.priorOvertime}
           workedToday={overtimeToDate.workedToday}
           liveWindowStart={liveWindowStart ?? null}
-          activeTrackingStartedAt={activeTracking?.startedAt ?? null}
           plannedStopTime={plannedStopTime}
           remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
           showTotalWorked={config?.showTotalWorked === true}
@@ -249,7 +243,6 @@ export function DayView() {
             customCategories={customCategories}
             categoryOrder={categoryOrder}
             categoryDescriptions={categoryDescriptions}
-            timeTrackingRepository={timeTrackingRepo}
           />
         </section>
       )}

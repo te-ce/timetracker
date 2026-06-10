@@ -4,11 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { AppConfig } from '../../infra/repositories/types'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { DEFAULT_APP_CONFIG as defaultAppConfig } from '../../shared/appConfigDefaults'
-import {
-  InMemoryMonthRepository,
-  InMemorySprintExportRepository,
-  InMemoryTimeTrackingRepository,
-} from '../../infra/repositories/in-memory'
+import { InMemoryMonthRepository, InMemorySprintExportRepository } from '../../infra/repositories/in-memory'
 import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import type { Repositories } from '../../infra/repositories/RepositoryContext'
 import { AutoCategoryPicker } from './AutoCategoryPicker'
@@ -18,7 +14,6 @@ function makeRepos(config: AppConfig = defaultAppConfig): Repositories {
     configRepo: new InMemoryConfigRepository(config),
     monthRepo: new InMemoryMonthRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
-    timeTrackingRepo: new InMemoryTimeTrackingRepository(),
   }
 }
 

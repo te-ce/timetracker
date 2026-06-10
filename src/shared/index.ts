@@ -29,7 +29,6 @@ export {
   invalidateMonth,
   invalidateMonthByYearMonth,
   invalidateMonthAll,
-  invalidateActiveTracking,
   invalidateSprintExport,
   QUERY_KEYS,
 } from './queryKeys'

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Link } from '@tanstack/react-router'
 import { useTimeFormatStore, type TimeFormat } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
 
@@ -7,7 +6,6 @@ interface Props {
   sollstunden: number
   priorOvertime: number
   workedToday: number
-  activeTrackingStartedAt?: string | null
   liveWindowStart?: string | null
   nowHHMM?: string
   officeDays?: number
@@ -57,32 +55,6 @@ function formatResult(remaining: number, totalWorked: number, fmt: TimeFormat, s
   return formatRemaining(remaining, fmt)
 }
 
-function formatElapsed(startedAt: string): string {
-  const ms = Date.now() - new Date(startedAt).getTime()
-  const totalSeconds = Math.floor(ms / 1000)
-  const h = Math.floor(totalSeconds / 3600)
-  const m = Math.floor((totalSeconds % 3600) / 60)
-  const s = totalSeconds % 60
-  return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-}
-
-function elapsedDecimalHours(startedAt: string): number {
-  return (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60)
-}
-
-function TrackingBadge({ startedAt }: { startedAt: string }) {
-  return (
-    <Link
-      to="/"
-      search={{ date: startedAt.slice(0, 10) }}
-      aria-hidden="true"
-      className="font-medium text-green-700 dark:text-green-400 tabular-nums hover:underline"
-    >
-      {formatElapsed(startedAt)} tracking
-    </Link>
-  )
-}
-
 interface OfficeStats {
   officeDays: number
   totalWorkDays: number
@@ -109,7 +81,6 @@ function buildBarData(
   sollstunden: number,
   priorOvertime: number,
   workedToday: number,
-  trackingElapsed: number,
   liveElapsed: number,
   fmt: TimeFormat,
   plannedStopTime: string | null | undefined,
@@ -119,16 +90,14 @@ function buildBarData(
   const hasOvertime = priorOvertime >= 0
   const remaining =
     remainingTimeMode === 'until-daily-target'
-      ? sollstunden - workedToday - trackingElapsed - liveElapsed
-      : sollstunden - priorOvertime - workedToday - trackingElapsed - liveElapsed
+      ? sollstunden - workedToday - liveElapsed
+      : sollstunden - priorOvertime - workedToday - liveElapsed
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'
   const overtimeSign = hasOvertime ? '−' : '+'
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
 
   const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
-  const totalWorked = workedToday + trackingElapsed + liveElapsed
-
-  const currentElapsed = liveElapsed + trackingElapsed
+  const totalWorked = workedToday + liveElapsed
 
   const equationBreakdown =
     remainingTimeMode === 'until-daily-target'
@@ -136,10 +105,9 @@ function buildBarData(
       : ` (${formatHours(sollstunden, fmt)} target ${overtimeSign} ${formatHours(Math.abs(priorOvertime), fmt)} ${overtimeLabel})`
 
   const workedBreakdownParts: string[] = []
-  if (currentElapsed > 0) {
+  if (liveElapsed > 0) {
     if (workedToday > 0) workedBreakdownParts.push(`${formatHours(workedToday, fmt)} past`)
-    if (liveElapsed > 0) workedBreakdownParts.push(`${formatHours(liveElapsed, fmt)} current`)
-    if (trackingElapsed > 0) workedBreakdownParts.push(`${formatHours(trackingElapsed, fmt)} tracking`)
+    workedBreakdownParts.push(`${formatHours(liveElapsed, fmt)} current`)
   }
   const workedBreakdown = workedBreakdownParts.length >= 2 ? ` (${workedBreakdownParts.join(' + ')})` : ''
 
@@ -173,7 +141,6 @@ export function OvertimeBar({
   sollstunden,
   priorOvertime,
   workedToday,
-  activeTrackingStartedAt,
   liveWindowStart,
   nowHHMM: nowHHMMProp,
   officeDays,
@@ -184,18 +151,10 @@ export function OvertimeBar({
   remainingTimeMode,
   showTotalWorked = false,
 }: Props) {
-  const [, setTick] = useState(0)
   const timeFormat = useTimeFormatStore((s) => s.format)
   const internalNow = useNow(!!liveWindowStart && !nowHHMMProp)
   const nowHHMM = nowHHMMProp ?? internalNow
 
-  useEffect(() => {
-    if (!activeTrackingStartedAt) return
-    const interval = setInterval(() => setTick((t) => t + 1), 1000)
-    return () => clearInterval(interval)
-  }, [activeTrackingStartedAt])
-
-  const trackingElapsed = activeTrackingStartedAt ? elapsedDecimalHours(activeTrackingStartedAt) : 0
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, nowHHMM) : 0
   const officeStats = getOfficeStats(officeDays, totalWorkDays, officePercent)
   const { resultLabel, overtimeLabel, overtimeSign, overtimeClass, summary, resultClass, requiredToday, totalWorked } =
@@ -203,7 +162,6 @@ export function OvertimeBar({
       sollstunden,
       priorOvertime,
       workedToday,
-      trackingElapsed,
       liveElapsed,
       timeFormat,
       plannedStopTime,
@@ -246,7 +204,7 @@ export function OvertimeBar({
           <span className="font-medium text-gray-700 dark:text-gray-200">
             {formatHours(totalWorked, timeFormat)} worked
           </span>
-          {(liveWindowStart || activeTrackingStartedAt) && (
+          {liveWindowStart && (
             <>
               <span className="text-gray-400 dark:text-gray-500">(</span>
               {workedToday > 0 && (
@@ -258,12 +216,6 @@ export function OvertimeBar({
                 <>
                   {workedToday > 0 && <span className="text-gray-300 dark:text-gray-600">+</span>}
                   <LiveWindowBadge elapsed={liveElapsed} fmt={timeFormat} />
-                </>
-              )}
-              {activeTrackingStartedAt && (
-                <>
-                  {(workedToday > 0 || liveWindowStart) && <span className="text-gray-300 dark:text-gray-600">+</span>}
-                  <TrackingBadge startedAt={activeTrackingStartedAt} />
                 </>
               )}
               <span className="text-gray-400 dark:text-gray-500">)</span>

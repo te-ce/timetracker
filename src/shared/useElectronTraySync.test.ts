@@ -6,7 +6,6 @@ import type { ReactNode } from 'react'
 import { handleStartSubtask, handleStopSubtask, handleStopAll, handleStartWorkPeriod } from './useElectronTraySync'
 import type { WorkPeriod } from '../infra/repositories/types'
 import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
-import { InMemoryTimeTrackingRepository } from '../infra/repositories/in-memory/time-tracking-repository'
 
 vi.mock('../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -90,49 +89,34 @@ describe('handleStopSubtask', () => {
 })
 
 describe('handleStopAll', () => {
-  it('stops live subtask, work period, and active tracking', async () => {
+  it('stops live subtask and work period', async () => {
     const repo = makeMockMonthRepo()
-    const stopTracking = vi.fn().mockResolvedValue(null)
     const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
-    await handleStopAll(repo, '2026-06-09', windows, stopTracking)
+    await handleStopAll(repo, '2026-06-09', windows)
     expect(repo.stopLiveSubtask).toHaveBeenCalled()
     expect(repo.stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))
-    expect(stopTracking).toHaveBeenCalled()
   })
 
   it('stops work period even without live subtask', async () => {
     const repo = makeMockMonthRepo()
-    const stopTracking = vi.fn().mockResolvedValue(null)
     const windows = [makeWindow()]
-    await handleStopAll(repo, '2026-06-09', windows, stopTracking)
+    await handleStopAll(repo, '2026-06-09', windows)
     expect(repo.stopLiveSubtask).not.toHaveBeenCalled()
     expect(repo.stopWorkPeriod).toHaveBeenCalled()
-    expect(stopTracking).toHaveBeenCalled()
   })
 
-  it('only stops tracking when no open period', async () => {
+  it('does nothing when no open period', async () => {
     const repo = makeMockMonthRepo()
-    const stopTracking = vi.fn().mockResolvedValue(null)
     const windows = [makeWindow({ end: '17:00' })]
-    await handleStopAll(repo, '2026-06-09', windows, stopTracking)
+    await handleStopAll(repo, '2026-06-09', windows)
     expect(repo.stopWorkPeriod).not.toHaveBeenCalled()
-    expect(stopTracking).toHaveBeenCalled()
   })
 })
 
 describe('handleStartWorkPeriod', () => {
-  it('starts active tracking with the given category', async () => {
-    const trackingRepo = new InMemoryTimeTrackingRepository()
-    const monthRepo = makeMockMonthRepo()
-    vi.spyOn(trackingRepo, 'start')
-    await handleStartWorkPeriod('_SUPPORT', trackingRepo, monthRepo, '2026-06-09')
-    expect(trackingRepo.start).toHaveBeenCalledWith('2026-06-09', '_SUPPORT')
-  })
-
   it('opens a work period in the month repo', async () => {
-    const trackingRepo = new InMemoryTimeTrackingRepository()
     const monthRepo = makeMockMonthRepo()
-    await handleStartWorkPeriod('_SUPPORT', trackingRepo, monthRepo, '2026-06-09')
+    await handleStartWorkPeriod('_SUPPORT', monthRepo, '2026-06-09')
     expect(monthRepo.openWorkPeriod).toHaveBeenCalledWith(
       '2026-06-09',
       '_SUPPORT',
@@ -141,11 +125,13 @@ describe('handleStartWorkPeriod', () => {
   })
 
   it('starts a new work period for a different category', async () => {
-    const trackingRepo = new InMemoryTimeTrackingRepository()
     const monthRepo = makeMockMonthRepo()
-    vi.spyOn(trackingRepo, 'start')
-    await handleStartWorkPeriod('_INFRA', trackingRepo, monthRepo, '2026-06-09')
-    expect(trackingRepo.start).toHaveBeenCalledWith('2026-06-09', '_INFRA')
+    await handleStartWorkPeriod('_INFRA', monthRepo, '2026-06-09')
+    expect(monthRepo.openWorkPeriod).toHaveBeenCalledWith(
+      '2026-06-09',
+      '_INFRA',
+      expect.stringMatching(/^\d{2}:\d{2}$/),
+    )
   })
 })
 
