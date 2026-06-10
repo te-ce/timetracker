@@ -94,6 +94,7 @@ export function MonthView() {
           liveWindowStart={todayLiveWindowStart ?? null}
           plannedStopTime={todayPlannedStopTime ?? null}
           remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
+          showTotalWorked={config?.showTotalWorked === true}
           {...(showOfficeStats ? { officeDays, totalWorkDays: trackedWorkDays.length, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />

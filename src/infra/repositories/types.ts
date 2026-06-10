@@ -126,6 +126,7 @@ export interface AppConfig {
   showWorkedHoursInTray?: boolean | undefined
   remainingTimeReference?: 'planned-stop' | 'target-hours' | undefined
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target' | undefined
+  showTotalWorked?: boolean | undefined
 }
 
 export interface ConfigRepository {

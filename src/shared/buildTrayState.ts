@@ -22,6 +22,7 @@ export interface TrayStateInput {
   isTracking: boolean
   startedAt: string | null
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
+  showTotalWorked?: boolean
 }
 
 export interface TrayState {
@@ -34,7 +35,8 @@ export interface TrayState {
   startedAt: string | null
 }
 
-function buildBadgeLabel(remaining: number, fmt: TimeFormat): string {
+function buildBadgeLabel(remaining: number, totalWorked: number, fmt: TimeFormat, showTotalWorked: boolean): string {
+  if (showTotalWorked) return `${formatHours(totalWorked, fmt)} worked`
   if (remaining > 0) return `${formatHours(remaining, fmt)} left`
   if (remaining === 0) return 'Done'
   return `${formatHours(Math.abs(remaining), fmt)} overtime`
@@ -100,6 +102,7 @@ function findLiveSubtaskCategory(windows: WorkPeriod[]): string | null {
 export function buildTrayState(input: TrayStateInput): TrayState {
   const { sollstunden, priorOvertime, workedHours, trackingElapsed, liveElapsed, timeFormat } = input
   const mode = input.remainingTimeMode ?? 'until-zero-overtime'
+  const totalWorked = workedHours + trackingElapsed + liveElapsed
   const remaining =
     mode === 'until-daily-target'
       ? sollstunden - workedHours - trackingElapsed - liveElapsed
@@ -114,7 +117,7 @@ export function buildTrayState(input: TrayStateInput): TrayState {
     timeFormat,
     mode,
   )
-  const badgeLabel = buildBadgeLabel(remaining, timeFormat)
+  const badgeLabel = buildBadgeLabel(remaining, totalWorked, timeFormat, input.showTotalWorked === true)
   const activeSubtaskCategory = findLiveSubtaskCategory(input.windows)
 
   return {

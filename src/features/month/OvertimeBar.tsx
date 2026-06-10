@@ -16,6 +16,7 @@ interface Props {
   plannedStopTime?: string | null
   onHide?: () => void
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
+  showTotalWorked?: boolean
 }
 
 function nowHHMMFn() {
@@ -49,6 +50,11 @@ function formatRemaining(remaining: number, fmt: TimeFormat): string {
   if (remaining > 0) return `${formatHours(remaining, fmt)} remaining`
   if (remaining === 0) return 'Done'
   return `${formatHours(Math.abs(remaining), fmt)} overtime today`
+}
+
+function formatResult(remaining: number, totalWorked: number, fmt: TimeFormat, showTotalWorked: boolean): string {
+  if (showTotalWorked) return `${formatHours(totalWorked, fmt)} worked today`
+  return formatRemaining(remaining, fmt)
 }
 
 function formatElapsed(startedAt: string): string {
@@ -89,7 +95,7 @@ function getOfficeStats(officeDays?: number, totalWorkDays?: number, officePerce
 }
 
 interface BarData {
-  remainingLabel: string
+  resultLabel: string
   overtimeLabel: string
   overtimeSign: string
   overtimeClass: string
@@ -108,13 +114,13 @@ function buildBarData(
   fmt: TimeFormat,
   plannedStopTime: string | null | undefined,
   remainingTimeMode: 'until-zero-overtime' | 'until-daily-target' | undefined,
+  showTotalWorked: boolean,
 ): BarData {
   const hasOvertime = priorOvertime >= 0
   const remaining =
     remainingTimeMode === 'until-daily-target'
       ? sollstunden - workedToday - trackingElapsed - liveElapsed
       : sollstunden - priorOvertime - workedToday - trackingElapsed - liveElapsed
-  const remainingLabel = formatRemaining(remaining, fmt)
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'
   const overtimeSign = hasOvertime ? '−' : '+'
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
@@ -139,11 +145,12 @@ function buildBarData(
 
   const projectedPart = plannedStopTime ? `, projected at ${plannedStopTime}` : ''
 
-  const summary = `${formatHours(requiredToday, fmt)} required${equationBreakdown}, ${formatHours(totalWorked, fmt)} worked${workedBreakdown}${projectedPart} — ${remainingLabel}`
+  const resultLabel = formatResult(remaining, totalWorked, fmt, showTotalWorked)
+  const summary = `${formatHours(requiredToday, fmt)} required${equationBreakdown}, ${formatHours(totalWorked, fmt)} worked${workedBreakdown}${projectedPart} — ${resultLabel}`
 
   const resultClass = remaining <= 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'
   return {
-    remainingLabel,
+    resultLabel,
     overtimeLabel,
     overtimeSign,
     overtimeClass,
@@ -175,6 +182,7 @@ export function OvertimeBar({
   plannedStopTime,
   onHide,
   remainingTimeMode,
+  showTotalWorked = false,
 }: Props) {
   const [, setTick] = useState(0)
   const timeFormat = useTimeFormatStore((s) => s.format)
@@ -190,25 +198,18 @@ export function OvertimeBar({
   const trackingElapsed = activeTrackingStartedAt ? elapsedDecimalHours(activeTrackingStartedAt) : 0
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, nowHHMM) : 0
   const officeStats = getOfficeStats(officeDays, totalWorkDays, officePercent)
-  const {
-    remainingLabel,
-    overtimeLabel,
-    overtimeSign,
-    overtimeClass,
-    summary,
-    resultClass,
-    requiredToday,
-    totalWorked,
-  } = buildBarData(
-    sollstunden,
-    priorOvertime,
-    workedToday,
-    trackingElapsed,
-    liveElapsed,
-    timeFormat,
-    plannedStopTime,
-    remainingTimeMode,
-  )
+  const { resultLabel, overtimeLabel, overtimeSign, overtimeClass, summary, resultClass, requiredToday, totalWorked } =
+    buildBarData(
+      sollstunden,
+      priorOvertime,
+      workedToday,
+      trackingElapsed,
+      liveElapsed,
+      timeFormat,
+      plannedStopTime,
+      remainingTimeMode,
+      showTotalWorked,
+    )
 
   return (
     <div
@@ -278,7 +279,7 @@ export function OvertimeBar({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-lg font-bold tabular-nums ${resultClass}`} aria-hidden="true">
-            {remainingLabel}
+            {resultLabel}
           </span>
           {onHide && (
             <button

@@ -116,6 +116,7 @@ export function useElectronTraySync() {
       isTracking: !!activeTracking,
       startedAt: activeTracking?.startedAt ?? null,
       remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
+      showTotalWorked: config.showTotalWorked === true,
     })
 
     if (config.showWorkedHoursInTray === false) {

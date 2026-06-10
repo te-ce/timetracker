@@ -168,3 +168,32 @@ describe('Planned-Stop projection mode', () => {
     expect(screen.getByText(/projected/i)).toBeInTheDocument()
   })
 })
+
+describe('showTotalWorked mode', () => {
+  it('shows total worked hours as the result when showTotalWorked is true', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} showTotalWorked />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-label', expect.stringContaining('3.00h worked today'))
+  })
+
+  it('includes live elapsed in total worked when showTotalWorked is true', () => {
+    render(
+      <OvertimeBar
+        sollstunden={8}
+        priorOvertime={0}
+        workedToday={3}
+        liveWindowStart="09:00"
+        nowHHMM="10:00"
+        showTotalWorked
+      />,
+    )
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-label', expect.stringContaining('4.00h worked today'))
+  })
+
+  it('still shows remaining as the result when showTotalWorked is false', () => {
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} showTotalWorked={false} />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-label', expect.stringContaining('remaining'))
+  })
+})

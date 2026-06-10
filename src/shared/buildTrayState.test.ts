@@ -162,17 +162,25 @@ describe('buildTrayState', () => {
     })
   })
 
-  describe('isTracking and startedAt', () => {
-    it('reflects tracking state', () => {
-      const result = buildTrayState(baseInput)
-      expect(result.isTracking).toBe(true)
-      expect(result.startedAt).toBe('2026-06-09T09:00:00Z')
+  describe('showTotalWorked', () => {
+    it('shows total worked hours in badge label when showTotalWorked is true', () => {
+      const result = buildTrayState({ ...baseInput, showTotalWorked: true })
+      expect(result.badgeLabel).toBe('3.00h worked')
     })
 
-    it('shows not tracking when isTracking is false', () => {
-      const result = buildTrayState({ ...baseInput, isTracking: false, startedAt: null })
-      expect(result.isTracking).toBe(false)
-      expect(result.startedAt).toBeNull()
+    it('includes trackingElapsed in total worked when showTotalWorked is true', () => {
+      const result = buildTrayState({ ...baseInput, trackingElapsed: 1, showTotalWorked: true })
+      expect(result.badgeLabel).toBe('4.00h worked')
+    })
+
+    it('includes liveElapsed in total worked when showTotalWorked is true', () => {
+      const result = buildTrayState({ ...baseInput, liveElapsed: 0.5, showTotalWorked: true })
+      expect(result.badgeLabel).toBe('3.50h worked')
+    })
+
+    it('still shows remaining when showTotalWorked is false', () => {
+      const result = buildTrayState({ ...baseInput, showTotalWorked: false })
+      expect(result.badgeLabel).toBe('5.00h left')
     })
   })
 })
