@@ -20,6 +20,6 @@ export default defineConfig({
   ],
   server: {
     host: 'timetracker.localhost',
-    port: 5173,
+    port: 5297,
   },
 })
