@@ -51,9 +51,10 @@ function saveWindowState() {
 // ── Electron storage (userData JSON files) ────────────────────────────────────
 
 function storagePath(key) {
-  const dir = path.join(app.getPath('userData'), 'storage')
+  const filePath = path.join(app.getPath('userData'), 'storage', key)
+  const dir = path.dirname(filePath)
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  return path.join(dir, `${key}.json`)
+  return filePath
 }
 
 ipcMain.handle('storage:get', (_, key) => {
