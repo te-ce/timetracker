@@ -38,6 +38,7 @@ function useNow(enabled: boolean): string {
   const [now, setNow] = useState(nowHHMMFn)
   useEffect(() => {
     if (!enabled) return
+    setNow(nowHHMMFn())
     const id = setInterval(() => setNow(nowHHMMFn()), 60_000)
     return () => clearInterval(id)
   }, [enabled])

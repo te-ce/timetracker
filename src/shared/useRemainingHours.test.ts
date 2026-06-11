@@ -206,6 +206,32 @@ describe('useRemainingHours', () => {
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(5)
     })
+
+    it('refreshes currentNow immediately when live activity starts, avoiding stale-time wraparound', () => {
+      vi.useFakeTimers()
+      // Mount with no live activity; currentNow initialises to "08:31"
+      vi.setSystemTime(new Date('2026-06-03T08:31:00'))
+      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
+      const { result, rerender } = renderHook(() => useRemainingHours())
+      expect(result.current.liveElapsed).toBe(0)
+
+      // Advance wall-clock 30 minutes WITHOUT ticking the interval (no live period → no interval)
+      vi.setSystemTime(new Date('2026-06-03T09:01:00'))
+
+      // Now a work period starts at 09:01
+      stubDayQuery({
+        sollstunden: 8,
+        workedHours: 3,
+        windows: [{ id: '1', start: '09:01', end: null, category: 'Work', subtasks: [] }],
+      })
+      act(() => {
+        rerender()
+      })
+
+      // liveElapsed must be ~0 (just started), not a wrapped-around ~23.5h value
+      expect(result.current.liveElapsed).toBeCloseTo(0, 1)
+      vi.useRealTimers()
+    })
   })
 })
 

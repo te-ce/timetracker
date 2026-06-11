@@ -94,6 +94,7 @@ export function useRemainingHours() {
 
   useEffect(() => {
     if (!hasLiveActivity) return
+    setCurrentNow(nowHHMMFn())
     const id = setInterval(() => setCurrentNow(nowHHMMFn()), 60_000)
     return () => clearInterval(id)
   }, [hasLiveActivity])
