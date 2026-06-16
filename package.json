@@ -91,19 +91,23 @@
       "electron/**/*",
       "public/favicon.svg"
     ],
+    "icon": "electron/icons/app",
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "electron/icons/app.icns",
       "target": [
         "dmg",
         "zip"
       ]
     },
     "win": {
+      "icon": "electron/icons/app.ico",
       "target": [
         "nsis"
       ]
     },
     "linux": {
+      "icon": "electron/icons/512x512.png",
       "target": [
         "AppImage"
       ]

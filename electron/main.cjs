@@ -229,6 +229,7 @@ function createWindow() {
     ...state,
     minWidth: 800,
     minHeight: 600,
+    icon: path.join(__dirname, 'icons/512x512.png'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
