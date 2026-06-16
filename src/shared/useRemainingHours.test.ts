@@ -192,13 +192,32 @@ describe('useRemainingHours', () => {
     it('subtracts live window elapsed from remaining', () => {
       const now = new Date()
       const thirtyMinsAgoHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(Math.max(0, now.getMinutes() - 30)).padStart(2, '0')}`
+      // workedHours includes the live elapsed (buildDaySummary now passes `now` to calculateWorkedHours).
+      // 3h closed + 0.5h live = 3.5h total from the query.
       stubDayQuery({
         sollstunden: 8,
-        workedHours: 3,
+        workedHours: 3.5,
         windows: [{ id: '1', start: thirtyMinsAgoHHMM, end: null, category: 'Work', subtasks: [] }],
       })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(4.5, 0)
+    })
+
+    it('does not double-count live elapsed when a period has been re-opened by deleting its stop time', () => {
+      // Scenario: user had a period stopped at noon, then deleted the stop time.
+      // The period is now open (end: null). buildDaySummary passes `now` so
+      // workedHours from useDayQuery already contains the live elapsed (5h).
+      // remaining must be sollstunden − workedHours (not − workedHours − liveElapsed).
+      const now = new Date()
+      const fiveHoursAgoHH = String((now.getHours() - 5 + 24) % 24).padStart(2, '0')
+      const fiveHoursAgoHHMM = `${fiveHoursAgoHH}:${String(now.getMinutes()).padStart(2, '0')}`
+      stubDayQuery({
+        sollstunden: 8,
+        workedHours: 5, // 5h live elapsed already in workedHours (from calculateWorkedHours with now)
+        windows: [{ id: '1', start: fiveHoursAgoHHMM, end: null, category: 'Work', subtasks: [] }],
+      })
+      const { result } = renderHook(() => useRemainingHours())
+      expect(result.current.remaining).toBeCloseTo(3, 0) // 8 − 5, not 8 − 5 − 5
     })
 
     it('remaining excludes live tracking when no open window', () => {
@@ -378,12 +397,11 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
   describe('target-hours mode (when remainingTimeReference = target-hours)', () => {
     it('uses target-based remaining when remainingTimeReference is target-hours', () => {
       const ps = makePlannedStopWindow(-120, 60)
-      // Full planned = 3h, but only 2h actually worked; target = 8h
-      // Remaining = 8 - 2 = 6h (approx)
-      const fullDuration = 3
+      // buildDaySummary passes `now` to calculateWorkedHours, so the query returns
+      // the live elapsed (2h) not the full planned duration (3h). Remaining = 8 − 2 = 6h.
       stubDayQuery({
         sollstunden: 8,
-        workedHours: fullDuration,
+        workedHours: 2, // planned live elapsed (not full planned duration)
         windows: [ps],
         config: { ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' },
       })

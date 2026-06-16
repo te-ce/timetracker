@@ -53,9 +53,17 @@ describe('OvertimeBar', () => {
   })
 
   it('deducts live window elapsed from remaining', () => {
-    // sollstunden=8, workedToday=3, liveWindow=1h → remaining=4h
-    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    // workedToday now includes live elapsed (buildDaySummary passes `now`).
+    // 3h closed + 1h live = 4h workedToday → remaining = 8 − 4 = 4h (not 8 − 4 − 1 = 3h).
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={4} liveWindowStart="09:00" nowHHMM="10:00" />)
     expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('4'))
+  })
+
+  it('does not double-count live elapsed when workedToday already includes it', () => {
+    // Scenario: period re-opened (stop deleted). workedToday=5h (5h live), liveWindow=5h.
+    // remaining must be sollstunden − workedToday (not − workedToday − liveElapsed).
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={5} liveWindowStart="09:00" nowHHMM="14:00" />)
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('3.00h remaining'))
   })
 
   it('does not render office section when office props are omitted', () => {
@@ -131,18 +139,19 @@ describe('total worked today', () => {
   })
 
   it('shows totalWorked including live elapsed as worked value', () => {
-    // workedToday=3, liveWindow=1h → totalWorked=4h shown as "4.00h worked"
-    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    // workedToday=4 (3h closed + 1h live), liveWindow=1h → totalWorked=4h shown as "4.00h worked"
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={4} liveWindowStart="09:00" nowHHMM="10:00" />)
     expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('4.00h worked'))
   })
 
   it('shows worked breakdown with past and current when live is active', () => {
-    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    // pastWorkedToday = workedToday − liveElapsed = 4 − 1 = 3h
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={4} liveWindowStart="09:00" nowHHMM="10:00" />)
     expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('3.00h past'))
   })
 
   it('renders a visible "past" label when live window is active', () => {
-    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={3} liveWindowStart="09:00" nowHHMM="10:00" />)
+    render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={4} liveWindowStart="09:00" nowHHMM="10:00" />)
     expect(screen.getByText(/past/i)).toBeInTheDocument()
   })
 })
@@ -177,11 +186,12 @@ describe('showTotalWorked mode', () => {
   })
 
   it('includes live elapsed in total worked when showTotalWorked is true', () => {
+    // workedToday=4 (3h closed + 1h live), liveWindow=1h → totalWorked=4h
     render(
       <OvertimeBar
         sollstunden={8}
         priorOvertime={0}
-        workedToday={3}
+        workedToday={4}
         liveWindowStart="09:00"
         nowHHMM="10:00"
         showTotalWorked

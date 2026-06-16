@@ -76,6 +76,7 @@ interface BarData {
   resultClass: string
   requiredToday: number
   totalWorked: number
+  pastWorkedToday: number
 }
 
 function buildBarData(
@@ -88,17 +89,18 @@ function buildBarData(
   remainingTimeMode: 'until-zero-overtime' | 'until-daily-target' | undefined,
   showTotalWorked: boolean,
 ): BarData {
+  // workedToday already includes live elapsed (buildDaySummary passes `now`). Subtract
+  // it back to get the closed-only portion for the "past" breakdown label.
+  const pastWorkedToday = Math.max(0, workedToday - liveElapsed)
   const hasOvertime = priorOvertime >= 0
   const remaining =
-    remainingTimeMode === 'until-daily-target'
-      ? sollstunden - workedToday - liveElapsed
-      : sollstunden - priorOvertime - workedToday - liveElapsed
+    remainingTimeMode === 'until-daily-target' ? sollstunden - workedToday : sollstunden - priorOvertime - workedToday
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'
   const overtimeSign = hasOvertime ? '−' : '+'
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
 
   const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
-  const totalWorked = workedToday + liveElapsed
+  const totalWorked = pastWorkedToday + liveElapsed
 
   const equationBreakdown =
     remainingTimeMode === 'until-daily-target'
@@ -107,7 +109,7 @@ function buildBarData(
 
   const workedBreakdownParts: string[] = []
   if (liveElapsed > 0) {
-    if (workedToday > 0) workedBreakdownParts.push(`${formatHours(workedToday, fmt)} past`)
+    if (pastWorkedToday > 0) workedBreakdownParts.push(`${formatHours(pastWorkedToday, fmt)} past`)
     workedBreakdownParts.push(`${formatHours(liveElapsed, fmt)} current`)
   }
   const workedBreakdown = workedBreakdownParts.length >= 2 ? ` (${workedBreakdownParts.join(' + ')})` : ''
@@ -127,6 +129,7 @@ function buildBarData(
     resultClass,
     requiredToday,
     totalWorked,
+    pastWorkedToday,
   }
 }
 
@@ -158,17 +161,26 @@ export function OvertimeBar({
 
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, nowHHMM) : 0
   const officeStats = getOfficeStats(officeDays, totalWorkDays, officePercent)
-  const { resultLabel, overtimeLabel, overtimeSign, overtimeClass, summary, resultClass, requiredToday, totalWorked } =
-    buildBarData(
-      sollstunden,
-      priorOvertime,
-      workedToday,
-      liveElapsed,
-      timeFormat,
-      plannedStopTime,
-      remainingTimeMode,
-      showTotalWorked,
-    )
+  const {
+    resultLabel,
+    overtimeLabel,
+    overtimeSign,
+    overtimeClass,
+    summary,
+    resultClass,
+    requiredToday,
+    totalWorked,
+    pastWorkedToday,
+  } = buildBarData(
+    sollstunden,
+    priorOvertime,
+    workedToday,
+    liveElapsed,
+    timeFormat,
+    plannedStopTime,
+    remainingTimeMode,
+    showTotalWorked,
+  )
 
   return (
     <div
@@ -208,14 +220,14 @@ export function OvertimeBar({
           {liveWindowStart && (
             <>
               <span className="text-gray-400 dark:text-gray-500">(</span>
-              {workedToday > 0 && (
+              {pastWorkedToday > 0 && (
                 <span className="font-medium text-gray-500 dark:text-gray-400">
-                  {formatHours(workedToday, timeFormat)} past
+                  {formatHours(pastWorkedToday, timeFormat)} past
                 </span>
               )}
               {liveWindowStart && (
                 <>
-                  {workedToday > 0 && <span className="text-gray-300 dark:text-gray-600">+</span>}
+                  {pastWorkedToday > 0 && <span className="text-gray-300 dark:text-gray-600">+</span>}
                   <LiveWindowBadge elapsed={liveElapsed} fmt={timeFormat} />
                 </>
               )}

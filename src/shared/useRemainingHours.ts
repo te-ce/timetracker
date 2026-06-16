@@ -100,16 +100,15 @@ export function useRemainingHours() {
   }, [hasLiveActivity])
 
   const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, currentNow) : 0
-
-  // For a Planned-Stop WorkPeriod: the query's workedHours includes its full planned
-  // duration (end − start). Correct it back to live elapsed for target-hours calculations.
-  const plannedFullDuration = plannedStopPeriod
-    ? liveWindowElapsedHours(plannedStopPeriod.start, plannedStopPeriod.end!)
-    : 0
   const plannedLiveElapsed = plannedStopPeriod ? liveWindowElapsedHours(plannedStopPeriod.start, currentNow) : 0
-  const correctedWorkedHours = workedHours - plannedFullDuration
 
-  // Projected remaining: uses full planned duration (workedHours already includes it).
+  // workedHours from useDayQuery now includes live elapsed for open/planned-stop periods
+  // (buildDaySummary passes `now` to calculateWorkedHours). Subtract to get closed-only
+  // hours so callers that do (workedHours + liveElapsed) still get the correct total.
+  const closedWorkedHours = Math.max(0, workedHours - liveElapsed - plannedLiveElapsed)
+
+  // Projected remaining: uses the full query workedHours (which after 8cd2ee1 equals
+  // closed + planned-live, not closed + full-planned-duration — known limitation).
   const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - workedHours
 
   const remainingTimeReference = config?.remainingTimeReference ?? 'planned-stop'
@@ -119,11 +118,12 @@ export function useRemainingHours() {
 
   const countdownHours = plannedStopPeriod ? liveWindowElapsedHours(currentNow, plannedStopPeriod.end!) : 0
 
+  // workedHours already contains live elapsed, so just subtract once.
   const remaining = isPlannedStopMode
     ? countdownHours
     : remainingTimeMode === 'until-daily-target'
-      ? sollstunden - correctedWorkedHours - plannedLiveElapsed - liveElapsed
-      : sollstunden - overtimeToDate.priorOvertime - correctedWorkedHours - plannedLiveElapsed - liveElapsed
+      ? sollstunden - workedHours
+      : sollstunden - overtimeToDate.priorOvertime - workedHours
 
   const { format } = useTimeFormatStore()
   const priorOvertime = overtimeToDate.priorOvertime
@@ -140,7 +140,7 @@ export function useRemainingHours() {
     isPlannedStopMode,
     plannedStopTime,
     sollstunden,
-    workedHours,
+    workedHours: closedWorkedHours,
     priorOvertime,
     liveElapsed,
     summary,
