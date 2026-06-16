@@ -15,6 +15,7 @@ import { RemainingTimeModeSettings } from './RemainingTimeModeSettings'
 import { ShowTotalWorkedSettings } from './ShowTotalWorkedSettings'
 import { HotkeySettings } from './HotkeySettings'
 import { LaunchAtLoginSettings } from './LaunchAtLoginSettings'
+import { StartupViewSettings } from './StartupViewSettings'
 import { WindowBehaviorSettings } from './WindowBehaviorSettings'
 import { LocalExcelFolderSettings } from './LocalExcelFolderSettings'
 import { LocalExcelSettings } from './LocalExcelSettings'
@@ -83,6 +84,7 @@ export function SettingsView() {
                 {isElectron && <LaunchAtLoginSettings repository={configRepo} />}
                 {isElectron && <WindowBehaviorSettings repository={configRepo} />}
                 {isElectron && <WorkedHoursTraySettings repository={configRepo} />}
+                <StartupViewSettings repository={configRepo} />
                 <OvertimeBarSettings repository={configRepo} />
                 <ShowTotalWorkedSettings repository={configRepo} />
                 <WorkedHoursNavSettings repository={configRepo} />

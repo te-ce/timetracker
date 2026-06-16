@@ -113,6 +113,7 @@ export function composeDayContext(
   monthData: MonthData,
   config: AppConfig | undefined,
   todayIso: string,
+  todayNow?: string,
 ): DayContext {
   const year = parseInt(date.slice(0, 4))
   const month = parseInt(date.slice(5, 7))
@@ -121,6 +122,7 @@ export function composeDayContext(
     monthData,
     today: todayIso,
     globalAutoCategory: config?.autoCategory ?? null,
+    ...(todayNow !== undefined ? { todayNow } : {}),
   })
 
   const dayData = monthData[date]

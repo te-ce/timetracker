@@ -75,10 +75,13 @@ export function useMonthSummaries(year: number, month: number) {
   const weekdayHours = config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
+  const d = new Date()
+  const todayNow = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   const summaries = buildMonthSummaries(year, month, {
     monthData,
     today: todayIso,
     globalAutoCategory: config?.autoCategory ?? null,
+    todayNow,
   })
 
   const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))

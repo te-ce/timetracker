@@ -87,6 +87,7 @@ interface Props {
   expanded?: boolean | undefined
   showOfficeStats?: boolean | undefined
   weekdayHours?: WeekdayHours | undefined
+  initialLogDate?: string | undefined
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
@@ -207,6 +208,7 @@ export function MonthGrid({
   expanded,
   showOfficeStats = true,
   weekdayHours = DEFAULT_WEEKDAY_HOURS,
+  initialLogDate,
 }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
@@ -217,7 +219,7 @@ export function MonthGrid({
   const [colDragOverIdx, setColDragOverIdx] = useState<number | null>(null)
   const [editingCat, setEditingCat] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
-  const [activeDialogDate, setActiveDialogDate] = useState<string | null>(null)
+  const [activeDialogDate, setActiveDialogDate] = useState<string | null>(initialLogDate ?? null)
   const [activeDialogCategory, setActiveDialogCategory] = useState<string | null>(null)
   const categoryDialogRef = useRef<HTMLDivElement>(null)
 

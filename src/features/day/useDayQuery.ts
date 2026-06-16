@@ -17,6 +17,11 @@ export interface DayQueryResult extends DayContext {
   config: AppConfig | undefined
 }
 
+function nowHHMM(): string {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 export function useDayQuery(date: string): DayQueryResult {
   const { monthRepo, configRepo } = useRepositories()
   const todayIso = toLocalIso(new Date())
@@ -33,5 +38,5 @@ export function useDayQuery(date: string): DayQueryResult {
     queryFn: () => monthRepo.getMonth(year, month),
   })
 
-  return { config, ...composeDayContext(date, monthData, config, todayIso) }
+  return { config, ...composeDayContext(date, monthData, config, todayIso, nowHHMM()) }
 }

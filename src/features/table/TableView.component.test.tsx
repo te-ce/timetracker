@@ -19,6 +19,7 @@ vi.mock('../../infra/auth/msalInstance', () => ({
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
+  useSearch: () => ({ expanded: false }),
 }))
 
 vi.mock('../../shared/useMonthSummaries', () => ({

@@ -1,5 +1,5 @@
 import './App.css'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type React from 'react'
 import { Link, Outlet, useRouterState, useNavigate, useRouter } from '@tanstack/react-router'
 import { useAuthStore } from './shared/authStore'
@@ -19,6 +19,7 @@ import { toLocalIso } from './shared/dateUtils'
 import { defaultHotkeyConfig, matchesShortcut } from './shared/hotkeyConfig'
 import { QUERY_KEYS } from './shared/queryKeys'
 import { useRepositories } from './infra/repositories/RepositoryContext'
+import { resolveStartupPath, getLastViewPath, saveLastViewPath } from './features/settings/resolveStartupPath'
 
 function IconCalendar() {
   return (
@@ -353,6 +354,20 @@ function App() {
   })
   const hotkeyConfig = appConfig?.hotkeys ?? defaultHotkeyConfig()
 
+  const startupNavigated = useRef(false)
+  useEffect(() => {
+    if (!appConfig || startupNavigated.current || !appConfig.startupView) return
+    startupNavigated.current = true
+    const today = toLocalIso(new Date())
+    const target = resolveStartupPath(appConfig.startupView, getLastViewPath(), today)
+    router.history.push(target)
+  }, [appConfig, router])
+
+  useEffect(() => {
+    const loc = routerState.location
+    saveLastViewPath(loc.pathname + loc.searchStr)
+  }, [routerState.location])
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.target instanceof HTMLElement) {
@@ -405,7 +420,7 @@ function App() {
         if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
           void navigate({ to: '/month', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'tableView', e.key, ctrl, shift)) {
-          void navigate({ to: '/table', search: defaultMonthSearch })
+          void navigate({ to: '/table', search: { ...defaultMonthSearch, expanded: false, logDate: undefined } })
         } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
           void navigate({ to: '/', search: { date: toLocalIso(new Date()) } })
         } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {

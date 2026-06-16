@@ -26,6 +26,7 @@ export interface MonthSummaryInput {
   monthData: MonthData
   today: string
   globalAutoCategory?: string | null
+  todayNow?: string
 }
 
 export interface MonthSummaryResult {
@@ -42,10 +43,10 @@ function unpackDay(dayData: Day | undefined) {
   return { windows, dayTypeOverride, isConfirmed }
 }
 
-function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, today: string): DaySummary {
+function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, today: string, now?: string): DaySummary {
   const { windows, dayTypeOverride, isConfirmed } = unpackDay(dayData)
-  const workedHours = calculateWorkedHours(windows)
-  const categoryHours = calculateCategoryHours(windows)
+  const workedHours = calculateWorkedHours(windows, now)
+  const categoryHours = calculateCategoryHours(windows, now)
   const entryTotal = Object.entries(categoryHours)
     .filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)
     .reduce((sum, [, h]) => sum + h, 0)
@@ -91,7 +92,7 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
 }
 
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
-  const { monthData, today } = input
+  const { monthData, today, todayNow } = input
   const daysInMonth = new Date(year, month, 0).getDate()
 
   const days: DaySummary[] = []
@@ -101,7 +102,8 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d)
     const iso = toLocalIso(date)
-    const summary = buildDaySummary(iso, date, monthData[iso], today)
+    const now = iso === today ? todayNow : undefined
+    const summary = buildDaySummary(iso, date, monthData[iso], today, now)
     if (summary.dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(summary.workedHours)
     days.push(summary)

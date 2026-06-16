@@ -127,7 +127,10 @@ export interface AppConfig {
   remainingTimeReference?: 'planned-stop' | 'target-hours' | undefined
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target' | undefined
   showTotalWorked?: boolean | undefined
+  startupView?: StartupView | undefined
 }
+
+export type StartupView = 'last' | 'day' | 'month' | 'table' | 'table-with-log'
 
 export interface ConfigRepository {
   get(): Promise<AppConfig>

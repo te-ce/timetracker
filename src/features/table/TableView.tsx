@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import type { ConfigRepository } from '../../infra/repositories/types'
@@ -30,6 +30,7 @@ async function saveAutoCategory(configRepo: ConfigRepository, category: string):
 export function TableView() {
   const { monthRepo, configRepo } = useRepositories()
   const navigate = useNavigate()
+  const search = useSearch({ from: '/table' })
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
   const [month, setMonth] = useState(today.getMonth() + 1)
@@ -86,7 +87,7 @@ export function TableView() {
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [clearDayDate, setClearDayDate] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(search.expanded)
 
   const resetMonthMutation = useMutation({
     mutationFn: () => monthRepo.deleteMonth(year, month),
@@ -137,6 +138,7 @@ export function TableView() {
       onNoteChange={(date, note) => noteMutation.mutate({ date, note })}
       onSelectDate={(date) => void navigate({ to: '/', search: { date } })}
       onClearDay={(date) => setClearDayDate(date)}
+      initialLogDate={search.logDate}
     />
   )
 
