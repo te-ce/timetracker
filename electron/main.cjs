@@ -139,38 +139,23 @@ function buildTrayMenu() {
     }
   }
 
-  // Auto category item (first, separated)
-  const autoCategoryItems = []
-  if (autoCategory && isTracking) {
-    const isAutoSelected = !activeSubtaskCategory
-    autoCategoryItems.push({
-      label: `● ${autoCategory}`,
-      type: 'checkbox',
-      checked: isAutoSelected,
-      click: () => {
-        // Clicking auto category while tracking → stop subtasks and work period
-        mainWindow.webContents.send('tray:stopAll')
-      },
-    })
-    autoCategoryItems.push({ type: 'separator' })
-  }
-
-  // Other category items (only shown while tracking — subtask switching)
+  // While tracking: all categories listed; selected = active subtask, else main category
   const categoryItems = isTracking
-    ? categories
-        .filter((cat) => cat !== autoCategory)
-        .map((cat) => ({
+    ? categories.map((cat) => {
+        const isSelected = activeSubtaskCategory ? cat === activeSubtaskCategory : cat === autoCategory
+        return {
           label: cat,
           type: 'checkbox',
-          checked: cat === activeSubtaskCategory,
+          checked: isSelected,
           click: () => {
-            if (cat === activeSubtaskCategory) {
+            if (isSelected) {
               mainWindow.webContents.send('tray:stopSubtask')
             } else {
               mainWindow.webContents.send('tray:startSubtask', cat)
             }
           },
-        }))
+        }
+      })
     : []
 
   // When not tracking: show all categories to start a new work period
@@ -201,7 +186,6 @@ function buildTrayMenu() {
     { type: 'separator' },
     ...infoItems,
     { type: 'separator' },
-    ...autoCategoryItems,
     ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
     ...(startWorkPeriodItems.length > 0 ? [...startWorkPeriodItems, { type: 'separator' }] : []),
     ...stopItem,
