@@ -88,6 +88,7 @@ interface Props {
   showOfficeStats?: boolean | undefined
   weekdayHours?: WeekdayHours | undefined
   initialLogDate?: string | undefined
+  openLogSignal?: number | undefined
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
@@ -209,6 +210,7 @@ export function MonthGrid({
   showOfficeStats = true,
   weekdayHours = DEFAULT_WEEKDAY_HOURS,
   initialLogDate,
+  openLogSignal,
 }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
@@ -229,6 +231,14 @@ export function MonthGrid({
   }
 
   const todayIso = toLocalIso(new Date())
+
+  const prevLogSignal = useRef(openLogSignal)
+  useEffect(() => {
+    if (openLogSignal === prevLogSignal.current) return
+    prevLogSignal.current = openLogSignal
+    setActiveDialogDate(todayIso)
+    setActiveDialogCategory(null)
+  }, [openLogSignal, todayIso])
 
   function nowHHMM() {
     const d = new Date()

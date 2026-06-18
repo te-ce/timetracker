@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
@@ -88,6 +88,13 @@ export function TableView() {
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [clearDayDate, setClearDayDate] = useState<string | null>(null)
   const [expanded, setExpanded] = useState(search.expanded)
+  const [logSignal, setLogSignal] = useState(0)
+  // Consume the deep-link logDate once; clearing it stops the dialog from
+  // reopening when MonthGrid remounts on every fullscreen toggle.
+  const [pendingLogDate, setPendingLogDate] = useState(search.logDate)
+  useEffect(() => {
+    if (pendingLogDate) setPendingLogDate(undefined)
+  }, [pendingLogDate])
 
   const resetMonthMutation = useMutation({
     mutationFn: () => monthRepo.deleteMonth(year, month),
@@ -138,8 +145,18 @@ export function TableView() {
       onNoteChange={(date, note) => noteMutation.mutate({ date, note })}
       onSelectDate={(date) => void navigate({ to: '/', search: { date } })}
       onClearDay={(date) => setClearDayDate(date)}
-      initialLogDate={search.logDate}
+      initialLogDate={pendingLogDate}
+      openLogSignal={logSignal}
     />
+  )
+
+  const logWorkBtn = (
+    <button
+      onClick={() => setLogSignal((n) => n + 1)}
+      className="rounded border px-2 py-1 text-xs text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+    >
+      Log work
+    </button>
   )
 
   const expandBtn = (
@@ -204,7 +221,10 @@ export function TableView() {
       <div data-testid="table-overlay" className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
         <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} compact />
-          {expandBtn}
+          <div className="flex items-center gap-2">
+            {logWorkBtn}
+            {expandBtn}
+          </div>
         </div>
         <div className="flex-1 min-h-0 px-4 py-2">{table}</div>
         <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 shrink-0">{footer}</div>
@@ -229,7 +249,10 @@ export function TableView() {
           onHide={() => hideOvertimeMutation.mutate()}
         />
       )}
-      <div className="flex justify-end">{expandBtn}</div>
+      <div className="flex justify-end gap-2">
+        {logWorkBtn}
+        {expandBtn}
+      </div>
       {table}
       {footer}
       {dialogs}

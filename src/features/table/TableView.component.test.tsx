@@ -27,10 +27,22 @@ vi.mock('../../shared/useMonthSummaries', () => ({
 }))
 
 vi.mock('./MonthTable', () => ({
-  MonthGrid: ({ onClearDay, expanded }: { onClearDay?: (date: string) => void; expanded?: boolean }) =>
+  MonthGrid: ({
+    onClearDay,
+    expanded,
+    openLogSignal,
+  }: {
+    onClearDay?: (date: string) => void
+    expanded?: boolean
+    openLogSignal?: number
+  }) =>
     createElement(
       'div',
-      { 'data-testid': 'month-table', 'data-expanded': String(expanded ?? false) },
+      {
+        'data-testid': 'month-table',
+        'data-expanded': String(expanded ?? false),
+        'data-log-signal': String(openLogSignal ?? 0),
+      },
       onClearDay
         ? createElement('button', { onClick: () => onClearDay('2026-06-05'), 'aria-label': 'trigger-clear-day' }, '×')
         : null,
@@ -253,6 +265,20 @@ describe('TableView', () => {
         const saved = await configRepo.get()
         expect(saved.showOvertimeBar).toBe(false)
       })
+    })
+  })
+
+  describe('Log work button', () => {
+    it('renders a Log work button', () => {
+      render(<TableView />, { wrapper: makeWrapper() })
+      expect(screen.getByRole('button', { name: /log work/i })).toBeInTheDocument()
+    })
+
+    it('increments openLogSignal passed to the grid when clicked', async () => {
+      render(<TableView />, { wrapper: makeWrapper() })
+      expect(screen.getByTestId('month-table').getAttribute('data-log-signal')).toBe('0')
+      await userEvent.click(screen.getByRole('button', { name: /log work/i }))
+      expect(screen.getByTestId('month-table').getAttribute('data-log-signal')).toBe('1')
     })
   })
 })

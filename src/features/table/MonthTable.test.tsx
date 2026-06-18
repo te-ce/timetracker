@@ -29,37 +29,43 @@ function setup(
     customCategories?: string[]
     expanded?: boolean
     showOfficeStats?: boolean
+    openLogSignal?: number
   } = {},
 ) {
   const repo = new InMemoryMonthRepository(opts.monthData ? { '2026-05': opts.monthData } : {})
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
-  render(
-    <QueryClientProvider client={queryClient}>
-      <MonthGrid
-        year={2026}
-        month={5}
-        repository={repo}
-        autoCategory={opts.autoCategory ?? '_COREMEDIA'}
-        customCategories={opts.customCategories}
-        confirmedDays={opts.confirmedDays}
-        dayTypes={opts.dayTypes}
-        workLocations={opts.workLocations}
-        defaultWorkLocation={opts.defaultWorkLocation}
-        onCategoryReorder={opts.onCategoryReorder}
-        onCategoryRename={opts.onCategoryRename}
-        onAutoCategoryChange={opts.onAutoCategoryChange}
-        onSelectDate={opts.onSelectDate}
-        onClearDay={opts.onClearDay}
-        sprintStartDate={opts.sprintStartDate}
-        sprintLengthDays={opts.sprintLengthDays}
-        expanded={opts.expanded}
-        showOfficeStats={opts.showOfficeStats}
-      />
-    </QueryClientProvider>,
-  )
+  function ui(signal?: number) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <MonthGrid
+          year={2026}
+          month={5}
+          repository={repo}
+          autoCategory={opts.autoCategory ?? '_COREMEDIA'}
+          customCategories={opts.customCategories}
+          confirmedDays={opts.confirmedDays}
+          dayTypes={opts.dayTypes}
+          workLocations={opts.workLocations}
+          defaultWorkLocation={opts.defaultWorkLocation}
+          onCategoryReorder={opts.onCategoryReorder}
+          onCategoryRename={opts.onCategoryRename}
+          onAutoCategoryChange={opts.onAutoCategoryChange}
+          onSelectDate={opts.onSelectDate}
+          onClearDay={opts.onClearDay}
+          sprintStartDate={opts.sprintStartDate}
+          sprintLengthDays={opts.sprintLengthDays}
+          expanded={opts.expanded}
+          showOfficeStats={opts.showOfficeStats}
+          openLogSignal={signal}
+        />
+      </QueryClientProvider>
+    )
+  }
 
-  return { repo }
+  const { rerender } = render(ui(opts.openLogSignal))
+
+  return { repo, rerender: (signal: number) => rerender(ui(signal)) }
 }
 
 describe('MonthGrid', () => {
@@ -838,6 +844,25 @@ describe('MonthGrid', () => {
       setup({ showOfficeStats: false })
       await screen.findByRole('columnheader', { name: /worked/i })
       expect(screen.queryByRole('button', { name: /^Location /i })).not.toBeInTheDocument()
+    })
+  })
+
+  describe('openLogSignal', () => {
+    it('does not open the work period dialog on initial render', async () => {
+      setup({ openLogSignal: 0 })
+      await screen.findByRole('columnheader', { name: /worked/i })
+      expect(screen.queryByText(/work periods/i)).not.toBeInTheDocument()
+    })
+
+    it('opens the work period dialog for today when the signal changes', async () => {
+      const { rerender } = setup({ openLogSignal: 0 })
+      await screen.findByRole('columnheader', { name: /worked/i })
+
+      rerender(1)
+
+      expect(await screen.findByText(/work periods/i)).toBeInTheDocument()
+      const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+      expect(screen.getByText(todayLabel)).toBeInTheDocument()
     })
   })
 })
