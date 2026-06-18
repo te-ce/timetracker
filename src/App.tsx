@@ -363,6 +363,24 @@ function App() {
     router.history.push(target)
   }, [appConfig, router])
 
+  const appConfigRef = useRef(appConfig)
+  useEffect(() => {
+    appConfigRef.current = appConfig
+  }, [appConfig])
+
+  useEffect(() => {
+    const api = window.electronAPI?.window
+    if (!api) return
+    const onShow = () => {
+      const cfg = appConfigRef.current
+      if (!cfg?.startupView) return
+      const today = toLocalIso(new Date())
+      router.history.push(resolveStartupPath(cfg.startupView, getLastViewPath(), today))
+    }
+    api.onShow(onShow)
+    return () => api.offShow(onShow)
+  }, [router])
+
   useEffect(() => {
     const loc = routerState.location
     saveLastViewPath(loc.pathname + loc.searchStr)

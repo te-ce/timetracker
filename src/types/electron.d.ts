@@ -36,5 +36,9 @@ interface Window {
     notify: {
       goalReached(): void
     }
+    window: {
+      onShow(cb: () => void): void
+      offShow(cb: () => void): void
+    }
   }
 }

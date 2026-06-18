@@ -54,6 +54,7 @@ describe('dispatchGoalNotification', () => {
         delete: () => Promise.resolve(),
       },
       notify: { goalReached },
+      window: { onShow: () => {}, offShow: () => {} },
     }
 
     dispatchGoalNotification()

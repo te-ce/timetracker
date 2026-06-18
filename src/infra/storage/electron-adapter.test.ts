@@ -37,6 +37,7 @@ beforeEach(() => {
     hotkey: { onToggle: () => {}, offToggle: () => {}, setGlobal: () => Promise.resolve() },
     storage: stub,
     notify: { goalReached: () => {} },
+    window: { onShow: () => {}, offShow: () => {} },
   }
 })
 

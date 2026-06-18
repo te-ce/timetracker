@@ -8,11 +8,11 @@ interface Props {
 }
 
 const OPTIONS: { value: StartupView; label: string }[] = [
-  { value: 'day', label: 'Day View (current day)' },
-  { value: 'month', label: 'Month View (current month)' },
-  { value: 'table', label: 'Table View' },
-  { value: 'table-with-log', label: 'Table View + work period log for today' },
-  { value: 'last', label: 'Last view when closed' },
+  { value: 'day', label: 'Today' },
+  { value: 'month', label: 'Month' },
+  { value: 'table', label: 'Timesheet' },
+  { value: 'table-with-log', label: "Timesheet + today's log" },
+  { value: 'last', label: 'Resume last view' },
 ]
 
 export function StartupViewSettings({ repository }: Props) {
@@ -51,7 +51,7 @@ export function StartupViewSettings({ repository }: Props) {
           </option>
         ))}
       </select>
-      <p className="text-xs text-gray-500 dark:text-gray-400">Which view to open when launching the app.</p>
+      <p className="text-xs text-gray-500 dark:text-gray-400">Which view to show when opening the app.</p>
       {mutation.isError && (
         <p role="alert" className="text-xs text-red-600 dark:text-red-400">
           Failed to save setting. Please try again.

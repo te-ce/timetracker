@@ -162,6 +162,7 @@ function makeElectronAPI() {
       delete: vi.fn().mockResolvedValue(undefined),
     },
     notify: { goalReached: vi.fn() },
+    window: { onShow: vi.fn(), offShow: vi.fn() },
   }
 }
 

@@ -16,11 +16,11 @@ describe('StartupViewSettings', () => {
     render(<StartupViewSettings repository={repo} />, { wrapper })
     const select = await screen.findByRole('combobox')
     expect(select).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /day view/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /month view/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Table View' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /table.*work period/i })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /last view/i })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Today' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Month' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Timesheet' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: "Timesheet + today's log" })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Resume last view' })).toBeInTheDocument()
   })
 
   it('defaults to "day" when no startupView in config', async () => {

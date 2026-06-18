@@ -29,4 +29,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   notify: {
     goalReached: () => ipcRenderer.send('notify:goalReached'),
   },
+  window: {
+    onShow: (cb) => ipcRenderer.on('window:show', cb),
+    offShow: (cb) => ipcRenderer.removeListener('window:show', cb),
+  },
 })

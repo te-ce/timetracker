@@ -122,6 +122,7 @@ function buildTrayMenu() {
     click: () => {
       mainWindow.show()
       mainWindow.focus()
+      mainWindow.webContents.send('window:show')
     },
   }
 
@@ -316,6 +317,7 @@ app.whenReady().then(async () => {
     else {
       mainWindow.show()
       mainWindow.focus()
+      mainWindow.webContents.send('window:show')
     }
   })
 })
