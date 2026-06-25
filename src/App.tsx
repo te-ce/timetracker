@@ -260,19 +260,19 @@ function RemainingHoursBadge() {
   if (showTotalWorked) {
     label = `${formatHours(totalWorked, timeFormat)} worked`
     badgeClass =
-      'hidden sm:inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400'
+      'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400'
   } else if (remaining > 0) {
     label = `${formatHours(remaining, timeFormat)} left`
     badgeClass =
-      'hidden sm:inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400'
+      'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400'
   } else if (remaining === 0) {
     label = 'Done'
     badgeClass =
-      'hidden sm:inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
+      'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
   } else {
     label = `${formatHours(Math.abs(remaining), timeFormat)} overtime`
     badgeClass =
-      'hidden sm:inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
+      'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
   }
 
   const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, timeFormat)
@@ -333,6 +333,303 @@ function TimeFormatToggle() {
     >
       {format === 'decimal' ? 'Dec.' : 'HH:MM'}
     </button>
+  )
+}
+
+function KeyboardShortcutsButton({ onToggle }: { onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-label="Keyboard shortcuts"
+      data-tooltip="Keyboard shortcuts (?)"
+      className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="2" y="4" width="20" height="16" rx="2" />
+        <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
+      </svg>
+    </button>
+  )
+}
+
+const HEADER_ITEM_IDS = ['remainingHours', 'officeStats', 'sync', 'timeFormat', 'undo', 'shortcuts', 'theme'] as const
+type HeaderItemId = (typeof HEADER_ITEM_IDS)[number]
+
+interface HeaderLayoutState {
+  order: HeaderItemId[]
+  hidden: HeaderItemId[]
+}
+
+const HEADER_ITEM_LABELS: Record<HeaderItemId, string> = {
+  remainingHours: 'Hours',
+  officeStats: 'Office stats',
+  sync: 'Sync',
+  timeFormat: 'Time format',
+  undo: 'Undo / Redo',
+  shortcuts: 'Shortcuts',
+  theme: 'Theme',
+}
+
+function normalizeHeaderLayout(raw: unknown): HeaderLayoutState {
+  const valid = new Set<string>(HEADER_ITEM_IDS)
+  const obj = typeof raw === 'object' && raw !== null ? raw : {}
+  const rawOrder = 'order' in obj && Array.isArray(obj.order) ? obj.order : []
+  const rawHidden = 'hidden' in obj && Array.isArray(obj.hidden) ? obj.hidden : []
+  const order = rawOrder.filter((id): id is HeaderItemId => typeof id === 'string' && valid.has(id))
+  const hidden = rawHidden.filter((id): id is HeaderItemId => typeof id === 'string' && valid.has(id))
+  for (const id of HEADER_ITEM_IDS) {
+    if (!order.includes(id)) order.push(id)
+  }
+  return { order, hidden }
+}
+
+function loadHeaderLayout(): HeaderLayoutState {
+  try {
+    const raw = localStorage.getItem('header-layout')
+    if (raw) return normalizeHeaderLayout(JSON.parse(raw))
+  } catch {
+    /* empty */
+  }
+  return normalizeHeaderLayout({})
+}
+
+function saveHeaderLayout(state: HeaderLayoutState) {
+  localStorage.setItem('header-layout', JSON.stringify(state))
+}
+
+function NavDropdown({ currentPath }: { currentPath: string }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && e.target instanceof Node && !ref.current.contains(e.target)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [open])
+
+  const active = NAV_ITEMS.find((item) => item.to === currentPath)
+
+  return (
+    <div className="relative max-[849px]:block hidden" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Open navigation menu"
+        aria-expanded={open}
+        className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+      >
+        {active?.icon}
+        <span>{active?.label ?? 'Menu'}</span>
+        <svg
+          className="h-3 w-3 ml-0.5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 min-w-[140px] rounded-md border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors first:rounded-t-md last:rounded-b-md ${
+                currentPath === item.to
+                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+              }`}
+            >
+              {item.icon}
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function HeaderControls({ onToggleLegend }: { onToggleLegend: () => void }) {
+  const [layout, setLayout] = useState<HeaderLayoutState>(loadHeaderLayout)
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const [dragOverId, setDragOverId] = useState<HeaderItemId | null>(null)
+  const dragItemRef = useRef<HeaderItemId | null>(null)
+  const overflowRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!overflowOpen) return
+    function onClickOutside(e: MouseEvent) {
+      if (overflowRef.current && e.target instanceof Node && !overflowRef.current.contains(e.target)) {
+        setOverflowOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [overflowOpen])
+
+  function updateLayout(next: HeaderLayoutState) {
+    setLayout(next)
+    saveHeaderLayout(next)
+  }
+
+  function hideItem(id: HeaderItemId) {
+    updateLayout({ ...layout, hidden: [...layout.hidden, id] })
+  }
+
+  function showItem(id: HeaderItemId) {
+    updateLayout({ ...layout, hidden: layout.hidden.filter((h) => h !== id) })
+    setOverflowOpen(false)
+  }
+
+  function onDragStart(id: HeaderItemId) {
+    dragItemRef.current = id
+  }
+
+  function onDragOver(e: React.DragEvent, id: HeaderItemId) {
+    e.preventDefault()
+    setDragOverId(id)
+  }
+
+  function onDrop(targetId: HeaderItemId) {
+    const src = dragItemRef.current
+    if (!src || src === targetId) {
+      setDragOverId(null)
+      return
+    }
+    const order = [...layout.order]
+    const fromIdx = order.indexOf(src)
+    const toIdx = order.indexOf(targetId)
+    order.splice(fromIdx, 1)
+    order.splice(toIdx, 0, src)
+    updateLayout({ ...layout, order })
+    setDragOverId(null)
+    dragItemRef.current = null
+  }
+
+  function onDragEnd() {
+    setDragOverId(null)
+    dragItemRef.current = null
+  }
+
+  function renderItem(id: HeaderItemId): React.ReactNode {
+    switch (id) {
+      case 'remainingHours':
+        return <RemainingHoursBadge />
+      case 'officeStats':
+        return <OfficeStatsBadge />
+      case 'sync':
+        return <SyncIndicator />
+      case 'timeFormat':
+        return <TimeFormatToggle />
+      case 'undo':
+        return <UndoButton />
+      case 'shortcuts':
+        return <KeyboardShortcutsButton onToggle={onToggleLegend} />
+      case 'theme':
+        return <ThemeToggle />
+    }
+  }
+
+  const visible = layout.order.filter((id) => !layout.hidden.includes(id))
+  const hidden = layout.hidden
+
+  return (
+    <div className="ml-auto flex items-center gap-1">
+      {visible.map((id) => (
+        <div
+          key={id}
+          className={`group relative flex items-center rounded-md transition-shadow ${dragOverId === id ? 'ring-2 ring-indigo-400 ring-offset-1' : ''}`}
+          draggable
+          onDragStart={() => onDragStart(id)}
+          onDragOver={(e) => onDragOver(e, id)}
+          onDragLeave={() => setDragOverId(null)}
+          onDrop={() => onDrop(id)}
+          onDragEnd={onDragEnd}
+          style={{ cursor: 'grab' }}
+        >
+          {renderItem(id)}
+          <button
+            onClick={() => hideItem(id)}
+            aria-label={`Remove ${HEADER_ITEM_LABELS[id]}`}
+            className="absolute -top-1.5 -right-1.5 z-10 hidden group-hover:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-red-100 hover:text-red-500 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-red-900/50 dark:hover:text-red-400 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 8 8"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="w-2 h-2"
+              aria-hidden="true"
+            >
+              <path d="M1 1l6 6M7 1L1 7" />
+            </svg>
+          </button>
+        </div>
+      ))}
+      {hidden.length > 0 && (
+        <div ref={overflowRef} className="relative">
+          <button
+            onClick={() => setOverflowOpen((v) => !v)}
+            aria-label="Hidden header items"
+            className="flex h-6 w-6 items-center justify-center rounded-md text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors leading-none"
+          >
+            •••
+          </button>
+          {overflowOpen && (
+            <div className="absolute right-0 top-full mt-1 z-50 min-w-36 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800 py-1">
+              <p className="px-3 py-1 text-xs font-medium text-gray-400 dark:text-gray-500">Hidden items</p>
+              {hidden.map((id) => (
+                <div
+                  key={id}
+                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <div className="flex-1 flex items-center">{renderItem(id)}</div>
+                  <button
+                    onClick={() => showItem(id)}
+                    aria-label={`Restore ${HEADER_ITEM_LABELS[id]}`}
+                    title={`Restore ${HEADER_ITEM_LABELS[id]}`}
+                    className="flex-shrink-0 rounded p-0.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 dark:hover:bg-gray-600 dark:hover:text-gray-200 transition-colors"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 10 10"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      className="w-2.5 h-2.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M5 2v6M2 5h6" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -475,58 +772,26 @@ function App() {
         aria-label="Main navigation"
       >
         <span className="mr-6 text-lg font-bold tracking-tight">Timetracker</span>
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.label}
-            to={item.to}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              currentPath === item.to
-                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
-                : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-            }`}
-          >
-            {item.icon}
-            {item.label}
-          </Link>
-        ))}
-        <div className="ml-auto flex items-center gap-3">
-          {/* Status indicators */}
-          <div className="flex items-center gap-2">
-            <RemainingHoursBadge />
-            <OfficeStatsBadge />
-            <SyncIndicator />
-          </div>
-
-          <div className="h-4 w-px bg-gray-200 dark:bg-gray-700" aria-hidden="true" />
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-0.5">
-            <TimeFormatToggle />
-            <UndoButton />
-            <button
-              onClick={() => setLegendOpen((v) => !v)}
-              aria-label="Keyboard shortcuts"
-              data-tooltip="Keyboard shortcuts (?)"
-              className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+        {/* Full nav links — hidden on small screens */}
+        <div className="hidden min-[850px]:flex items-center gap-1">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                currentPath === item.to
+                  ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+              }`}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
-              </svg>
-            </button>
-            <ThemeToggle />
-          </div>
+              {item.icon}
+              {item.label}
+            </Link>
+          ))}
         </div>
+        {/* Hamburger — visible only on small screens */}
+        <NavDropdown currentPath={currentPath} />
+        <HeaderControls onToggleLegend={() => setLegendOpen((v) => !v)} />
       </nav>
       {legendOpen && <KeyboardShortcutLegend onClose={() => setLegendOpen(false)} />}
 
