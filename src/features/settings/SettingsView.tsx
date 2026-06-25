@@ -21,6 +21,7 @@ import { LocalExcelFolderSettings } from './LocalExcelFolderSettings'
 import { LocalExcelSettings } from './LocalExcelSettings'
 import { SharePointSettings } from './SharePointSettings'
 import { SheetSelector } from './SheetSelector'
+import { SprintArchiveSettings } from './SprintArchiveSettings'
 import { SettingsTabs } from './SettingsTabs'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
@@ -75,6 +76,7 @@ export function SettingsView() {
                     <SheetSelector repository={configRepo} />
                   </>
                 )}
+                <SprintArchiveSettings repository={configRepo} />
               </>
             )
           }

@@ -1,6 +1,6 @@
 import type { ExcelRow } from './excelService'
-import { listSheets, listRows, writeSprintData } from './excelService'
-import { listLocalSheets, listLocalRows, writeLocalSprintData } from './localExcelService'
+import { listSheets, listRows, writeSprintData, archiveSprintData } from './excelService'
+import { listLocalSheets, listLocalRows, writeLocalSprintData, archiveLocalSprintData } from './localExcelService'
 
 export type { ExcelRow }
 
@@ -9,6 +9,11 @@ export interface WorkbookService {
   listRows(sheet: string): Promise<ExcelRow[]>
   writeSprintData(
     sheet: string,
+    mapping: Record<string, string>,
+    hoursPerCategory: Record<string, number>,
+  ): Promise<void>
+  archiveSprintSheet(
+    sheetName: string,
     mapping: Record<string, string>,
     hoursPerCategory: Record<string, number>,
   ): Promise<void>
@@ -37,6 +42,14 @@ export class GraphApiWorkbookService implements WorkbookService {
   ): Promise<void> {
     return writeSprintData(this.sharepointUrl, sheet, mapping, hoursPerCategory, await this.getToken())
   }
+
+  async archiveSprintSheet(
+    sheetName: string,
+    mapping: Record<string, string>,
+    hoursPerCategory: Record<string, number>,
+  ): Promise<void> {
+    return archiveSprintData(this.sharepointUrl, sheetName, mapping, hoursPerCategory, await this.getToken())
+  }
 }
 
 export class LocalFolderWorkbookService implements WorkbookService {
@@ -59,5 +72,13 @@ export class LocalFolderWorkbookService implements WorkbookService {
     hoursPerCategory: Record<string, number>,
   ): Promise<void> {
     return writeLocalSprintData(this.filename, sheet, mapping, hoursPerCategory)
+  }
+
+  archiveSprintSheet(
+    sheetName: string,
+    mapping: Record<string, string>,
+    hoursPerCategory: Record<string, number>,
+  ): Promise<void> {
+    return archiveLocalSprintData(this.filename, sheetName, mapping, hoursPerCategory)
   }
 }

@@ -128,6 +128,7 @@ export interface AppConfig {
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target' | undefined
   showTotalWorked?: boolean | undefined
   startupView?: StartupView | undefined
+  archiveSprintSheet?: boolean | undefined
 }
 
 export type StartupView = 'last' | 'day' | 'month' | 'table' | 'table-with-log'

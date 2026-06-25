@@ -89,3 +89,31 @@ export async function writeLocalSprintData(
   await writable.write(data as ArrayBuffer)
   await writable.close()
 }
+
+export async function archiveLocalSprintData(
+  filename: string,
+  sheetName: string,
+  mapping: Record<string, string>,
+  hoursPerCategory: Record<string, number>,
+): Promise<void> {
+  const dir = await getDir()
+  const fileHandle = await dir.getFileHandle(filename)
+  const file = await fileHandle.getFile()
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(await file.arrayBuffer())
+
+  const ws = wb.addWorksheet(sheetName)
+  for (const [category, taskId] of Object.entries(mapping)) {
+    ws.addRow([taskId, hoursPerCategory[category] ?? 0])
+  }
+
+  const rawOutput: unknown = await wb.xlsx.writeBuffer()
+  if (!(rawOutput instanceof ArrayBuffer) && !(rawOutput instanceof Uint8Array)) {
+    throw new Error('writeBuffer returned unexpected type')
+  }
+  const writable = await fileHandle.createWritable()
+  const data: unknown = rawOutput
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  await writable.write(data as ArrayBuffer)
+  await writable.close()
+}

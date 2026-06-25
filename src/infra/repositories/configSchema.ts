@@ -36,6 +36,7 @@ export const appConfigSchema = z
     showWorkedHoursInTray: z.boolean().optional(),
     remainingTimeReference: z.enum(['planned-stop', 'target-hours']).optional(),
     remainingTimeMode: z.enum(['until-zero-overtime', 'until-daily-target']).optional(),
+    archiveSprintSheet: z.boolean().optional(),
   })
   .passthrough()
   .transform((raw) => {

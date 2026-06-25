@@ -10,6 +10,7 @@ import { useAuthStore } from '../../shared/authStore'
 import { QUERY_KEYS, invalidateConfig, invalidateSprintExport } from '../../shared/queryKeys'
 import { createWorkbookService, isExportReady } from '../excel'
 import { toLocalIso } from '../../shared/dateUtils'
+import { buildArchiveSheetName } from './sprintSheetName'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
@@ -83,7 +84,12 @@ function SprintContent({
   async function handleExport(): Promise<void> {
     if (!config.targetSheet) throw new Error('No target sheet selected.')
     const service = createWorkbookService(config, isAuthenticated)
-    await service.writeSprintData(config.targetSheet, config.categoryMapping ?? {}, hoursPerCategory)
+    const mapping = config.categoryMapping ?? {}
+    await service.writeSprintData(config.targetSheet, mapping, hoursPerCategory)
+    if (config.archiveSprintSheet) {
+      const archiveName = buildArchiveSheetName(config.localExcelFile ?? null, sprint.start, sprint.end)
+      await service.archiveSprintSheet(archiveName, mapping, hoursPerCategory)
+    }
     await markExportedMutation.mutateAsync()
   }
 

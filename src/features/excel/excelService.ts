@@ -114,3 +114,30 @@ export async function writeSprintData(
   }
   await Promise.all(writes)
 }
+
+export async function archiveSprintData(
+  sharePointUrl: string,
+  sheetName: string,
+  mapping: Record<string, string>,
+  hoursPerCategory: Record<string, number>,
+  token: string,
+): Promise<void> {
+  const base = workbookBase(sharePointUrl)
+  const createRes = await fetch(`${base}/worksheets`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: sheetName }),
+  })
+  if (!createRes.ok) throw new Error(`archiveSprintData create sheet failed: ${createRes.status}`)
+
+  const rows = Object.entries(mapping).map(([cat, taskId]) => [taskId, hoursPerCategory[cat] ?? 0])
+  if (rows.length === 0) return
+
+  const encodedSheet = encodeURIComponent(sheetName)
+  const patchRes = await fetch(`${base}/worksheets/${encodedSheet}/range(address='A1:B${rows.length}')`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: rows }),
+  })
+  if (!patchRes.ok) throw new Error(`archiveSprintData write failed: ${patchRes.status}`)
+}
