@@ -10,6 +10,8 @@ import { useUndoStore } from './shared/undoStore'
 import { useRemainingHours, buildReceipt } from './shared/useRemainingHours'
 import { useElectronTraySync } from './shared/useElectronTraySync'
 import { useGoalNotification } from './shared/useGoalNotification'
+import { useSprintExportReminder } from './features/sprint/useSprintExportReminder'
+import { SprintExportBadge } from './features/sprint/SprintExportBadge'
 import { usePrefetchCurrentMonth } from './shared/usePrefetchCurrentMonth'
 import { useQuery } from '@tanstack/react-query'
 import { KeyboardShortcutLegend } from './shared/KeyboardShortcutLegend'
@@ -553,7 +555,7 @@ function HeaderControls({ onToggleLegend }: { onToggleLegend: () => void }) {
   const hidden = layout.hidden
 
   return (
-    <div className="ml-auto flex items-center gap-1">
+    <div className="flex items-center gap-1">
       {visible.map((id) => (
         <div
           key={id}
@@ -638,6 +640,7 @@ function App() {
   useElectronTraySync()
   useGoalNotification()
   usePrefetchCurrentMonth()
+  const sprintsNeedingExport = useSprintExportReminder()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
   const navigate = useNavigate()
@@ -791,7 +794,10 @@ function App() {
         </div>
         {/* Hamburger — visible only on small screens */}
         <NavDropdown currentPath={currentPath} />
-        <HeaderControls onToggleLegend={() => setLegendOpen((v) => !v)} />
+        <div className="ml-auto flex items-center gap-2">
+          <SprintExportBadge sprints={sprintsNeedingExport} />
+          <HeaderControls onToggleLegend={() => setLegendOpen((v) => !v)} />
+        </div>
       </nav>
       {legendOpen && <KeyboardShortcutLegend onClose={() => setLegendOpen(false)} />}
 

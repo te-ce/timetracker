@@ -35,6 +35,7 @@ interface Window {
     }
     notify: {
       goalReached(): void
+      sprintExportDue(body: string): void
     }
     window: {
       onShow(cb: () => void): void

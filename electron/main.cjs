@@ -344,3 +344,9 @@ ipcMain.on('notify:goalReached', () => {
     }).show()
   }
 })
+
+ipcMain.on('notify:sprintExportDue', (_, body) => {
+  if (Notification.isSupported()) {
+    new Notification({ title: 'Timetracker', body }).show()
+  }
+})

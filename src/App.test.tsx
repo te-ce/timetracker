@@ -192,3 +192,33 @@ describe('App', () => {
     })
   })
 })
+
+describe('HeaderControls overflow dropdown', () => {
+  const FULL_ORDER = ['remainingHours', 'officeStats', 'sync', 'timeFormat', 'undo', 'shortcuts', 'theme']
+
+  beforeEach(() => {
+    localStorage.removeItem('header-layout')
+  })
+
+  it('renders actual item component in overflow dropdown', async () => {
+    localStorage.setItem('header-layout', JSON.stringify({ order: FULL_ORDER, hidden: ['theme'] }))
+    renderApp()
+    await screen.findByText('Timetracker')
+
+    await userEvent.click(screen.getByRole('button', { name: /hidden header items/i }))
+
+    expect(screen.getByRole('button', { name: /switch to (light|dark) mode/i })).toBeInTheDocument()
+  })
+
+  it('hidden item in dropdown remains interactive', async () => {
+    useThemeStore.setState({ theme: 'light' })
+    localStorage.setItem('header-layout', JSON.stringify({ order: FULL_ORDER, hidden: ['theme'] }))
+    renderApp()
+    await screen.findByText('Timetracker')
+
+    await userEvent.click(screen.getByRole('button', { name: /hidden header items/i }))
+    await userEvent.click(screen.getByRole('button', { name: /switch to dark mode/i }))
+
+    expect(useThemeStore.getState().theme).toBe('dark')
+  })
+})
