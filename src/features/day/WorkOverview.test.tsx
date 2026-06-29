@@ -131,7 +131,7 @@ describe('WorkOverview', () => {
 
   it('renders existing periods sorted by start time regardless of insertion order', async () => {
     setup([period('b', '10:00', '11:00'), period('a', '08:00', '09:00')])
-    const btns = await screen.findAllByRole('button', { name: /edit period/i })
+    const btns = await screen.findAllByRole('button', { name: /edit start time/i })
     expect(btns[0]).toHaveAccessibleName(/08:00/)
     expect(btns[1]).toHaveAccessibleName(/10:00/)
   })
@@ -200,7 +200,7 @@ describe('WorkOverview', () => {
   describe('subtask form — parseDurationInput', () => {
     async function setupWithPeriod() {
       const { repo } = setup([period('a', '09:00', '11:00')])
-      await screen.findByRole('button', { name: /edit period/i })
+      await screen.findByRole('button', { name: /edit start time/i })
       await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
       return { repo }
     }
@@ -248,16 +248,16 @@ describe('WorkOverview', () => {
   describe('edit period time', () => {
     it('clicking period time opens edit inputs with current values', async () => {
       setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit period 09:00/i }))
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit start time 09:00/i }))
       expect(screen.getByDisplayValue('09:00')).toBeInTheDocument()
       expect(screen.getByDisplayValue('17:00')).toBeInTheDocument()
     })
 
     it('saving an edit updates the period start in the repository', async () => {
       const { repo } = setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit period 09:00/i }))
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit start time 09:00/i }))
       const startInput = screen.getByLabelText('Edit start time')
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '08:00')
@@ -269,8 +269,8 @@ describe('WorkOverview', () => {
 
     it('pressing Enter in edit start input saves the period', async () => {
       const { repo } = setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit period 09:00/i }))
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit start time 09:00/i }))
       const startInput = screen.getByLabelText('Edit start time')
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '10:00{Enter}')
@@ -281,29 +281,29 @@ describe('WorkOverview', () => {
 
     it('pressing Escape cancels the edit without saving', async () => {
       setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit period 09:00/i }))
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit start time 09:00/i }))
       const startInput = screen.getByLabelText('Edit start time')
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '07:00')
       await userEvent.keyboard('{Escape}')
-      expect(await screen.findByRole('button', { name: /edit period 09:00/i })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /edit start time 09:00/i })).toBeInTheDocument()
       expect(screen.queryByDisplayValue('07:00')).not.toBeInTheDocument()
     })
 
     it('Cancel button exits edit mode without saving', async () => {
       setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit period 09:00/i }))
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit start time 09:00/i }))
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
-      expect(await screen.findByRole('button', { name: /edit period 09:00/i })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /edit start time 09:00/i })).toBeInTheDocument()
       expect(screen.queryByLabelText('Edit start time')).not.toBeInTheDocument()
     })
 
     it('end time input keeps focus after value change triggers re-render', async () => {
       setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
-      await userEvent.click(screen.getByRole('button', { name: /edit period 09:00/i }))
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
+      await userEvent.click(screen.getByRole('button', { name: /edit start time 09:00/i }))
       const endInput = screen.getByLabelText('Edit end time')
       endInput.focus()
       fireEvent.change(endInput, { target: { value: '18:00' } })
@@ -346,7 +346,7 @@ describe('WorkOverview', () => {
       setup()
       await screen.findByText(/no periods recorded yet/i)
       await addPeriod('', '10:00')
-      await screen.findByRole('button', { name: /edit period/i })
+      await screen.findByRole('button', { name: /edit start time/i })
       const nowBtn = screen.getAllByRole('button', { name: /now/i })[0]
       expect(nowBtn).toHaveAttribute('aria-pressed', 'true')
     })
@@ -395,30 +395,34 @@ describe('WorkOverview', () => {
       expect(await screen.findByRole('button', { name: /stop tracking/i })).toBeInTheDocument()
     })
 
-    it('clicking Stop shows Cancel and Confirm buttons inline, hides Stop', async () => {
-      setup([period('a', '09:00', null)])
-      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      expect(screen.queryByRole('button', { name: /stop tracking/i })).not.toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
-      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+    it('clicking Stop enters edit mode with end input pre-filled to now, hides Stop', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-04T14:32:00'))
+      try {
+        setup([period('a', '09:00', null)])
+        await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
+        expect(screen.queryByRole('button', { name: /stop tracking/i })).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument()
+        expect(screen.getByLabelText('Edit end time')).toHaveValue('14:32')
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
-    it('Cancel in stop form restores Stop button', async () => {
+    it('Cancel in edit mode restores Stop button', async () => {
       setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
       await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
       expect(await screen.findByRole('button', { name: /stop tracking/i })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /^cancel$/i })).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Edit end time')).not.toBeInTheDocument()
     })
 
     it('Stop button sets period end time in repository', async () => {
       const { repo } = setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      const stopInput = screen.getByLabelText(/period ended at/i)
-      await userEvent.clear(stopInput)
-      await userEvent.type(stopInput, '17:00')
-      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+      fireEvent.change(screen.getByLabelText('Edit end time'), { target: { value: '17:00' } })
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.start).toBe('09:00')
@@ -429,59 +433,33 @@ describe('WorkOverview', () => {
     it('Stop rejects time not after period start', async () => {
       setup([period('a', '10:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      const stopInput = screen.getByLabelText(/period ended at/i)
-      await userEvent.clear(stopInput)
-      await userEvent.type(stopInput, '09:00')
-      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+      fireEvent.change(screen.getByLabelText('Edit end time'), { target: { value: '09:00' } })
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       expect(await screen.findByText(/must be after/i)).toBeInTheDocument()
     })
 
     it('no Stop button on closed period', async () => {
       setup([period('a', '09:00', '17:00')])
-      await screen.findByRole('button', { name: /edit period/i })
+      await screen.findByRole('button', { name: /edit start time/i })
       expect(screen.queryByRole('button', { name: /stop tracking/i })).not.toBeInTheDocument()
     })
 
-    it('pressing Escape in stop period form dismisses without saving', async () => {
+    it('pressing Escape in edit mode dismisses without saving', async () => {
       setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
+      expect(screen.getByLabelText('Edit end time')).toBeInTheDocument()
       await userEvent.keyboard('{Escape}')
       expect(await screen.findByRole('button', { name: /stop tracking/i })).toBeInTheDocument()
-      expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Edit end time')).not.toBeInTheDocument()
     })
 
-    it('stop period form dismisses when focus moves to an element outside the form', async () => {
-      setup([period('a', '09:00', null)])
-      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      // change the time so isDirty = true
-      const input = screen.getByLabelText(/period ended at/i)
-      await userEvent.clear(input)
-      await userEvent.type(input, '17:30')
-      // first click away shows the warning hint; the form stays open
-      await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
-      expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
-      expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
-      // second mousedown outside cancels
-      fireEvent.mouseDown(document.body)
-      expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
-    })
-
-    it('stop period form shows now pill active and time input by default', async () => {
-      setup([period('a', '09:00', null)])
-      await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      expect(screen.getByLabelText(/period ended at/i)).toHaveAttribute('type', 'time')
-      const nowBtns = screen.getAllByRole('button', { name: /now/i })
-      expect(nowBtns.every((btn) => btn.getAttribute('aria-pressed') === 'true')).toBe(true)
-    })
-
-    it('Stop period: confirming without editing stops at current time', async () => {
+    it('Stop period: saving with pre-filled now time stops at current time', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date('2026-06-04T14:32:00'))
       try {
         const { repo } = setup([period('a', '09:00', null)])
         await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-        await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+        await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
         await waitFor(async () => {
           expect((await getWindows(repo))[0]?.end).toBe('14:32')
         })
@@ -490,12 +468,10 @@ describe('WorkOverview', () => {
       }
     })
 
-    it('Stop period: editing stop time deactivates now pill', async () => {
+    it('Stop period: end input is a native time picker', async () => {
       setup([period('a', '09:00', null)])
       await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-      fireEvent.change(screen.getByLabelText(/period ended at/i), { target: { value: '17:00' } })
-      const nowBtns = screen.getAllByRole('button', { name: /now/i })
-      expect(nowBtns.some((btn) => btn.getAttribute('aria-pressed') === 'false')).toBe(true)
+      expect(screen.getByLabelText('Edit end time')).toHaveAttribute('type', 'time')
     })
   })
 
@@ -595,7 +571,7 @@ describe('WorkOverview', () => {
       vi.setSystemTime(new Date('2026-06-04T18:00:00'))
       try {
         setup([period('a', '09:00', '17:00')]) // 17:00 is in the past at 18:00
-        await screen.findByRole('button', { name: /edit period/i })
+        await screen.findByRole('button', { name: /edit start time/i })
         expect(screen.queryByRole('button', { name: /start tracking subtask/i })).not.toBeInTheDocument()
       } finally {
         vi.useRealTimers()
@@ -626,10 +602,8 @@ describe('WorkOverview', () => {
         }
         const { repo } = setup([p])
         await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-        const stopInput = screen.getByLabelText(/subtask stopped at/i)
-        await userEvent.clear(stopInput)
-        await userEvent.type(stopInput, '11:30')
-        await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+        fireEvent.change(screen.getByLabelText('Edit subtask end time'), { target: { value: '11:30' } })
+        await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
         await waitFor(async () => {
           const saved = await getWindows(repo)
           expect(saved[0]?.subtasks[0]?.stoppedAt).toBe('11:30')
@@ -658,44 +632,34 @@ describe('WorkOverview', () => {
       expect(await screen.findByRole('button', { name: /stop subtask/i })).toBeInTheDocument()
     })
 
-    it('clicking Stop subtask shows Cancel and Confirm buttons inline, hides Stop subtask', async () => {
-      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      expect(screen.queryByRole('button', { name: /stop subtask/i })).not.toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
-      expect(screen.getByRole('button', { name: /^confirm$/i })).toBeInTheDocument()
-      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
+    it('clicking Stop subtask enters edit mode with end pre-filled to now, hides Stop subtask', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-06-04T10:30:00'))
+      try {
+        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+        await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
+        expect(screen.queryByRole('button', { name: /stop subtask/i })).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^cancel$/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument()
+        expect(screen.getByLabelText('Edit subtask end time')).toHaveValue('10:30')
+      } finally {
+        vi.useRealTimers()
+      }
     })
 
-    it('stop subtask form shows now pill active and time input by default', async () => {
-      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      expect(screen.getByLabelText(/subtask stopped at/i)).toHaveAttribute('type', 'time')
-      const nowBtns = screen.getAllByRole('button', { name: /now/i })
-      expect(nowBtns.some((btn) => btn.getAttribute('aria-pressed') === 'true')).toBe(true)
-    })
-
-    it('Stop subtask: confirming without editing stops at current time', async () => {
+    it('Stop subtask: saving with pre-filled now time stops at current time', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date('2026-06-04T10:30:00'))
       try {
         const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
         await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-        await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+        await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
         await waitFor(async () => {
           expect((await getWindows(repo))[0]?.subtasks[0]?.stoppedAt).toBe('10:30')
         })
       } finally {
         vi.useRealTimers()
       }
-    })
-
-    it('Stop subtask: editing stop time deactivates now pill', async () => {
-      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      fireEvent.change(screen.getByLabelText(/subtask stopped at/i), { target: { value: '11:00' } })
-      const nowBtns = screen.getAllByRole('button', { name: /now/i })
-      expect(nowBtns.some((btn) => btn.getAttribute('aria-pressed') === 'false')).toBe(true)
     })
 
     it('stop form hides Stop subtask and × buttons while open', async () => {
@@ -705,7 +669,7 @@ describe('WorkOverview', () => {
       expect(screen.queryByRole('button', { name: /stop live subtask/i })).not.toBeInTheDocument()
     })
 
-    it('Cancel in stop subtask form restores Stop subtask button', async () => {
+    it('Cancel in stop subtask edit mode restores Stop subtask button', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
       await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
@@ -715,10 +679,8 @@ describe('WorkOverview', () => {
     it('Stop subtask saves computed hours and preserves start/end times', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:00')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      const stopInput = screen.getByLabelText(/subtask stopped at/i)
-      await userEvent.clear(stopInput)
-      await userEvent.type(stopInput, '10:30')
-      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+      fireEvent.change(screen.getByLabelText('Edit subtask end time'), { target: { value: '10:30' } })
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.subtasks[0]?.hours).toBe(1.5)
@@ -730,20 +692,16 @@ describe('WorkOverview', () => {
     it('Stop subtask rejects time before slice start', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '10:00')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      const stopInput = screen.getByLabelText(/subtask stopped at/i)
-      await userEvent.clear(stopInput)
-      await userEvent.type(stopInput, '09:00')
-      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+      fireEvent.change(screen.getByLabelText('Edit subtask end time'), { target: { value: '09:00' } })
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       expect(await screen.findByText(/must be at or after/i)).toBeInTheDocument()
     })
 
     it('Stop subtask allows start == end (saves 0 hours)', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '10:00')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      const stopInput = screen.getByLabelText(/subtask stopped at/i)
-      await userEvent.clear(stopInput)
-      await userEvent.type(stopInput, '10:00')
-      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+      fireEvent.change(screen.getByLabelText('Edit subtask end time'), { target: { value: '10:00' } })
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.subtasks[0]?.hours).toBe(0)
@@ -778,45 +736,28 @@ describe('WorkOverview', () => {
       })
     })
 
-    it('pressing Escape in stop subtask form dismisses without saving', async () => {
+    it('pressing Escape in stop subtask edit mode dismisses without saving', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
-      await userEvent.keyboard('{Escape}')
+      const endInput = screen.getByLabelText('Edit subtask end time', { selector: 'input' })
+      expect(endInput).toBeInTheDocument()
+      fireEvent.keyDown(endInput, { key: 'Escape' })
       expect(await screen.findByRole('button', { name: /stop subtask/i })).toBeInTheDocument()
-      expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Edit subtask end time', { selector: 'input' })).not.toBeInTheDocument()
     })
 
-    it('stop subtask form dismisses when focus moves to an element outside the form', async () => {
+    it('stop subtask end time input is a native time picker', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      // change the time so isDirty = true
-      const input = screen.getByLabelText(/subtask stopped at/i)
-      await userEvent.clear(input)
-      await userEvent.type(input, '10:15')
-      // first click away shows the warning hint; the form stays open
-      await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
-      expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
-      expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
-      // second mousedown outside cancels
-      fireEvent.mouseDown(document.body)
-      expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
-    })
-
-    it('stop subtask time input is a native time picker', async () => {
-      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-      expect(screen.getByLabelText(/subtask stopped at/i)).toHaveAttribute('type', 'time')
+      expect(screen.getByLabelText('Edit subtask end time')).toHaveAttribute('type', 'time')
     })
 
     it('Stop all (from period header) stops live slice and sets period end', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:00')])
       await screen.findByRole('button', { name: /stop tracking/i })
       await userEvent.click(screen.getByRole('button', { name: /stop tracking/i }))
-      const stopInput = screen.getByLabelText(/period ended at/i)
-      await userEvent.clear(stopInput)
-      await userEvent.type(stopInput, '11:00')
-      await userEvent.click(screen.getByRole('button', { name: /^confirm$/i }))
+      fireEvent.change(screen.getByLabelText('Edit end time'), { target: { value: '11:00' } })
+      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.end).toBe('11:00')
@@ -909,7 +850,7 @@ describe('WorkOverview', () => {
   describe('auto-merge on add', () => {
     it('merges into one period when new start matches existing end', async () => {
       const { repo } = setup([period('a', '09:00', '10:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
       await addPeriod('10:00', '11:00')
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -921,7 +862,7 @@ describe('WorkOverview', () => {
 
     it('merges into one period when new end matches existing start', async () => {
       const { repo } = setup([period('a', '11:00', '12:00')])
-      await screen.findByRole('button', { name: /edit period 11:00/i })
+      await screen.findByRole('button', { name: /edit start time 11:00/i })
       await addPeriod('10:00', '11:00')
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -933,7 +874,7 @@ describe('WorkOverview', () => {
 
     it('chains three adjacent periods into one', async () => {
       const { repo } = setup([period('a', '08:00', '09:00'), period('b', '10:00', '11:00')])
-      await screen.findByRole('button', { name: /edit period 08:00/i })
+      await screen.findByRole('button', { name: /edit start time 08:00/i })
       await addPeriod('09:00', '10:00')
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -945,7 +886,7 @@ describe('WorkOverview', () => {
 
     it('does not merge when there is a gap', async () => {
       const { repo } = setup([period('a', '09:00', '10:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
       await addPeriod('10:30', '11:30')
       await waitFor(async () => {
         expect(await getWindows(repo)).toHaveLength(2)
@@ -1093,7 +1034,7 @@ describe('WorkOverview', () => {
       setup([period('a', '09:00', '11:00')])
       const header = await screen.findByTestId('period-card-header')
       const duration = within(header).getByTestId('period-duration')
-      const timeBtn = within(header).getByRole('button', { name: /edit period/i })
+      const timeBtn = within(header).getByRole('button', { name: /edit start time/i })
       expect(duration.compareDocumentPosition(timeBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
 
@@ -1335,16 +1276,21 @@ describe('WorkOverview', () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       const banner = await screen.findByTestId('live-subtask-banner')
       await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-      expect(screen.getByLabelText<HTMLInputElement>(/subtask started at/i).value).toBe('09:30')
+      expect(screen.getByLabelText<HTMLInputElement>('Edit subtask start time').value).toBe('09:30')
+    })
+
+    it('start time input is a native time picker', async () => {
+      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+      const banner = await screen.findByTestId('live-subtask-banner')
+      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
+      expect(screen.getByLabelText('Edit subtask start time')).toHaveAttribute('type', 'time')
     })
 
     it('saving a new start time persists to the repository', async () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       const banner = await screen.findByTestId('live-subtask-banner')
       await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-      const input = screen.getByLabelText(/subtask started at/i)
-      await userEvent.clear(input)
-      await userEvent.type(input, '08:45')
+      fireEvent.change(screen.getByLabelText('Edit subtask start time'), { target: { value: '08:45' } })
       await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
       await waitFor(async () => {
         const saved = await getWindows(repo)
@@ -1356,9 +1302,9 @@ describe('WorkOverview', () => {
       const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       const banner = await screen.findByTestId('live-subtask-banner')
       await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-      const input = screen.getByLabelText(/subtask started at/i)
-      await userEvent.clear(input)
-      await userEvent.type(input, '08:00{Enter}')
+      const input = screen.getByLabelText('Edit subtask start time')
+      fireEvent.change(input, { target: { value: '08:00' } })
+      fireEvent.keyDown(input, { key: 'Enter' })
       await waitFor(async () => {
         const saved = await getWindows(repo)
         expect(saved[0]?.subtasks[0]?.startedAt).toBe('08:00')
@@ -1369,10 +1315,10 @@ describe('WorkOverview', () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       const banner = await screen.findByTestId('live-subtask-banner')
       await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-      expect(screen.getByLabelText(/subtask started at/i)).toBeInTheDocument()
+      expect(screen.getByLabelText('Edit subtask start time')).toBeInTheDocument()
       await userEvent.keyboard('{Escape}')
       expect(await screen.findByRole('button', { name: /edit subtask start time/i })).toBeInTheDocument()
-      expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Edit subtask start time')).not.toBeInTheDocument()
     })
 
     it('Cancel button closes the form without saving', async () => {
@@ -1381,41 +1327,24 @@ describe('WorkOverview', () => {
       await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
       await userEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
       expect(await screen.findByRole('button', { name: /edit subtask start time/i })).toBeInTheDocument()
-      expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
-    })
-
-    it('invalid format shows error and does not save', async () => {
-      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      const banner = await screen.findByTestId('live-subtask-banner')
-      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-      const input = screen.getByLabelText(/subtask started at/i)
-      await userEvent.clear(input)
-      await userEvent.type(input, 'not-a-time')
-      await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
-      expect(await screen.findByText(/must be HH:MM/i)).toBeInTheDocument()
-    })
-
-    it('start time input is a plain text field not a native time picker', async () => {
-      setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-      const banner = await screen.findByTestId('live-subtask-banner')
-      await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-      expect(screen.getByLabelText(/subtask started at/i)).toHaveAttribute('type', 'text')
+      expect(screen.queryByLabelText('Edit subtask start time')).not.toBeInTheDocument()
     })
   })
 
   describe('live subtask banner layout', () => {
-    it('shows start – --:-- format for active subtask time', async () => {
+    it('shows start and --:-- as separate click targets', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       const banner = await screen.findByTestId('live-subtask-banner')
-      expect(within(banner).getByText(/09:30\s*–\s*--:--/)).toBeInTheDocument()
+      expect(within(banner).getByRole('button', { name: /edit subtask start time/i })).toHaveTextContent('09:30')
+      expect(within(banner).getByRole('button', { name: /edit subtask end time/i })).toHaveTextContent('--:--')
     })
 
     it('category name appears before the time range in DOM', async () => {
       setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
       const banner = await screen.findByTestId('live-subtask-banner')
       const catLabel = within(banner).getByTestId('live-subtask-category')
-      const timeRange = within(banner).getByText(/09:30\s*–\s*--:--/)
-      expect(catLabel.compareDocumentPosition(timeRange) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      const startBtn = within(banner).getByRole('button', { name: /edit subtask start time/i })
+      expect(catLabel.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
 
@@ -1462,49 +1391,15 @@ describe('WorkOverview', () => {
       })
     })
 
-    describe('StopPeriodForm', () => {
-      it('clicking away without changing the time cancels immediately with no hint', async () => {
-        setup([period('a', '09:00', null)])
-        await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-        const input = screen.getByLabelText(/period ended at/i)
-        expect(input).toBeInTheDocument()
-        fireEvent.blur(input)
-        expect(screen.queryByLabelText(/period ended at/i)).not.toBeInTheDocument()
-        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
-      })
-
-      it('clicking away after changing the time shows the cancel hint', async () => {
-        setup([period('a', '09:00', null)])
-        await userEvent.click(await screen.findByRole('button', { name: /stop tracking/i }))
-        const input = screen.getByLabelText(/period ended at/i)
-        await userEvent.clear(input)
-        await userEvent.type(input, '17:30')
-        await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
-        expect(screen.getByLabelText(/period ended at/i)).toBeInTheDocument()
-        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
-      })
-    })
-
-    describe('StopSubtaskForm', () => {
-      it('clicking away without changing the time cancels immediately with no hint', async () => {
-        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-        await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-        const input = screen.getByLabelText(/subtask stopped at/i)
-        expect(input).toBeInTheDocument()
-        fireEvent.blur(input)
-        expect(screen.queryByLabelText(/subtask stopped at/i)).not.toBeInTheDocument()
-        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
-      })
-
-      it('clicking away after changing the time shows the cancel hint', async () => {
-        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-        await userEvent.click(await screen.findByRole('button', { name: /stop subtask/i }))
-        const input = screen.getByLabelText(/subtask stopped at/i)
-        await userEvent.clear(input)
-        await userEvent.type(input, '10:15')
-        await userEvent.click(screen.getByRole('button', { name: /log subtask/i }))
-        expect(screen.getByLabelText(/subtask stopped at/i)).toBeInTheDocument()
-        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+    describe('time edit blur', () => {
+      it('clicking outside period time edit saves the time', async () => {
+        const { repo } = setup([period('a', '09:00', '17:00')])
+        await userEvent.click(await screen.findByRole('button', { name: /edit start time 09:00/i }))
+        fireEvent.change(screen.getByLabelText('Edit start time'), { target: { value: '08:00' } })
+        fireEvent.blur(screen.getByLabelText('Edit start time'), { relatedTarget: document.body })
+        await waitFor(async () => {
+          expect((await getWindows(repo))[0]?.start).toBe('08:00')
+        })
       })
     })
 
@@ -1551,28 +1446,16 @@ describe('WorkOverview', () => {
       })
     })
 
-    describe('EditStartTimeForm (live subtask start time)', () => {
-      it('clicking away without changing the time cancels immediately with no hint', async () => {
-        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
+    describe('live subtask time edit blur', () => {
+      it('clicking outside subtask time edit saves the start time', async () => {
+        const { repo } = setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
         const banner = await screen.findByTestId('live-subtask-banner')
         await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-        const input = screen.getByLabelText(/subtask started at/i)
-        expect(input).toBeInTheDocument()
-        fireEvent.blur(input)
-        expect(screen.queryByLabelText(/subtask started at/i)).not.toBeInTheDocument()
-        expect(screen.queryByText(/click outside again to cancel/i)).not.toBeInTheDocument()
-      })
-
-      it('clicking away after changing the time shows the cancel hint', async () => {
-        setup([periodWithLiveSubtask('a', '09:00', 'Work', '09:30')])
-        const banner = await screen.findByTestId('live-subtask-banner')
-        await userEvent.click(within(banner).getByRole('button', { name: /edit subtask start time/i }))
-        const input = screen.getByLabelText(/subtask started at/i)
-        await userEvent.clear(input)
-        await userEvent.type(input, '08:45')
-        fireEvent.blur(input)
-        expect(screen.getByLabelText(/subtask started at/i)).toBeInTheDocument()
-        expect(screen.getByText(/click outside again to cancel/i)).toBeInTheDocument()
+        fireEvent.change(screen.getByLabelText('Edit subtask start time'), { target: { value: '08:45' } })
+        fireEvent.blur(screen.getByLabelText('Edit subtask start time'), { relatedTarget: document.body })
+        await waitFor(async () => {
+          expect((await getWindows(repo))[0]?.subtasks[0]?.startedAt).toBe('08:45')
+        })
       })
     })
   })
@@ -1705,7 +1588,7 @@ describe('WorkOverview', () => {
 
     it('merges into exactly one period when new start matches existing end', async () => {
       const { repo } = setupCloud([period('a', '09:00', '10:00')])
-      await screen.findByRole('button', { name: /edit period 09:00/i })
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
       await addPeriod('10:00', '11:00')
       await waitFor(async () => {
         const saved = (await repo.getMonth(YEAR, MONTH))[DATE]?.windows ?? []
@@ -1717,7 +1600,7 @@ describe('WorkOverview', () => {
 
     it('merges a three-period chain into exactly one period', async () => {
       const { repo } = setupCloud([period('a', '08:00', '09:00'), period('b', '10:00', '11:00')])
-      await screen.findByRole('button', { name: /edit period 08:00/i })
+      await screen.findByRole('button', { name: /edit start time 08:00/i })
       await addPeriod('09:00', '10:00')
       await waitFor(async () => {
         const saved = (await repo.getMonth(YEAR, MONTH))[DATE]?.windows ?? []

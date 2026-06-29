@@ -40,7 +40,7 @@ test.describe('daily booking', () => {
     await workSection.getByLabel('Start').fill('09:00')
     await workSection.getByLabel('End').fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
-    await expect(workSection.getByRole('button', { name: /Edit period 09:00 to 17:00/ })).toBeVisible({
+    await expect(workSection.getByRole('button', { name: /Edit start time 09:00/ })).toBeVisible({
       timeout: 10_000,
     })
 
@@ -160,7 +160,7 @@ test.describe('auto category', () => {
     await workSection.getByLabel('Start').fill('09:00')
     await workSection.getByLabel('End').fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
-    await expect(workSection.getByRole('button', { name: /Edit period 09:00 to 17:00/ })).toBeVisible()
+    await expect(workSection.getByRole('button', { name: /Edit start time 09:00/ })).toBeVisible()
 
     await expect(page.getByText('main', { exact: true }).first()).toBeVisible()
   })

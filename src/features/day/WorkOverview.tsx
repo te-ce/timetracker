@@ -169,128 +169,6 @@ function CategoryPicker({
   )
 }
 
-// ─── Stop Subtask Form ──────────────────────────────────────────────────────────
-
-interface StopSubtaskFormProps {
-  subtaskStartedAt: string
-  onStop: (stoppedAt: string) => void
-  onCancel: () => void
-}
-
-function StopSubtaskForm({ subtaskStartedAt, onStop, onCancel }: StopSubtaskFormProps) {
-  const [stoppedAt, setStoppedAt] = useState('')
-  const [error, setError] = useState(false)
-  const isDirty = stoppedAt !== ''
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
-
-  function handleStop() {
-    const time = stoppedAt || nowHHMM()
-    if (minutesFrom(time) < minutesFrom(subtaskStartedAt)) {
-      setError(true)
-      return
-    }
-    onStop(time)
-  }
-
-  return (
-    <div className="relative flex items-center gap-2" onBlur={handleBlur} onFocus={handleFocus}>
-      {pendingCancel && <BlurCancelHint />}
-      <span className="text-sm text-gray-500 dark:text-gray-400">Stopped at</span>
-      <NowChip
-        aria-label="Subtask stopped at"
-        focusOnMount
-        onChange={(v) => {
-          setStoppedAt(v)
-          setError(false)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleStop()
-          if (e.key === 'Escape') onCancel()
-        }}
-      />
-      {error && (
-        <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
-          Must be at or after {subtaskStartedAt}
-        </span>
-      )}
-      <button
-        onClick={onCancel}
-        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1"
-      >
-        Cancel
-      </button>
-      <button
-        onClick={handleStop}
-        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1"
-      >
-        Confirm
-      </button>
-    </div>
-  )
-}
-
-// ─── Stop Period Form ─────────────────────────────────────────────────────────
-
-interface StopPeriodFormProps {
-  periodStart: string
-  liveSubtask: LiveSubtask | undefined
-  onStop: (stopTime: string) => void
-  onCancel: () => void
-}
-
-function StopPeriodForm({ periodStart, liveSubtask, onStop, onCancel }: StopPeriodFormProps) {
-  const [stopTime, setStopTime] = useState('')
-  const [error, setError] = useState(false)
-  const isDirty = stopTime !== ''
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
-
-  function handleStop() {
-    const time = stopTime || nowHHMM()
-    const baseTime = liveSubtask && isAfter(liveSubtask.startedAt, periodStart) ? liveSubtask.startedAt : periodStart
-    if (!isAfter(time, baseTime)) {
-      setError(true)
-      return
-    }
-    onStop(time)
-  }
-
-  return (
-    <div className="relative flex items-center gap-2" onBlur={handleBlur} onFocus={handleFocus}>
-      {pendingCancel && <BlurCancelHint />}
-      <span className="text-sm text-gray-500 dark:text-gray-400">Ended at</span>
-      <NowChip
-        aria-label="Period ended at"
-        focusOnMount
-        onChange={(v) => {
-          setStopTime(v)
-          setError(false)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleStop()
-          if (e.key === 'Escape') onCancel()
-        }}
-      />
-      {error && (
-        <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
-          Must be after {periodStart}
-        </span>
-      )}
-      <button
-        onClick={onCancel}
-        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1"
-      >
-        Cancel
-      </button>
-      <button
-        onClick={handleStop}
-        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1"
-      >
-        Confirm
-      </button>
-    </div>
-  )
-}
-
 // ─── Live Subtask Banner ────────────────────────────────────────────────────────
 
 interface LiveSubtaskBannerProps {
@@ -303,73 +181,6 @@ interface LiveSubtaskBannerProps {
   categoryDescriptions?: Record<string, string> | undefined
 }
 
-function EditStartTimeForm({
-  current,
-  onSave,
-  onCancel,
-}: {
-  current: string
-  onSave: (t: string) => void
-  onCancel: () => void
-}) {
-  const [value, setValue] = useState(current)
-  const [error, setError] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, value !== current)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
-
-  function handleSave() {
-    if (!/^\d{1,2}:\d{2}$/.test(value.trim())) {
-      setError(true)
-      return
-    }
-    onSave(value.trim())
-  }
-
-  return (
-    <span className="relative flex items-center gap-1" onBlur={handleBlur} onFocus={handleFocus}>
-      {pendingCancel && <BlurCancelHint />}
-      <input
-        ref={inputRef}
-        type="text"
-        value={value}
-        placeholder="HH:MM"
-        onChange={(e) => {
-          setValue(e.target.value)
-          setError(false)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') handleSave()
-          if (e.key === 'Escape') onCancel()
-        }}
-        aria-label="Subtask started at"
-        className={`rounded border px-1.5 py-1 text-sm w-20 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-400 ${error ? 'border-red-500 dark:border-red-500' : ''}`}
-      />
-      <span className="text-sm text-gray-400">– --:--</span>
-      {error && (
-        <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
-          Must be HH:MM
-        </span>
-      )}
-      <button
-        onClick={onCancel}
-        className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1"
-      >
-        Cancel
-      </button>
-      <button
-        onClick={handleSave}
-        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1"
-      >
-        Save
-      </button>
-    </span>
-  )
-}
-
 function LiveSubtaskBanner({
   subtask,
   periodId,
@@ -379,13 +190,18 @@ function LiveSubtaskBanner({
   mutations,
   categoryDescriptions,
 }: LiveSubtaskBannerProps) {
-  const [stopping, setStopping] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [editingCategory, setEditingCategory] = useState(false)
-  const [editingStart, setEditingStart] = useState(false)
+  const [editingTime, setEditingTime] = useState(false)
+  const [editStart, setEditStart] = useState(subtask.startedAt)
+  const [editEnd, setEditEnd] = useState('')
+  const [timeError, setTimeError] = useState<string | null>(null)
   const [editingNote, setEditingNote] = useState(false)
   const [noteValue, setNoteValue] = useState(subtask.note ?? '')
   const noteInputRef = useRef<HTMLInputElement>(null)
+  const subtaskStartInputRef = useRef<HTMLInputElement>(null)
+  const subtaskEndInputRef = useRef<HTMLInputElement>(null)
+  const focusEndRef = useRef(false)
   const timeFormat = useTimeFormatStore((s) => s.format)
   const {
     pendingCancel: catPendingCancel,
@@ -397,6 +213,15 @@ function LiveSubtaskBanner({
   useEffect(() => {
     if (editingNote) noteInputRef.current?.focus()
   }, [editingNote])
+
+  useEffect(() => {
+    if (!editingTime) return
+    if (focusEndRef.current) {
+      subtaskEndInputRef.current?.focus()
+    } else {
+      subtaskStartInputRef.current?.focus()
+    }
+  }, [editingTime])
   const elapsedHours = (() => {
     const startMins = minutesFrom(subtask.startedAt)
     const endMins = minutesFrom(nowTime)
@@ -414,9 +239,26 @@ function LiveSubtaskBanner({
     resetCatPending()
   }
 
-  function changeStart(startedAt: string) {
-    mutations.addSubtask.mutate({ date, periodId, subtask: { ...subtask, startedAt } })
-    setEditingStart(false)
+  function enterSubtaskEditMode(focusEnd: boolean) {
+    setEditStart(subtask.startedAt)
+    setEditEnd(focusEnd ? nowHHMM() : '')
+    setTimeError(null)
+    focusEndRef.current = focusEnd
+    setEditingTime(true)
+  }
+
+  function saveSubtaskTime() {
+    if (editEnd && minutesFrom(editEnd) < minutesFrom(editStart)) {
+      setTimeError(`Must be at or after ${editStart}`)
+      return
+    }
+    if (editStart !== subtask.startedAt) {
+      mutations.addSubtask.mutate({ date, periodId, subtask: { ...subtask, startedAt: editStart } })
+    }
+    if (editEnd) {
+      mutations.stopLiveSubtask.mutate({ date, periodId, subtaskId: subtask.id, stoppedAt: editEnd })
+    }
+    setEditingTime(false)
   }
 
   function saveNote() {
@@ -424,35 +266,7 @@ function LiveSubtaskBanner({
     setEditingNote(false)
   }
 
-  if (stopping) {
-    return (
-      <div
-        data-testid="live-subtask-banner"
-        className="flex items-center gap-2 text-sm min-h-[2.625rem] mb-2 pb-2 border-b dark:border-gray-700"
-      >
-        <span className="w-12 text-right font-mono text-sm tabular-nums shrink-0 flex items-center justify-end gap-1">
-          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
-          <span className="text-green-600 dark:text-green-400 font-semibold whitespace-nowrap">{elapsed}</span>
-        </span>
-        <span className="font-medium text-gray-700 dark:text-gray-300 shrink-0">{subtask.category}</span>
-        {description && <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
-        <span className="text-sm text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
-          {subtask.startedAt} – --:--
-        </span>
-        <span className="flex-1" />
-        <StopSubtaskForm
-          subtaskStartedAt={subtask.startedAt}
-          onStop={(stoppedAt) => {
-            mutations.stopLiveSubtask.mutate({ date, periodId, subtaskId: subtask.id, stoppedAt })
-            setStopping(false)
-          }}
-          onCancel={() => setStopping(false)}
-        />
-      </div>
-    )
-  }
-
-  const isEditing = editingCategory || editingStart || editingNote
+  const isEditing = editingCategory || editingTime || editingNote
 
   return (
     <div
@@ -498,19 +312,77 @@ function LiveSubtaskBanner({
           {description && <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
         </>
       )}
-      {editingStart ? (
-        <EditStartTimeForm current={subtask.startedAt} onSave={changeStart} onCancel={() => setEditingStart(false)} />
-      ) : (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setEditingStart(true)
+      {editingTime ? (
+        <div
+          className="relative flex items-center gap-1 flex-wrap shrink-0"
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) saveSubtaskTime()
           }}
-          className="text-sm text-gray-400 dark:text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 tabular-nums whitespace-nowrap shrink-0"
-          aria-label="Edit subtask start time"
         >
-          {subtask.startedAt} – --:--
-        </button>
+          <input
+            ref={subtaskStartInputRef}
+            type="time"
+            value={editStart}
+            onChange={(e) => setEditStart(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveSubtaskTime()
+              if (e.key === 'Escape') setEditingTime(false)
+            }}
+            aria-label="Edit subtask start time"
+            className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          />
+          <span className="text-gray-400 text-sm">–</span>
+          <input
+            ref={subtaskEndInputRef}
+            type="time"
+            value={editEnd}
+            onChange={(e) => {
+              setEditEnd(e.target.value)
+              setTimeError(null)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') saveSubtaskTime()
+              if (e.key === 'Escape') setEditingTime(false)
+            }}
+            aria-label="Edit subtask end time"
+            className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          />
+          {timeError && (
+            <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
+              {timeError}
+            </span>
+          )}
+          <button onClick={saveSubtaskTime} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1">
+            Save
+          </button>
+          <button onClick={() => setEditingTime(false)} className="text-xs text-gray-400 ml-1">
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <span className="flex items-center gap-1 text-sm text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              enterSubtaskEditMode(false)
+            }}
+            className="hover:text-indigo-600 dark:hover:text-indigo-400"
+            aria-label={`Edit subtask start time ${subtask.startedAt}`}
+          >
+            {subtask.startedAt}
+          </button>
+          <span>–</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              enterSubtaskEditMode(true)
+            }}
+            className="hover:text-indigo-600 dark:hover:text-indigo-400"
+            aria-label="Edit subtask end time"
+          >
+            --:--
+          </button>
+        </span>
       )}
       {editingNote ? (
         <input
@@ -539,25 +411,29 @@ function LiveSubtaskBanner({
       ) : (
         <span className="flex-1" />
       )}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          setStopping(true)
-        }}
-        className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-2 py-1 shrink-0"
-      >
-        Stop subtask
-      </button>
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          setConfirmingDelete(true)
-        }}
-        className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base leading-none shrink-0 p-1 rounded"
-        aria-label="Delete live subtask"
-      >
-        ×
-      </button>
+      {!editingTime && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              enterSubtaskEditMode(true)
+            }}
+            className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-2 py-1 shrink-0"
+          >
+            Stop subtask
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setConfirmingDelete(true)
+            }}
+            className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base leading-none shrink-0 p-1 rounded"
+            aria-label="Delete live subtask"
+          >
+            ×
+          </button>
+        </>
+      )}
       {confirmingDelete && (
         <ConfirmDialog
           title="Delete subtask?"
@@ -1182,21 +1058,52 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
   const [editingTime, setEditingTime] = useState(false)
   const [editStart, setEditStart] = useState(w.start)
   const [editEnd, setEditEnd] = useState(w.end ?? '')
-  const [stoppingPeriod, setStoppingPeriod] = useState(false)
+  const [timeError, setTimeError] = useState<string | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const startInputRef = useRef<HTMLInputElement>(null)
+  const endInputRef = useRef<HTMLInputElement>(null)
+  const focusEndRef = useRef(false)
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   useEffect(() => {
-    if (editingTime) startInputRef.current?.focus()
+    if (!editingTime) return
+    if (focusEndRef.current) {
+      endInputRef.current?.focus()
+    } else {
+      startInputRef.current?.focus()
+    }
   }, [editingTime])
 
+  function enterEditMode(focusEnd: boolean) {
+    setEditStart(w.start)
+    setEditEnd(w.end ?? (focusEnd ? nowHHMM() : ''))
+    setTimeError(null)
+    focusEndRef.current = focusEnd
+    setEditingTime(true)
+  }
+
   function saveTime() {
+    if (isRunning && editEnd) {
+      const baseTime = liveSubtask && isAfter(liveSubtask.startedAt, w.start) ? liveSubtask.startedAt : w.start
+      if (!isAfter(editEnd, baseTime)) {
+        setTimeError(`Must be after ${baseTime}`)
+        return
+      }
+      mutations.stopPeriod.mutate({
+        date,
+        periodId: w.id,
+        endTime: editEnd,
+        liveSubtaskId: liveSubtask?.id,
+        stoppedAt: liveSubtask ? editEnd : undefined,
+      })
+      setEditingTime(false)
+      return
+    }
     mutations.saveWithAbsorbed.mutate({ date, window: { ...w, start: editStart, end: editEnd || null }, absorbed: [] })
     setEditingTime(false)
   }
 
-  const showStopButton = isRunning && !stoppingPeriod
+  const showStopButton = isRunning
 
   return (
     <>
@@ -1211,7 +1118,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
           <div className="min-w-0 flex justify-center">
             {editingTime ? (
               <div
-                className="flex items-center gap-1 flex-wrap"
+                className="relative flex items-center gap-1 flex-wrap"
                 onBlur={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget)) saveTime()
                 }}
@@ -1232,14 +1139,23 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
                 <input
                   type="time"
                   value={editEnd}
-                  onChange={(e) => setEditEnd(e.target.value)}
+                  onChange={(e) => {
+                    setEditEnd(e.target.value)
+                    setTimeError(null)
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') saveTime()
                     if (e.key === 'Escape') setEditingTime(false)
                   }}
                   aria-label="Edit end time"
+                  ref={endInputRef}
                   className="rounded border px-1.5 py-0.5 text-sm w-24 font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
                 />
+                {timeError && (
+                  <span className="absolute top-full left-0 mt-0.5 text-xs text-red-600 dark:text-red-400 whitespace-nowrap bg-white dark:bg-gray-800 rounded shadow px-1 z-10">
+                    {timeError}
+                  </span>
+                )}
                 <button onClick={saveTime} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1">
                   Save
                 </button>
@@ -1248,59 +1164,34 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => {
-                  setEditStart(w.start)
-                  setEditEnd(w.end ?? '')
-                  setEditingTime(true)
-                }}
-                className="group/time flex items-center gap-1.5 font-mono text-base font-semibold text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 whitespace-nowrap"
-                aria-label={`Edit period ${w.start} to ${w.end ?? 'open end'}`}
-              >
-                {w.start} – {w.end ?? '--:--'}
-                <svg
-                  className="h-3 w-3 text-gray-400 group-hover/time:text-indigo-500 shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
+              <span className="group/time flex items-center gap-1.5 font-mono text-base font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
+                <button
+                  onClick={() => enterEditMode(false)}
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400"
+                  aria-label={`Edit start time ${w.start}`}
                 >
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-              </button>
+                  {w.start}
+                </button>
+                <span className="text-gray-400 font-normal text-sm">–</span>
+                <button
+                  onClick={() => enterEditMode(true)}
+                  className="hover:text-indigo-600 dark:hover:text-indigo-400"
+                  aria-label={`Edit end time ${w.end ?? 'open end'}`}
+                >
+                  {w.end ?? '--:--'}
+                </button>
+              </span>
             )}
           </div>
           <div className="absolute right-0 flex items-center gap-2">
-            {stoppingPeriod ? (
-              <StopPeriodForm
-                periodStart={w.start}
-                liveSubtask={liveSubtask}
-                onStop={(stopTime) => {
-                  mutations.stopPeriod.mutate({
-                    date,
-                    periodId: w.id,
-                    endTime: stopTime,
-                    liveSubtaskId: liveSubtask?.id,
-                    stoppedAt: liveSubtask ? stopTime : undefined,
-                  })
-                  setStoppingPeriod(false)
-                }}
-                onCancel={() => setStoppingPeriod(false)}
-              />
-            ) : (
-              showStopButton && (
-                <button
-                  onClick={() => setStoppingPeriod(true)}
-                  aria-label="Stop tracking"
-                  className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-2 py-1"
-                >
-                  Stop
-                </button>
-              )
+            {showStopButton && !editingTime && (
+              <button
+                onClick={() => enterEditMode(true)}
+                aria-label="Stop tracking"
+                className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-2 py-1"
+              >
+                Stop
+              </button>
             )}
             <button
               onClick={() => setConfirmingDelete(true)}

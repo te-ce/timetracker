@@ -56,8 +56,8 @@ describe('WorkedHoursCell', () => {
   it('clicking opens editor with existing windows listed', async () => {
     setup([makeWindow('w1', '09:00', '13:00'), makeWindow('w2', '14:00', '18:00')])
     await userEvent.click(screen.getByText('8.00'))
-    expect(await screen.findByText('09:00 – 13:00')).toBeInTheDocument()
-    expect(screen.getByText('14:00 – 18:00')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /edit start time 09:00/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /edit start time 14:00/i })).toBeInTheDocument()
   })
 
   it('user can add a duration entry via from/to inputs', async () => {
@@ -82,7 +82,7 @@ describe('WorkedHoursCell', () => {
   it('user can remove a duration entry', async () => {
     const { repo } = setup([makeWindow('w1', '09:00', '13:00')])
     await userEvent.click(screen.getByText('8.00'))
-    await screen.findByText('09:00 – 13:00')
+    await screen.findByRole('button', { name: /edit start time 09:00/i })
     await userEvent.click(screen.getByRole('button', { name: /remove period/i }))
     await userEvent.click(await screen.findByRole('button', { name: /^delete$/i }))
 
@@ -95,10 +95,10 @@ describe('WorkedHoursCell', () => {
   it('clicking outside closes the editor', async () => {
     setup([makeWindow('w1', '09:00', '13:00')])
     await userEvent.click(screen.getByText('8.00'))
-    await screen.findByText('09:00 – 13:00')
+    await screen.findByRole('button', { name: /edit start time 09:00/i })
     await userEvent.click(document.body)
     await waitFor(() => {
-      expect(screen.queryByText('09:00 – 13:00')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /edit start time 09:00/i })).not.toBeInTheDocument()
     })
   })
 
@@ -106,8 +106,7 @@ describe('WorkedHoursCell', () => {
     it('clicking a period switches it to edit mode with current values', async () => {
       setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByText('09:00 – 17:00')
-      await userEvent.click(screen.getByText('09:00 – 17:00'))
+      await userEvent.click(await screen.findByRole('button', { name: /edit start time 09:00/i }))
 
       expect(screen.getByDisplayValue('09:00')).toBeInTheDocument()
       expect(screen.getByDisplayValue('17:00')).toBeInTheDocument()
@@ -118,8 +117,7 @@ describe('WorkedHoursCell', () => {
     it('saving an edit updates the period in the repository', async () => {
       const { repo } = setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByText('09:00 – 17:00')
-      await userEvent.click(screen.getByText('09:00 – 17:00'))
+      await userEvent.click(await screen.findByRole('button', { name: /edit start time 09:00/i }))
       const startInput = screen.getByDisplayValue('09:00')
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '08:00')
@@ -134,8 +132,7 @@ describe('WorkedHoursCell', () => {
     it('pressing Enter in the edit start input saves the period', async () => {
       const { repo } = setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByText('09:00 – 17:00')
-      await userEvent.click(screen.getByText('09:00 – 17:00'))
+      await userEvent.click(await screen.findByRole('button', { name: /edit start time 09:00/i }))
       const startInput = screen.getByDisplayValue('09:00')
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '10:00{Enter}')
@@ -149,8 +146,7 @@ describe('WorkedHoursCell', () => {
     it('pressing Enter in the edit end input saves the period', async () => {
       const { repo } = setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByText('09:00 – 17:00')
-      await userEvent.click(screen.getByText('09:00 – 17:00'))
+      await userEvent.click(await screen.findByRole('button', { name: /edit start time 09:00/i }))
       const endInput = screen.getByDisplayValue('17:00')
       await userEvent.clear(endInput)
       await userEvent.type(endInput, '18:00{Enter}')
@@ -164,8 +160,7 @@ describe('WorkedHoursCell', () => {
     it('pressing Escape in edit mode closes the modal', async () => {
       setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByText('09:00 – 17:00')
-      await userEvent.click(screen.getByText('09:00 – 17:00'))
+      await userEvent.click(await screen.findByRole('button', { name: /edit start time 09:00/i }))
       const startInput = screen.getByDisplayValue('09:00')
       await userEvent.clear(startInput)
       await userEvent.type(startInput, '07:00')
@@ -173,18 +168,17 @@ describe('WorkedHoursCell', () => {
 
       await waitFor(() => {
         expect(screen.queryByDisplayValue('07:00')).not.toBeInTheDocument()
-        expect(screen.queryByText('09:00 – 17:00')).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /edit start time 09:00/i })).not.toBeInTheDocument()
       })
     })
 
     it('Cancel button exits edit mode without saving', async () => {
       setup([makeWindow('w1', '09:00', '17:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByText('09:00 – 17:00')
-      await userEvent.click(screen.getByText('09:00 – 17:00'))
+      await userEvent.click(await screen.findByRole('button', { name: /edit start time 09:00/i }))
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
 
-      expect(await screen.findByText('09:00 – 17:00')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /edit start time 09:00/i })).toBeInTheDocument()
       expect(screen.queryByDisplayValue('09:00')).not.toBeInTheDocument()
     })
   })
@@ -193,7 +187,7 @@ describe('WorkedHoursCell', () => {
     it('displays open period as "HH:MM – --:--"', async () => {
       setup([makeWindow('w1', '09:00', null)], 0)
       await userEvent.click(screen.getByTestId('worked-hours'))
-      expect(await screen.findByText('09:00 – --:--')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /edit start time 09:00/i })).toBeInTheDocument()
     })
   })
 
@@ -209,10 +203,10 @@ describe('WorkedHoursCell', () => {
     it('clicking the × close button closes the modal', async () => {
       setup([makeWindow('w1', '09:00', '13:00')])
       await userEvent.click(screen.getByText('8.00'))
-      await screen.findByText('09:00 – 13:00')
+      await screen.findByRole('button', { name: /edit start time 09:00/i })
       await userEvent.click(screen.getByRole('button', { name: /close/i }))
       await waitFor(() => {
-        expect(screen.queryByText('09:00 – 13:00')).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /edit start time 09:00/i })).not.toBeInTheDocument()
       })
     })
   })

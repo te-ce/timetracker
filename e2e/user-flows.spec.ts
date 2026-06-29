@@ -70,7 +70,7 @@ test.describe('start period backfill', () => {
     await workSection.getByLabel('End').fill('12:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
 
-    await expect(workSection.getByLabel(/Edit period 09:00 to 12:00/)).toBeVisible()
+    await expect(workSection.getByRole('button', { name: /Edit start time 09:00/ })).toBeVisible()
   })
 })
 
@@ -94,11 +94,11 @@ test.describe('break flow', () => {
 
     // Stop the running period
     await workSection.getByLabel('Stop tracking').click()
-    await workSection.getByLabel('Period ended at').fill('12:00')
-    await workSection.getByRole('button', { name: 'Confirm' }).click()
+    await workSection.getByLabel('Edit end time').fill('12:00')
+    await workSection.getByRole('button', { name: 'Save' }).click()
 
     // Period should now be closed
-    await expect(workSection.getByLabel(/Edit period 09:00 to 12:00/)).toBeVisible()
+    await expect(workSection.getByRole('button', { name: /Edit start time 09:00/ })).toBeVisible()
     await expect(workSection.getByLabel('Stop tracking')).not.toBeVisible()
 
     // Add a new period after the break
@@ -107,7 +107,7 @@ test.describe('break flow', () => {
     await workSection.getByLabel('End').fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
 
-    await expect(workSection.getByLabel(/Edit period 13:00 to 17:00/)).toBeVisible()
+    await expect(workSection.getByRole('button', { name: /Edit start time 13:00/ })).toBeVisible()
   })
 })
 
