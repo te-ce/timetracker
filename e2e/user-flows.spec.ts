@@ -103,8 +103,8 @@ test.describe('break flow', () => {
 
     // Add a new period after the break
     await workSection.getByRole('button', { name: /now/i }).click()
-    await workSection.getByLabel('Start').fill('13:00')
-    await workSection.getByLabel('End').fill('17:00')
+    await workSection.getByLabel('Start', { exact: true }).fill('13:00')
+    await workSection.getByLabel('End', { exact: true }).fill('17:00')
     await workSection.getByRole('button', { name: 'Add period' }).click()
 
     await expect(workSection.getByRole('button', { name: /Edit start time 13:00/ })).toBeVisible()
