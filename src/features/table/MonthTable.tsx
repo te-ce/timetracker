@@ -12,7 +12,7 @@ import { computeSprintGroups } from '../sprint'
 import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
 import { QUERY_KEYS, invalidateMonthByYearMonth } from '../../shared/queryKeys'
-import { toLocalIso } from '../../shared/dateUtils'
+import { useTodayIso } from '../../shared/useTodayIso'
 import type { MonthTableRow } from './buildMonthTable'
 import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
@@ -230,7 +230,7 @@ export function MonthGrid({
     setActiveDialogCategory(null)
   }
 
-  const todayIso = toLocalIso(new Date())
+  const todayIso = useTodayIso()
 
   const prevLogSignal = useRef(openLogSignal)
   useEffect(() => {

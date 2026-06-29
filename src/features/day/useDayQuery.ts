@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
-import { toLocalIso } from '../../shared/dateUtils'
+import { useTodayIso } from '../../shared/useTodayIso'
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import {
   composeDayContext,
@@ -24,7 +24,7 @@ function nowHHMM(): string {
 
 export function useDayQuery(date: string): DayQueryResult {
   const { monthRepo, configRepo } = useRepositories()
-  const todayIso = toLocalIso(new Date())
+  const todayIso = useTodayIso()
   const year = parseInt(date.slice(0, 4))
   const month = parseInt(date.slice(5, 7))
 

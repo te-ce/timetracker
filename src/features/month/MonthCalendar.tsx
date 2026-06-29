@@ -1,4 +1,5 @@
 import { toLocalIso } from '../../shared/dateUtils'
+import { useTodayIso } from '../../shared/useTodayIso'
 import type { DayStatus } from '../../shared/dayStatus'
 import { STATUS_CELL, STATUS_DOT, STATUS_LABEL } from '../../shared/statusColors'
 import type { DisplayStatus } from '../../shared/statusColors'
@@ -48,8 +49,7 @@ export function MonthCalendar({
   dayNoteMap = {},
 }: Props) {
   const days = getDaysInMonth(year, month)
-  const now = new Date()
-  const todayIso = toLocalIso(now)
+  const todayIso = useTodayIso()
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   return (

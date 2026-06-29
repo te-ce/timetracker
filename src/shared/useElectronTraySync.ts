@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateMonth } from './queryKeys'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { getAllCategories } from './categories'
-import { toLocalIso } from './dateUtils'
+import { useTodayIso } from './useTodayIso'
 import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
@@ -89,7 +89,7 @@ export function useElectronTraySync() {
   const queryClient = useQueryClient()
   const { workedHours, sollstunden, priorOvertime, liveElapsed } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const todayIso = toLocalIso(new Date())
+  const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
 
   const openPeriod = windows.find((w) => w.end === null)

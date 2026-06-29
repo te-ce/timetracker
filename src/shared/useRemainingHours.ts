@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { toLocalIso } from './dateUtils'
+import { useTodayIso } from './useTodayIso'
 import { useDayQuery } from '../features/day/useDayQuery'
 import { formatHours } from './formatHours'
 import { findOpenPeriod, findPlannedStopPeriod } from './worktime'
@@ -79,7 +79,7 @@ export function buildReceipt(
 }
 
 export function useRemainingHours() {
-  const todayIso = toLocalIso(new Date())
+  const todayIso = useTodayIso()
   const { config, sollstunden, workedHours, overtimeToDate, windows, officeDays, totalWorkDays, officePercent } =
     useDayQuery(todayIso)
   const liveWindowStart = findOpenPeriod(windows)?.start ?? null

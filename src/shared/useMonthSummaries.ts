@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { buildMonthSummaries, calculateOvertimeToDate } from '../features/month'
-import { toLocalIso } from './dateUtils'
+import { useTodayIso } from './useTodayIso'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
 import { findOpenPeriod, findPlannedStopPeriod } from './worktime'
@@ -60,7 +60,7 @@ function extractMonthMaps(monthData: MonthData): MonthMaps {
 
 export function useMonthSummaries(year: number, month: number) {
   const { monthRepo, configRepo } = useRepositories()
-  const todayIso = toLocalIso(new Date())
+  const todayIso = useTodayIso()
 
   const { data: config } = useQuery({
     queryKey: QUERY_KEYS.config,
