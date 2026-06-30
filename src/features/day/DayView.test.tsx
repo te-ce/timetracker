@@ -129,6 +129,18 @@ describe('DayView', () => {
     })
   })
 
+  describe('OvertimeBar live tracking on past days', () => {
+    it('does not show live tracking when viewing a past day with an open period', () => {
+      stubQuery({
+        windows: [{ id: 'a', start: '09:00', end: null, category: '_COREMEDIA', subtasks: [] }],
+        todayIso: '2026-06-03', // selectedDate '2026-05-15' is in the past
+      })
+      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
+      // LiveWindowBadge renders "{elapsed} current" — should not be present for a past day
+      expect(screen.queryByText(/current/i)).not.toBeInTheDocument()
+    })
+  })
+
   describe('OvertimeBar placement', () => {
     it('renders OvertimeBar outside the work-periods section', () => {
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })

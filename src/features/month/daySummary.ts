@@ -102,7 +102,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d)
     const iso = toLocalIso(date)
-    const now = iso === today ? todayNow : undefined
+    const now = iso === today ? todayNow : iso < today ? '23:59' : undefined
     const summary = buildDaySummary(iso, date, monthData[iso], today, now)
     if (summary.dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(summary.workedHours)

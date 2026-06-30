@@ -152,7 +152,7 @@ export function DayView() {
   })
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
-  const liveWindowStart = findOpenPeriod(windows)?.start
+  const liveWindowStart = selectedDate === todayIso ? findOpenPeriod(windows)?.start : undefined
   const plannedStopTime =
     selectedDate === todayIso
       ? (findPlannedStopPeriod(windows, new Date().toTimeString().slice(0, 5))?.end ?? null)

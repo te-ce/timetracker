@@ -7,6 +7,10 @@ function win(id: string, start: string, end: string, category = '_COREMEDIA'): W
   return { id, start, end, category, subtasks: [] }
 }
 
+function openWin(id: string, start: string, category = '_COREMEDIA'): WorkPeriod {
+  return { id, start, end: null, category, subtasks: [] }
+}
+
 describe('buildMonthSummaries', () => {
   const today = '2026-05-19'
 
@@ -137,5 +141,36 @@ describe('buildMonthSummaries', () => {
     const result = buildMonthSummaries(2026, 5, { monthData: {}, today })
     expect(result.workedHoursPerDay).toHaveLength(31)
     expect(result.workedHoursPerDay[0]).toBe(0)
+  })
+
+  describe('overnight/next-day scenarios', () => {
+    it('past day with only an open period counts worked hours (capped at 23:59)', () => {
+      const monthData: MonthData = {
+        '2026-05-18': { windows: [openWin('a', '09:00')] },
+      }
+      // today is the day AFTER the open period — app ran overnight
+      const result = buildMonthSummaries(2026, 5, { monthData, today: '2026-05-19' })
+      // 09:00 → 23:59 = 14h59m
+      expect(result.workedHoursPerDay[17]).toBeGreaterThan(14)
+    })
+
+    it('past day with a closed period is unaffected by the capping logic', () => {
+      const monthData: MonthData = {
+        '2026-05-18': { windows: [win('a', '09:00', '17:00')] },
+      }
+      const result = buildMonthSummaries(2026, 5, { monthData, today: '2026-05-19' })
+      expect(result.workedHoursPerDay[17]).toBe(8)
+    })
+
+    it('past day with both a closed period and an open period counts both', () => {
+      const monthData: MonthData = {
+        '2026-05-18': {
+          windows: [win('a', '09:00', '12:00'), openWin('b', '13:00')],
+        },
+      }
+      const result = buildMonthSummaries(2026, 5, { monthData, today: '2026-05-19' })
+      // 09:00→12:00 = 3h, 13:00→23:59 = 10h59m, total > 13h
+      expect(result.workedHoursPerDay[17]).toBeGreaterThan(13)
+    })
   })
 })
