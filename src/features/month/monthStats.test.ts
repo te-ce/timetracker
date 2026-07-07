@@ -148,4 +148,24 @@ describe('calculateOvertimeToDate', () => {
     expect(result.priorOvertime).toBe(0)
     expect(result.workedToday).toBe(8)
   })
+
+  it('uses projectedWorkedToday for the cumulative value but keeps workedToday as elapsed', () => {
+    // today so far: 4h elapsed, but a planned-stop period projects to 8h by end of day
+    const result = calculateOvertimeToDate([4], ['2026-05-19'], '2026-05-19', [8], 8)
+    expect(result.workedToday).toBe(4)
+    expect(result.value).toBe(0)
+  })
+
+  it('includes prior days plus projected today in the cumulative value', () => {
+    const result = calculateOvertimeToDate([10, 4], ['2026-05-18', '2026-05-19'], '2026-05-19', [8, 8], 9)
+    // prior: 10-8=+2, today projected: 9-8=+1, total value = +3
+    expect(result.priorOvertime).toBe(2)
+    expect(result.workedToday).toBe(4)
+    expect(result.value).toBe(3)
+  })
+
+  it('falls back to today hours when projectedWorkedToday is not given', () => {
+    const result = calculateOvertimeToDate([4], ['2026-05-19'], '2026-05-19', [8])
+    expect(result.value).toBe(-4)
+  })
 })

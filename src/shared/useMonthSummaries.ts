@@ -91,6 +91,7 @@ export function useMonthSummaries(year: number, month: number) {
     summaries.days.map((d) => d.date),
     todayIso,
     targetHoursPerDay,
+    summaries.projectedWorkedHoursToday,
   )
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)

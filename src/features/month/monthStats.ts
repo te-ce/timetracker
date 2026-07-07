@@ -27,12 +27,18 @@ export function calculateMonthStats(workedHoursPerDay: number[], targetHoursPerD
 /**
  * Calculate over/undertime considering only days with tracked hours,
  * up to and including today. Also computes how much work is still needed today.
+ *
+ * `projectedWorkedToday`, when given, replaces today's hours in the cumulative
+ * `value` total so a planned-stop period's still-to-come portion counts toward
+ * the running over/undertime. `workedToday` itself stays actual/elapsed —
+ * callers showing "today so far" (e.g. the overtime bar) should not jump ahead.
  */
 export function calculateOvertimeToDate(
   workedHoursPerDay: number[],
   dates: string[],
   today: string,
   targetHoursPerDay: number[],
+  projectedWorkedToday?: number,
 ): OvertimeToDate {
   let totalWorked = 0
   let targetToDate = 0
@@ -47,11 +53,16 @@ export function calculateOvertimeToDate(
     const target = targetHoursPerDay[i] ?? 0
     if (date === today) {
       workedToday = hours
-    } else if (hours > 0) {
-      priorWorked += hours
-      priorTarget += target
+      const projectedHours = projectedWorkedToday ?? hours
+      if (projectedHours > 0) {
+        totalWorked += projectedHours
+        targetToDate += target
+      }
+      continue
     }
     if (hours > 0) {
+      priorWorked += hours
+      priorTarget += target
       totalWorked += hours
       targetToDate += target
     }

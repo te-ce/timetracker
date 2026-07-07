@@ -1,6 +1,6 @@
 import type { DayType } from '../day'
 import type { Day, MonthData } from '../../infra/repositories/types'
-import { calculateWorkedHours } from '../../shared/worktime'
+import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../shared/worktime'
 import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 
@@ -88,9 +88,15 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     if (date > today) {
       rows.push({ ...base, accumulatedOvertime: null })
     } else {
-      if (base.workedHours > 0) {
+      // For today, include the still-to-come portion of a planned-stop period so
+      // the running total reflects the full planned day, not just elapsed time.
+      const overtimeHours =
+        date === today && now !== undefined
+          ? calculateProjectedWorkedHours(monthData[date]?.windows ?? [], now)
+          : base.workedHours
+      if (overtimeHours > 0) {
         const target = base.dayType === 'WorkDay' ? (weekdayHours[new Date(year, month - 1, d).getDay()] ?? 0) : 0
-        runningOvertime += base.workedHours - target
+        runningOvertime += overtimeHours - target
       }
       rows.push({ ...base, accumulatedOvertime: runningOvertime })
     }

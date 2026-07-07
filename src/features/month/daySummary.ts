@@ -3,7 +3,7 @@ import type { DayStatus } from '../../shared/dayStatus'
 import type { MonthData, Day } from '../../infra/repositories/types'
 import { classifyDay } from '../../shared/dayStatus'
 import { classifyDayType } from '../day/dayType'
-import { calculateWorkedHours } from '../../shared/worktime'
+import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../shared/worktime'
 import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { toLocalIso } from '../../shared/dateUtils'
 
@@ -34,6 +34,8 @@ export interface MonthSummaryResult {
   workDayCount: number
   workedHoursPerDay: number[]
   hasAnyTrackedHours: boolean
+  /** Today's worked hours including the still-to-come portion of a planned-stop period. */
+  projectedWorkedHoursToday: number
 }
 
 function unpackDay(dayData: Day | undefined) {
@@ -98,6 +100,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
   const days: DaySummary[] = []
   const workedHoursPerDay: number[] = []
   let workDayCount = 0
+  let projectedWorkedHoursToday = 0
 
   for (let d = 1; d <= daysInMonth; d++) {
     const date = new Date(year, month - 1, d)
@@ -106,9 +109,15 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     const summary = buildDaySummary(iso, date, monthData[iso], today, now)
     if (summary.dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(summary.workedHours)
+    if (iso === today) {
+      // Includes the still-to-come portion of a planned-stop period, so cumulative
+      // over/undertime can reflect the full planned day, not just elapsed time.
+      projectedWorkedHoursToday =
+        now !== undefined ? calculateProjectedWorkedHours(monthData[iso]?.windows ?? [], now) : summary.workedHours
+    }
     days.push(summary)
   }
 
   const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)
-  return { days, workDayCount, workedHoursPerDay, hasAnyTrackedHours }
+  return { days, workDayCount, workedHoursPerDay, hasAnyTrackedHours, projectedWorkedHoursToday }
 }

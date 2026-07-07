@@ -118,7 +118,11 @@ export function composeDayContext(
   const year = parseInt(date.slice(0, 4))
   const month = parseInt(date.slice(5, 7))
 
-  const { days: monthDays, workedHoursPerDay } = buildMonthSummaries(year, month, {
+  const {
+    days: monthDays,
+    workedHoursPerDay,
+    projectedWorkedHoursToday,
+  } = buildMonthSummaries(year, month, {
     monthData,
     today: todayIso,
     globalAutoCategory: config?.autoCategory ?? null,
@@ -137,6 +141,7 @@ export function composeDayContext(
     monthDays.map((d) => d.date),
     todayIso,
     targetHoursPerDay,
+    projectedWorkedHoursToday,
   )
   const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])
 

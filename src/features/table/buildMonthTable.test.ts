@@ -168,6 +168,26 @@ describe('buildMonthTable', () => {
       expect(rows[3]!.accumulatedOvertime).toBeCloseTo(0) // May 4: +2-2=0
     })
 
+    it('projects a planned-stop period on today to its full duration in accumulatedOvertime', () => {
+      // May 1 (Thu, today): period ends at 18:00 (10h), but now is only 14:00 (6h elapsed)
+      const monthData: MonthData = {
+        '2026-05-01': { windows: [win('1', '08:00', '18:00')] },
+      }
+      const rows = buildMonthTable({
+        year: 2026,
+        month: 5,
+        monthData,
+        dayTypes: new Map(),
+        weekdayHours: STD,
+        today: '2026-05-01',
+        todayNow: '14:00',
+      })
+      // workedHours column stays elapsed-only (6h), but accumulatedOvertime uses
+      // the full planned 10h → +2h, not the elapsed-only -2h.
+      expect(rows[0]!.workedHours).toBeCloseTo(6)
+      expect(rows[0]!.accumulatedOvertime).toBeCloseTo(2)
+    })
+
     it('future dates (after today) have null accumulatedOvertime', () => {
       const monthData: MonthData = {
         '2026-05-01': { windows: [win('1', '08:00', '16:00')] }, // 8h

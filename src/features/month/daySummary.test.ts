@@ -143,6 +143,25 @@ describe('buildMonthSummaries', () => {
     expect(result.workedHoursPerDay[0]).toBe(0)
   })
 
+  describe('projectedWorkedHoursToday', () => {
+    it('projects a planned-stop period to its full duration', () => {
+      // today ends at 18:00 (9h) but now is only 14:00 (5h elapsed)
+      const monthData: MonthData = {
+        [today]: { windows: [win('a', '09:00', '18:00')] },
+      }
+      const result = buildMonthSummaries(2026, 5, { monthData, today, todayNow: '14:00' })
+      const todayIdx = result.days.findIndex((d) => d.date === today)
+      expect(result.days[todayIdx]!.workedHours).toBeCloseTo(5)
+      expect(result.projectedWorkedHoursToday).toBeCloseTo(9)
+    })
+
+    it('falls back to elapsed workedHours when today has no todayNow', () => {
+      const monthData: MonthData = { [today]: { windows: [win('a', '09:00', '17:00')] } }
+      const result = buildMonthSummaries(2026, 5, { monthData, today })
+      expect(result.projectedWorkedHoursToday).toBe(8)
+    })
+  })
+
   describe('overnight/next-day scenarios', () => {
     it('past day with only an open period counts worked hours (capped at 23:59)', () => {
       const monthData: MonthData = {

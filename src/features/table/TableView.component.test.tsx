@@ -61,6 +61,7 @@ function stubSummariesWithLiveWindow(liveWindowStart: string): void {
       workDayCount: 0,
       workedHoursPerDay: [],
       hasAnyTrackedHours: false,
+      projectedWorkedHoursToday: 0,
     },
     dayTypeOverrides: new Map(),
     workLocations: new Map(),
@@ -84,6 +85,7 @@ function stubSummaries(): void {
       workDayCount: 0,
       workedHoursPerDay: [],
       hasAnyTrackedHours: false,
+      projectedWorkedHoursToday: 0,
     },
     dayTypeOverrides: new Map(),
     workLocations: new Map(),
@@ -241,7 +243,13 @@ describe('TableView', () => {
     it('hides OvertimeBar when showOvertimeBar is false in config', () => {
       vi.mocked(useMonthSummaries).mockReturnValue({
         config: { ...DEFAULT_APP_CONFIG, showOvertimeBar: false },
-        summaries: { days: [], workDayCount: 0, workedHoursPerDay: [], hasAnyTrackedHours: false },
+        summaries: {
+          days: [],
+          workDayCount: 0,
+          workedHoursPerDay: [],
+          hasAnyTrackedHours: false,
+          projectedWorkedHoursToday: 0,
+        },
         dayTypeOverrides: new Map(),
         workLocations: new Map(),
         confirmedDays: new Set(),
