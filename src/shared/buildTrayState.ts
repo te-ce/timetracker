@@ -14,6 +14,7 @@ export interface TrayStateInput {
   priorOvertime: number
   workedHours: number
   liveElapsed: number
+  remaining: number
   timeFormat: TimeFormat
   autoCategory: string | null
   categories: string[]
@@ -46,12 +47,12 @@ function buildReceiptLines(
   priorOvertime: number,
   workedHours: number,
   liveElapsed: number,
+  remaining: number,
   fmt: TimeFormat,
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target',
 ): ReceiptLine[] {
   const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
   const totalWorked = workedHours + liveElapsed
-  const remaining = requiredToday - totalWorked
   const hasOvertime = priorOvertime >= 0
   const carrySign = hasOvertime ? '-' : '+'
   const carryLabel = hasOvertime ? 'Overtime carry-over' : 'Undertime carry-over'
@@ -95,15 +96,19 @@ function findLiveSubtaskCategory(windows: WorkPeriod[]): string | null {
 }
 
 export function buildTrayState(input: TrayStateInput): TrayState {
-  const { sollstunden, priorOvertime, workedHours, liveElapsed, timeFormat } = input
+  const { sollstunden, priorOvertime, workedHours, liveElapsed, remaining, timeFormat } = input
   const mode = input.remainingTimeMode ?? 'until-zero-overtime'
   const totalWorked = workedHours + liveElapsed
-  const remaining =
-    mode === 'until-daily-target'
-      ? sollstunden - workedHours - liveElapsed
-      : sollstunden - priorOvertime - workedHours - liveElapsed
 
-  const receiptLines = buildReceiptLines(sollstunden, priorOvertime, workedHours, liveElapsed, timeFormat, mode)
+  const receiptLines = buildReceiptLines(
+    sollstunden,
+    priorOvertime,
+    workedHours,
+    liveElapsed,
+    remaining,
+    timeFormat,
+    mode,
+  )
   const badgeLabel = buildBadgeLabel(remaining, totalWorked, timeFormat, input.showTotalWorked === true)
   const activeSubtaskCategory = findLiveSubtaskCategory(input.windows)
 

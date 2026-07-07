@@ -46,11 +46,11 @@ export function buildReceipt(
   priorOvertime: number,
   workedHours: number,
   liveElapsed: number,
+  remaining: number,
   fmt: TimeFormat,
 ): ReceiptLine[] {
   const requiredToday = sollstunden - priorOvertime
   const totalWorked = workedHours + liveElapsed
-  const remaining = requiredToday - totalWorked
   const hasOvertime = priorOvertime >= 0
   const carrySign = hasOvertime ? '-' : '+'
   const carryLabel = hasOvertime ? 'Overtime carry-over' : 'Undertime carry-over'

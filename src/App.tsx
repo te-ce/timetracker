@@ -277,7 +277,7 @@ function RemainingHoursBadge() {
       'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
   }
 
-  const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, timeFormat)
+  const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, remaining, timeFormat)
   const tooltipContent = (
     <div className="space-y-0.5 text-xs">
       {receiptLines.map((line, i) =>

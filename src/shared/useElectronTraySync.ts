@@ -87,7 +87,7 @@ export async function handleStopAll(monthRepo: MonthRepository, today: string, w
 export function useElectronTraySync() {
   const { configRepo, monthRepo } = useRepositories()
   const queryClient = useQueryClient()
-  const { workedHours, sollstunden, priorOvertime, liveElapsed } = useRemainingHours()
+  const { workedHours, sollstunden, priorOvertime, liveElapsed, remaining } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
@@ -110,6 +110,7 @@ export function useElectronTraySync() {
       priorOvertime,
       workedHours,
       liveElapsed,
+      remaining,
       timeFormat,
       autoCategory: resolvedAutoCategory,
       categories,
@@ -133,6 +134,7 @@ export function useElectronTraySync() {
     sollstunden,
     priorOvertime,
     liveElapsed,
+    remaining,
     timeFormat,
     windows,
     resolvedAutoCategory,

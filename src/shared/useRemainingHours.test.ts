@@ -256,7 +256,7 @@ describe('useRemainingHours', () => {
 
 describe('buildReceipt', () => {
   it('includes target, carry-over, worked, and remaining lines', () => {
-    const lines = buildReceipt(8, 1, 3, 0, 'decimal')
+    const lines = buildReceipt(8, 1, 3, 0, 4, 'decimal')
     expect(lines.find((l) => l.label === 'Target')?.value).toBe('8.00h')
     expect(lines.find((l) => l.label.includes('carry'))?.value).toContain('1')
     expect(lines.find((l) => l.label === 'Worked')?.value).toContain('3')
@@ -266,55 +266,55 @@ describe('buildReceipt', () => {
   })
 
   it('shows overtime when remaining is negative', () => {
-    const lines = buildReceipt(8, 0, 10, 0, 'decimal')
+    const lines = buildReceipt(8, 0, 10, 0, -2, 'decimal')
     const total = lines.find((l) => l.isTotal)
     expect(total?.label).toBe('Overtime')
     expect(total?.value).toContain('2.00')
   })
 
   it('shows Done when remaining is exactly 0', () => {
-    const lines = buildReceipt(8, 0, 8, 0, 'decimal')
+    const lines = buildReceipt(8, 0, 8, 0, 0, 'decimal')
     const total = lines.find((l) => l.isTotal)
     expect(total?.label).toBe('Done')
   })
 
   it('includes current window line when liveElapsed > 0', () => {
-    const lines = buildReceipt(8, 0, 3, 0.5, 'decimal')
+    const lines = buildReceipt(8, 0, 3, 0.5, 4.5, 'decimal')
     expect(lines.some((l) => l.label === 'Current')).toBe(true)
   })
 
   it('omits current window line when liveElapsed is 0', () => {
-    const lines = buildReceipt(8, 0, 3, 0, 'decimal')
+    const lines = buildReceipt(8, 0, 3, 0, 5, 'decimal')
     expect(lines.some((l) => l.label === 'Current')).toBe(false)
   })
 
   it('shows Required as primary line with value = target minus carry-over', () => {
     // sollstunden=8, priorOvertime=2 → required=6
-    const lines = buildReceipt(8, 2, 0, 0, 'decimal')
+    const lines = buildReceipt(8, 2, 0, 0, 6, 'decimal')
     expect(lines.find((l) => l.label === 'Required')?.value).toBe('6.00h')
   })
 
   it('marks Target and carry-over as sub-items of Required', () => {
-    const lines = buildReceipt(8, 2, 0, 0, 'decimal')
+    const lines = buildReceipt(8, 2, 0, 0, 6, 'decimal')
     expect(lines.find((l) => l.label === 'Target')?.isSubItem).toBe(true)
     expect(lines.find((l) => l.label.includes('carry'))?.isSubItem).toBe(true)
   })
 
   it('shows Worked as primary line with totalWorked value (past + live)', () => {
     // totalWorked = 3 + 0.5 = 3.5
-    const lines = buildReceipt(8, 0, 3, 0.5, 'decimal')
+    const lines = buildReceipt(8, 0, 3, 0.5, 4.5, 'decimal')
     expect(lines.find((l) => l.label === 'Worked')?.value).toContain('3.50')
   })
 
   it('shows Past as isSubItem with workedHours value', () => {
-    const lines = buildReceipt(8, 0, 3, 0, 'decimal')
+    const lines = buildReceipt(8, 0, 3, 0, 5, 'decimal')
     const pastLine = lines.find((l) => l.label === 'Past')
     expect(pastLine?.isSubItem).toBe(true)
     expect(pastLine?.value).toContain('3')
   })
 
   it('marks Current as isSubItem', () => {
-    const lines = buildReceipt(8, 0, 3, 0.5, 'decimal')
+    const lines = buildReceipt(8, 0, 3, 0.5, 4.5, 'decimal')
     expect(lines.find((l) => l.label === 'Current')?.isSubItem).toBe(true)
   })
 })

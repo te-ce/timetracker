@@ -27,6 +27,7 @@ describe('buildTrayState', () => {
     priorOvertime: 0,
     workedHours: 3,
     liveElapsed: 0,
+    remaining: 5,
     timeFormat: 'decimal' as const,
     autoCategory: '_COREMEDIA',
     categories: ['_COREMEDIA', '_SUPPORT', '_INFRA'],
@@ -42,32 +43,42 @@ describe('buildTrayState', () => {
     })
 
     it('shows Done when remaining = 0', () => {
-      const result = buildTrayState({ ...baseInput, workedHours: 8 })
+      const result = buildTrayState({ ...baseInput, workedHours: 8, remaining: 0 })
       expect(result.badgeLabel).toBe('Done')
     })
 
     it('shows overtime when remaining < 0', () => {
-      const result = buildTrayState({ ...baseInput, workedHours: 9 })
+      const result = buildTrayState({ ...baseInput, workedHours: 9, remaining: -1 })
       expect(result.badgeLabel).toBe('1.00h overtime')
     })
 
     it('accounts for priorOvertime in remaining', () => {
-      const result = buildTrayState({ ...baseInput, priorOvertime: 2 })
+      const result = buildTrayState({ ...baseInput, priorOvertime: 2, remaining: 3 })
       expect(result.badgeLabel).toBe('3.00h left')
     })
 
     it('ignores priorOvertime when remainingTimeMode is until-daily-target', () => {
-      const result = buildTrayState({ ...baseInput, priorOvertime: 2, remainingTimeMode: 'until-daily-target' })
+      const result = buildTrayState({
+        ...baseInput,
+        priorOvertime: 2,
+        remaining: 5,
+        remainingTimeMode: 'until-daily-target',
+      })
       expect(result.badgeLabel).toBe('5.00h left')
     })
 
     it('uses priorOvertime when remainingTimeMode is until-zero-overtime', () => {
-      const result = buildTrayState({ ...baseInput, priorOvertime: 2, remainingTimeMode: 'until-zero-overtime' })
+      const result = buildTrayState({
+        ...baseInput,
+        priorOvertime: 2,
+        remaining: 3,
+        remainingTimeMode: 'until-zero-overtime',
+      })
       expect(result.badgeLabel).toBe('3.00h left')
     })
 
     it('accounts for liveElapsed in remaining', () => {
-      const result = buildTrayState({ ...baseInput, liveElapsed: 1 })
+      const result = buildTrayState({ ...baseInput, liveElapsed: 1, remaining: 4 })
       expect(result.badgeLabel).toBe('4.00h left')
     })
   })
@@ -99,7 +110,7 @@ describe('buildTrayState', () => {
     })
 
     it('includes Current sub-item when liveElapsed > 0', () => {
-      const result = buildTrayState({ ...baseInput, liveElapsed: 1.5 })
+      const result = buildTrayState({ ...baseInput, liveElapsed: 1.5, remaining: 3.5 })
       expect(result.receiptLines.find((l) => l.label === 'Current')).toMatchObject({
         isSubItem: true,
         value: '1.50h',
@@ -168,7 +179,7 @@ describe('buildTrayState', () => {
     })
 
     it('includes liveElapsed in total worked when showTotalWorked is true', () => {
-      const result = buildTrayState({ ...baseInput, liveElapsed: 1, showTotalWorked: true })
+      const result = buildTrayState({ ...baseInput, liveElapsed: 1, remaining: 4, showTotalWorked: true })
       expect(result.badgeLabel).toBe('4.00h worked')
     })
 
