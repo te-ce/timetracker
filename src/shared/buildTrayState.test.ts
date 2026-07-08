@@ -131,9 +131,9 @@ describe('buildTrayState', () => {
   })
 
   describe('activeSubtaskCategory', () => {
-    it('returns null when open period has no live subtask', () => {
+    it('falls back to the open period own category when it has no live subtask', () => {
       const result = buildTrayState(baseInput)
-      expect(result.activeSubtaskCategory).toBeNull()
+      expect(result.activeSubtaskCategory).toBe('_COREMEDIA')
     })
 
     it('returns the category of a live subtask on the open period', () => {
@@ -146,9 +146,10 @@ describe('buildTrayState', () => {
       expect(result.activeSubtaskCategory).toBe('_SUPPORT')
     })
 
-    it('ignores stopped subtasks', () => {
+    it('falls back to the open period category when subtasks are all stopped', () => {
       const windows = [
         makePeriod({
+          category: '_MAINT',
           subtasks: [
             {
               id: 's1',
@@ -160,6 +161,18 @@ describe('buildTrayState', () => {
           ],
         }),
       ]
+      const result = buildTrayState({ ...baseInput, windows })
+      expect(result.activeSubtaskCategory).toBe('_MAINT')
+    })
+
+    it('uses the reopened period own category, not the unrelated global autoCategory', () => {
+      const windows = [makePeriod({ category: '_MAINT' })]
+      const result = buildTrayState({ ...baseInput, windows, autoCategory: '_COREMEDIA' })
+      expect(result.activeSubtaskCategory).toBe('_MAINT')
+    })
+
+    it('returns null when there is no open period', () => {
+      const windows = [makePeriod({ end: '17:00' })]
       const result = buildTrayState({ ...baseInput, windows })
       expect(result.activeSubtaskCategory).toBeNull()
     })

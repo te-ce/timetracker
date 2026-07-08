@@ -42,7 +42,7 @@ function findLiveSubtaskCategory(windows: WorkPeriod[]): string | null {
   const openPeriod = findOpenPeriod(windows)
   if (!openPeriod) return null
   const live = openPeriod.subtasks.find(isLiveSubtask)
-  return live?.category ?? null
+  return live?.category ?? openPeriod.category
 }
 
 export function buildTrayState(input: TrayStateInput): TrayState {
