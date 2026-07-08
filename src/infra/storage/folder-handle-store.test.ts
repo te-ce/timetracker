@@ -1,11 +1,12 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 
 // Fresh in-memory IndexedDB for every test — folder-handle-store uses the global
 // `indexedDB` directly, so replacing it resets state between runs.
 beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
+  vi.unstubAllGlobals()
 })
 
 // Bust the vitest module cache so each test picks up the new globalThis.indexedDB.
@@ -34,6 +35,11 @@ function makeHandleWithPermission(query: PermissionState, request: PermissionSta
     queryPermission: () => Promise.resolve(query),
     requestPermission: () => Promise.resolve(request),
   } as unknown as FileSystemDirectoryHandle
+}
+
+function stubUserActivation(isActive: boolean) {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  vi.stubGlobal('navigator', { userActivation: { isActive } } as unknown as Navigator)
 }
 
 describe('saveHandle / loadHandle', () => {
@@ -106,12 +112,21 @@ describe('verifyPermission', () => {
     expect(await m.verifyPermission(makeHandleWithPermission('granted', 'denied'))).toBe(true)
   })
 
-  it('returns true when queryPermission is prompt and requestPermission is granted', async () => {
+  it('returns true when queryPermission is prompt, user gesture is active, and requestPermission is granted', async () => {
+    stubUserActivation(true)
     const m = await freshModule()
     expect(await m.verifyPermission(makeHandleWithPermission('prompt', 'granted'))).toBe(true)
   })
 
+  it('returns false without calling requestPermission when there is no active user gesture', async () => {
+    stubUserActivation(false)
+    const m = await freshModule()
+    const handle = makeHandleWithPermission('prompt', 'granted')
+    expect(await m.verifyPermission(handle)).toBe(false)
+  })
+
   it('returns false when both queryPermission and requestPermission are denied', async () => {
+    stubUserActivation(true)
     const m = await freshModule()
     expect(await m.verifyPermission(makeHandleWithPermission('denied', 'denied'))).toBe(false)
   })

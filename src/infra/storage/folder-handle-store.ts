@@ -63,6 +63,9 @@ export const clearExcelHandle = () => deleteHandleByKey(EXCEL_HANDLE_KEY)
 
 export async function verifyPermission(handle: FileSystemDirectoryHandle): Promise<boolean> {
   if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') return true
+  // requestPermission() requires a user gesture — calling it without one (e.g. during
+  // automatic startup loading) can reject or hang indefinitely in some browsers.
+  if (!navigator.userActivation.isActive) return false
   if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') return true
   return false
 }
