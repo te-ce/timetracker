@@ -13,14 +13,16 @@ import { useGoalNotification } from './shared/useGoalNotification'
 import { useSprintExportReminder } from './features/sprint/useSprintExportReminder'
 import { SprintExportBadge } from './features/sprint/SprintExportBadge'
 import { usePrefetchCurrentMonth } from './shared/usePrefetchCurrentMonth'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyboardShortcutLegend } from './shared/KeyboardShortcutLegend'
 import { Tooltip } from './shared'
 import { msalInstance } from './infra/auth/msalInstance'
 import { toLocalIso } from './shared/dateUtils'
 import { defaultHotkeyConfig, matchesShortcut } from './shared/hotkeyConfig'
-import { QUERY_KEYS } from './shared/queryKeys'
+import { QUERY_KEYS, invalidateConfig, invalidateMonthByYearMonth } from './shared/queryKeys'
 import { useRepositories } from './infra/repositories/RepositoryContext'
+import { isLocalFolderMode } from './infra/auth/bootstrapConfig'
+import { useRetryOnFirstInteraction } from './shared/useRetryOnFirstInteraction'
 import { resolveStartupPath, getLastViewPath, saveLastViewPath } from './features/settings/resolveStartupPath'
 
 function IconCalendar() {
@@ -639,9 +641,15 @@ function HeaderControls({ onToggleLegend }: { onToggleLegend: () => void }) {
 
 function App() {
   const { configRepo } = useRepositories()
+  const queryClient = useQueryClient()
   useElectronTraySync()
   useGoalNotification()
-  const { isPending: monthIsPending } = usePrefetchCurrentMonth()
+  const {
+    isPending: monthIsPending,
+    isError: monthIsError,
+    year: currentMonthYear,
+    month: currentMonth,
+  } = usePrefetchCurrentMonth()
   const sprintsNeedingExport = useSprintExportReminder()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
@@ -650,7 +658,11 @@ function App() {
   const { undo, redo } = useUndoStore()
   const [legendOpen, setLegendOpen] = useState(false)
 
-  const { data: appConfig, isPending: configIsPending } = useQuery({
+  const {
+    data: appConfig,
+    isPending: configIsPending,
+    isError: configIsError,
+  } = useQuery({
     queryKey: QUERY_KEYS.config,
     queryFn: () => configRepo.get(),
   })
@@ -664,6 +676,16 @@ function App() {
     const timer = setTimeout(() => setLoadingTimedOut(true), 5000)
     return () => clearTimeout(timer)
   }, [])
+
+  // Local-folder permission isn't persisted across restarts, so the initial
+  // config/month fetch can fail with no active user gesture available to grant
+  // it. Retry both on the user's first interaction with the page, which does
+  // carry a gesture — no more manually clicking a nav tab to "wake up" storage.
+  const retryAfterPermissionFailure = useCallback(() => {
+    invalidateConfig(queryClient)
+    invalidateMonthByYearMonth(queryClient, currentMonthYear, currentMonth)
+  }, [queryClient, currentMonthYear, currentMonth])
+  useRetryOnFirstInteraction(isLocalFolderMode() && (configIsError || monthIsError), retryAfterPermissionFailure)
 
   const startupNavigated = useRef(false)
   useEffect(() => {

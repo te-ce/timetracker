@@ -8,10 +8,10 @@ export function usePrefetchCurrentMonth() {
   const year = today.getFullYear()
   const month = today.getMonth() + 1
 
-  const { isPending } = useQuery({
+  const { isPending, isError } = useQuery({
     queryKey: QUERY_KEYS.month(year, month),
     queryFn: () => monthRepo.getMonth(year, month),
   })
 
-  return { isPending }
+  return { isPending, isError, year, month }
 }
