@@ -641,7 +641,7 @@ function App() {
   const { configRepo } = useRepositories()
   useElectronTraySync()
   useGoalNotification()
-  usePrefetchCurrentMonth()
+  const { isPending: monthIsPending } = usePrefetchCurrentMonth()
   const sprintsNeedingExport = useSprintExportReminder()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
@@ -650,7 +650,7 @@ function App() {
   const { undo, redo } = useUndoStore()
   const [legendOpen, setLegendOpen] = useState(false)
 
-  const { data: appConfig } = useQuery({
+  const { data: appConfig, isPending: configIsPending } = useQuery({
     queryKey: QUERY_KEYS.config,
     queryFn: () => configRepo.get(),
   })
@@ -769,6 +769,18 @@ function App() {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
+
+  if (configIsPending || monthIsPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 dark:border-gray-700 dark:border-t-gray-300"
+          role="status"
+          aria-label="Loading"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
