@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTimeFormatStore, type TimeFormat } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
+import { calculateRemaining } from '../../shared/remainingCalc'
 
 interface Props {
   sollstunden: number
@@ -12,6 +13,9 @@ interface Props {
   totalWorkDays?: number
   officePercent?: number
   plannedStopTime?: string | null
+  isPlannedStopMode?: boolean
+  countdownHours?: number
+  projectedWorkedToday?: number | undefined
   onHide?: () => void
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
   showTotalWorked?: boolean
@@ -88,18 +92,27 @@ function buildBarData(
   plannedStopTime: string | null | undefined,
   remainingTimeMode: 'until-zero-overtime' | 'until-daily-target' | undefined,
   showTotalWorked: boolean,
+  isPlannedStopMode: boolean,
+  countdownHours: number,
+  projectedWorkedToday: number,
 ): BarData {
   // workedToday already includes live elapsed (buildDaySummary passes `now`). Subtract
   // it back to get the closed-only portion for the "past" breakdown label.
   const pastWorkedToday = Math.max(0, workedToday - liveElapsed)
   const hasOvertime = priorOvertime >= 0
-  const remaining =
-    remainingTimeMode === 'until-daily-target' ? sollstunden - workedToday : sollstunden - priorOvertime - workedToday
+  const { remaining, requiredToday } = calculateRemaining({
+    sollstunden,
+    priorOvertime,
+    workedHours: workedToday,
+    projectedWorkedHours: projectedWorkedToday,
+    remainingTimeMode: remainingTimeMode ?? 'until-zero-overtime',
+    isPlannedStopMode,
+    countdownHours,
+  })
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'
   const overtimeSign = hasOvertime ? '−' : '+'
   const overtimeClass = hasOvertime ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'
 
-  const requiredToday = remainingTimeMode === 'until-daily-target' ? sollstunden : sollstunden - priorOvertime
   const totalWorked = pastWorkedToday + liveElapsed
 
   const equationBreakdown =
@@ -151,6 +164,9 @@ export function OvertimeBar({
   totalWorkDays,
   officePercent,
   plannedStopTime,
+  isPlannedStopMode = false,
+  countdownHours = 0,
+  projectedWorkedToday,
   onHide,
   remainingTimeMode,
   showTotalWorked = false,
@@ -180,6 +196,9 @@ export function OvertimeBar({
     plannedStopTime,
     remainingTimeMode,
     showTotalWorked,
+    isPlannedStopMode,
+    countdownHours,
+    projectedWorkedToday ?? workedToday,
   )
 
   return (

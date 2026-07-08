@@ -5,9 +5,9 @@ import { Link, Outlet, useRouterState, useNavigate, useRouter } from '@tanstack/
 import { useAuthStore } from './shared/authStore'
 import { useThemeStore } from './shared/themeStore'
 import { useTimeFormatStore } from './shared/timeFormatStore'
-import { formatHours } from './shared/formatHours'
 import { useUndoStore } from './shared/undoStore'
-import { useRemainingHours, buildReceipt } from './shared/useRemainingHours'
+import { useRemainingHours } from './shared/useRemainingHours'
+import { buildReceipt, buildBadgeLabel } from './shared/remainingCalc'
 import { useElectronTraySync } from './shared/useElectronTraySync'
 import { useGoalNotification } from './shared/useGoalNotification'
 import { useSprintExportReminder } from './features/sprint/useSprintExportReminder'
@@ -256,28 +256,30 @@ function RemainingHoursBadge() {
 
   const showTotalWorked = config?.showTotalWorked === true
   const totalWorked = workedHours + liveElapsed
+  const remainingTimeMode = config?.remainingTimeMode ?? 'until-zero-overtime'
 
-  let label: string
+  const label = buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
   let badgeClass: string
   if (showTotalWorked) {
-    label = `${formatHours(totalWorked, timeFormat)} worked`
     badgeClass =
       'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-400'
   } else if (remaining > 0) {
-    label = `${formatHours(remaining, timeFormat)} left`
     badgeClass =
       'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400'
-  } else if (remaining === 0) {
-    label = 'Done'
-    badgeClass =
-      'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
   } else {
-    label = `${formatHours(Math.abs(remaining), timeFormat)} overtime`
     badgeClass =
       'hidden sm:inline-flex items-center whitespace-nowrap rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400'
   }
 
-  const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, remaining, timeFormat)
+  const receiptLines = buildReceipt(
+    sollstunden,
+    priorOvertime,
+    workedHours,
+    liveElapsed,
+    remaining,
+    timeFormat,
+    remainingTimeMode,
+  )
   const tooltipContent = (
     <div className="space-y-0.5 text-xs">
       {receiptLines.map((line, i) =>

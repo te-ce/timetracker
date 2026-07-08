@@ -176,6 +176,35 @@ describe('Planned-Stop projection mode', () => {
     render(<OvertimeBar sollstunden={8} priorOvertime={0} workedToday={8} plannedStopTime="17:00" />)
     expect(screen.getByText(/projected/i)).toBeInTheDocument()
   })
+
+  it('uses projectedWorkedToday instead of workedToday for remaining when countdown is off', () => {
+    // workedToday=3 (elapsed so far) but a planned stop projects 6h total → remaining = 8 - 6 = 2h.
+    render(
+      <OvertimeBar
+        sollstunden={8}
+        priorOvertime={0}
+        workedToday={3}
+        plannedStopTime="17:00"
+        projectedWorkedToday={6}
+      />,
+    )
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('2.00h remaining'))
+  })
+
+  it('uses the countdown to the planned stop as remaining when isPlannedStopMode is set', () => {
+    // Without planned-stop mode: remaining = 8 - 0 - 3 = 5h. With it, the countdown wins.
+    render(
+      <OvertimeBar
+        sollstunden={8}
+        priorOvertime={0}
+        workedToday={3}
+        plannedStopTime="17:00"
+        isPlannedStopMode
+        countdownHours={1.5}
+      />,
+    )
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', expect.stringContaining('1.50h remaining'))
+  })
 })
 
 describe('showTotalWorked mode', () => {

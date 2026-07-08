@@ -9,6 +9,7 @@ import {
   isPlannedStop,
   findPlannedStopPeriod,
   calculateProjectedWorkedHours,
+  derivePlannedStopState,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
@@ -229,5 +230,22 @@ describe('calculateWorkedHours with future end times', () => {
   it('treats a future end as full duration when no now is provided', () => {
     // Without now: no knowledge of "future", uses end − start as-is
     expect(calculateWorkedHours([makeWindow('09:00', '17:00')])).toBe(8)
+  })
+})
+
+describe('derivePlannedStopState', () => {
+  it('is not in planned-stop mode when there is no planned-stop period', () => {
+    const result = derivePlannedStopState([makeWindow('09:00', '12:00')], '13:00', 'planned-stop')
+    expect(result).toEqual({ isPlannedStopMode: false, plannedStopTime: null, countdownHours: 0 })
+  })
+
+  it('counts down to the planned-stop end when reference is planned-stop', () => {
+    const result = derivePlannedStopState([makeWindow('13:00', '17:00')], '15:00', 'planned-stop')
+    expect(result).toEqual({ isPlannedStopMode: true, plannedStopTime: '17:00', countdownHours: 2 })
+  })
+
+  it('is not in planned-stop mode when reference is target-hours, even with a planned stop', () => {
+    const result = derivePlannedStopState([makeWindow('13:00', '17:00')], '15:00', 'target-hours')
+    expect(result).toEqual({ isPlannedStopMode: false, plannedStopTime: '17:00', countdownHours: 2 })
   })
 })

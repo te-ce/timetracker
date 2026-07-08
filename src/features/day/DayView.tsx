@@ -9,7 +9,7 @@ import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
 import { invalidateConfig } from '../../shared/queryKeys'
-import { findOpenPeriod, findPlannedStopPeriod } from '../../shared/worktime'
+import { findOpenPeriod, derivePlannedStopState, calculateProjectedWorkedHours } from '../../shared/worktime'
 import { Tooltip } from '../../shared'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
@@ -153,10 +153,13 @@ export function DayView() {
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = selectedDate === todayIso ? findOpenPeriod(windows)?.start : undefined
-  const plannedStopTime =
+  const nowHHMM = new Date().toTimeString().slice(0, 5)
+  const { isPlannedStopMode, plannedStopTime, countdownHours } =
     selectedDate === todayIso
-      ? (findPlannedStopPeriod(windows, new Date().toTimeString().slice(0, 5))?.end ?? null)
-      : null
+      ? derivePlannedStopState(windows, nowHHMM, config?.remainingTimeReference ?? 'planned-stop')
+      : { isPlannedStopMode: false, plannedStopTime: null, countdownHours: 0 }
+  const projectedWorkedToday =
+    selectedDate === todayIso && plannedStopTime ? calculateProjectedWorkedHours(windows, nowHHMM) : undefined
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config?.officeStats !== false
   const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
@@ -190,6 +193,9 @@ export function DayView() {
           workedToday={overtimeToDate.workedToday}
           liveWindowStart={liveWindowStart ?? null}
           plannedStopTime={plannedStopTime}
+          isPlannedStopMode={isPlannedStopMode}
+          countdownHours={countdownHours}
+          projectedWorkedToday={projectedWorkedToday}
           remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
           showTotalWorked={config?.showTotalWorked === true}
           onHide={() => hideOvertimeMutation.mutate()}

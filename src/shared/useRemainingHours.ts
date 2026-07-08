@@ -2,9 +2,16 @@ import { useState, useEffect } from 'react'
 import { useTodayIso } from './useTodayIso'
 import { useDayQuery } from '../features/day/useDayQuery'
 import { formatHours } from './formatHours'
-import { findOpenPeriod, findPlannedStopPeriod } from './worktime'
-import type { TimeFormat } from './timeFormatStore'
+import {
+  findOpenPeriod,
+  findPlannedStopPeriod,
+  derivePlannedStopState,
+  calculateProjectedWorkedHours,
+} from './worktime'
+import { calculateRemaining } from './remainingCalc'
 import { useTimeFormatStore } from './timeFormatStore'
+export { buildReceipt } from './remainingCalc'
+export type { ReceiptLine } from './remainingCalc'
 
 function nowHHMMFn(): string {
   const d = new Date()
@@ -32,50 +39,6 @@ function buildSummary(sollstunden: number, priorOvertime: number, workedHours: n
   else if (remaining === 0) remainingLabel = 'Done'
   else remainingLabel = `${formatHours(Math.abs(remaining), 'decimal')} overtime today`
   return `${formatHours(sollstunden, 'decimal')} target, ${formatHours(Math.abs(priorOvertime), 'decimal')} ${overtimeLabel} carry-over, ${formatHours(workedHours, 'decimal')} worked today — ${remainingLabel}`
-}
-
-export interface ReceiptLine {
-  label: string
-  value: string
-  isTotal?: boolean
-  isSubItem?: boolean
-}
-
-export function buildReceipt(
-  sollstunden: number,
-  priorOvertime: number,
-  workedHours: number,
-  liveElapsed: number,
-  remaining: number,
-  fmt: TimeFormat,
-): ReceiptLine[] {
-  const requiredToday = sollstunden - priorOvertime
-  const totalWorked = workedHours + liveElapsed
-  const hasOvertime = priorOvertime >= 0
-  const carrySign = hasOvertime ? '-' : '+'
-  const carryLabel = hasOvertime ? 'Overtime carry-over' : 'Undertime carry-over'
-
-  const lines: ReceiptLine[] = [
-    { label: 'Required', value: formatHours(requiredToday, fmt) },
-    { label: 'Target', value: formatHours(sollstunden, fmt), isSubItem: true },
-    { label: carryLabel, value: `${carrySign}${formatHours(Math.abs(priorOvertime), fmt)}`, isSubItem: true },
-    { label: 'Worked', value: `-${formatHours(totalWorked, fmt)}` },
-    { label: 'Past', value: formatHours(workedHours, fmt), isSubItem: true },
-  ]
-
-  if (liveElapsed > 0) {
-    lines.push({ label: 'Current', value: formatHours(liveElapsed, fmt), isSubItem: true })
-  }
-
-  if (remaining > 0) {
-    lines.push({ label: 'Remaining', value: formatHours(remaining, fmt), isTotal: true })
-  } else if (remaining === 0) {
-    lines.push({ label: 'Done', value: '', isTotal: true })
-  } else {
-    lines.push({ label: 'Overtime', value: formatHours(Math.abs(remaining), fmt), isTotal: true })
-  }
-
-  return lines
 }
 
 export function useRemainingHours() {
@@ -107,23 +70,31 @@ export function useRemainingHours() {
   // hours so callers that do (workedHours + liveElapsed) still get the correct total.
   const closedWorkedHours = Math.max(0, workedHours - liveElapsed - plannedLiveElapsed)
 
-  // Projected remaining: uses the full query workedHours (which after 8cd2ee1 equals
-  // closed + planned-live, not closed + full-planned-duration — known limitation).
-  const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - workedHours
+  // Full projected worked hours, including the still-to-come portion of a planned-stop
+  // period. Only meaningful (and only computed) when a planned stop actually exists.
+  const projectedWorkedHours = plannedStopPeriod ? calculateProjectedWorkedHours(windows, currentNow) : undefined
+  const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - (projectedWorkedHours ?? workedHours)
 
   const remainingTimeReference = config?.remainingTimeReference ?? 'planned-stop'
   const remainingTimeMode = config?.remainingTimeMode ?? 'until-zero-overtime'
-  const isPlannedStopMode = !!plannedStopPeriod && remainingTimeReference !== 'target-hours'
-  const plannedStopTime = plannedStopPeriod?.end ?? null
+  const { isPlannedStopMode, plannedStopTime, countdownHours } = derivePlannedStopState(
+    windows,
+    currentNow,
+    remainingTimeReference,
+  )
 
-  const countdownHours = plannedStopPeriod ? liveWindowElapsedHours(currentNow, plannedStopPeriod.end!) : 0
-
-  // workedHours already contains live elapsed, so just subtract once.
-  const remaining = isPlannedStopMode
-    ? countdownHours
-    : remainingTimeMode === 'until-daily-target'
-      ? sollstunden - workedHours
-      : sollstunden - overtimeToDate.priorOvertime - workedHours
+  // workedHours already contains live elapsed, so just subtract once. When the countdown
+  // is off (isPlannedStopMode false) but a planned stop still exists, project the future
+  // portion so remaining/overtime already reflects the scheduled stop.
+  const { remaining } = calculateRemaining({
+    sollstunden,
+    priorOvertime: overtimeToDate.priorOvertime,
+    workedHours,
+    projectedWorkedHours,
+    remainingTimeMode,
+    isPlannedStopMode,
+    countdownHours,
+  })
 
   const { format } = useTimeFormatStore()
   const priorOvertime = overtimeToDate.priorOvertime

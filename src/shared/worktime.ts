@@ -69,6 +69,29 @@ export function calculateWorkedHours(windows: WorkPeriod[], now?: string): numbe
   }, 0)
 }
 
+export interface PlannedStopState {
+  isPlannedStopMode: boolean
+  plannedStopTime: string | null
+  countdownHours: number
+}
+
+/**
+ * Derives whether "remaining" should count down to a planned-stop period's end
+ * rather than the usual target/overtime subtraction. Shared by useRemainingHours
+ * (badge/tray) and DayView (overtime bar) so all three stay in sync.
+ */
+export function derivePlannedStopState(
+  windows: WorkPeriod[],
+  nowHHMM: string,
+  remainingTimeReference: 'planned-stop' | 'target-hours',
+): PlannedStopState {
+  const plannedStopPeriod = findPlannedStopPeriod(windows, nowHHMM)
+  const isPlannedStopMode = !!plannedStopPeriod && remainingTimeReference !== 'target-hours'
+  const plannedStopTime = plannedStopPeriod?.end ?? null
+  const countdownHours = plannedStopPeriod ? (parseMinutes(plannedStopPeriod.end!) - parseMinutes(nowHHMM)) / 60 : 0
+  return { isPlannedStopMode, plannedStopTime, countdownHours }
+}
+
 export function calcSubtaskHours(startedAt: string, stoppedAt: string): number {
   const startMins = parseMinutes(startedAt)
   let endMins = parseMinutes(stoppedAt)

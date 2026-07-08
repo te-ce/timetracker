@@ -395,10 +395,11 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
   })
 
   describe('target-hours mode (when remainingTimeReference = target-hours)', () => {
-    it('uses target-based remaining when remainingTimeReference is target-hours', () => {
+    it('projects the full planned-stop duration into remaining when countdown is off', () => {
       const ps = makePlannedStopWindow(-120, 60)
-      // buildDaySummary passes `now` to calculateWorkedHours, so the query returns
-      // the live elapsed (2h) not the full planned duration (3h). Remaining = 8 − 2 = 6h.
+      // Planned stop runs -120..+60 → full planned duration = 3h. With the countdown off,
+      // remaining should use the projected total (3h), not just live-elapsed (2h):
+      // Remaining = 8 − 3 = 5h.
       stubDayQuery({
         sollstunden: 8,
         workedHours: 2, // planned live elapsed (not full planned duration)
@@ -406,7 +407,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
         config: { ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' },
       })
       const { result } = renderHook(() => useRemainingHours())
-      expect(result.current.remaining).toBeCloseTo(6, 0)
+      expect(result.current.remaining).toBeCloseTo(5, 0)
     })
 
     it('sets isPlannedStopMode to false when remainingTimeReference is target-hours', () => {
