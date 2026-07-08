@@ -656,6 +656,15 @@ function App() {
   })
   const hotkeyConfig = appConfig?.hotkeys ?? defaultHotkeyConfig()
 
+  // Bails out of the loading gate if config/month fetches hang (e.g. slow/stuck
+  // auth) instead of blocking the app forever — falls back to the old
+  // render-with-defaults behavior.
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setLoadingTimedOut(true), 5000)
+    return () => clearTimeout(timer)
+  }, [])
+
   const startupNavigated = useRef(false)
   useEffect(() => {
     if (!appConfig || startupNavigated.current || !appConfig.startupView) return
@@ -770,7 +779,7 @@ function App() {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  if (configIsPending || monthIsPending) {
+  if ((configIsPending || monthIsPending) && !loadingTimedOut) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div
