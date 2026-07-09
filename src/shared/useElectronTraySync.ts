@@ -1,13 +1,12 @@
 import { useEffect, useCallback } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS, invalidateMonth } from './queryKeys'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
+import { QUERY_KEYS, invalidateMonth, invalidateConfig } from './queryKeys'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { getAllCategories } from './categories'
 import { useTodayIso } from './useTodayIso'
 import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
-import { usePresentingModeStore } from './presentingModeStore'
 import { useDayQuery } from '../features/day/useDayQuery'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
@@ -90,8 +89,6 @@ export function useElectronTraySync() {
   const queryClient = useQueryClient()
   const { workedHours, sollstunden, priorOvertime, liveElapsed, remaining } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const isPresenting = usePresentingModeStore((s) => s.isPresenting)
-  const togglePresenting = usePresentingModeStore((s) => s.toggle)
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
 
@@ -103,6 +100,17 @@ export function useElectronTraySync() {
     queryKey: QUERY_KEYS.config,
     queryFn: () => configRepo.get(),
   })
+
+  const toggleShowWorkedHoursInTray = useMutation({
+    mutationFn: () =>
+      configRepo.save({ ...config!, showWorkedHoursInTray: !(config!.showWorkedHoursInTray !== false) }),
+    onSuccess: () => invalidateConfig(queryClient),
+  })
+  const toggleHoursDisplay = useCallback(() => {
+    if (config) toggleShowWorkedHoursInTray.mutate()
+  }, [config, toggleShowWorkedHoursInTray])
+
+  const hideHours = config?.showWorkedHoursInTray === false
 
   useEffect(() => {
     if (!window.electronAPI || !config) return
@@ -122,12 +130,8 @@ export function useElectronTraySync() {
       startedAt,
       remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
       showTotalWorked: config.showTotalWorked === true,
-      presentingMode: isPresenting,
+      presentingMode: hideHours,
     })
-
-    if (config.showWorkedHoursInTray === false) {
-      trayState.receiptLines = []
-    }
 
     window.electronAPI.tray.sync(trayState)
   }, [
@@ -142,7 +146,7 @@ export function useElectronTraySync() {
     timeFormat,
     windows,
     resolvedAutoCategory,
-    isPresenting,
+    hideHours,
   ])
 
   const onStartSubtask = useCallback(
@@ -213,11 +217,11 @@ export function useElectronTraySync() {
   useEffect(() => {
     const api = window.electronAPI
     if (!api) return
-    api.tray.onTogglePresentingMode(togglePresenting)
-    api.hotkey.onTogglePresenting(togglePresenting)
+    api.tray.onTogglePresentingMode(toggleHoursDisplay)
+    api.hotkey.onTogglePresenting(toggleHoursDisplay)
     return () => {
-      api.tray.offTogglePresentingMode(togglePresenting)
-      api.hotkey.offTogglePresenting(togglePresenting)
+      api.tray.offTogglePresentingMode(toggleHoursDisplay)
+      api.hotkey.offTogglePresenting(toggleHoursDisplay)
     }
-  }, [togglePresenting])
+  }, [toggleHoursDisplay])
 }

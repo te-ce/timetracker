@@ -193,9 +193,9 @@ function buildTrayMenu() {
     ...stopItem,
     { type: 'separator' },
     {
-      label: 'Presenting Mode',
+      label: 'Display Hours',
       type: 'checkbox',
-      checked: presentingMode,
+      checked: !presentingMode,
       click: () => {
         mainWindow.webContents.send('tray:togglePresentingMode')
       },

@@ -229,20 +229,23 @@ describe('useElectronTraySync hook', () => {
     expect(api.hotkey.offTogglePresenting).toHaveBeenCalledOnce()
   })
 
-  it('toggles the presenting-mode store when the tray or hotkey event fires', async () => {
+  it('flips the showWorkedHoursInTray config setting when the tray or hotkey event fires', async () => {
     const api = makeElectronAPI()
     window.electronAPI = api
     const { useElectronTraySync } = await import('./useElectronTraySync')
-    const { usePresentingModeStore } = await import('./presentingModeStore')
+    const { configRepo } = await import('../infra/repositories/shared')
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
+    await vi.waitFor(() => expect(api.tray.sync).toHaveBeenCalled())
 
-    expect(usePresentingModeStore.getState().isPresenting).toBe(false)
-    const trayListener = api.tray.onTogglePresentingMode.mock.calls[0]?.[0]
+    const callsBeforeToggle = api.tray.onTogglePresentingMode.mock.calls.length
+    const trayListener = api.tray.onTogglePresentingMode.mock.calls.at(-1)?.[0]
     trayListener()
-    expect(usePresentingModeStore.getState().isPresenting).toBe(true)
-    const hotkeyListener = api.hotkey.onTogglePresenting.mock.calls[0]?.[0]
+    await vi.waitFor(async () => expect((await configRepo.get()).showWorkedHoursInTray).toBe(false))
+    await vi.waitFor(() => expect(api.tray.onTogglePresentingMode.mock.calls.length).toBeGreaterThan(callsBeforeToggle))
+
+    const hotkeyListener = api.hotkey.onTogglePresenting.mock.calls.at(-1)?.[0]
     hotkeyListener()
-    expect(usePresentingModeStore.getState().isPresenting).toBe(false)
+    await vi.waitFor(async () => expect((await configRepo.get()).showWorkedHoursInTray).not.toBe(false))
   })
 })
