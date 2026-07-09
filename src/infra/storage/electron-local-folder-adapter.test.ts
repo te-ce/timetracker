@@ -73,9 +73,11 @@ beforeEach(() => {
 })
 
 describe('ElectronLocalFolderStorageAdapter', () => {
-  it('throws when no folder path is configured', async () => {
+  it('falls back to the browser handle adapter when no path is configured', async () => {
+    // jsdom has no indexedDB; reaching that error proves the fallback adapter was used
+    // instead of throwing "No local folder configured." for the fs-path adapter.
     const adapter = new ElectronLocalFolderStorageAdapter()
-    await expect(adapter.get('config')).rejects.toThrow('No local folder configured.')
+    await expect(adapter.get('config')).rejects.toThrow('indexedDB is not defined')
   })
 
   it('stores and retrieves a value under the configured folder path', async () => {
