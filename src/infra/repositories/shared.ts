@@ -3,6 +3,7 @@ import { OneDriveStorageAdapter } from '../storage/onedrive-adapter'
 import { FallbackStorageAdapter } from '../storage/fallback-adapter'
 import { LocalFolderStorageAdapter } from '../storage/local-folder-adapter'
 import { ElectronStorageAdapter } from '../storage/electron-adapter'
+import { ElectronLocalFolderStorageAdapter } from '../storage/electron-local-folder-adapter'
 import { getAccessToken } from '../auth/msalInstance'
 import { isLocalFolderMode } from '../auth/bootstrapConfig'
 import type { StorageAdapter } from '../storage/adapter'
@@ -11,7 +12,9 @@ import { CloudSprintExportRepository } from './cloud/sprint-export-repository'
 import { CloudMonthRepository } from './cloud/month-repository'
 
 function makeStorage(): StorageAdapter {
-  if (isLocalFolderMode()) return new LocalFolderStorageAdapter()
+  if (isLocalFolderMode()) {
+    return window.electronAPI ? new ElectronLocalFolderStorageAdapter() : new LocalFolderStorageAdapter()
+  }
   const offlineFallback = window.electronAPI ? new ElectronStorageAdapter() : new LocalStorageAdapter()
   return new FallbackStorageAdapter(new OneDriveStorageAdapter(getAccessToken), offlineFallback)
 }

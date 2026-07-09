@@ -38,6 +38,12 @@ interface Window {
       put<T>(key: string, data: T): Promise<void>
       delete(key: string): Promise<void>
     }
+    localFolder: {
+      pickFolder(): Promise<string | null>
+      get<T>(basePath: string, key: string): Promise<T | null>
+      put<T>(basePath: string, key: string, data: T): Promise<void>
+      delete(basePath: string, key: string): Promise<void>
+    }
     notify: {
       goalReached(): void
       sprintExportDue(body: string): void

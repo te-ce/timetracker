@@ -1,4 +1,14 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, globalShortcut, Notification } = require('electron')
+const {
+  app,
+  BrowserWindow,
+  Tray,
+  Menu,
+  nativeImage,
+  ipcMain,
+  globalShortcut,
+  Notification,
+  dialog,
+} = require('electron')
 const path = require('path')
 const fs = require('fs')
 const AutoLaunch = require('electron-auto-launch')
@@ -74,6 +84,43 @@ ipcMain.handle('storage:put', (_, key, data) => {
 ipcMain.handle('storage:delete', (_, key) => {
   try {
     fs.unlinkSync(storagePath(key))
+  } catch {
+    /* non-critical: file may not exist */
+  }
+})
+
+// ── Local folder storage (Node fs, no browser permission/gesture needed) ─────
+
+function localFolderPath(basePath, key) {
+  const filename = key.endsWith('.json') ? key : `${key}.json`
+  const filePath = path.join(basePath, filename)
+  const dir = path.dirname(filePath)
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
+  return filePath
+}
+
+ipcMain.handle('localfolder:pickFolder', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory', 'createDirectory'] })
+  if (result.canceled || result.filePaths.length === 0) return null
+  return result.filePaths[0]
+})
+
+ipcMain.handle('localfolder:get', (_, basePath, key) => {
+  try {
+    const raw = fs.readFileSync(localFolderPath(basePath, key), 'utf8')
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle('localfolder:put', (_, basePath, key, data) => {
+  fs.writeFileSync(localFolderPath(basePath, key), JSON.stringify(data, null, 2))
+})
+
+ipcMain.handle('localfolder:delete', (_, basePath, key) => {
+  try {
+    fs.unlinkSync(localFolderPath(basePath, key))
   } catch {
     /* non-critical: file may not exist */
   }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { loadHandle, saveHandle, verifyPermission } from '../../infra/storage/folder-handle-store'
+import { LOCAL_FOLDER_PATH_KEY } from '../../infra/storage/electron-local-folder-adapter'
 
 export function AppDataFolderSettings() {
   const [folderName, setFolderName] = useState<string | null>(null)
@@ -7,17 +8,28 @@ export function AppDataFolderSettings() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (window.electronAPI) {
+      void window.electronAPI.storage.get<string>(LOCAL_FOLDER_PATH_KEY).then(setFolderName)
+      return
+    }
     void loadHandle().then((h) => setFolderName(h?.name ?? null))
   }, [])
 
   async function handlePick() {
-    if (!window.showDirectoryPicker) {
-      setError('File System Access API not supported in this browser.')
-      return
-    }
     setPicking(true)
     setError(null)
     try {
+      if (window.electronAPI) {
+        const path = await window.electronAPI.localFolder.pickFolder()
+        if (path === null) return
+        await window.electronAPI.storage.put(LOCAL_FOLDER_PATH_KEY, path)
+        window.location.reload()
+        return
+      }
+      if (!window.showDirectoryPicker) {
+        setError('File System Access API not supported in this browser.')
+        return
+      }
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
       const ok = await verifyPermission(handle)
       if (!ok) {

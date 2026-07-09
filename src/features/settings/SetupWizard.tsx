@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { writeBootstrapConfig, skipSetup, setLocalFolderMode } from '../../infra/auth/bootstrapConfig'
 import { saveHandle } from '../../infra/storage/folder-handle-store'
+import { LOCAL_FOLDER_PATH_KEY } from '../../infra/storage/electron-local-folder-adapter'
 
 interface Props {
   onSkip: () => void
@@ -73,13 +74,21 @@ export function SetupWizard({ onSkip }: Props) {
   async function handleLocalFolder() {
     const ua = navigator.userAgent
     const browser = detectBrowserSupport(ua)
-    if (!window.showDirectoryPicker) {
-      setError(getApiUnsupportedError(ua))
-      return
-    }
     setPickingFolder(true)
     setError(null)
     try {
+      if (window.electronAPI) {
+        const path = await window.electronAPI.localFolder.pickFolder()
+        if (path === null) return
+        await window.electronAPI.storage.put(LOCAL_FOLDER_PATH_KEY, path)
+        setLocalFolderMode()
+        window.location.reload()
+        return
+      }
+      if (!window.showDirectoryPicker) {
+        setError(getApiUnsupportedError(ua))
+        return
+      }
       const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
       await saveHandle(handle)
       setLocalFolderMode()
@@ -169,11 +178,13 @@ export function SetupWizard({ onSkip }: Props) {
           >
             {pickingFolder ? 'Picking folder…' : 'Use Local Folder'}
           </button>
-          <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
-            Supported in Chrome, Edge &amp; Opera. Brave needs{' '}
-            <code className="font-mono">brave://flags/#file-system-access-api</code> enabled. Safari 17+ has partial
-            support. Firefox is not supported.
-          </p>
+          {!window.electronAPI && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+              Supported in Chrome, Edge &amp; Opera. Brave needs{' '}
+              <code className="font-mono">brave://flags/#file-system-access-api</code> enabled. Safari 17+ has partial
+              support. Firefox is not supported.
+            </p>
+          )}
           <button
             onClick={handleSkip}
             className="w-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm py-2 rounded-lg transition-colors"

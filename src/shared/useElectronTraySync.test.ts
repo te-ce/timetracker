@@ -165,6 +165,12 @@ function makeElectronAPI() {
       put: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
     },
+    localFolder: {
+      pickFolder: vi.fn().mockResolvedValue(null),
+      get: vi.fn().mockResolvedValue(null),
+      put: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+    },
     notify: { goalReached: vi.fn(), sprintExportDue: vi.fn() },
     window: { onShow: vi.fn(), offShow: vi.fn() },
   }

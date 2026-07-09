@@ -44,6 +44,12 @@ beforeEach(() => {
       setGlobal: () => Promise.resolve(),
     },
     storage: stub,
+    localFolder: {
+      pickFolder: () => Promise.resolve(null),
+      get: () => Promise.resolve(null),
+      put: () => Promise.resolve(),
+      delete: () => Promise.resolve(),
+    },
     notify: { goalReached: () => {}, sprintExportDue: () => {} },
     window: { onShow: () => {}, offShow: () => {} },
   }

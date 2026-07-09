@@ -61,6 +61,12 @@ describe('dispatchGoalNotification', () => {
         put: () => Promise.resolve(),
         delete: () => Promise.resolve(),
       },
+      localFolder: {
+        pickFolder: () => Promise.resolve(null),
+        get: () => Promise.resolve(null),
+        put: () => Promise.resolve(),
+        delete: () => Promise.resolve(),
+      },
       notify: { goalReached, sprintExportDue: vi.fn() },
       window: { onShow: () => {}, offShow: () => {} },
     }

@@ -30,6 +30,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     put: (key, data) => ipcRenderer.invoke('storage:put', key, data),
     delete: (key) => ipcRenderer.invoke('storage:delete', key),
   },
+  localFolder: {
+    pickFolder: () => ipcRenderer.invoke('localfolder:pickFolder'),
+    get: (basePath, key) => ipcRenderer.invoke('localfolder:get', basePath, key),
+    put: (basePath, key, data) => ipcRenderer.invoke('localfolder:put', basePath, key, data),
+    delete: (basePath, key) => ipcRenderer.invoke('localfolder:delete', basePath, key),
+  },
   notify: {
     goalReached: () => ipcRenderer.send('notify:goalReached'),
     sprintExportDue: (body) => ipcRenderer.send('notify:sprintExportDue', body),
