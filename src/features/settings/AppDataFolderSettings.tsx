@@ -9,7 +9,15 @@ export function AppDataFolderSettings() {
 
   useEffect(() => {
     if (window.electronAPI) {
-      void window.electronAPI.storage.get<string>(LOCAL_FOLDER_PATH_KEY).then(setFolderName)
+      void window.electronAPI.storage.get<string>(LOCAL_FOLDER_PATH_KEY).then((path) => {
+        if (path) {
+          setFolderName(path)
+          return
+        }
+        // Not yet migrated to a native path — show the browser handle's name so the
+        // "Change" button still renders and lets the user re-pick via the native dialog.
+        void loadHandle().then((h) => setFolderName(h?.name ?? null))
+      })
       return
     }
     void loadHandle().then((h) => setFolderName(h?.name ?? null))

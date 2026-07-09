@@ -10,6 +10,7 @@ vi.mock('../../infra/storage/folder-handle-store', () => ({
 
 import * as folderHandleStore from '../../infra/storage/folder-handle-store'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
+import { LOCAL_FOLDER_PATH_KEY } from '../../infra/storage/electron-local-folder-adapter'
 
 const mockLoadHandle = vi.mocked(folderHandleStore.loadHandle)
 const mockSaveHandle = vi.mocked(folderHandleStore.saveHandle)
@@ -20,6 +21,50 @@ function makeHandle(name: string): FileSystemDirectoryHandle {
   return { name } as FileSystemDirectoryHandle
 }
 
+function makeElectronApiStub(overrides: {
+  storagePath?: string | null
+  pickFolder?: string | null
+}): NonNullable<typeof window.electronAPI> {
+  return {
+    autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
+    tray: {
+      sync: () => {},
+      onStartSubtask: () => {},
+      offStartSubtask: () => {},
+      onStopSubtask: () => {},
+      offStopSubtask: () => {},
+      onStopAll: () => {},
+      offStopAll: () => {},
+      onStartWorkPeriod: () => {},
+      offStartWorkPeriod: () => {},
+      onTogglePresentingMode: () => {},
+      offTogglePresentingMode: () => {},
+    },
+    hotkey: {
+      onToggle: () => {},
+      offToggle: () => {},
+      onTogglePresenting: () => {},
+      offTogglePresenting: () => {},
+      setGlobal: () => Promise.resolve(),
+    },
+    storage: {
+      get: <T,>(key: string) =>
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        Promise.resolve(key === LOCAL_FOLDER_PATH_KEY ? ((overrides.storagePath ?? null) as T | null) : null),
+      put: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+    },
+    localFolder: {
+      pickFolder: () => Promise.resolve(overrides.pickFolder ?? null),
+      get: () => Promise.resolve(null),
+      put: () => Promise.resolve(),
+      delete: () => Promise.resolve(),
+    },
+    notify: { goalReached: () => {}, sprintExportDue: () => {} },
+    window: { onShow: () => {}, offShow: () => {} },
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockLoadHandle.mockResolvedValue(null)
@@ -27,6 +72,7 @@ beforeEach(() => {
   mockSaveHandle.mockResolvedValue(undefined as never)
   mockVerifyPermission.mockResolvedValue(true)
   vi.unstubAllGlobals()
+  delete window.electronAPI
 })
 
 describe('AppDataFolderSettings', () => {
@@ -110,6 +156,33 @@ describe('AppDataFolderSettings', () => {
     await user.click(screen.getByRole('button', { name: /change/i }))
 
     await screen.findByText(/failed to open folder picker/i)
+  })
+
+  it('falls back to the browser handle name in Electron when no native path is configured yet', async () => {
+    window.electronAPI = makeElectronApiStub({ storagePath: null })
+    mockLoadHandle.mockResolvedValue(makeHandle('OldHandleFolder'))
+
+    render(<AppDataFolderSettings />)
+
+    await screen.findByText('OldHandleFolder')
+    expect(screen.getByRole('button', { name: /change/i })).toBeInTheDocument()
+  })
+
+  it('shows the native path and picks a new one via the native dialog in Electron', async () => {
+    const user = userEvent.setup()
+    const reloadMock = vi.fn()
+    vi.stubGlobal('location', { reload: reloadMock })
+    window.electronAPI = makeElectronApiStub({ storagePath: '/old/path', pickFolder: '/new/path' })
+    const putSpy = vi.mocked(window.electronAPI.storage.put)
+
+    render(<AppDataFolderSettings />)
+
+    await screen.findByText('/old/path')
+    await user.click(screen.getByRole('button', { name: /change/i }))
+
+    await waitFor(() => expect(putSpy).toHaveBeenCalledWith(LOCAL_FOLDER_PATH_KEY, '/new/path'))
+    expect(reloadMock).toHaveBeenCalledOnce()
+    expect(mockSaveHandle).not.toHaveBeenCalled()
   })
 
   it('does not show error when user aborts picker (AbortError)', async () => {
