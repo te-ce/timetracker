@@ -244,6 +244,9 @@ function LiveSubtaskBanner({
     setEditEnd(focusEnd ? nowHHMM() : '')
     setTimeError(null)
     focusEndRef.current = focusEnd
+    setEditingCategory(false)
+    resetCatPending()
+    setEditingNote(false)
     setEditingTime(true)
   }
 
@@ -402,6 +405,9 @@ function LiveSubtaskBanner({
         <button
           onClick={(e) => {
             e.stopPropagation()
+            setEditingCategory(false)
+            resetCatPending()
+            setEditingTime(false)
             setEditingNote(true)
           }}
           className="text-sm text-gray-500 dark:text-gray-400 italic truncate flex-1 text-left hover:text-indigo-600 dark:hover:text-indigo-400"
