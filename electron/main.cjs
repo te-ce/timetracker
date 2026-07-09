@@ -16,6 +16,7 @@ let trayState = {
   categories: [],
   isTracking: false,
   startedAt: null,
+  presentingMode: false,
 }
 
 const autoLauncher = new AutoLaunch({ name: 'Timetracker' })
@@ -115,7 +116,8 @@ function updateTrayDisplay() {
 }
 
 function buildTrayMenu() {
-  const { receiptLines, autoCategory, activeSubtaskCategory, categories, isTracking, startedAt } = trayState
+  const { receiptLines, autoCategory, activeSubtaskCategory, categories, isTracking, startedAt, presentingMode } =
+    trayState
 
   const openItem = {
     label: 'Open Timetracker',
@@ -189,6 +191,15 @@ function buildTrayMenu() {
     ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
     ...(startWorkPeriodItems.length > 0 ? [...startWorkPeriodItems, { type: 'separator' }] : []),
     ...stopItem,
+    { type: 'separator' },
+    {
+      label: 'Presenting Mode',
+      type: 'checkbox',
+      checked: presentingMode,
+      click: () => {
+        mainWindow.webContents.send('tray:togglePresentingMode')
+      },
+    },
     {
       label: 'Quit',
       click: () => {
@@ -247,18 +258,26 @@ function createWindow() {
 }
 
 const DEFAULT_GLOBAL_HOTKEY = 'CommandOrControl+Shift+Space'
+const PRESENTING_MODE_HOTKEY = 'CommandOrControl+Shift+P'
 
 function registerGlobalHotkey(accelerator) {
   globalShortcut.unregisterAll()
-  if (!accelerator) return
-  globalShortcut.register(accelerator, () => {
+
+  if (accelerator) {
+    globalShortcut.register(accelerator, () => {
+      if (!mainWindow) return
+      if (trayState.isTracking) {
+        mainWindow.webContents.send('hotkey:toggle')
+      } else {
+        mainWindow.show()
+        mainWindow.focus()
+      }
+    })
+  }
+
+  globalShortcut.register(PRESENTING_MODE_HOTKEY, () => {
     if (!mainWindow) return
-    if (trayState.isTracking) {
-      mainWindow.webContents.send('hotkey:toggle')
-    } else {
-      mainWindow.show()
-      mainWindow.focus()
-    }
+    mainWindow.webContents.send('hotkey:togglePresenting')
   })
 }
 

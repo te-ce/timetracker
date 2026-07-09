@@ -201,4 +201,28 @@ describe('buildTrayState', () => {
       expect(result.badgeLabel).toBe('5.00h left')
     })
   })
+
+  describe('presentingMode', () => {
+    it('blanks the badge label when presentingMode is true', () => {
+      const result = buildTrayState({ ...baseInput, presentingMode: true })
+      expect(result.badgeLabel).toBe('')
+    })
+
+    it('blanks the receipt lines when presentingMode is true', () => {
+      const result = buildTrayState({ ...baseInput, presentingMode: true })
+      expect(result.receiptLines).toEqual([])
+    })
+
+    it('still shows the badge label and receipt lines when presentingMode is false', () => {
+      const result = buildTrayState({ ...baseInput, presentingMode: false })
+      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.receiptLines.length).toBeGreaterThan(0)
+    })
+
+    it('passes presentingMode through to the output so the tray menu can reflect it', () => {
+      expect(buildTrayState({ ...baseInput, presentingMode: true }).presentingMode).toBe(true)
+      expect(buildTrayState({ ...baseInput, presentingMode: false }).presentingMode).toBe(false)
+      expect(buildTrayState(baseInput).presentingMode).toBe(false)
+    })
+  })
 })

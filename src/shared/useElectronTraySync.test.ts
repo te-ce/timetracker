@@ -150,10 +150,14 @@ function makeElectronAPI() {
       offStopAll: vi.fn(),
       onStartWorkPeriod: vi.fn(),
       offStartWorkPeriod: vi.fn(),
+      onTogglePresentingMode: vi.fn(),
+      offTogglePresentingMode: vi.fn(),
     },
     hotkey: {
       onToggle: vi.fn(),
       offToggle: vi.fn(),
+      onTogglePresenting: vi.fn(),
+      offTogglePresenting: vi.fn(),
       setGlobal: vi.fn().mockResolvedValue(undefined),
     },
     storage: {
@@ -210,5 +214,35 @@ describe('useElectronTraySync hook', () => {
     expect(api.hotkey.onToggle).toHaveBeenCalledOnce()
     unmount()
     expect(api.hotkey.offToggle).toHaveBeenCalledOnce()
+  })
+
+  it('registers and cleans up presenting-mode toggle listeners from both tray and hotkey', async () => {
+    const api = makeElectronAPI()
+    window.electronAPI = api
+    const { useElectronTraySync } = await import('./useElectronTraySync')
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { unmount } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
+    expect(api.tray.onTogglePresentingMode).toHaveBeenCalledOnce()
+    expect(api.hotkey.onTogglePresenting).toHaveBeenCalledOnce()
+    unmount()
+    expect(api.tray.offTogglePresentingMode).toHaveBeenCalledOnce()
+    expect(api.hotkey.offTogglePresenting).toHaveBeenCalledOnce()
+  })
+
+  it('toggles the presenting-mode store when the tray or hotkey event fires', async () => {
+    const api = makeElectronAPI()
+    window.electronAPI = api
+    const { useElectronTraySync } = await import('./useElectronTraySync')
+    const { usePresentingModeStore } = await import('./presentingModeStore')
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
+
+    expect(usePresentingModeStore.getState().isPresenting).toBe(false)
+    const trayListener = api.tray.onTogglePresentingMode.mock.calls[0]?.[0]
+    trayListener()
+    expect(usePresentingModeStore.getState().isPresenting).toBe(true)
+    const hotkeyListener = api.hotkey.onTogglePresenting.mock.calls[0]?.[0]
+    hotkeyListener()
+    expect(usePresentingModeStore.getState().isPresenting).toBe(false)
   })
 })

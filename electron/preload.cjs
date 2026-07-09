@@ -15,10 +15,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     offStopAll: (cb) => ipcRenderer.removeListener('tray:stopAll', cb),
     onStartWorkPeriod: (cb) => ipcRenderer.on('tray:startWorkPeriod', (_, cat) => cb(cat)),
     offStartWorkPeriod: (cb) => ipcRenderer.removeListener('tray:startWorkPeriod', cb),
+    onTogglePresentingMode: (cb) => ipcRenderer.on('tray:togglePresentingMode', cb),
+    offTogglePresentingMode: (cb) => ipcRenderer.removeListener('tray:togglePresentingMode', cb),
   },
   hotkey: {
     onToggle: (cb) => ipcRenderer.on('hotkey:toggle', cb),
     offToggle: (cb) => ipcRenderer.removeListener('hotkey:toggle', cb),
+    onTogglePresenting: (cb) => ipcRenderer.on('hotkey:togglePresenting', cb),
+    offTogglePresenting: (cb) => ipcRenderer.removeListener('hotkey:togglePresenting', cb),
     setGlobal: (accelerator) => ipcRenderer.invoke('hotkey:setGlobal', accelerator),
   },
   storage: {

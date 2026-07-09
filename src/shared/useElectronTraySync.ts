@@ -7,6 +7,7 @@ import { useTodayIso } from './useTodayIso'
 import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
+import { usePresentingModeStore } from './presentingModeStore'
 import { useDayQuery } from '../features/day/useDayQuery'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
@@ -89,6 +90,8 @@ export function useElectronTraySync() {
   const queryClient = useQueryClient()
   const { workedHours, sollstunden, priorOvertime, liveElapsed, remaining } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
+  const isPresenting = usePresentingModeStore((s) => s.isPresenting)
+  const togglePresenting = usePresentingModeStore((s) => s.toggle)
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
 
@@ -119,6 +122,7 @@ export function useElectronTraySync() {
       startedAt,
       remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
       showTotalWorked: config.showTotalWorked === true,
+      presentingMode: isPresenting,
     })
 
     if (config.showWorkedHoursInTray === false) {
@@ -138,6 +142,7 @@ export function useElectronTraySync() {
     timeFormat,
     windows,
     resolvedAutoCategory,
+    isPresenting,
   ])
 
   const onStartSubtask = useCallback(
@@ -204,4 +209,15 @@ export function useElectronTraySync() {
       api.hotkey.offToggle(listener)
     }
   }, [isTracking, onStopAll])
+
+  useEffect(() => {
+    const api = window.electronAPI
+    if (!api) return
+    api.tray.onTogglePresentingMode(togglePresenting)
+    api.hotkey.onTogglePresenting(togglePresenting)
+    return () => {
+      api.tray.offTogglePresentingMode(togglePresenting)
+      api.hotkey.offTogglePresenting(togglePresenting)
+    }
+  }, [togglePresenting])
 }

@@ -46,8 +46,16 @@ describe('dispatchGoalNotification', () => {
         offStopAll: () => {},
         onStartWorkPeriod: () => {},
         offStartWorkPeriod: () => {},
+        onTogglePresentingMode: () => {},
+        offTogglePresentingMode: () => {},
       },
-      hotkey: { onToggle: () => {}, offToggle: () => {}, setGlobal: vi.fn().mockResolvedValue(undefined) },
+      hotkey: {
+        onToggle: () => {},
+        offToggle: () => {},
+        onTogglePresenting: () => {},
+        offTogglePresenting: () => {},
+        setGlobal: vi.fn().mockResolvedValue(undefined),
+      },
       storage: {
         get: () => Promise.resolve(null),
         put: () => Promise.resolve(),

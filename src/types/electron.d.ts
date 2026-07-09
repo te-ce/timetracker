@@ -13,6 +13,7 @@ interface Window {
         categories: string[]
         isTracking: boolean
         startedAt: string | null
+        presentingMode: boolean
       }): void
       onStartSubtask(cb: (category: string) => void): void
       offStartSubtask(cb: (category: string) => void): void
@@ -22,10 +23,14 @@ interface Window {
       offStopAll(cb: () => void): void
       onStartWorkPeriod(cb: (category: string) => void): void
       offStartWorkPeriod(cb: (category: string) => void): void
+      onTogglePresentingMode(cb: () => void): void
+      offTogglePresentingMode(cb: () => void): void
     }
     hotkey: {
       onToggle(cb: () => void): void
       offToggle(cb: () => void): void
+      onTogglePresenting(cb: () => void): void
+      offTogglePresenting(cb: () => void): void
       setGlobal(accelerator: string | null): Promise<void>
     }
     storage: {
