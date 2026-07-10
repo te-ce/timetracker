@@ -23,7 +23,12 @@ import { QUERY_KEYS, invalidateConfig, invalidateMonthByYearMonth } from './shar
 import { useRepositories } from './infra/repositories/RepositoryContext'
 import { isLocalFolderMode } from './infra/auth/bootstrapConfig'
 import { useRetryOnFirstInteraction } from './shared/useRetryOnFirstInteraction'
-import { resolveStartupPath, getLastViewPath, saveLastViewPath } from './features/settings/resolveStartupPath'
+import {
+  resolveStartupPath,
+  getLastViewPath,
+  saveLastViewPath,
+  normalizeLastViewPath,
+} from './features/settings/resolveStartupPath'
 
 function IconCalendar() {
   return (
@@ -716,7 +721,7 @@ function App() {
 
   useEffect(() => {
     const loc = routerState.location
-    saveLastViewPath(loc.pathname + loc.searchStr)
+    saveLastViewPath(normalizeLastViewPath(loc.pathname, loc.searchStr, toLocalIso(new Date())))
   }, [routerState.location])
 
   const handleKeyDown = useCallback(

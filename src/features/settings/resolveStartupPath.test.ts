@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { resolveStartupPath } from './resolveStartupPath'
+import { resolveStartupPath, normalizeLastViewPath } from './resolveStartupPath'
 
 describe('resolveStartupPath', () => {
   it('day → DayView with today', () => {
@@ -28,5 +28,27 @@ describe('resolveStartupPath', () => {
 
   it('last with no saved path → falls back to DayView today', () => {
     expect(resolveStartupPath('last', null, '2024-01-15')).toBe('/?date=2024-01-15')
+  })
+
+  it('last with saved path "/" (day view, no explicit date) → resolves to fresh today, not stale', () => {
+    expect(resolveStartupPath('last', '/', '2024-01-15')).toBe('/?date=2024-01-15')
+  })
+
+  it('last with saved path "/?date=..." (deliberately navigated day) → returns that exact stale date', () => {
+    expect(resolveStartupPath('last', '/?date=2023-06-01', '2024-01-15')).toBe('/?date=2023-06-01')
+  })
+})
+
+describe('normalizeLastViewPath', () => {
+  it('day view showing today → strips the date so startup resolves to a fresh today', () => {
+    expect(normalizeLastViewPath('/', '?date=2024-01-15', '2024-01-15')).toBe('/')
+  })
+
+  it('day view showing a different day (user navigated away) → keeps the explicit date', () => {
+    expect(normalizeLastViewPath('/', '?date=2023-06-01', '2024-01-15')).toBe('/?date=2023-06-01')
+  })
+
+  it('non-day view → passed through unchanged', () => {
+    expect(normalizeLastViewPath('/month', '?year=2024&month=3', '2024-01-15')).toBe('/month?year=2024&month=3')
   })
 })

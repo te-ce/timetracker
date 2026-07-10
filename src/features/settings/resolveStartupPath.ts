@@ -10,6 +10,11 @@ export function saveLastViewPath(path: string): void {
   localStorage.setItem(LAST_VIEW_KEY, path)
 }
 
+export function normalizeLastViewPath(pathname: string, searchStr: string, today: string): string {
+  if (pathname === '/' && searchStr === `?date=${today}`) return '/'
+  return pathname + searchStr
+}
+
 export function resolveStartupPath(view: StartupView | undefined, lastPath: string | null, today: string): string {
   const [year, month] = today.split('-').map(Number)
   switch (view) {
@@ -20,7 +25,7 @@ export function resolveStartupPath(view: StartupView | undefined, lastPath: stri
     case 'table-with-log':
       return `/table?year=${year}&month=${month}&logDate=${today}`
     case 'last':
-      return lastPath ?? `/?date=${today}`
+      return lastPath === '/' ? `/?date=${today}` : (lastPath ?? `/?date=${today}`)
     case 'day':
     default:
       return `/?date=${today}`
