@@ -73,17 +73,17 @@ export function SprintReportPanel({
         <span className="font-normal text-gray-500 dark:text-gray-400">· {formatHours(total, 'hhmm')}</span>
       </div>
 
-      {exportStatus === 'pending' && onExport && (
+      {onExport && (
         <div className="flex flex-col items-end gap-2">
           <button
             onClick={() => void handleExport()}
-            disabled={exporting || !exportReady}
+            disabled={exporting}
             className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
             data-tooltip={
               !exportReady ? 'Configure SharePoint URL, sheet, and category mapping in Settings first' : undefined
             }
           >
-            {exporting ? 'Exporting…' : 'Export to SharePoint'}
+            {exporting ? 'Exporting…' : 'Export'}
           </button>
           {!exportReady && (
             <p className="text-xs text-gray-400 dark:text-gray-500">

@@ -434,14 +434,13 @@ test.describe('sprint view', () => {
     await expect(page.getByRole('heading', { name: 'Sprint Report' })).toBeVisible()
   })
 
-  test('export button is disabled when SharePoint URL is not configured', async ({ page }) => {
+  test('export button is enabled even when SharePoint URL is not configured', async ({ page }) => {
     await page.goto('/sprint')
 
-    // Without sharepointUrl configured, export should not be ready
+    // Export button is always available; readiness is surfaced via a hint, not a disabled state
     const exportBtn = page.getByRole('button', { name: /export/i })
-    if (await exportBtn.isVisible()) {
-      await expect(exportBtn).toBeDisabled()
-    }
+    await expect(exportBtn).toBeVisible()
+    await expect(exportBtn).toBeEnabled()
   })
 })
 

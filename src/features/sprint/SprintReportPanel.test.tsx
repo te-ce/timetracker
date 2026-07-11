@@ -45,7 +45,7 @@ describe('SprintReportPanel', () => {
     expect(screen.getByText(/exported/i)).toBeInTheDocument()
   })
 
-  it('shows Export to SharePoint button when pending and onExport provided', () => {
+  it('shows Export button when onExport provided', () => {
     render(
       <SprintReportPanel
         hoursPerCategory={{ QA: 5 }}
@@ -55,7 +55,7 @@ describe('SprintReportPanel', () => {
         onExport={vi.fn().mockResolvedValue(undefined)}
       />,
     )
-    expect(screen.getByRole('button', { name: /export to sharepoint/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^export$/i })).toBeInTheDocument()
   })
 
   it('calls onExport when button clicked', async () => {
@@ -69,11 +69,11 @@ describe('SprintReportPanel', () => {
         onExport={onExport}
       />,
     )
-    await userEvent.click(screen.getByRole('button', { name: /export to sharepoint/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^export$/i }))
     expect(onExport).toHaveBeenCalledOnce()
   })
 
-  it('disables export button when exportReady is false', () => {
+  it('keeps export button enabled even when exportReady is false', () => {
     render(
       <SprintReportPanel
         hoursPerCategory={{ QA: 5 }}
@@ -83,10 +83,10 @@ describe('SprintReportPanel', () => {
         onExport={vi.fn().mockResolvedValue(undefined)}
       />,
     )
-    expect(screen.getByRole('button', { name: /export to sharepoint/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /^export$/i })).toBeEnabled()
   })
 
-  it('hides export button when already exported', () => {
+  it('shows export button even when already exported (allows re-export)', () => {
     render(
       <SprintReportPanel
         hoursPerCategory={{ QA: 5 }}
@@ -96,7 +96,7 @@ describe('SprintReportPanel', () => {
         onExport={vi.fn().mockResolvedValue(undefined)}
       />,
     )
-    expect(screen.queryByRole('button', { name: /export to sharepoint/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^export$/i })).toBeInTheDocument()
   })
 
   it('shows error message when export fails', async () => {
@@ -110,7 +110,7 @@ describe('SprintReportPanel', () => {
         onExport={onExport}
       />,
     )
-    await userEvent.click(screen.getByRole('button', { name: /export to sharepoint/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^export$/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Network error')
   })
 })
