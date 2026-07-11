@@ -1,7 +1,7 @@
 import type { DayType } from '../day'
 import type { Day, MonthData } from '../../infra/repositories/types'
 import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../shared/worktime'
-import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
+import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 
 export interface MonthTableRow {
@@ -47,10 +47,11 @@ function buildDayRow(
   month: number,
   dayData: Day | undefined,
   dayTypes: Map<string, DayType>,
+  weekdayHours: WeekdayHours,
   now?: string,
 ): BaseRow {
   const workedHours = calculateWorkedHours(dayData?.windows ?? [], now)
-  const categoryHours = calculateCategoryHours(dayData?.windows ?? [], now)
+  const categoryHours = calculateDayCategoryHours(dayData ?? { windows: [] }, date, weekdayHours, now)
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
   const entries: Record<string, number> = Object.fromEntries(
     Object.entries(categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY),
@@ -84,7 +85,7 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
   for (let d = 1; d <= totalDays; d++) {
     const date = padDay(year, month, d)
     const now = date === today ? todayNow : undefined
-    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes, now)
+    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, now)
     if (date > today) {
       rows.push({ ...base, accumulatedOvertime: null })
     } else {

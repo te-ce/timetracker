@@ -103,6 +103,43 @@ describe('buildMonthTable', () => {
     expect(rows[0]!.dayType).toBe('Vacation')
   })
 
+  it('auto-books the weekday target into _LEAVE for a leave day with no logged work', () => {
+    // 2026-05-01 is a Friday (default target 8h)
+    const rows = buildMonthTable({
+      year: 2026,
+      month: 5,
+      monthData: { '2026-05-01': { windows: [], dayTypeOverride: 'Vacation' } },
+      dayTypes: new Map(),
+    })
+
+    expect(rows[0]!.entries['_LEAVE']).toBe(8)
+    expect(rows[0]!.workedHours).toBe(0)
+  })
+
+  it('does not auto-book _LEAVE when work is logged on a leave day', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        windows: [{ id: 'w1', start: '09:00', end: '11:00', category: '_COREMEDIA', subtasks: [] }],
+        dayTypeOverride: 'Vacation',
+      },
+    }
+    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
+
+    expect(rows[0]!.entries['_LEAVE']).toBeUndefined()
+    expect(rows[0]!.entries['_COREMEDIA']).toBe(2)
+  })
+
+  it('does not auto-book _LEAVE on non-leave day types', () => {
+    const rows = buildMonthTable({
+      year: 2026,
+      month: 5,
+      monthData: { '2026-05-01': { windows: [], dayTypeOverride: 'PublicHoliday' } },
+      dayTypes: new Map(),
+    })
+
+    expect(rows[0]!.entries['_LEAVE']).toBeUndefined()
+  })
+
   it('excludes the _UNCATEGORIZED key from entries', () => {
     const monthData: MonthData = {
       '2026-05-01': {

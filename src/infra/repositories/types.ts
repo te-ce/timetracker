@@ -69,7 +69,11 @@ export interface MonthRepository {
   getMonth(year: number, month: number): Promise<MonthData>
   updateDay(date: string, updater: (current: Day) => Day): Promise<void>
   deleteMonth(year: number, month: number): Promise<void>
-  findEntriesByDateRange(from: string, to: string): Promise<DatedTimeEntry[]>
+  findEntriesByDateRange(
+    from: string,
+    to: string,
+    weekdayHours: import('../../shared/weekdayHours').WeekdayHours,
+  ): Promise<DatedTimeEntry[]>
   getAllMonths(): Promise<string[]>
 
   // Day-level verbs

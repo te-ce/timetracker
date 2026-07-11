@@ -5,6 +5,7 @@ import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
 import { CloudMonthRepository } from './month-repository'
+import { DEFAULT_WEEKDAY_HOURS } from '../../../shared/weekdayHours'
 
 function adapterWithValue(key: string, value: unknown): StorageAdapter {
   return {
@@ -181,11 +182,20 @@ describe('CloudMonthRepository', () => {
     await repo.updateDay('2026-06-01', () => ({
       windows: [{ id: 'w2', start: '09:00', end: '13:00', category: '_SUPPORT', subtasks: [] }],
     }))
-    const results = await repo.findEntriesByDateRange('2026-05-01', '2026-06-30')
+    const results = await repo.findEntriesByDateRange('2026-05-01', '2026-06-30', DEFAULT_WEEKDAY_HOURS)
     expect(results).toHaveLength(2)
     const e1 = results.find((e) => e.category === '_COREMEDIA')
     expect(e1?.date).toBe('2026-05-15')
     expect(e1?.hours).toBe(6)
+  })
+
+  it('findEntriesByDateRange auto-books _LEAVE for a leave day with no logged work', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    // 2026-05-15 is a Friday (default target 8h)
+    await repo.updateDay('2026-05-15', () => ({ windows: [], dayTypeOverride: 'Vacation' }))
+    const results = await repo.findEntriesByDateRange('2026-05-01', '2026-05-31', DEFAULT_WEEKDAY_HOURS)
+    expect(results).toEqual([{ id: '2026-05-15-_LEAVE', category: '_LEAVE', hours: 8, date: '2026-05-15' }])
   })
 
   it('findEntriesByDateRange filters by date bounds', async () => {
@@ -197,7 +207,7 @@ describe('CloudMonthRepository', () => {
     await repo.updateDay('2026-05-20', () => ({
       windows: [{ id: 'w2', start: '09:00', end: '12:00', category: '_COREMEDIA', subtasks: [] }],
     }))
-    const results = await repo.findEntriesByDateRange('2026-05-15', '2026-05-31')
+    const results = await repo.findEntriesByDateRange('2026-05-15', '2026-05-31', DEFAULT_WEEKDAY_HOURS)
     expect(results).toHaveLength(1)
     expect(results[0]?.category).toBe('_COREMEDIA')
     expect(results[0]?.hours).toBe(3)

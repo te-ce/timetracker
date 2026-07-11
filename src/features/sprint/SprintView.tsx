@@ -57,7 +57,7 @@ function SprintContent({
 
   const { data: entries = [] } = useQuery({
     queryKey: QUERY_KEYS.sprintEntries(activeIndex, sprintConfig.startDate, sprintConfig.lengthDays),
-    queryFn: () => monthRepo.findEntriesByDateRange(sprint.start, sprint.end),
+    queryFn: () => monthRepo.findEntriesByDateRange(sprint.start, sprint.end, config.weekdayHours),
   })
 
   const hoursPerCategory = aggregateSprintHours(entries, sprint)

@@ -10,7 +10,8 @@ import type {
 } from '../types'
 import { JsonRecordStore } from './json-store'
 import { validateDay } from '../configSchema'
-import { calculateCategoryHours } from '../../../shared/periodCategories'
+import { calculateDayCategoryHours } from '../../../shared/periodCategories'
+import type { WeekdayHours } from '../../../shared/weekdayHours'
 import {
   upsertWindow,
   removeWindow,
@@ -87,7 +88,7 @@ export class CloudMonthRepository implements MonthRepository {
     this.stores.delete(key)
   }
 
-  async findEntriesByDateRange(from: string, to: string): Promise<DatedTimeEntry[]> {
+  async findEntriesByDateRange(from: string, to: string, weekdayHours: WeekdayHours): Promise<DatedTimeEntry[]> {
     const fromYm = yearMonth(from)
     const toYm = yearMonth(to)
     const months = await this.getAllMonths()
@@ -99,7 +100,7 @@ export class CloudMonthRepository implements MonthRepository {
       const data = await this.getMonth(year, month)
       for (const [date, day] of Object.entries(data)) {
         if (date >= from && date <= to) {
-          const categoryHours = calculateCategoryHours(day.windows)
+          const categoryHours = calculateDayCategoryHours(day, date, weekdayHours)
           for (const [category, hours] of Object.entries(categoryHours)) {
             result.push({ id: `${date}-${category}`, category, hours, date })
           }

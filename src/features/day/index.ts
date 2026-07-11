@@ -13,14 +13,7 @@ export {
   type DayContext,
   composeDayContext,
 } from './dayContext'
-export {
-  type DayType,
-  isDayTypeOverride,
-  type AutoBooking,
-  classifyDayType,
-  isWorkPeriodExpected,
-  getAutoBooking,
-} from './dayType'
+export { type DayType, isDayTypeOverride, classifyDayType, isWorkPeriodExpected } from './dayType'
 export {
   upsertWindow,
   removeWindow,

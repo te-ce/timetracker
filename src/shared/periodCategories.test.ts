@@ -2,10 +2,12 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateCategoryHours,
+  calculateDayCategoryHours,
   calculateTotalCategorizedHours,
   calculateUncategorizedHours,
   UNCATEGORIZED_CATEGORY,
 } from './periodCategories'
+import { DEFAULT_WEEKDAY_HOURS } from './weekdayHours'
 import type { WorkPeriod } from '../infra/repositories/types'
 
 function period(
@@ -17,6 +19,44 @@ function period(
 ): WorkPeriod {
   return { id, start, end, category, subtasks }
 }
+
+describe('calculateDayCategoryHours', () => {
+  // 2026-05-15 is a Friday (default target 8h)
+  const FRIDAY = '2026-05-15'
+
+  it('auto-books _LEAVE to the weekday target for a leave day with no work', () => {
+    const result = calculateDayCategoryHours(
+      { windows: [], dayTypeOverride: 'Vacation' },
+      FRIDAY,
+      DEFAULT_WEEKDAY_HOURS,
+    )
+    expect(result).toEqual({ _LEAVE: 8 })
+  })
+
+  it('does not auto-book _LEAVE when work is logged on a leave day', () => {
+    const result = calculateDayCategoryHours(
+      { windows: [period('a', '09:00', '11:00', '_COREMEDIA')], dayTypeOverride: 'SickDay' },
+      FRIDAY,
+      DEFAULT_WEEKDAY_HOURS,
+    )
+    expect(result['_LEAVE']).toBeUndefined()
+    expect(result['_COREMEDIA']).toBeCloseTo(2)
+  })
+
+  it('does not auto-book _LEAVE for non-leave day types', () => {
+    expect(
+      calculateDayCategoryHours({ windows: [], dayTypeOverride: 'PublicHoliday' }, FRIDAY, DEFAULT_WEEKDAY_HOURS),
+    ).toEqual({})
+    expect(calculateDayCategoryHours({ windows: [] }, FRIDAY, DEFAULT_WEEKDAY_HOURS)).toEqual({})
+  })
+
+  it('does not auto-book _LEAVE on a zero-target weekday', () => {
+    // 2026-05-16 is a Saturday (default target 0h)
+    expect(
+      calculateDayCategoryHours({ windows: [], dayTypeOverride: 'Vacation' }, '2026-05-16', DEFAULT_WEEKDAY_HOURS),
+    ).toEqual({})
+  })
+})
 
 describe('calculateCategoryHours', () => {
   it('returns empty object for no windows', () => {

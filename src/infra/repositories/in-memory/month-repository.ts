@@ -7,7 +7,8 @@ import type {
   WorkPeriod,
   WorkPeriodSubtask,
 } from '../types'
-import { calculateCategoryHours } from '../../../shared/periodCategories'
+import { calculateDayCategoryHours } from '../../../shared/periodCategories'
+import type { WeekdayHours } from '../../../shared/weekdayHours'
 import { hasOpenPeriod, findOpenPeriod } from '../../../shared/worktime'
 import {
   upsertWindow,
@@ -68,12 +69,12 @@ export class InMemoryMonthRepository implements MonthRepository {
     return Promise.resolve()
   }
 
-  findEntriesByDateRange(from: string, to: string): Promise<DatedTimeEntry[]> {
+  findEntriesByDateRange(from: string, to: string, weekdayHours: WeekdayHours): Promise<DatedTimeEntry[]> {
     const result: DatedTimeEntry[] = []
     for (const [, data] of this.months) {
       for (const [date, day] of Object.entries(data)) {
         if (date >= from && date <= to) {
-          const categoryHours = calculateCategoryHours(day.windows)
+          const categoryHours = calculateDayCategoryHours(day, date, weekdayHours)
           for (const [category, hours] of Object.entries(categoryHours)) {
             result.push({ id: `${date}-${category}`, category, hours, date })
           }

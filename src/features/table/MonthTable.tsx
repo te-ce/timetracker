@@ -604,7 +604,8 @@ export function MonthGrid({
                 const rowBg = bgPair[globalRowIdx % 2]!
                 const loc = resolveWorkLocation(workLocations, row.date, defaultWorkLocation)
                 const locIcon = loc === 'Office' ? '🏢' : '🏠'
-                const rowOpacityClass = isNonWorkDay ? 'opacity-50' : ''
+                const rowOpacityClass =
+                  isNonWorkDay && row.workedHours === 0 && Object.keys(row.entries).length === 0 ? 'opacity-50' : ''
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
                 const rowCategoryBreakdown: Record<string, number> = { ...row.entries }
                 if (autoCategory && row.autoCategoryHours > 0.001) {

@@ -7,10 +7,6 @@ export function isDayTypeOverride(v: string): v is DayTypeOverride {
   return DAY_TYPE_OVERRIDES.includes(v)
 }
 
-export type AutoBooking = { category: '_LEAVE'; hours: number }
-
-const LEAVE_TYPES = new Set<DayType>(['Vacation', 'SickDay'])
-
 export function classifyDayType(date: Date, holidayDates?: Set<string>): DayType {
   const dow = date.getDay()
   if (dow === 0 || dow === 6) return 'Weekend'
@@ -23,8 +19,4 @@ export function classifyDayType(date: Date, holidayDates?: Set<string>): DayType
 
 export function isWorkPeriodExpected(dayType: DayType): boolean {
   return dayType === 'WorkDay'
-}
-
-export function getAutoBooking(dayType: DayType, sollstunden: number): AutoBooking | null {
-  return LEAVE_TYPES.has(dayType) ? { category: '_LEAVE', hours: sollstunden } : null
 }

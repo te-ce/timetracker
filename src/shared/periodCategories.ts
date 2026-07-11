@@ -1,8 +1,32 @@
-import type { WorkPeriod } from '../infra/repositories/types'
+import type { Day, DayTypeOverride, WorkPeriod } from '../infra/repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../infra/repositories/types'
 import { calculateWorkedHours } from './worktime'
+import { targetHoursForDate, type WeekdayHours } from './weekdayHours'
 
 export { UNCATEGORIZED_CATEGORY }
+
+const LEAVE_CATEGORY = '_LEAVE'
+const LEAVE_OVERRIDES = new Set<DayTypeOverride>(['Vacation', 'SickDay'])
+
+/**
+ * Category hours for a day, including auto-booked _LEAVE for leave days
+ * (Vacation/SickDay) that have no logged work. Single source of truth shared
+ * by the month table and the sprint/export aggregation.
+ */
+export function calculateDayCategoryHours(
+  day: Pick<Day, 'windows' | 'dayTypeOverride'>,
+  date: string,
+  weekdayHours: WeekdayHours,
+  now?: string,
+): Record<string, number> {
+  const result = calculateCategoryHours(day.windows, now)
+  const hasWork = Object.values(result).some((h) => h > 0.001)
+  if (!hasWork && day.dayTypeOverride && LEAVE_OVERRIDES.has(day.dayTypeOverride)) {
+    const leave = targetHoursForDate(date, weekdayHours)
+    if (leave > 0) result[LEAVE_CATEGORY] = leave
+  }
+  return result
+}
 
 export function calculateCategoryHours(windows: WorkPeriod[], now?: string): Record<string, number> {
   const result: Record<string, number> = {}

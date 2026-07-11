@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { classifyDayType, isWorkPeriodExpected, getAutoBooking } from './dayType'
+import { classifyDayType, isWorkPeriodExpected } from './dayType'
 import type { DayType } from './dayType'
 
 // 2024-01-13 = Saturday, 2024-01-14 = Sunday, 2024-01-15 = Monday
@@ -39,16 +39,5 @@ describe('isWorkPeriodExpected', () => {
 
   it.each<DayType>(['Weekend', 'PublicHoliday', 'Vacation', 'SickDay'])('returns false for %s', (dayType) => {
     expect(isWorkPeriodExpected(dayType)).toBe(false)
-  })
-})
-
-describe('getAutoBooking', () => {
-  it.each<DayType>(['Vacation', 'SickDay'])('books Sollstunden to "On Leave" for %s', (dayType) => {
-    const booking = getAutoBooking(dayType, 8)
-    expect(booking).toEqual({ category: '_LEAVE', hours: 8 })
-  })
-
-  it.each<DayType>(['WorkDay', 'Weekend', 'PublicHoliday'])('returns null for %s', (dayType) => {
-    expect(getAutoBooking(dayType, 8)).toBeNull()
   })
 })
