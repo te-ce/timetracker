@@ -70,8 +70,8 @@ describe('GraphApiWorkbookService', () => {
     const mapping = { CAT: 'T-1' }
     const hours = { CAT: 8 }
     const svc = new GraphApiWorkbookService(SP_URL, getToken)
-    await svc.archiveSprintSheet('Archive Sheet', mapping, hours)
-    expect(mockArchiveSprintData).toHaveBeenCalledWith(SP_URL, 'Archive Sheet', mapping, hours, TOKEN)
+    await svc.archiveSprintSheet('Archive Sheet', mapping, hours, false)
+    expect(mockArchiveSprintData).toHaveBeenCalledWith(SP_URL, 'Archive Sheet', mapping, hours, TOKEN, false)
   })
 
   it('propagates token getter rejections', async () => {
@@ -118,7 +118,7 @@ describe('LocalFolderWorkbookService', () => {
     const mapping = { CAT: 'T-1' }
     const hours = { CAT: 8 }
     const svc = new LocalFolderWorkbookService(FILENAME)
-    await svc.archiveSprintSheet('Archive Sheet', mapping, hours)
-    expect(mockArchiveLocalSprintData).toHaveBeenCalledWith(FILENAME, 'Archive Sheet', mapping, hours)
+    await svc.archiveSprintSheet('Archive Sheet', mapping, hours, true)
+    expect(mockArchiveLocalSprintData).toHaveBeenCalledWith(FILENAME, 'Archive Sheet', mapping, hours, true)
   })
 })

@@ -81,14 +81,14 @@ function SprintContent({
   const exportStatus = sprintExport ? sprintExport.status : 'pending'
   const exportReady = isExportReady(config, isAuthenticated)
 
-  async function handleExport(): Promise<void> {
+  async function handleExport(overwrite: boolean): Promise<void> {
     if (!config.targetSheet) throw new Error('No target sheet selected.')
     const service = createWorkbookService(config, isAuthenticated)
     const mapping = config.categoryMapping ?? {}
     await service.writeSprintData(config.targetSheet, mapping, hoursPerCategory)
     if (config.archiveSprintSheet) {
       const archiveName = buildArchiveSheetName(config.localExcelFile ?? null, sprint.start, sprint.end)
-      await service.archiveSprintSheet(archiveName, mapping, hoursPerCategory)
+      await service.archiveSprintSheet(archiveName, mapping, hoursPerCategory, overwrite)
     }
     await markExportedMutation.mutateAsync()
   }

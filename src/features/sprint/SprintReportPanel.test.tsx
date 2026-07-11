@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SprintReportPanel } from './SprintReportPanel'
+import { SheetExistsError } from '../excel'
 
 describe('SprintReportPanel', () => {
   it('displays HH:MM and decimal for each category', () => {
@@ -112,5 +113,33 @@ describe('SprintReportPanel', () => {
     )
     await userEvent.click(screen.getByRole('button', { name: /^export$/i }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Network error')
+  })
+
+  it('switches to "Export and overwrite" when the archive sheet already exists, then re-exports with overwrite', async () => {
+    const onExport = vi
+      .fn<(overwrite: boolean) => Promise<void>>()
+      .mockRejectedValueOnce(new SheetExistsError('Sprint 3'))
+      .mockResolvedValueOnce(undefined)
+    render(
+      <SprintReportPanel
+        hoursPerCategory={{ QA: 5 }}
+        allCategories={['QA']}
+        exportStatus="pending"
+        exportReady
+        onExport={onExport}
+      />,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: /^export$/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Worksheet "Sprint 3" already exists')
+    expect(onExport).toHaveBeenNthCalledWith(1, false)
+
+    const confirmBtn = screen.getByRole('button', { name: /export and overwrite/i })
+    await userEvent.click(confirmBtn)
+    expect(onExport).toHaveBeenNthCalledWith(2, true)
+
+    // On success the confirm state clears back to a plain Export button
+    expect(screen.getByRole('button', { name: /^export$/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /export and overwrite/i })).not.toBeInTheDocument()
   })
 })

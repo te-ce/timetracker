@@ -1,6 +1,6 @@
 export type { ExcelRow } from './excelService'
 export { encodeSharesUrl } from './excelService'
-export { listSheets } from './excelService'
+export { listSheets, SheetExistsError, isSheetExistsError } from './excelService'
 export { listLocalXlsxFiles, listLocalSheets } from './localExcelService'
 export { buildWorkbookService, createWorkbookService, isExportReady } from './workbookFactory'
 export type { WorkbookService } from './workbookService'

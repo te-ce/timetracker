@@ -24,11 +24,15 @@ type EachRowCallback = (row: MockRow, rowNumber: number) => void
 const mockState = vi.hoisted(() => {
   const rows: MockRow[] = []
   const writtenCells: Map<string, number | null> = new Map()
+  const removedSheetIds: number[] = []
+  const addedSheetNames: string[] = []
   let sheetName = 'Sheet1'
   let writeBufferResult: unknown = new Uint8Array([0])
   return {
     rows,
     writtenCells,
+    removedSheetIds,
+    addedSheetNames,
     get sheetName() {
       return sheetName
     },
@@ -57,6 +61,7 @@ vi.mock('exceljs', () => {
       if (name !== mockState.sheetName) return undefined
       const state = mockState
       return {
+        id: 1,
         name: mockState.sheetName,
         eachRow(cb: EachRowCallback) {
           state.rows.forEach((row, idx) => cb(row, idx + 1))
@@ -78,7 +83,11 @@ vi.mock('exceljs', () => {
         },
       }
     }
-    addWorksheet() {
+    removeWorksheet(id: number) {
+      mockState.removedSheetIds.push(id)
+    }
+    addWorksheet(name: string) {
+      mockState.addedSheetNames.push(name)
       return { addRow: vi.fn() }
     }
   }
@@ -86,7 +95,14 @@ vi.mock('exceljs', () => {
 })
 
 import { loadExcelHandle } from '../../infra/storage/folder-handle-store'
-import { listLocalXlsxFiles, listLocalSheets, listLocalRows, writeLocalSprintData } from './localExcelService'
+import {
+  listLocalXlsxFiles,
+  listLocalSheets,
+  listLocalRows,
+  writeLocalSprintData,
+  archiveLocalSprintData,
+} from './localExcelService'
+import { SheetExistsError } from './excelService'
 
 function makeRow(col1: string | null, col2: string | null, col3: string | null): MockRow {
   return {
@@ -148,6 +164,8 @@ beforeEach(() => {
   mockState.rows.length = 0
   mockState.sheetName = 'Sheet1'
   mockState.writtenCells.clear()
+  mockState.removedSheetIds.length = 0
+  mockState.addedSheetNames.length = 0
   mockState.writeBufferResult = new Uint8Array([0])
 })
 
@@ -289,6 +307,42 @@ describe('writeLocalSprintData', () => {
     await expect(writeLocalSprintData('sprint.xlsx', 'Sheet1', {}, {})).rejects.toThrow(
       'writeBuffer returned unexpected type',
     )
+  })
+})
+
+describe('archiveLocalSprintData', () => {
+  it('throws SheetExistsError when the sheet exists and overwrite is false', async () => {
+    mockState.sheetName = 'Sprint 3'
+    const { handle } = makeWritableFileHandle()
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+
+    await expect(
+      archiveLocalSprintData('sprint.xlsx', 'Sprint 3', { _CAT: 'TASK-1' }, { _CAT: 5 }, false),
+    ).rejects.toBeInstanceOf(SheetExistsError)
+    expect(mockState.removedSheetIds).toEqual([])
+  })
+
+  it('removes the existing sheet then re-adds it when overwrite is true', async () => {
+    mockState.sheetName = 'Sprint 3'
+    const { handle, didWrite } = makeWritableFileHandle()
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+
+    await archiveLocalSprintData('sprint.xlsx', 'Sprint 3', { _CAT: 'TASK-1' }, { _CAT: 5 }, true)
+
+    expect(mockState.removedSheetIds).toEqual([1])
+    expect(mockState.addedSheetNames).toEqual(['Sprint 3'])
+    expect(didWrite()).toBe(true)
+  })
+
+  it('adds a new sheet without removing when it does not exist', async () => {
+    mockState.sheetName = 'Sheet1'
+    const { handle } = makeWritableFileHandle()
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+
+    await archiveLocalSprintData('sprint.xlsx', 'Sprint 9', { _CAT: 'TASK-1' }, { _CAT: 5 }, false)
+
+    expect(mockState.removedSheetIds).toEqual([])
+    expect(mockState.addedSheetNames).toEqual(['Sprint 9'])
   })
 })
 

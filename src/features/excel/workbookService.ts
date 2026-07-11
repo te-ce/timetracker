@@ -16,6 +16,7 @@ export interface WorkbookService {
     sheetName: string,
     mapping: Record<string, string>,
     hoursPerCategory: Record<string, number>,
+    overwrite: boolean,
   ): Promise<void>
 }
 
@@ -47,8 +48,9 @@ export class GraphApiWorkbookService implements WorkbookService {
     sheetName: string,
     mapping: Record<string, string>,
     hoursPerCategory: Record<string, number>,
+    overwrite: boolean,
   ): Promise<void> {
-    return archiveSprintData(this.sharepointUrl, sheetName, mapping, hoursPerCategory, await this.getToken())
+    return archiveSprintData(this.sharepointUrl, sheetName, mapping, hoursPerCategory, await this.getToken(), overwrite)
   }
 }
 
@@ -78,7 +80,8 @@ export class LocalFolderWorkbookService implements WorkbookService {
     sheetName: string,
     mapping: Record<string, string>,
     hoursPerCategory: Record<string, number>,
+    overwrite: boolean,
   ): Promise<void> {
-    return archiveLocalSprintData(this.filename, sheetName, mapping, hoursPerCategory)
+    return archiveLocalSprintData(this.filename, sheetName, mapping, hoursPerCategory, overwrite)
   }
 }

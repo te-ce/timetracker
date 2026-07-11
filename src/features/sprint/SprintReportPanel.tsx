@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatHours } from '../../shared/formatHours'
+import { isSheetExistsError } from '../excel'
 
 export type ExportStatus = 'pending' | 'exported'
 
@@ -8,7 +9,7 @@ interface Props {
   allCategories: string[]
   exportStatus: ExportStatus
   exportReady?: boolean
-  onExport?: () => Promise<void>
+  onExport?: (overwrite: boolean) => Promise<void>
 }
 
 function exportBadgeClassName(status: ExportStatus): string {
@@ -27,15 +28,18 @@ export function SprintReportPanel({
   const total = allCategories.reduce((sum, cat) => sum + (hoursPerCategory[cat] ?? 0), 0)
   const [exporting, setExporting] = useState(false)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [needsOverwriteConfirm, setNeedsOverwriteConfirm] = useState(false)
 
-  async function handleExport() {
+  async function handleExport(overwrite: boolean) {
     if (!onExport) return
     setExportError(null)
     setExporting(true)
     try {
-      await onExport()
+      await onExport(overwrite)
+      setNeedsOverwriteConfirm(false)
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'Export failed')
+      setNeedsOverwriteConfirm(isSheetExistsError(err))
     } finally {
       setExporting(false)
     }
@@ -76,14 +80,14 @@ export function SprintReportPanel({
       {onExport && (
         <div className="flex flex-col items-end gap-2">
           <button
-            onClick={() => void handleExport()}
+            onClick={() => void handleExport(needsOverwriteConfirm)}
             disabled={exporting}
             className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
             data-tooltip={
               !exportReady ? 'Configure SharePoint URL, sheet, and category mapping in Settings first' : undefined
             }
           >
-            {exporting ? 'Exporting…' : 'Export'}
+            {exporting ? 'Exporting…' : needsOverwriteConfirm ? 'Export and overwrite' : 'Export'}
           </button>
           {!exportReady && (
             <p className="text-xs text-gray-400 dark:text-gray-500">

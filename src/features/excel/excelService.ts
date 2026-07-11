@@ -10,6 +10,20 @@ export interface ExcelRow {
   description: string
 }
 
+/** Thrown when archiving would create a worksheet whose name already exists. */
+export class SheetExistsError extends Error {
+  readonly sheetName: string
+  constructor(sheetName: string) {
+    super(`Worksheet "${sheetName}" already exists`)
+    this.name = 'SheetExistsError'
+    this.sheetName = sheetName
+  }
+}
+
+export function isSheetExistsError(err: unknown): err is SheetExistsError {
+  return err instanceof SheetExistsError
+}
+
 /**
  * Encodes a SharePoint URL into the base64url format required by the
  * Graph API /shares endpoint.
@@ -121,8 +135,21 @@ export async function archiveSprintData(
   mapping: Record<string, string>,
   hoursPerCategory: Record<string, number>,
   token: string,
+  overwrite: boolean,
 ): Promise<void> {
   const base = workbookBase(sharePointUrl)
+  const encodedName = encodeURIComponent(sheetName)
+  const existsRes = await fetch(`${base}/worksheets/${encodedName}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (existsRes.ok) {
+    if (!overwrite) throw new SheetExistsError(sheetName)
+    const delRes = await fetch(`${base}/worksheets/${encodedName}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!delRes.ok) throw new Error(`archiveSprintData delete sheet failed: ${delRes.status}`)
+  }
   const createRes = await fetch(`${base}/worksheets`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

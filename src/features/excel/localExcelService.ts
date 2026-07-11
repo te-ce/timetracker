@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs'
+import { SheetExistsError } from './excelService'
 import type { ExcelRow } from './excelService'
 import { loadHandle, loadExcelHandle, verifyPermission } from '../../infra/storage/folder-handle-store'
 
@@ -95,6 +96,7 @@ export async function archiveLocalSprintData(
   sheetName: string,
   mapping: Record<string, string>,
   hoursPerCategory: Record<string, number>,
+  overwrite: boolean,
 ): Promise<void> {
   const dir = await getDir()
   const fileHandle = await dir.getFileHandle(filename)
@@ -102,6 +104,11 @@ export async function archiveLocalSprintData(
   const wb = new ExcelJS.Workbook()
   await wb.xlsx.load(await file.arrayBuffer())
 
+  const existing = wb.getWorksheet(sheetName)
+  if (existing) {
+    if (!overwrite) throw new SheetExistsError(sheetName)
+    wb.removeWorksheet(existing.id)
+  }
   const ws = wb.addWorksheet(sheetName)
   for (const [category, taskId] of Object.entries(mapping)) {
     ws.addRow([taskId, hoursPerCategory[category] ?? 0])
