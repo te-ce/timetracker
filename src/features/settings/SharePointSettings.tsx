@@ -52,6 +52,7 @@ export function SharePointSettings({ repository }: Props) {
         />
         {isDirty && (
           <button
+            type="button"
             onClick={handleSave}
             disabled={mutation.isPending}
             className="rounded bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"

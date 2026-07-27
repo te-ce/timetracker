@@ -32,6 +32,7 @@ export function DefaultLocationSettings({ repository }: Props) {
         {WORK_LOCATIONS.map((loc) => (
           <button
             key={loc}
+            type="button"
             onClick={() => mutation.mutate(loc)}
             className={`rounded border px-4 py-1.5 text-sm transition-colors ${
               (config.defaultWorkLocation ?? 'Remote') === loc

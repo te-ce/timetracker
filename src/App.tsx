@@ -168,6 +168,7 @@ function ThemeToggle() {
   const { theme, toggleTheme } = useThemeStore()
   return (
     <button
+      type="button"
       onClick={toggleTheme}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
@@ -206,6 +207,7 @@ function UndoButton() {
   return (
     <div className="flex items-center gap-0.5">
       <button
+        type="button"
         onClick={() => void undo()}
         disabled={!canUndo}
         aria-label="Undo"
@@ -228,6 +230,7 @@ function UndoButton() {
         </svg>
       </button>
       <button
+        type="button"
         onClick={() => void redo()}
         disabled={!canRedo}
         aria-label="Redo"
@@ -337,6 +340,7 @@ function TimeFormatToggle() {
   const { format, toggleFormat } = useTimeFormatStore()
   return (
     <button
+      type="button"
       onClick={toggleFormat}
       aria-label={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
       data-tooltip={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
@@ -350,6 +354,7 @@ function TimeFormatToggle() {
 function KeyboardShortcutsButton({ onToggle }: { onToggle: () => void }) {
   return (
     <button
+      type="button"
       onClick={onToggle}
       aria-label="Keyboard shortcuts"
       data-tooltip="Keyboard shortcuts (?)"
@@ -436,6 +441,7 @@ function NavDropdown({ currentPath }: { currentPath: string }) {
   return (
     <div className="relative max-[849px]:block hidden" ref={ref}>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="Open navigation menu"
         aria-expanded={open}
@@ -579,6 +585,7 @@ function HeaderControls({ onToggleLegend }: { onToggleLegend: () => void }) {
         >
           {renderItem(id)}
           <button
+            type="button"
             onClick={() => hideItem(id)}
             aria-label={`Remove ${HEADER_ITEM_LABELS[id]}`}
             className="absolute -top-1.5 -right-1.5 z-10 hidden group-hover:flex h-3.5 w-3.5 items-center justify-center rounded-full bg-gray-200 text-gray-500 hover:bg-red-100 hover:text-red-500 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-red-900/50 dark:hover:text-red-400 transition-colors"
@@ -600,6 +607,7 @@ function HeaderControls({ onToggleLegend }: { onToggleLegend: () => void }) {
       {hidden.length > 0 && (
         <div ref={overflowRef} className="relative">
           <button
+            type="button"
             onClick={() => setOverflowOpen((v) => !v)}
             aria-label="Hidden header items"
             className="flex h-6 w-6 items-center justify-center rounded-md text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 transition-colors leading-none"
@@ -616,6 +624,7 @@ function HeaderControls({ onToggleLegend }: { onToggleLegend: () => void }) {
                 >
                   <div className="flex-1 flex items-center">{renderItem(id)}</div>
                   <button
+                    type="button"
                     onClick={() => showItem(id)}
                     aria-label={`Restore ${HEADER_ITEM_LABELS[id]}`}
                     title={`Restore ${HEADER_ITEM_LABELS[id]}`}

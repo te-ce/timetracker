@@ -30,6 +30,7 @@ export function SettingsTabs({ children }: SettingsTabsProps) {
           {TABS.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               role="tab"
               aria-selected={activeTab === tab.id}
               onClick={() => setActiveTab(tab.id)}

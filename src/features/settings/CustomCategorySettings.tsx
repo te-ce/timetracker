@@ -150,6 +150,7 @@ export function CustomCategorySettings({ repository }: Props) {
               </span>
             )}
             <button
+              type="button"
               aria-label={`Remove ${cat}`}
               onClick={() => handleRemove(idx)}
               className="text-red-500 hover:text-red-700 hover:bg-red-50 text-xs font-medium p-1 rounded"
@@ -173,6 +174,7 @@ export function CustomCategorySettings({ repository }: Props) {
           className="flex-1 rounded border px-3 py-1.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
         />
         <button
+          type="button"
           onClick={handleAdd}
           className="rounded bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
         >

@@ -69,6 +69,7 @@ function UnmappedCategoryRowsSection({ unmappedRows, onAddAsCategory }: Unmapped
               {row.description ? ` — ${row.description}` : ''}
             </span>
             <button
+              type="button"
               onClick={() => onAddAsCategory(row)}
               className="shrink-0 rounded border border-indigo-300 dark:border-indigo-700 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
             >
@@ -95,6 +96,7 @@ function CategoryMappingSaveRow({ isDirty, isPending, isError, isSaved, onSave }
       {isDirty && (
         <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={onSave}
             disabled={isPending}
             className="rounded bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
@@ -291,6 +293,7 @@ function CategorySettingsRow({
         )}
       </div>
       <button
+        type="button"
         aria-label={`Remove ${cat}`}
         onClick={() => onRemove(idx)}
         className="shrink-0 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs font-medium p-1 rounded"
@@ -520,6 +523,7 @@ export function CategorySettings({ repository }: Props) {
         <div className="flex items-center gap-2">
           {config.categoryImportOrder && (
             <button
+              type="button"
               onClick={handleResetToImportOrder}
               className="rounded border px-2.5 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700"
               data-tooltip="Reset sort order to the order categories appeared in Excel"
@@ -529,6 +533,7 @@ export function CategorySettings({ repository }: Props) {
           )}
           {showMappingHint && <span className="text-xs text-gray-400 dark:text-gray-500">{mappingHint}</span>}
           <button
+            type="button"
             onClick={() => void handleLoadRows()}
             disabled={!excelReady || loadingRows}
             className="rounded border px-2.5 py-1 text-xs font-medium hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 disabled:opacity-40"
@@ -603,6 +608,7 @@ export function CategorySettings({ repository }: Props) {
           className="flex-1 rounded border px-3 py-1.5 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
         />
         <button
+          type="button"
           onClick={handleAdd}
           className="rounded bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
         >

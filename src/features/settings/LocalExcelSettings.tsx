@@ -23,6 +23,7 @@ function FileSelector({ xlsxFiles, currentFile, loading, onScanFiles, onFileChan
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={onScanFiles}
           disabled={loading}
           className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"
@@ -65,6 +66,7 @@ function SheetPickerSection({ sheets, currentSheet, loading, onLoadSheets, onSel
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={onLoadSheets}
           disabled={loading}
           className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"

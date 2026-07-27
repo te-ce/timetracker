@@ -37,12 +37,14 @@ function MsalSyncPanel() {
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => void handleSignOut()}
               className="self-start rounded border px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Sign out
             </button>
             <button
+              type="button"
               onClick={() => {
                 clearBootstrapConfig()
                 window.location.reload()
@@ -61,12 +63,14 @@ function MsalSyncPanel() {
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => void handleSignIn()}
               className="self-start rounded-lg bg-indigo-600 dark:bg-indigo-500 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
             >
               Sign in with Microsoft
             </button>
             <button
+              type="button"
               onClick={() => {
                 clearBootstrapConfig()
                 window.location.reload()
@@ -92,6 +96,7 @@ function NotConfiguredPanel() {
         </span>
       </div>
       <button
+        type="button"
         onClick={() => {
           clearBootstrapConfig()
           window.location.reload()

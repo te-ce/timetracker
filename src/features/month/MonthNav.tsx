@@ -42,7 +42,7 @@ export function MonthNav({ year, month, onMonthChange, compact }: Props) {
 
   return (
     <div className={compact ? 'flex items-center gap-3' : 'flex items-center justify-between'}>
-      <button aria-label="Previous month" onClick={handlePrev} className={navBtnClass}>
+      <button type="button" aria-label="Previous month" onClick={handlePrev} className={navBtnClass}>
         ← Prev
       </button>
       <div className="flex items-center gap-2">
@@ -50,6 +50,7 @@ export function MonthNav({ year, month, onMonthChange, compact }: Props) {
           {MONTH_NAMES[month]} {year}
         </h2>
         <button
+          type="button"
           aria-label="Current month"
           onClick={() => onMonthChange?.(now.getFullYear(), now.getMonth())}
           className={`rounded-md border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isCurrentMonth ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30'}`}
@@ -58,7 +59,7 @@ export function MonthNav({ year, month, onMonthChange, compact }: Props) {
           Today
         </button>
       </div>
-      <button aria-label="Next month" onClick={handleNext} className={navBtnClass}>
+      <button type="button" aria-label="Next month" onClick={handleNext} className={navBtnClass}>
         Next →
       </button>
     </div>

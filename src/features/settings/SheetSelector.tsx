@@ -44,6 +44,7 @@ function SheetSelectorBody({
     <>
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={onLoadSheets}
           disabled={!isReady || loadingSheets}
           className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"

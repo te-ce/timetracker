@@ -80,6 +80,7 @@ export function SprintReportPanel({
       {onExport && (
         <div className="flex flex-col items-end gap-2">
           <button
+            type="button"
             onClick={() => void handleExport(needsOverwriteConfirm)}
             disabled={exporting}
             className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"

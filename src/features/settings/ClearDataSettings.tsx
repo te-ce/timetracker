@@ -40,12 +40,14 @@ export function ClearDataSettings() {
       {confirming ? (
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => void handleClear()}
             className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"
           >
             Confirm clear
           </button>
           <button
+            type="button"
             onClick={() => setConfirming(false)}
             className="rounded border px-3 py-1.5 text-sm dark:border-gray-600 dark:text-gray-300"
           >
@@ -54,6 +56,7 @@ export function ClearDataSettings() {
         </div>
       ) : (
         <button
+          type="button"
           onClick={() => setConfirming(true)}
           className="w-fit rounded border border-red-400 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
         >

@@ -73,6 +73,7 @@ export function AppDataFolderSettings() {
           <span className="font-mono text-gray-700 dark:text-gray-300 truncate">{folderName}</span>
         </div>
         <button
+          type="button"
           onClick={() => void handlePick()}
           disabled={picking}
           className="rounded border px-3 py-1 text-xs font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 disabled:opacity-40 shrink-0"

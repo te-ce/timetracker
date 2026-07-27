@@ -97,6 +97,7 @@ function SprintContent({
     <>
       <div className="flex items-center">
         <button
+          type="button"
           onClick={() => onSprintIndexChange(activeIndex - 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
@@ -110,6 +111,7 @@ function SprintContent({
             </span>
           </h2>
           <button
+            type="button"
             onClick={() => onSprintIndexChange(null)}
             className={`rounded border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${sprintIndex === null ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}
             aria-disabled={sprintIndex === null}
@@ -118,6 +120,7 @@ function SprintContent({
           </button>
         </div>
         <button
+          type="button"
           onClick={() => onSprintIndexChange(activeIndex + 1)}
           className="rounded border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >

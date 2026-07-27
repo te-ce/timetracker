@@ -152,6 +152,7 @@ export function TableView() {
 
   const logWorkBtn = (
     <button
+      type="button"
       onClick={() => setLogSignal((n) => n + 1)}
       className="rounded border px-2 py-1 text-xs text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
     >
@@ -161,6 +162,7 @@ export function TableView() {
 
   const expandBtn = (
     <button
+      type="button"
       onClick={() => setExpanded((e) => !e)}
       aria-label={expanded ? 'Collapse table' : 'Expand table'}
       aria-pressed={expanded}
@@ -174,6 +176,7 @@ export function TableView() {
     <div className="flex items-center justify-between gap-4">
       <StatusLegend className="px-1" />
       <button
+        type="button"
         onClick={() => setShowResetConfirm(true)}
         className="rounded border px-3 py-1 text-sm font-medium text-red-600 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/30 opacity-50 hover:opacity-100 transition-opacity"
         aria-label="Reset all data for this month"

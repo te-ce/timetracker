@@ -17,6 +17,7 @@ export function SprintExportBadge({ sprints }: Props) {
   return (
     <Tooltip content={tooltip ?? label}>
       <button
+        type="button"
         onClick={() => void navigate({ to: '/sprint', search: { sprint: undefined } })}
         className="flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 px-3 py-0.5 text-xs font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
         aria-label={tooltip ? `${label}: ${tooltip}` : label}

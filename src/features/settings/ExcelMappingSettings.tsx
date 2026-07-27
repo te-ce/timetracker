@@ -134,6 +134,7 @@ function UnmappedRowsSection({ unmappedRows, onAddAsCategory }: UnmappedRowsSect
               {row.description ? ` — ${row.description}` : ''}
             </span>
             <button
+              type="button"
               onClick={() => onAddAsCategory(row)}
               className="rounded border border-indigo-300 dark:border-indigo-700 px-2 py-0.5 text-xs text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
             >
@@ -159,6 +160,7 @@ function MappingSaveRow({ isDirty, isPending, isSuccess, isError, onSave }: Mapp
     <div className="flex items-center gap-3">
       {isDirty && (
         <button
+          type="button"
           onClick={onSave}
           disabled={isPending}
           className="rounded bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
@@ -293,6 +295,7 @@ export function ExcelMappingSettings({ repository }: Props) {
 
       <div className="flex items-center gap-2">
         <button
+          type="button"
           onClick={() => void handleLoadRows()}
           disabled={!isReady || loadingRows}
           className="rounded border px-3 py-1.5 text-sm font-medium hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-40"

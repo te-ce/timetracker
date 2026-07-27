@@ -363,16 +363,21 @@ function LiveSubtaskBanner({
               {timeError}
             </span>
           )}
-          <button onClick={saveSubtaskTime} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1">
+          <button
+            type="button"
+            onClick={saveSubtaskTime}
+            className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1"
+          >
             Save
           </button>
-          <button onClick={() => setEditingTime(false)} className="text-xs text-gray-400 ml-1">
+          <button type="button" onClick={() => setEditingTime(false)} className="text-xs text-gray-400 ml-1">
             Cancel
           </button>
         </div>
       ) : (
         <span className="flex items-center gap-1 text-sm text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation()
               enterSubtaskEditMode(false)
@@ -384,6 +389,7 @@ function LiveSubtaskBanner({
           </button>
           <span>–</span>
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation()
               enterSubtaskEditMode(true)
@@ -411,6 +417,7 @@ function LiveSubtaskBanner({
         />
       ) : subtask.note ? (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation()
             setEditingCategory(false)
@@ -428,6 +435,7 @@ function LiveSubtaskBanner({
       {!editingTime && (
         <>
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation()
               enterSubtaskEditMode(true)
@@ -437,6 +445,7 @@ function LiveSubtaskBanner({
             Stop subtask
           </button>
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation()
               setConfirmingDelete(true)
@@ -531,12 +540,14 @@ function StartSubtaskForm({
         className={`${inputClass} flex-1 min-w-0 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
       />
       <button
+        type="button"
         onClick={handleStart}
         className="text-sm text-green-600 dark:text-green-400 font-medium hover:text-green-800 dark:hover:text-green-300 border border-green-200 dark:border-green-800 rounded px-2 py-1 shrink-0"
       >
         Start
       </button>
       <button
+        type="button"
         onClick={onCancel}
         className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 shrink-0"
       >
@@ -707,6 +718,7 @@ function SubtaskEditForm({
           />
           {timed && (
             <button
+              type="button"
               onClick={switchToDecimal}
               className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 shrink-0"
             >
@@ -725,12 +737,17 @@ function SubtaskEditForm({
         className={`${inputClass} flex-1 min-w-0 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
       />
       <button
+        type="button"
         onClick={commit}
         className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 shrink-0"
       >
         Save
       </button>
-      <button onClick={onDone} className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0">
+      <button
+        type="button"
+        onClick={onDone}
+        className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shrink-0"
+      >
         Cancel
       </button>
     </div>
@@ -801,6 +818,7 @@ function SubtaskRow({
         <span className="flex-1" />
       )}
       <button
+        type="button"
         onClick={(e) => {
           e.stopPropagation()
           setConfirmingDelete(true)
@@ -898,12 +916,14 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
         className={`${inputClass} flex-1 min-w-0 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
       />
       <button
+        type="button"
         onClick={handleSubmit}
         className="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:text-indigo-800 dark:hover:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded px-2 py-1 shrink-0"
       >
         Add
       </button>
       <button
+        type="button"
         onClick={onCancel}
         className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border border-gray-200 dark:border-gray-700 rounded px-2 py-1 shrink-0"
       >
@@ -965,6 +985,7 @@ function PeriodCardFooter({
           {canStartLiveSubtask && (
             <Tooltip content="Start live tracking for a subtask within this period">
               <button
+                type="button"
                 onClick={() => setStartingSubtask(true)}
                 className="text-sm text-green-600 dark:text-green-500 hover:text-green-800 dark:hover:text-green-300 font-medium"
               >
@@ -974,6 +995,7 @@ function PeriodCardFooter({
           )}
           <Tooltip content="Log a completed subtask for this period">
             <button
+              type="button"
               onClick={() => setAddingSubtask(true)}
               className="text-sm text-indigo-500 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
             >
@@ -1050,6 +1072,7 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescri
           onChange={setCategory}
         />
         <button
+          type="button"
           onClick={handleAdd}
           disabled={!canSubmit}
           className="rounded-lg bg-indigo-600 dark:bg-indigo-500 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-40 whitespace-nowrap"
@@ -1179,16 +1202,21 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
                     {timeError}
                   </span>
                 )}
-                <button onClick={saveTime} className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1">
+                <button
+                  type="button"
+                  onClick={saveTime}
+                  className="text-xs text-indigo-600 dark:text-indigo-400 font-medium ml-1"
+                >
                   Save
                 </button>
-                <button onClick={() => setEditingTime(false)} className="text-xs text-gray-400 ml-1">
+                <button type="button" onClick={() => setEditingTime(false)} className="text-xs text-gray-400 ml-1">
                   Cancel
                 </button>
               </div>
             ) : (
               <span className="group/time flex items-center gap-1.5 font-mono text-base font-semibold text-gray-700 dark:text-gray-200 whitespace-nowrap">
                 <button
+                  type="button"
                   onClick={() => enterEditMode(false)}
                   className="hover:text-indigo-600 dark:hover:text-indigo-400"
                   aria-label={`Edit start time ${w.start}`}
@@ -1197,6 +1225,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
                 </button>
                 <span className="text-gray-400 font-normal text-sm">–</span>
                 <button
+                  type="button"
                   onClick={() => enterEditMode(true)}
                   className="hover:text-indigo-600 dark:hover:text-indigo-400"
                   aria-label={`Edit end time ${w.end ?? 'open end'}`}
@@ -1209,6 +1238,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
           <div className="absolute right-0 flex items-center gap-2">
             {showStopButton && !editingTime && (
               <button
+                type="button"
                 onClick={() => enterEditMode(true)}
                 aria-label="Stop tracking"
                 className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium border border-red-200 dark:border-red-800 rounded px-2 py-1"
@@ -1217,6 +1247,7 @@ function CardHeader({ w, date, duration, isRunning, liveSubtask, mutations }: Ca
               </button>
             )}
             <button
+              type="button"
               onClick={() => setConfirmingDelete(true)}
               className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-lg leading-none p-1 rounded"
               aria-label="Remove period"

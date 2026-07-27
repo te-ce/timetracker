@@ -46,6 +46,7 @@ export function DotPopoverPanel({ state, popoverRef, onSelectDayType }: DotPopov
       <div className="flex flex-wrap gap-1">
         {DAY_TYPE_OPTIONS.map((opt) => (
           <button
+            type="button"
             key={opt.value}
             onClick={() => onSelectDayType(opt.value)}
             className={`rounded px-2 py-0.5 text-xs transition-colors ${

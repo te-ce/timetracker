@@ -166,12 +166,14 @@ export function SetupWizard({ onSkip }: Props) {
 
         <div className="flex flex-col gap-2">
           <button
+            type="button"
             onClick={handleSave}
             className="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400 text-white font-medium py-2 rounded-lg text-sm transition-colors"
           >
             Save &amp; Connect
           </button>
           <button
+            type="button"
             onClick={() => void handleLocalFolder()}
             disabled={pickingFolder}
             className="w-full border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2 rounded-lg text-sm transition-colors disabled:opacity-50"
@@ -186,6 +188,7 @@ export function SetupWizard({ onSkip }: Props) {
             </p>
           )}
           <button
+            type="button"
             onClick={handleSkip}
             className="w-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm py-2 rounded-lg transition-colors"
           >

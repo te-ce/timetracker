@@ -66,6 +66,7 @@ export function LocalExcelFolderSettings() {
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
+                type="button"
                 onClick={() => void handlePick()}
                 disabled={picking}
                 className="rounded border px-3 py-1 text-xs font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 disabled:opacity-40"
@@ -73,6 +74,7 @@ export function LocalExcelFolderSettings() {
                 Change
               </button>
               <button
+                type="button"
                 onClick={() => void handleReset()}
                 className="rounded border px-3 py-1 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 border-red-200 dark:border-red-800"
               >
@@ -84,6 +86,7 @@ export function LocalExcelFolderSettings() {
           <>
             <span className="text-gray-500 dark:text-gray-400">Same as app data folder</span>
             <button
+              type="button"
               onClick={() => void handlePick()}
               disabled={picking}
               className="rounded border px-3 py-1.5 text-xs font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700 disabled:opacity-40 shrink-0"

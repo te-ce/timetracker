@@ -22,6 +22,7 @@ export function IncompleteBanner({ incompleteDates, onNavigate }: Props) {
         {incompleteDates.map((date) => (
           <li key={date}>
             <button
+              type="button"
               onClick={() => onNavigate(date)}
               aria-label={`Go to ${new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}
               className="rounded border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 px-2 py-0.5 text-xs hover:bg-amber-100 dark:hover:bg-amber-900/40"

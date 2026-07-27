@@ -95,6 +95,7 @@ export function MonthCalendar({
           <div key={date.getDate()}>
             <Tooltip content={tooltipContent}>
               <button
+                type="button"
                 onClick={() => onSelectDate(iso)}
                 aria-label={label}
                 aria-current={isToday ? 'date' : undefined}

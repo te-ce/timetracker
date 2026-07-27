@@ -72,6 +72,7 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
         />
       </label>
       <button
+        type="button"
         onClick={() => saveMutation.mutate()}
         className="rounded-lg bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
       >

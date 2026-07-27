@@ -33,6 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
               {this.state.error.message}
             </pre>
             <button
+              type="button"
               className="mt-4 rounded bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700"
               onClick={() => window.location.reload()}
             >

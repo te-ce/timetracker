@@ -28,12 +28,14 @@ export function DayNoteEditor({ dayNote, onSave }: Props) {
           />
           <div className="flex gap-2 justify-end">
             <button
+              type="button"
               onClick={() => setNoteValue(null)}
               className="rounded border px-3 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={() => {
                 onSave(noteValue.trim())
                 setNoteValue(null)
@@ -47,12 +49,14 @@ export function DayNoteEditor({ dayNote, onSave }: Props) {
       ) : dayNote ? (
         <div className="flex items-start gap-1">
           <button
+            type="button"
             onClick={() => setNoteValue(dayNote)}
             className="flex-1 min-w-0 text-left rounded border px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50 whitespace-pre-wrap"
           >
             {dayNote}
           </button>
           <button
+            type="button"
             onClick={() => onSave('')}
             className="shrink-0 text-xs text-red-500 dark:text-red-400 hover:underline py-1.5"
           >
@@ -61,6 +65,7 @@ export function DayNoteEditor({ dayNote, onSave }: Props) {
         </div>
       ) : (
         <button
+          type="button"
           onClick={() => setNoteValue('')}
           className="w-full text-left rounded border border-dashed px-2 py-1.5 text-sm text-gray-400 dark:text-gray-500 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800/50"
         >

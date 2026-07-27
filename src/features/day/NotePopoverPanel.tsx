@@ -36,12 +36,14 @@ export function NotePopoverPanel({ state, popoverRef, onChange, onSave, onClose 
       />
       <div className="mt-2 flex justify-end gap-2">
         <button
+          type="button"
           onClick={onClose}
           className="rounded border px-2 py-1 text-xs hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         >
           Cancel
         </button>
         <button
+          type="button"
           onClick={onSave}
           className="rounded border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40"
         >

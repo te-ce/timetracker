@@ -43,6 +43,7 @@ function CategoryBadge({
   if (onAutoCategoryChange)
     return (
       <button
+        type="button"
         onClick={(e) => {
           e.stopPropagation()
           onAutoCategoryChange(cat)

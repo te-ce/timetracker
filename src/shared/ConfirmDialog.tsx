@@ -32,6 +32,7 @@ export function ConfirmDialog({
   return createPortal(
     <>
       <button
+        type="button"
         className="fixed inset-0 z-[100] bg-black/30 cursor-default"
         aria-label="Close dialog"
         onClick={onCancel}
@@ -51,12 +52,14 @@ export function ConfirmDialog({
         </div>
         <div className="flex justify-end gap-2">
           <button
+            type="button"
             onClick={onCancel}
             className="rounded-lg border px-4 py-1.5 text-sm font-medium hover:bg-gray-100 dark:border-gray-600 dark:hover:bg-gray-700"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={onConfirm}
             className={`rounded-lg px-4 py-1.5 text-sm font-medium text-white ${
               danger

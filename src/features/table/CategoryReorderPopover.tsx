@@ -74,6 +74,7 @@ export function CategoryReorderPopover({ repository }: Props) {
   return (
     <div className="relative" ref={panelRef}>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
         className="rounded border px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
         data-tooltip="Reorder categories"
