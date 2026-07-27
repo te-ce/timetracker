@@ -1,4 +1,5 @@
 import type { MonthTableRow } from '../table'
+import { getSprintForDate } from './sprint'
 
 export interface SprintGroup {
   label: string
@@ -14,16 +15,13 @@ export function computeSprintGroups(
     return [{ label: '', rows }]
   }
 
-  const sprintStart = new Date(sprintStartDate)
+  const config = { startDate: sprintStartDate, lengthDays: sprintLengthDays }
   const groups: SprintGroup[] = []
   let currentRows: MonthTableRow[] = []
   let currentSprintIdx: number | null = null
 
   for (const row of rows) {
-    const rowDate = new Date(row.date)
-    const diffMs = rowDate.getTime() - sprintStart.getTime()
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    const sprintIdx = Math.floor(diffDays / sprintLengthDays)
+    const sprintIdx = getSprintForDate(row.date, config).index
 
     if (currentSprintIdx === null || sprintIdx !== currentSprintIdx) {
       if (currentRows.length > 0) {
