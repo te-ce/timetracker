@@ -1,8 +1,9 @@
 import type { ExcelRow } from './excelService'
-import { listSheets, listRows, writeSprintData, archiveSprintData } from './excelService'
+import { listSheets, listRows, writeSprintData, archiveSprintData, isSheetExistsError } from './excelService'
 import { listLocalSheets, listLocalRows, writeLocalSprintData, archiveLocalSprintData } from './localExcelService'
 
 export type { ExcelRow }
+export { isSheetExistsError }
 
 export interface WorkbookService {
   listSheets(): Promise<string[]>

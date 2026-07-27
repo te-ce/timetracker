@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import type { ExcelRow } from '../excel/excelService'
+import type { ExcelRow } from '../excel/workbookService'
 import { buildWorkbookService } from '../excel/workbookFactory'
 import { getAllCategories, isValidCustomCategoryName } from '../../shared/categories'
+import { useDragReorder } from '../../shared/reorder'
 import { autoMatchCategories } from './excelMapping'
 import { useAuthStore } from '../../shared/authStore'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
@@ -340,8 +341,6 @@ export function CategorySettings({ repository }: Props) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const [newCategory, setNewCategory] = useState('')
-  const dragIdx = useRef<number | null>(null)
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
 
   const [excelRows, setExcelRows] = useState<ExcelRow[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -394,10 +393,15 @@ export function CategorySettings({ repository }: Props) {
     },
   })
 
+  const categories = config ? getAllCategories(config.customCategories, config.categoryOrder) : []
+  const { dragOverIdx, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useDragReorder(
+    categories,
+    (newOrder) => categoryMutation.mutate({ categoryOrder: newOrder }),
+  )
+
   if (!config) return null
 
   const { customCategories } = config
-  const categories = getAllCategories(customCategories, config.categoryOrder)
   const customCategoriesSet = new Set(customCategories)
   const savedMapping = config.categoryMapping ? config.categoryMapping : {}
   const activeMapping = localMapping !== null ? localMapping : savedMapping
@@ -433,38 +437,6 @@ export function CategorySettings({ repository }: Props) {
     const newCustom = customCategories.map((c) => (c === oldName ? trimmed : c))
     if (!customCategories.includes(oldName)) newCustom.push(trimmed)
     categoryMutation.mutate({ customCategories: newCustom, categoryOrder: newOrder })
-  }
-
-  function handleDragStart(idx: number) {
-    dragIdx.current = idx
-  }
-
-  function handleDragOver(e: React.DragEvent, idx: number) {
-    e.preventDefault()
-    setDragOverIdx(idx)
-  }
-
-  function handleDrop(idx: number) {
-    const from = dragIdx.current
-    const to = Math.max(0, Math.min(idx, categories.length - 1))
-    if (from === null || from === to) {
-      dragIdx.current = null
-      setDragOverIdx(null)
-      return
-    }
-    const newOrder = [...categories]
-    const spliced = newOrder.splice(from, 1)
-    const moved = spliced[0]
-    if (moved === undefined) return
-    newOrder.splice(to, 0, moved)
-    categoryMutation.mutate({ categoryOrder: newOrder })
-    dragIdx.current = null
-    setDragOverIdx(null)
-  }
-
-  function handleDragEnd() {
-    dragIdx.current = null
-    setDragOverIdx(null)
   }
 
   function handleSaveDesc(idx: number, newDesc: string) {

@@ -2,9 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { listSheets } from '../excel/excelService'
+import { buildWorkbookService } from '../excel/workbookFactory'
 import { useAuthStore } from '../../shared/authStore'
-import { getAccessToken } from '../../infra/auth/msalInstance'
 
 interface Props {
   repository: ConfigRepository
@@ -101,12 +100,12 @@ export function SheetSelector({ repository }: Props) {
   const sharepointUrl = config?.sharepointUrl
 
   async function handleLoadSheets() {
-    if (!sharepointUrl || !isAuthenticated) return
+    const workbook = config && buildWorkbookService(config, isAuthenticated)
+    if (!workbook) return
     setLoadError(null)
     setLoadingSheets(true)
     try {
-      const token = await getAccessToken()
-      const result = await listSheets(sharepointUrl, token)
+      const result = await workbook.listSheets()
       setSheets(result)
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load sheets')

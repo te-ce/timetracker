@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { listLocalXlsxFiles, listLocalSheets } from '../excel/localExcelService'
+import { listLocalXlsxFiles } from '../excel/localExcelService'
+import { LocalFolderWorkbookService } from '../excel/workbookService'
 
 interface Props {
   repository: ConfigRepository
@@ -143,7 +144,7 @@ export function LocalExcelSettings({ repository }: Props) {
     }
     setLoadError(null)
     try {
-      const result = await listLocalSheets(filename)
+      const result = await new LocalFolderWorkbookService(filename).listSheets()
       setSheets(result)
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Failed to load sheets')
@@ -155,7 +156,7 @@ export function LocalExcelSettings({ repository }: Props) {
     setLoadError(null)
     setLoading(true)
     try {
-      const result = await listLocalSheets(currentFile)
+      const result = await new LocalFolderWorkbookService(currentFile).listSheets()
       setSheets(result)
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Failed to load sheets')
