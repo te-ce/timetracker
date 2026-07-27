@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs'
 import { SheetExistsError } from './excelService'
 import type { ExcelRow } from './excelService'
+import { buildWritePlan, buildArchiveRows } from './exportPlan'
 import { loadHandle, loadExcelHandle, verifyPermission } from '../../infra/storage/folder-handle-store'
 
 async function getDir(): Promise<FileSystemDirectoryHandle> {
@@ -66,18 +67,17 @@ export async function writeLocalSprintData(
   const ws = wb.getWorksheet(sheet)
   if (!ws) throw new Error(`Sheet "${sheet}" not found in ${filename}`)
 
-  const taskIdToRow = new Map<string, number>()
+  const rows: { taskId: string; rowNumber: number }[] = []
   ws.eachRow((row, rowNumber) => {
     const col1 = row.getCell(1).value
     if (typeof col1 === 'string' && col1.trim()) {
-      taskIdToRow.set(col1.trim(), rowNumber)
+      rows.push({ taskId: col1.trim(), rowNumber })
     }
   })
 
-  for (const [category, taskId] of Object.entries(mapping)) {
-    const rowNumber = taskIdToRow.get(taskId)
-    if (rowNumber === undefined) continue
-    ws.getRow(rowNumber).getCell(2).value = hoursPerCategory[category] ?? 0
+  const plan = buildWritePlan(rows, mapping, hoursPerCategory)
+  for (const { rowNumber, hours } of plan) {
+    ws.getRow(rowNumber).getCell(2).value = hours
   }
 
   const rawOutput: unknown = await wb.xlsx.writeBuffer()
@@ -110,8 +110,8 @@ export async function archiveLocalSprintData(
     wb.removeWorksheet(existing.id)
   }
   const ws = wb.addWorksheet(sheetName)
-  for (const [category, taskId] of Object.entries(mapping)) {
-    ws.addRow([taskId, hoursPerCategory[category] ?? 0])
+  for (const row of buildArchiveRows(mapping, hoursPerCategory)) {
+    ws.addRow(row)
   }
 
   const rawOutput: unknown = await wb.xlsx.writeBuffer()

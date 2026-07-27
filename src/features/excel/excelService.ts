@@ -5,6 +5,8 @@
  * Required scope: Files.ReadWrite.All
  */
 
+import { buildWritePlan, buildArchiveRows } from './exportPlan'
+
 export interface ExcelRow {
   taskId: string
   description: string
@@ -91,12 +93,6 @@ export async function writeSprintData(
   const encodedSheet = encodeURIComponent(sheet)
   const base = workbookBase(sharePointUrl)
 
-  // Build taskId → row index map (1-based, matching Excel row numbers from usedRange start)
-  const taskIdToRowIndex = new Map<string, number>()
-  rows.forEach((row, idx) => {
-    taskIdToRowIndex.set(row.taskId, idx)
-  })
-
   // Determine the actual starting row of the used range
   const rangeRes = await fetch(`${base}/worksheets/${encodedSheet}/usedRange(valuesOnly=true)`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -108,27 +104,25 @@ export async function writeSprintData(
   const addressMatch = /!.*?(\d+):/.exec(rangeJson.address)
   const startRow = addressMatch ? parseInt(addressMatch[1] ?? '1', 10) : 1
 
-  // Write each mapped category
-  const writes: Promise<void>[] = []
-  for (const [category, taskId] of Object.entries(mapping)) {
-    const rowIdx = taskIdToRowIndex.get(taskId)
-    if (rowIdx === undefined) continue
-    const hours = hoursPerCategory[category] ?? 0
-    const excelRow = startRow + rowIdx
-    const cellAddress = `B${excelRow}`
-    writes.push(
-      fetch(`${base}/worksheets/${encodedSheet}/range(address='${cellAddress}')`, {
-        method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ values: [[hours]] }),
-      }).then((r) => {
-        if (!r.ok) throw new Error(`writeSprintData PATCH ${cellAddress} failed: ${r.status}`)
-      }),
-    )
-  }
+  const plan = buildWritePlan(
+    rows.map((row, idx) => ({ taskId: row.taskId, rowNumber: startRow + idx })),
+    mapping,
+    hoursPerCategory,
+  )
+
+  const writes = plan.map(({ rowNumber, hours }) => {
+    const cellAddress = `B${rowNumber}`
+    return fetch(`${base}/worksheets/${encodedSheet}/range(address='${cellAddress}')`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ values: [[hours]] }),
+    }).then((r) => {
+      if (!r.ok) throw new Error(`writeSprintData PATCH ${cellAddress} failed: ${r.status}`)
+    })
+  })
   await Promise.all(writes)
 }
 
@@ -160,7 +154,7 @@ export async function archiveSprintData(
   })
   if (!createRes.ok) throw new Error(`archiveSprintData create sheet failed: ${createRes.status}`)
 
-  const rows = Object.entries(mapping).map(([cat, taskId]) => [taskId, hoursPerCategory[cat] ?? 0])
+  const rows = buildArchiveRows(mapping, hoursPerCategory)
   if (rows.length === 0) return
 
   const encodedSheet = encodeURIComponent(sheetName)
