@@ -26,7 +26,6 @@ See [CONTEXT.md](../../../CONTEXT.md) for full glossary. Short version:
 | `dayContext.test.ts`        | Unit tests for all derivation logic                                                  |
 | `dayType.ts`                | `classifyDay()`, `isDayTypeOverride()` type guard, DayType helpers                   |
 | `dayUpdaters.ts`            | Pure update functions for Day mutations (add/edit/delete WorkPeriod, set note, etc.) |
-| `confirmDay.ts`             | Logic to confirm a day as complete                                                   |
 | `workPeriodMerge.ts`        | Merges overlapping WorkPeriods                                                       |
 | `useDayQuery.ts`            | TanStack Query hook to load/subscribe to a Day                                       |
 | `useDayMutations.ts`        | Mutations for day-level fields (type, note, confirmation)                            |

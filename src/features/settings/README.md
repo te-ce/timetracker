@@ -1,6 +1,6 @@
 # features/settings/
 
-SettingsView — all app configuration. Covers MSAL bootstrap, storage mode, categories (fixed + custom + AutoFill rules), sprint config, Excel mapping, display preferences (theme, time format, hotkeys), and data management.
+SettingsView — all app configuration. Covers MSAL bootstrap, storage mode, categories (fixed + custom), sprint config, Excel mapping, display preferences (theme, time format, hotkeys), and data management.
 
 Also contains the **SetupWizard** shown on first launch to choose sync mode.
 
@@ -8,7 +8,6 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 
 - **BootstrapConfig** — `{ clientId, tenantId }` stored in localStorage; required before MSAL init. Set in MSAL settings.
 - **AppConfig** — full app configuration stored in the repository (OneDrive / local folder / localStorage).
-- **AutoFillRule** — recurring rule that materializes WorkPeriods on load (`everyWorkday` or `weekly(days, intervalWeeks)`).
 - **ExcelMapping** — `Record<category, taskId>` linking categories to SharePoint Excel rows.
 - **AutoCategory** — global default category for new WorkPeriods; overridable per day.
 
@@ -37,7 +36,6 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 | `LaunchAtLoginSettings.tsx`      | Electron launch-at-login toggle                                    |
 | `WindowBehaviorSettings.tsx`     | Electron window hide-on-close behavior                             |
 | `ClearDataSettings.tsx`          | Destructive data reset                                             |
-| `autoFillRules.ts`               | AutoFillRule domain logic — materialization, recurrence            |
 | `excelMapping.ts`                | ExcelMapping derivation helpers                                    |
 | `exportStatus.ts`                | ExportStatus derivation from sprint export records                 |
 | `useCategoryMutations.ts`        | Mutations for category config changes                              |
@@ -49,5 +47,3 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 All settings read from and write to `AppConfig` via TanStack Query mutations. The config repository persists to OneDrive (synced mode) or localStorage/local folder (offline mode).
 
 `SetupWizard` is rendered when `BootstrapConfig` is absent — it writes `clientId`/`tenantId` to localStorage before MSAL is initialized, then reloads the app.
-
-`autoFillRules.ts` is called on app load: it scans from the last materialized date to today and inserts missing WorkPeriod records for any matching rules.

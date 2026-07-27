@@ -138,18 +138,6 @@ Each cell shows hours derived from `calculateCategoryHours()` across all WorkPer
 Clicking a category cell opens the **WorkPeriod dialog** in DayView for editing.  
 A read-only **WorkedHours** column provides context.
 
-## AutoFillRule
-
-A recurring rule that materializes WorkPeriod records on app load.  
-Two recurrence patterns:
-
-- `everyWorkday` — fires Mon–Fri, skips non-WorkDay days (holidays, vacation, etc.)
-- `weekly(days, intervalWeeks)` — specific weekday(s) every N weeks, also skips non-WorkDay days
-
-Each rule tracks a `materializedDates` set (ISO strings) — days where the rule was already applied.  
-If a date is in the set, the rule does not re-materialize (even if the user deleted the period).  
-Materialization happens on app load: scan from last materialization date to today.
-
 ## BootstrapConfig
 
 The minimal configuration required to initialize MSAL before the app can function.  

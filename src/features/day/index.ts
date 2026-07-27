@@ -5,7 +5,6 @@ export { type DotPopoverState, DotPopoverPanel } from './DotPopoverPanel'
 export { IncompleteBanner } from './IncompleteBanner'
 export { type NotePopoverState, NotePopoverPanel } from './NotePopoverPanel'
 export { WorkOverview } from './WorkOverview'
-export { buildConfirmedDay } from './confirmDay'
 export {
   type DayRawData,
   type DayConfigContext,
