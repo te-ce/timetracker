@@ -7,8 +7,10 @@ import { OvertimeBar } from './OvertimeBar'
 import { StatusLegend } from './StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
+import { officeStats } from '../../shared/officeStats'
+import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
-import { invalidateConfig, invalidateMonthByYearMonth } from '../../shared/queryKeys'
+import { invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
@@ -47,9 +49,7 @@ export function MonthView() {
     todayPlannedStopTime,
   } = useMonthSummaries(year, month)
 
-  const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
-  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
-  const officePercent = trackedWorkDays.length > 0 ? Math.round((officeDays / trackedWorkDays.length) * 100) : 0
+  const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
 
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayDisplayStatusMap: Record<string, DisplayStatus> = {}
@@ -70,13 +70,7 @@ export function MonthView() {
 
   const showOvertimeBar = config?.showOvertimeBar !== false
   const showOfficeStats = config?.officeStats !== false
-  const hideOvertimeMutation = useMutation({
-    mutationFn: async () => {
-      const cfg = await configRepo.get()
-      await configRepo.save({ ...cfg, showOvertimeBar: false })
-    },
-    onSuccess: () => invalidateConfig(queryClient),
-  })
+  const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
   return (
     <div className="flex flex-col gap-6">
@@ -90,7 +84,7 @@ export function MonthView() {
           plannedStopTime={todayPlannedStopTime ?? null}
           remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
           showTotalWorked={config?.showTotalWorked === true}
-          {...(showOfficeStats ? { officeDays, totalWorkDays: trackedWorkDays.length, officePercent } : {})}
+          {...(showOfficeStats ? { officeDays, totalWorkDays, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />
       )}

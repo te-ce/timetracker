@@ -13,6 +13,7 @@ import type { DaySummary } from '../month/daySummary'
 import { type OvertimeToDate } from '../../shared/overtime'
 import { composeMonthOvertime } from '../../shared/monthOvertime'
 import { calculateTotalCategorizedHours } from '../../shared/periodCategories'
+import { officeStats } from '../../shared/officeStats'
 import { targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
 import { derivePlannedStopState, calculateProjectedWorkedHours } from '../../shared/worktime'
@@ -114,17 +115,6 @@ function fromDaySummary(
   }
 }
 
-function calcOfficeStats(
-  monthDays: DaySummary[],
-  monthData: MonthData,
-): { officeDays: number; totalWorkDays: number; officePercent: number } {
-  const trackedWorkDays = monthDays.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
-  const officeDays = trackedWorkDays.filter((d) => monthData[d.date]?.location === 'Office').length
-  const totalWorkDays = trackedWorkDays.length
-  const officePercent = totalWorkDays > 0 ? Math.round((officeDays / totalWorkDays) * 100) : 0
-  return { officeDays, totalWorkDays, officePercent }
-}
-
 export function composeDayContext(
   date: string,
   monthData: MonthData,
@@ -172,6 +162,6 @@ export function composeDayContext(
     countdownHours: plannedStop.countdownHours,
     projectedWorkedToday,
     ...fromDaySummary(daySummary),
-    ...calcOfficeStats(monthDays, monthData),
+    ...officeStats(monthDays, (d) => monthData[d]?.location),
   }
 }

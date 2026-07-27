@@ -12,12 +12,9 @@ import { DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
+import { officeStats } from '../../shared/officeStats'
+import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 import { resolveTableConfig } from './tableConfig'
-
-function calcOfficePercent(officeDays: number, totalWorkDays: number): number {
-  if (totalWorkDays === 0) return 0
-  return Math.round((officeDays / totalWorkDays) * 100)
-}
 
 async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
   const cfg = await configRepo.get()
@@ -75,17 +72,9 @@ export function TableView() {
     todayPlannedStopTime,
   } = useMonthSummaries(year, month)
 
-  const hideOvertimeMutation = useMutation({
-    mutationFn: async () => {
-      const cfg = await configRepo.get()
-      await configRepo.save({ ...cfg, showOvertimeBar: false })
-    },
-    onSuccess: () => invalidateConfig(queryClient),
-  })
+  const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
-  const trackedWorkDays = summaries.days.filter((d) => d.dayType === 'WorkDay' && d.workedHours > 0)
-  const officeDays = trackedWorkDays.filter((d) => workLocations.get(d.date) === 'Office').length
-  const officePercent = calcOfficePercent(officeDays, trackedWorkDays.length)
+  const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [clearDayDate, setClearDayDate] = useState<string | null>(null)
@@ -250,7 +239,7 @@ export function TableView() {
           plannedStopTime={todayPlannedStopTime ?? null}
           remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
           showTotalWorked={config?.showTotalWorked === true}
-          {...(showOfficeStats ? { officeDays, totalWorkDays: trackedWorkDays.length, officePercent } : {})}
+          {...(showOfficeStats ? { officeDays, totalWorkDays, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />
       )}
