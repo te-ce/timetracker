@@ -2,8 +2,9 @@ import type { DayType } from '../day'
 import type { Day, MonthData } from '../../infra/repositories/types'
 import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../shared/worktime'
 import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
-import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
+import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS, targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
+import { calculateOvertimeToDate } from '../month/monthStats'
 
 export interface MonthTableRow {
   date: string
@@ -87,27 +88,37 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     globalAutoCategory = null,
   } = input
   const totalDays = new Date(year, month, 0).getDate()
-  const rows: MonthTableRow[] = []
-  let runningOvertime = 0
+  const baseRows: BaseRow[] = []
   for (let d = 1; d <= totalDays; d++) {
     const date = padDay(year, month, d)
     const now = date === today ? todayNow : undefined
-    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, globalAutoCategory, now)
-    if (date > today) {
-      rows.push({ ...base, accumulatedOvertime: null })
-    } else {
-      // For today, include the still-to-come portion of a planned-stop period so
-      // the running total reflects the full planned day, not just elapsed time.
-      const overtimeHours =
-        date === today && now !== undefined
-          ? calculateProjectedWorkedHours(monthData[date]?.windows ?? [], now)
-          : base.workedHours
-      if (overtimeHours > 0) {
-        const target = base.dayType === 'WorkDay' ? (weekdayHours[new Date(year, month - 1, d).getDay()] ?? 0) : 0
-        runningOvertime += overtimeHours - target
-      }
-      rows.push({ ...base, accumulatedOvertime: runningOvertime })
-    }
+    baseRows.push(buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, globalAutoCategory, now))
   }
-  return rows
+
+  const dates = baseRows.map((r) => r.date)
+  const workedHoursPerDay = baseRows.map((r) => r.workedHours)
+  const targetHoursPerDay = dates.map((date) => targetHoursForDate(date, weekdayHours))
+
+  return baseRows.map((base, i) => {
+    if (base.date > today) return { ...base, accumulatedOvertime: null }
+
+    // For today, include the still-to-come portion of a planned-stop period so
+    // the running total reflects the full planned day, not just elapsed time.
+    const projectedWorkedToday =
+      base.date === today && todayNow !== undefined
+        ? calculateProjectedWorkedHours(monthData[base.date]?.windows ?? [], todayNow)
+        : undefined
+
+    // Reuses the same cumulative accumulator as the Day view's overtime bar
+    // (monthStats.calculateOvertimeToDate) instead of a parallel running-total
+    // loop, so both views agree on accumulated overtime for every edge case.
+    const { value } = calculateOvertimeToDate(
+      workedHoursPerDay.slice(0, i + 1),
+      dates.slice(0, i + 1),
+      base.date,
+      targetHoursPerDay.slice(0, i + 1),
+      projectedWorkedToday,
+    )
+    return { ...base, accumulatedOvertime: value }
+  })
 }
