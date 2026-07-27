@@ -197,11 +197,11 @@ describe('HeaderControls overflow dropdown', () => {
   const FULL_ORDER = ['remainingHours', 'officeStats', 'sync', 'timeFormat', 'undo', 'shortcuts', 'theme']
 
   beforeEach(() => {
-    localStorage.removeItem('header-layout')
+    localStorage.removeItem('header-layout:v1')
   })
 
   it('renders actual item component in overflow dropdown', async () => {
-    localStorage.setItem('header-layout', JSON.stringify({ order: FULL_ORDER, hidden: ['theme'] }))
+    localStorage.setItem('header-layout:v1', JSON.stringify({ order: FULL_ORDER, hidden: ['theme'] }))
     renderApp()
     await screen.findByText('Timetracker')
 
@@ -212,7 +212,7 @@ describe('HeaderControls overflow dropdown', () => {
 
   it('hidden item in dropdown remains interactive', async () => {
     useThemeStore.setState({ theme: 'light' })
-    localStorage.setItem('header-layout', JSON.stringify({ order: FULL_ORDER, hidden: ['theme'] }))
+    localStorage.setItem('header-layout:v1', JSON.stringify({ order: FULL_ORDER, hidden: ['theme'] }))
     renderApp()
     await screen.findByText('Timetracker')
 

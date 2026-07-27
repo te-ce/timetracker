@@ -226,13 +226,12 @@ export function MonthGrid({
 
   const todayIso = useTodayIso()
 
-  const prevLogSignal = useRef(openLogSignal)
-  useEffect(() => {
-    if (openLogSignal === prevLogSignal.current) return
-    prevLogSignal.current = openLogSignal
+  const [seenLogSignal, setSeenLogSignal] = useState(openLogSignal)
+  if (openLogSignal !== seenLogSignal) {
+    setSeenLogSignal(openLogSignal)
     setActiveDialogDate(todayIso)
     setActiveDialogCategory(null)
-  }, [openLogSignal, todayIso])
+  }
 
   const [liveNow, setLiveNow] = useState(nowHHMM)
   useEffect(() => {

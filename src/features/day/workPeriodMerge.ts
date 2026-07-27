@@ -28,16 +28,18 @@ export function mergeAdjacentInto(
 ): { merged: WorkPeriod; absorbed: string[] } {
   let merged = { ...incoming }
   const absorbed: string[] = []
+  const absorbedIds = new Set<string>()
 
   let changed = true
   while (changed) {
     changed = false
     for (const p of existing) {
-      if (absorbed.includes(p.id) || p.id === incoming.id) continue
+      if (absorbedIds.has(p.id) || p.id === incoming.id) continue
       // p ends exactly where merged starts
       if (p.end !== null && hhmm(p.end) === hhmm(merged.start)) {
         merged = { ...merged, start: p.start, subtasks: collectSubtasksFromAbsorbed(merged, p) }
         absorbed.push(p.id)
+        absorbedIds.add(p.id)
         changed = true
         break
       }
@@ -45,6 +47,7 @@ export function mergeAdjacentInto(
       if (merged.end !== null && hhmm(merged.end) === hhmm(p.start)) {
         merged = { ...merged, end: p.end, subtasks: collectSubtasksFromAbsorbed(merged, p) }
         absorbed.push(p.id)
+        absorbedIds.add(p.id)
         changed = true
         break
       }

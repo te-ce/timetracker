@@ -101,8 +101,9 @@ export abstract class AbstractMonthRepository implements MonthRepository {
   }
 
   saveWorkPeriodWithAbsorbed(date: string, window: WorkPeriod, absorbed: string[]): Promise<void> {
+    const absorbedIds = new Set(absorbed)
     return this.updateDay(date, (day) => {
-      const withoutAbsorbed = { ...day, windows: day.windows.filter((w) => !absorbed.includes(w.id)) }
+      const withoutAbsorbed = { ...day, windows: day.windows.filter((w) => !absorbedIds.has(w.id)) }
       return upsertWindow(withoutAbsorbed, window)
     })
   }
@@ -161,9 +162,10 @@ export abstract class AbstractMonthRepository implements MonthRepository {
     if (!latest) return
     const closed = { ...latest, end: now, category }
     const { merged, absorbed } = mergeAdjacentInto(dayWindows, closed)
+    const absorbedIds = new Set(absorbed)
     await this.updateDay(date, (day) => ({
       ...day,
-      windows: [...day.windows.filter((w) => w.id !== merged.id && !absorbed.includes(w.id)), merged],
+      windows: [...day.windows.filter((w) => w.id !== merged.id && !absorbedIds.has(w.id)), merged],
     }))
   }
 }

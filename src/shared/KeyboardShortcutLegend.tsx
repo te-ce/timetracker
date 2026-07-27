@@ -64,7 +64,7 @@ export function KeyboardShortcutLegend({ onClose }: Props) {
               <span className="text-gray-600 dark:text-gray-400">{description}</span>
               <span className="flex items-center gap-1 shrink-0">
                 {keys.map((k, i) => (
-                  <span key={i} className="flex items-center gap-1">
+                  <span key={k} className="flex items-center gap-1">
                     <kbd className="rounded border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 text-xs font-mono text-gray-700 dark:text-gray-300">
                       {k}
                     </kbd>

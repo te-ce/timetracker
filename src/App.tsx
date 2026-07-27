@@ -292,19 +292,19 @@ function RemainingHoursBadge() {
   )
   const tooltipContent = (
     <div className="space-y-0.5 text-xs">
-      {receiptLines.map((line, i) =>
+      {receiptLines.map((line) =>
         line.isTotal ? (
-          <div key={i} className="flex justify-between gap-4 border-t border-gray-500 pt-0.5 font-semibold">
+          <div key={line.label} className="flex justify-between gap-4 border-t border-gray-500 pt-0.5 font-semibold">
             <span>{line.label}</span>
             {line.value && <span className="tabular-nums">{line.value}</span>}
           </div>
         ) : line.isSubItem ? (
-          <div key={i} className="flex justify-between gap-4 pl-3 text-gray-400 dark:text-gray-500">
+          <div key={line.label} className="flex justify-between gap-4 pl-3 text-gray-400 dark:text-gray-500">
             <span>{line.label}</span>
             <span className="tabular-nums">{line.value}</span>
           </div>
         ) : (
-          <div key={i} className="flex justify-between gap-4">
+          <div key={line.label} className="flex justify-between gap-4">
             <span>{line.label}</span>
             <span className="tabular-nums">{line.value}</span>
           </div>
@@ -409,9 +409,11 @@ function normalizeHeaderLayout(raw: unknown): HeaderLayoutState {
   return { order, hidden }
 }
 
+const HEADER_LAYOUT_STORAGE_KEY = 'header-layout:v1'
+
 function loadHeaderLayout(): HeaderLayoutState {
   try {
-    const raw = localStorage.getItem('header-layout')
+    const raw = localStorage.getItem(HEADER_LAYOUT_STORAGE_KEY)
     if (raw) return normalizeHeaderLayout(JSON.parse(raw))
   } catch {
     /* empty */
@@ -420,7 +422,7 @@ function loadHeaderLayout(): HeaderLayoutState {
 }
 
 function saveHeaderLayout(state: HeaderLayoutState) {
-  localStorage.setItem('header-layout', JSON.stringify(state))
+  localStorage.setItem(HEADER_LAYOUT_STORAGE_KEY, JSON.stringify(state))
 }
 
 function NavDropdown({ currentPath }: { currentPath: string }) {
@@ -566,7 +568,8 @@ function HeaderControls({ onToggleLegend }: { onToggleLegend: () => void }) {
     }
   }
 
-  const visible = layout.order.filter((id) => !layout.hidden.includes(id))
+  const hiddenSet = new Set(layout.hidden)
+  const visible = layout.order.filter((id) => !hiddenSet.has(id))
   const hidden = layout.hidden
 
   return (

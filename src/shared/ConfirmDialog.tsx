@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useEffectEvent, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
 interface Props {
@@ -20,14 +20,15 @@ export function ConfirmDialog({
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
+  const handleKey = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === 'Escape') onCancel()
+    if (e.key === 'Enter') onConfirm()
+  })
+
   useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onCancel()
-      if (e.key === 'Enter') onConfirm()
-    }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
-  }, [onConfirm, onCancel])
+  }, [])
 
   return createPortal(
     <>

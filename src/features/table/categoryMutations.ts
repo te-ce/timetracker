@@ -30,21 +30,25 @@ export async function renameCategoryAcrossAllMonths(
       return monthRepo.getMonth(year, month)
     }),
   )
+  const datesToRename: string[] = []
   for (const data of monthsData) {
     for (const [date, day] of Object.entries(data)) {
       const needsRename = day.windows.some(
         (w) => w.category === oldName || w.subtasks.some((s) => s.category === oldName),
       )
-      if (needsRename) {
-        await monthRepo.updateDay(date, (d) => ({
-          ...d,
-          windows: d.windows.map((w) => ({
-            ...w,
-            category: w.category === oldName ? newName : w.category,
-            subtasks: w.subtasks.map((s) => (s.category === oldName ? { ...s, category: newName } : s)),
-          })),
-        }))
-      }
+      if (needsRename) datesToRename.push(date)
     }
   }
+  await Promise.all(
+    datesToRename.map((date) =>
+      monthRepo.updateDay(date, (d) => ({
+        ...d,
+        windows: d.windows.map((w) => ({
+          ...w,
+          category: w.category === oldName ? newName : w.category,
+          subtasks: w.subtasks.map((s) => (s.category === oldName ? { ...s, category: newName } : s)),
+        })),
+      })),
+    ),
+  )
 }
