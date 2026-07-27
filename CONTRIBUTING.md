@@ -169,6 +169,20 @@ npm run format     # Prettier
 - No docstrings that restate what the function name already says
 - `as const` is fine — it is a const assertion, not a type cast
 
+## React state patterns
+
+- **Never write `ref.current` during render.** React can replay or discard a render pass, so the mutation can leak from work that never commits. Sync a ref to a prop/value only inside `useEffect`.
+- **Reacting to another state value changing → prefer derived state over `useEffect`, but only when you're setting your own component's state.** Compare the incoming value against a "seen" value held in `useState`, and call your own setter directly in the render body when it differs:
+  ```ts
+  const [seenToken, setSeenToken] = useState(token)
+  if (token !== seenToken) {
+    setSeenToken(token)
+    setEditing(false)
+  }
+  ```
+  This is safe because React discards and immediately re-renders when you call a setter during render — no extra effect, no extra paint/tick, and it stays synchronous with the triggering event (an `useEffect`-based equivalent adds a render round-trip, which can be observable in tests that assert immediately after firing an event).
+- **Invoking an external callback/prop as a reaction to a state change still belongs in `useEffect`.** Calling a parent-owned function (e.g. an `onCancel`/`onDone` prop) during render violates React's "cannot update a component while rendering a different component" rule, since you don't control what that callback does. Only the derived-state-in-render trick applies to a component's _own_ setters.
+
 ## React Query
 
 - All cache keys go through `QUERY_KEYS` in `src/shared/queryKeys.ts` — never inline `['someKey', ...]` arrays

@@ -70,13 +70,14 @@ function useNow(): string {
 
 // ─── Blur-cancel warning ──────────────────────────────────────────────────────
 
-function useBlurWarning(onCancel: () => void, isDirty: boolean) {
+function useBlurWarning(isDirty: boolean) {
   const [pendingCancel, setPendingCancel] = useState(false)
+  const [cancelToken, setCancelToken] = useState(0)
   const containerRef = useRef<Element | null>(null)
-  const onCancelRef = useRef(onCancel)
-  onCancelRef.current = onCancel
   const isDirtyRef = useRef(isDirty)
-  isDirtyRef.current = isDirty
+  useEffect(() => {
+    isDirtyRef.current = isDirty
+  })
 
   useEffect(() => {
     if (!pendingCancel) return
@@ -85,7 +86,7 @@ function useBlurWarning(onCancel: () => void, isDirty: boolean) {
       if (!(e.target instanceof Node)) return
       const inside = containerRef.current?.contains(e.target) ?? false
       setPendingCancel(false)
-      if (!inside) onCancelRef.current()
+      if (!inside) setCancelToken((t) => t + 1)
     }
 
     document.addEventListener('mousedown', handleMouseDown)
@@ -95,7 +96,7 @@ function useBlurWarning(onCancel: () => void, isDirty: boolean) {
   function handleBlur(e: React.FocusEvent) {
     if (!e.currentTarget.contains(e.relatedTarget)) {
       if (!isDirtyRef.current) {
-        onCancelRef.current()
+        setCancelToken((t) => t + 1)
         return
       }
       containerRef.current = e.currentTarget
@@ -111,7 +112,7 @@ function useBlurWarning(onCancel: () => void, isDirty: boolean) {
     setPendingCancel(false)
   }
 
-  return { pendingCancel, handleBlur, handleFocus, reset }
+  return { pendingCancel, handleBlur, handleFocus, reset, cancelToken }
 }
 
 function BlurCancelHint() {
@@ -208,7 +209,14 @@ function LiveSubtaskBanner({
     handleBlur: catHandleBlur,
     handleFocus: catHandleFocus,
     reset: resetCatPending,
-  } = useBlurWarning(() => setEditingCategory(false), false)
+    cancelToken: catCancelToken,
+  } = useBlurWarning(false)
+
+  const [seenCatCancelToken, setSeenCatCancelToken] = useState(catCancelToken)
+  if (catCancelToken !== seenCatCancelToken) {
+    setSeenCatCancelToken(catCancelToken)
+    setEditingCategory(false)
+  }
 
   useEffect(() => {
     if (editingNote) noteInputRef.current?.focus()
@@ -478,7 +486,10 @@ function StartSubtaskForm({
   const [startedAt, setStartedAt] = useState('')
   const [note, setNote] = useState('')
   const isDirty = category !== defaultCategory || startedAt !== '' || note !== ''
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
+  const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
+  useEffect(() => {
+    if (cancelToken > 0) onCancel()
+  }, [cancelToken, onCancel])
 
   function handleStart() {
     const time = startedAt || nowHHMM()
@@ -604,7 +615,10 @@ function SubtaskEditForm({
     editHours !== String(sl.hours) ||
     editStart !== (sl.startedAt ?? '') ||
     editEnd !== (sl.stoppedAt ?? '')
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onDone, isDirty)
+  const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
+  useEffect(() => {
+    if (cancelToken > 0) onDone()
+  }, [cancelToken, onDone])
 
   useEffect(() => {
     if (submode === 'timed') endInputRef.current?.focus()
@@ -828,7 +842,10 @@ function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: Subt
   const [note, setNote] = useState('')
   const durationInputRef = useRef<HTMLInputElement>(null)
   const isDirty = durationRaw !== '' || note !== ''
-  const { pendingCancel, handleBlur, handleFocus } = useBlurWarning(onCancel, isDirty)
+  const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
+  useEffect(() => {
+    if (cancelToken > 0) onCancel()
+  }, [cancelToken, onCancel])
   useEffect(() => {
     durationInputRef.current?.focus()
   }, [])
@@ -1255,7 +1272,13 @@ function AutoCategoryRow({
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
   const [editing, setEditing] = useState(false)
   const description = categoryDescriptions?.[category]
-  const { pendingCancel, handleBlur, handleFocus, reset } = useBlurWarning(() => setEditing(false), false)
+  const { pendingCancel, handleBlur, handleFocus, reset, cancelToken } = useBlurWarning(false)
+
+  const [seenCancelToken, setSeenCancelToken] = useState(cancelToken)
+  if (cancelToken !== seenCancelToken) {
+    setSeenCancelToken(cancelToken)
+    setEditing(false)
+  }
 
   function handleChange(cat: string) {
     mutations.setPeriodCategory.mutate({ date, periodId, category: cat })
