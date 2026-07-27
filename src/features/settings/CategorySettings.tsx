@@ -163,8 +163,7 @@ function CategorySettingsRow({
   const nameTitle = isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'
   return (
     <div
-      role="option"
-      aria-selected={false}
+      role="listitem"
       tabIndex={0}
       draggable
       onDragStart={(e) => {
@@ -577,7 +576,7 @@ export function CategorySettings({ repository }: Props) {
       </div>
 
       {/* Category list */}
-      <div role="listbox" aria-label="Categories" className="flex flex-col gap-1">
+      <div role="list" aria-label="Categories" className="flex flex-col gap-1">
         {categories.map((cat, idx) => (
           <CategorySettingsRow
             key={cat}

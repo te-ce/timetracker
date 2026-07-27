@@ -101,12 +101,11 @@ export function CustomCategorySettings({ repository }: Props) {
     <div className="flex flex-col gap-3">
       <span className="text-sm font-medium">Categories</span>
 
-      <div role="listbox" aria-label="Categories" className="flex flex-col gap-1">
+      <div role="list" aria-label="Categories" className="flex flex-col gap-1">
         {categories.map((cat, idx) => (
           <div
             key={cat}
-            role="option"
-            aria-selected={false}
+            role="listitem"
             tabIndex={0}
             draggable
             onDragStart={(e) => {
