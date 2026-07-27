@@ -12,9 +12,8 @@ export function calculateAutoCategory(workedHours: number, manualTotal: number):
 }
 
 export function resolveAutoCategory(
-  date: string,
-  dayOverrides: Map<string, string>,
+  dayOverride: string | null | undefined,
   globalDefault: string | null,
 ): string | null {
-  return dayOverrides.get(date) ?? globalDefault
+  return dayOverride ?? globalDefault
 }

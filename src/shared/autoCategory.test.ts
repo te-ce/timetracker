@@ -42,22 +42,22 @@ describe('calculateAutoCategory', () => {
 
 describe('resolveAutoCategory', () => {
   it('returns global default when no per-day override exists', () => {
-    expect(resolveAutoCategory('2026-05-19', new Map(), 'Coremedia')).toBe('Coremedia')
+    expect(resolveAutoCategory(undefined, 'Coremedia')).toBe('Coremedia')
   })
 
-  it('returns per-day override when one exists for that date', () => {
-    expect(resolveAutoCategory('2026-05-19', new Map([['2026-05-19', 'QA']]), 'Coremedia')).toBe('QA')
+  it('returns per-day override when one exists', () => {
+    expect(resolveAutoCategory('QA', 'Coremedia')).toBe('QA')
   })
 
   it('returns null when global default is null and no override', () => {
-    expect(resolveAutoCategory('2026-05-19', new Map(), null)).toBeNull()
+    expect(resolveAutoCategory(undefined, null)).toBeNull()
   })
 
   it('override takes precedence even when global is null', () => {
-    expect(resolveAutoCategory('2026-05-19', new Map([['2026-05-19', 'Infra']]), null)).toBe('Infra')
+    expect(resolveAutoCategory('Infra', null)).toBe('Infra')
   })
 
-  it('does not return override for different date', () => {
-    expect(resolveAutoCategory('2026-05-20', new Map([['2026-05-19', 'QA']]), 'Coremedia')).toBe('Coremedia')
+  it('treats null override same as undefined (falls back to global)', () => {
+    expect(resolveAutoCategory(null, 'Coremedia')).toBe('Coremedia')
   })
 })

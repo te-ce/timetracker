@@ -27,6 +27,7 @@ import { Tooltip } from '../../shared/Tooltip'
 import { useUndoStore } from '../../shared/undoStore'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { DaySummaryBody } from '../../shared/DaySummaryBody'
+import { resolveAutoCategory } from '../../shared/autoCategory'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
 
@@ -56,14 +57,14 @@ function saveDayTypeInRepo(repository: MonthRepository, date: string, value: str
   return Promise.resolve()
 }
 
-function classifyRow(row: MonthTableRow, autoCategory: string | null, confirmedDays: Set<string>, today: string) {
+function classifyRow(row: MonthTableRow, confirmedDays: Set<string>, today: string) {
   const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
   return classifyDay({
     dayType: row.dayType,
     workedHours: row.workedHours,
     manualTotal,
-    isEntriesBalanced: row.workedHours > 0 && Math.abs(row.workedHours - manualTotal) < 0.01,
-    hasAutoCategory: !!autoCategory && manualTotal <= row.workedHours,
+    isEntriesBalanced: row.isEntriesBalanced,
+    hasAutoCategory: false,
     isConfirmed: confirmedDays.has(row.date),
     isoDate: row.date,
     today,
@@ -428,11 +429,20 @@ export function MonthGrid({
     },
   })
 
-  const rows = buildMonthTable({ year, month, monthData, dayTypes, weekdayHours, today: todayIso, todayNow: liveNow })
+  const rows = buildMonthTable({
+    year,
+    month,
+    monthData,
+    dayTypes,
+    weekdayHours,
+    today: todayIso,
+    todayNow: liveNow,
+    globalAutoCategory: autoCategory,
+  })
 
   function getCellValue(row: MonthTableRow, category: string): string {
     const manual = row.entries[category] ?? 0
-    const autoHours = category === autoCategory ? row.autoCategoryHours : 0
+    const autoHours = category === row.resolvedAutoCategory ? row.autoCategoryHours : 0
     const val = manual + autoHours
     return val ? formatHoursCompact(val, timeFormat) : ''
   }
@@ -446,10 +456,11 @@ export function MonthGrid({
   function handleDotClick(e: React.MouseEvent<HTMLElement>, row: MonthTableRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = dayTypes.get(row.date) ?? row.dayType
-    const { displayStatus, reason, leaveType } = classifyRow(row, autoCategory, confirmedDays, todayIso)
+    const { displayStatus, reason, leaveType } = classifyRow(row, confirmedDays, todayIso)
     const categoryBreakdown: Record<string, number> = { ...row.entries }
-    if (autoCategory && row.autoCategoryHours > 0.001) {
-      categoryBreakdown[autoCategory] = (categoryBreakdown[autoCategory] ?? 0) + row.autoCategoryHours
+    if (row.resolvedAutoCategory && row.autoCategoryHours > 0.001) {
+      categoryBreakdown[row.resolvedAutoCategory] =
+        (categoryBreakdown[row.resolvedAutoCategory] ?? 0) + row.autoCategoryHours
     }
     setDotPopover({
       date: row.date,
@@ -607,7 +618,7 @@ export function MonthGrid({
               const groupRows = group.rows.map((row) => {
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const isToday = row.date === todayIso
-                const { displayStatus, reason, leaveType } = classifyRow(row, autoCategory, confirmedDays, todayIso)
+                const { displayStatus, reason, leaveType } = classifyRow(row, confirmedDays, todayIso)
                 const bgPair = isToday ? TODAY_ROW_BG : STATUS_ROW_BG[displayStatus]
                 const rowBg = bgPair[globalRowIdx % 2]!
                 const loc = resolveWorkLocation(workLocations, row.date, defaultWorkLocation)
@@ -616,8 +627,9 @@ export function MonthGrid({
                   isNonWorkDay && row.workedHours === 0 && Object.keys(row.entries).length === 0 ? 'opacity-50' : ''
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
                 const rowCategoryBreakdown: Record<string, number> = { ...row.entries }
-                if (autoCategory && row.autoCategoryHours > 0.001) {
-                  rowCategoryBreakdown[autoCategory] = (rowCategoryBreakdown[autoCategory] ?? 0) + row.autoCategoryHours
+                if (row.resolvedAutoCategory && row.autoCategoryHours > 0.001) {
+                  rowCategoryBreakdown[row.resolvedAutoCategory] =
+                    (rowCategoryBreakdown[row.resolvedAutoCategory] ?? 0) + row.autoCategoryHours
                 }
                 const daySummaryData: DaySummaryData = {
                   displayStatus,
@@ -643,7 +655,7 @@ export function MonthGrid({
                       workedHours={parseFloat(row.workedHours.toFixed(2))}
                       windows={monthData[row.date]?.windows ?? []}
                       repository={repository}
-                      autoCategory={autoCategory}
+                      autoCategory={row.resolvedAutoCategory}
                       customCategories={customCategories}
                       categoryOrder={categoryOrder}
                       categoryDescriptions={categoryDescriptions}
@@ -685,7 +697,7 @@ export function MonthGrid({
                     )}
                     <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
                     {allCategories.map((cat) => {
-                      const isAutoTarget = cat === autoCategory
+                      const isAutoTarget = cat === row.resolvedAutoCategory
                       const val = getCellValue(row, cat)
                       return (
                         <td
@@ -766,7 +778,7 @@ export function MonthGrid({
                       {allCategories.map((cat) => {
                         const catTotal = group.rows.reduce((sum, row) => {
                           const manual = row.entries[cat] ?? 0
-                          const autoHours = cat === autoCategory ? row.autoCategoryHours : 0
+                          const autoHours = cat === row.resolvedAutoCategory ? row.autoCategoryHours : 0
                           return sum + manual + autoHours
                         }, 0)
                         return (
@@ -803,7 +815,7 @@ export function MonthGrid({
               {allCategories.map((cat) => {
                 const catTotal = rows.reduce((sum, row) => {
                   const manual = row.entries[cat] ?? 0
-                  const autoHours = cat === autoCategory ? row.autoCategoryHours : 0
+                  const autoHours = cat === row.resolvedAutoCategory ? row.autoCategoryHours : 0
                   return sum + manual + autoHours
                 }, 0)
                 return (
@@ -855,7 +867,7 @@ export function MonthGrid({
                   date={activeDialogDate}
                   windows={monthData[activeDialogDate]?.windows ?? []}
                   repository={repository}
-                  autoCategory={autoCategory}
+                  autoCategory={resolveAutoCategory(monthData[activeDialogDate]?.autoCategoryOverride, autoCategory)}
                   customCategories={customCategories}
                   categoryOrder={categoryOrder}
                   categoryDescriptions={categoryDescriptions}

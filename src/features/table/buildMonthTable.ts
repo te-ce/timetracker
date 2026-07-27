@@ -3,6 +3,7 @@ import type { Day, MonthData } from '../../infra/repositories/types'
 import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../shared/worktime'
 import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
+import { resolveAutoCategory } from '../../shared/autoCategory'
 
 export interface MonthTableRow {
   date: string
@@ -10,7 +11,9 @@ export interface MonthTableRow {
   workedHours: number
   entries: Record<string, number>
   autoCategoryHours: number
-  autoCategoryOverride: number | null
+  /** AutoCategory resolved for this day: per-day override (ADR 0004) falling back to the global default. */
+  resolvedAutoCategory: string | null
+  isEntriesBalanced: boolean
   hasUnaccountedHours: boolean
   /** Running over/undertime total up to this date. null for future dates. */
   accumulatedOvertime: number | null
@@ -25,6 +28,7 @@ export interface MonthTableInput {
   today?: string
   /** Current HH:MM time — passed to today's row so open periods count as live. */
   todayNow?: string
+  globalAutoCategory?: string | null
 }
 
 function padDay(year: number, month: number, day: number): string {
@@ -48,6 +52,7 @@ function buildDayRow(
   dayData: Day | undefined,
   dayTypes: Map<string, DayType>,
   weekdayHours: WeekdayHours,
+  globalAutoCategory: string | null,
   now?: string,
 ): BaseRow {
   const workedHours = calculateWorkedHours(dayData?.windows ?? [], now)
@@ -64,7 +69,8 @@ function buildDayRow(
     workedHours,
     entries,
     autoCategoryHours: uncategorizedHours,
-    autoCategoryOverride: null,
+    resolvedAutoCategory: resolveAutoCategory(dayData?.autoCategoryOverride, globalAutoCategory),
+    isEntriesBalanced: workedHours > 0 && uncategorizedHours < 0.01,
     hasUnaccountedHours,
   }
 }
@@ -78,6 +84,7 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     weekdayHours = DEFAULT_WEEKDAY_HOURS,
     today = '9999-12-31',
     todayNow,
+    globalAutoCategory = null,
   } = input
   const totalDays = new Date(year, month, 0).getDate()
   const rows: MonthTableRow[] = []
@@ -85,7 +92,7 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
   for (let d = 1; d <= totalDays; d++) {
     const date = padDay(year, month, d)
     const now = date === today ? todayNow : undefined
-    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, now)
+    const base = buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, globalAutoCategory, now)
     if (date > today) {
       rows.push({ ...base, accumulatedOvertime: null })
     } else {

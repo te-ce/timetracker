@@ -10,7 +10,8 @@ function makeRow(date: string): MonthTableRow {
     workedHours: 0,
     entries: {},
     autoCategoryHours: 0,
-    autoCategoryOverride: null,
+    resolvedAutoCategory: null,
+    isEntriesBalanced: true,
     hasUnaccountedHours: false,
     accumulatedOvertime: 0,
   }

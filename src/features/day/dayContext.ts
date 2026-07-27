@@ -13,6 +13,7 @@ import { buildMonthSummaries, type DaySummary } from '../month/daySummary'
 import { calculateOvertimeToDate, type OvertimeToDate } from '../month/monthStats'
 import { calculateTotalCategorizedHours } from '../../shared/periodCategories'
 import { targetHoursForDate } from '../../shared/weekdayHours'
+import { resolveAutoCategory } from '../../shared/autoCategory'
 
 export interface DayRawData {
   windows: WorkPeriod[]
@@ -134,7 +135,7 @@ export function composeDayContext(
 
   const { sollstunden, weekdayHours, defaultWorkLocation, globalAutoCategory } = resolveConfigDefaults(config, date)
   const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
-  const autoCategory = dayData?.autoCategoryOverride ?? globalAutoCategory
+  const autoCategory = resolveAutoCategory(dayData?.autoCategoryOverride, globalAutoCategory)
   const targetHoursPerDay = monthDays.map((d) => targetHoursForDate(d.date, weekdayHours))
   const overtimeToDate = calculateOvertimeToDate(
     workedHoursPerDay,
