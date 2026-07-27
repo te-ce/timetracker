@@ -1,6 +1,6 @@
 import type { WorkPeriod, MonthRepository } from '../../infra/repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
-import { mergeAdjacentInto } from './workPeriodMerge'
+import { mergeAdjacentInto } from '../../infra/repositories/work-period-merge'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
 import { findOpenPeriod } from '../../shared/worktime'
 import { getAllCategories } from '../../shared/categories'

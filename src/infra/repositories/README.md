@@ -10,6 +10,9 @@ repositories/
 ├── types.ts                — Repository interface definitions
 ├── configSchema.ts         — Zod schema for AppConfig validation on load
 ├── shared.ts               — Shared parsing helpers used by both implementation families
+├── abstract-month-repository.ts — Storage-agnostic MonthRepository mutation logic shared by cloud/in-memory
+├── day-updaters.ts         — Pure Day/WorkPeriod update functions (add/edit/delete WorkPeriod, subtasks, etc.)
+├── work-period-merge.ts    — Merges adjacent WorkPeriods
 │
 ├── cloud/                  — Production implementations (delegate to StorageAdapter)
 │   ├── month-repository.ts

@@ -19,8 +19,8 @@ import {
   startLiveSubtask as doStartLiveSubtask,
   stopLiveSubtask as doStopLiveSubtask,
   stopPeriod as doStopPeriod,
-} from '../../features/day/dayUpdaters'
-import { mergeAdjacentInto } from '../../features/day/workPeriodMerge'
+} from './day-updaters'
+import { mergeAdjacentInto } from './work-period-merge'
 
 export function isDayEmpty(day: Day): boolean {
   return (
@@ -37,8 +37,9 @@ export function isDayEmpty(day: Day): boolean {
  * Shared business logic for both MonthRepository adapters. The only real seam
  * between Cloud (OneDrive-backed JSON files) and InMemory (test double) is how
  * a month is read and how a day update is persisted — everything else (the ~14
- * mutation verbs) is storage-agnostic and was previously duplicated verbatim
- * across both implementations.
+ * mutation verbs, in `day-updaters.ts` and `work-period-merge.ts`) is
+ * storage-agnostic and was previously duplicated verbatim across both
+ * implementations.
  */
 export abstract class AbstractMonthRepository implements MonthRepository {
   abstract getMonth(year: number, month: number): Promise<MonthData>

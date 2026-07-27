@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { mergeAdjacentInto } from './workPeriodMerge'
-import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
+import { mergeAdjacentInto } from './work-period-merge'
+import type { WorkPeriod, WorkPeriodSubtask } from './types'
 
 function period(id: string, start: string, end: string | null, category = '_COREMEDIA'): WorkPeriod {
   return { id, start, end, category, subtasks: [] }

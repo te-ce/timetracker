@@ -1,4 +1,4 @@
-import type { Day, WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
+import type { Day, WorkPeriod, WorkPeriodSubtask } from './types'
 import { calcSubtaskHours } from '../../shared/worktime'
 
 export function upsertWindow(day: Day, window: WorkPeriod): Day {

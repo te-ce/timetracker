@@ -1,4 +1,4 @@
-import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
+import type { WorkPeriod, WorkPeriodSubtask } from './types'
 import { calculateWorkedHours } from '../../shared/worktime'
 import { remainderHours } from '../../shared/periodCategories'
 

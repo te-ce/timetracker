@@ -9,8 +9,8 @@ import {
   startLiveSubtask,
   stopLiveSubtask,
   stopPeriod,
-} from './dayUpdaters'
-import type { Day, WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
+} from './day-updaters'
+import type { Day, WorkPeriod, WorkPeriodSubtask } from './types'
 
 function emptyDay(): Day {
   return { windows: [] }
