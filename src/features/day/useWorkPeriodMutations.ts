@@ -17,24 +17,30 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     invalidateMonth(queryClient, date)
   }
 
+  // Pushes an undo/redo pair onto the shared undo stack. `redo` replays the
+  // mutation that already ran; `undo` restores the day snapshot captured in
+  // onMutate. Every work-period mutation below shares this exact shape — the
+  // only thing that varies per mutation is the description and the redo call.
+  function pushUndoableMutation(date: string, description: string, prev: Day, redo: () => Promise<void>) {
+    useUndoStore.getState().push({
+      description,
+      undo: async () => {
+        await repository.updateDay(date, () => prev)
+        invalidate(date)
+      },
+      redo: async () => {
+        await redo()
+        invalidate(date)
+      },
+    })
+    invalidate(date)
+  }
+
   const save = useMutation({
     mutationFn: ({ date, window }: { date: string; window: WorkPeriod }) => repository.saveWorkPeriod(date, window),
     onMutate: async ({ date }) => ({ prev: await snapshotDay(repository, date) }),
-    onSuccess: (_, { date, window }, context) => {
-      const prev = context.prev
-      useUndoStore.getState().push({
-        description: 'Edit work period',
-        undo: async () => {
-          await repository.updateDay(date, () => prev)
-          invalidate(date)
-        },
-        redo: async () => {
-          await repository.saveWorkPeriod(date, window)
-          invalidate(date)
-        },
-      })
-      invalidate(date)
-    },
+    onSuccess: (_, { date, window }, { prev }) =>
+      pushUndoableMutation(date, 'Edit work period', prev, () => repository.saveWorkPeriod(date, window)),
   })
 
   const remove = useMutation({
@@ -42,105 +48,42 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       await repository.removeWorkPeriod(date, id)
     },
     onMutate: async ({ date }) => ({ prev: await snapshotDay(repository, date) }),
-    onSuccess: (_, { date, id }, context) => {
-      const prev = context.prev
-      useUndoStore.getState().push({
-        description: 'Delete work period',
-        undo: async () => {
-          await repository.updateDay(date, () => prev)
-          invalidate(date)
-        },
-        redo: async () => {
-          await repository.removeWorkPeriod(date, id)
-          invalidate(date)
-        },
-      })
-      invalidate(date)
-    },
+    onSuccess: (_, { date, id }, { prev }) =>
+      pushUndoableMutation(date, 'Delete work period', prev, () => repository.removeWorkPeriod(date, id)),
   })
 
   const saveWithAbsorbed = useMutation({
     mutationFn: ({ date, window, absorbed }: { date: string; window: WorkPeriod; absorbed: string[] }) =>
       repository.saveWorkPeriodWithAbsorbed(date, window, absorbed),
     onMutate: async ({ date }) => ({ prev: await snapshotDay(repository, date) }),
-    onSuccess: (_, { date, window, absorbed }, context) => {
-      const prev = context.prev
-      useUndoStore.getState().push({
-        description: 'Merge work periods',
-        undo: async () => {
-          await repository.updateDay(date, () => prev)
-          invalidate(date)
-        },
-        redo: async () => {
-          await repository.saveWorkPeriodWithAbsorbed(date, window, absorbed)
-          invalidate(date)
-        },
-      })
-      invalidate(date)
-    },
+    onSuccess: (_, { date, window, absorbed }, { prev }) =>
+      pushUndoableMutation(date, 'Merge work periods', prev, () =>
+        repository.saveWorkPeriodWithAbsorbed(date, window, absorbed),
+      ),
   })
 
   const setPeriodCategory = useMutation({
     mutationFn: ({ date, periodId, category }: { date: string; periodId: string; category: string }) =>
       repository.setPeriodCategory(date, periodId, category),
     onMutate: async ({ date }) => ({ prev: await snapshotDay(repository, date) }),
-    onSuccess: (_, { date, periodId, category }, context) => {
-      const prev = context.prev
-      useUndoStore.getState().push({
-        description: 'Change category',
-        undo: async () => {
-          await repository.updateDay(date, () => prev)
-          invalidate(date)
-        },
-        redo: async () => {
-          await repository.setPeriodCategory(date, periodId, category)
-          invalidate(date)
-        },
-      })
-      invalidate(date)
-    },
+    onSuccess: (_, { date, periodId, category }, { prev }) =>
+      pushUndoableMutation(date, 'Change category', prev, () => repository.setPeriodCategory(date, periodId, category)),
   })
 
   const addSubtask = useMutation({
     mutationFn: ({ date, periodId, subtask }: { date: string; periodId: string; subtask: WorkPeriodSubtask }) =>
       repository.addSubtask(date, periodId, subtask),
     onMutate: async ({ date }) => ({ prev: await snapshotDay(repository, date) }),
-    onSuccess: (_, { date, periodId, subtask }, context) => {
-      const prev = context.prev
-      useUndoStore.getState().push({
-        description: 'Add subtask',
-        undo: async () => {
-          await repository.updateDay(date, () => prev)
-          invalidate(date)
-        },
-        redo: async () => {
-          await repository.addSubtask(date, periodId, subtask)
-          invalidate(date)
-        },
-      })
-      invalidate(date)
-    },
+    onSuccess: (_, { date, periodId, subtask }, { prev }) =>
+      pushUndoableMutation(date, 'Add subtask', prev, () => repository.addSubtask(date, periodId, subtask)),
   })
 
   const deleteSubtask = useMutation({
     mutationFn: ({ date, periodId, subtaskId }: { date: string; periodId: string; subtaskId: string }) =>
       repository.removeSubtask(date, periodId, subtaskId),
     onMutate: async ({ date }) => ({ prev: await snapshotDay(repository, date) }),
-    onSuccess: (_, { date, periodId, subtaskId }, context) => {
-      const prev = context.prev
-      useUndoStore.getState().push({
-        description: 'Delete subtask',
-        undo: async () => {
-          await repository.updateDay(date, () => prev)
-          invalidate(date)
-        },
-        redo: async () => {
-          await repository.removeSubtask(date, periodId, subtaskId)
-          invalidate(date)
-        },
-      })
-      invalidate(date)
-    },
+    onSuccess: (_, { date, periodId, subtaskId }, { prev }) =>
+      pushUndoableMutation(date, 'Delete subtask', prev, () => repository.removeSubtask(date, periodId, subtaskId)),
   })
 
   const startLiveSubtask = useMutation({
