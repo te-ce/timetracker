@@ -1,5 +1,4 @@
 import { DayNoteEditor } from './DayNoteEditor'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { OvertimeBar } from '../month/OvertimeBar'
@@ -8,7 +7,7 @@ import { DayTypePicker } from './DayTypePicker'
 import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
-import { invalidateConfig } from '../../shared/queryKeys'
+import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 import { findOpenPeriod } from '../../shared/worktime'
 import { Tooltip } from '../../shared/Tooltip'
 import { useDayQuery } from './useDayQuery'
@@ -151,14 +150,7 @@ export function DayView() {
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
-  const queryClient = useQueryClient()
-  const hideOvertimeMutation = useMutation({
-    mutationFn: async () => {
-      const cfg = await configRepo.get()
-      await configRepo.save({ ...cfg, showOvertimeBar: false })
-    },
-    onSuccess: () => invalidateConfig(queryClient),
-  })
+  const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = selectedDate === todayIso ? findOpenPeriod(windows)?.start : undefined
