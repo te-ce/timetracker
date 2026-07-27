@@ -13,11 +13,33 @@ export function findOpenPeriod(windows: WorkPeriod[]): WorkPeriod | undefined {
   return windows.find((w) => w.end === null)
 }
 
-function parseMinutes(time: string): number {
+export function parseMinutes(time: string): number {
   const parts = time.split(':').map(Number)
   const h = parts[0] ?? 0
   const m = parts[1] ?? 0
   return h * 60 + m
+}
+
+export function nowHHMM(): string {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+export function isAfter(a: string, b: string): boolean {
+  return parseMinutes(a) > parseMinutes(b)
+}
+
+export function parseDurationInput(raw: string): number | null {
+  const trimmed = raw.trim()
+  const hhmmMatch = /^(\d{1,2}):(\d{2})$/.exec(trimmed)
+  if (hhmmMatch) {
+    const h = parseInt(hhmmMatch[1] ?? '0')
+    const m = parseInt(hhmmMatch[2] ?? '0')
+    return h + m / 60
+  }
+  const num = parseFloat(trimmed)
+  if (!isNaN(num) && num > 0) return num
+  return null
 }
 
 /**
