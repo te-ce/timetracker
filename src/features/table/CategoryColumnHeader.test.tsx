@@ -17,7 +17,6 @@ function setup(overrides: Partial<CategoryColumnHeaderProps> = {}) {
       onDrop: vi.fn(),
       onDragEnd: vi.fn(),
     },
-    allCategories: ['_COREMEDIA', '_SUPPORT'],
     onEditValueChange: vi.fn(),
     onCommitRename: vi.fn(),
     onSetEditingCat: vi.fn(),

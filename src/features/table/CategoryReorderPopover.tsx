@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import { getAllCategories } from '../../shared/categories'
+import { useDragReorder } from '../../shared/reorder'
 
 interface Props {
   repository: ConfigRepository
@@ -11,8 +12,6 @@ interface Props {
 export function CategoryReorderPopover({ repository }: Props) {
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
-  const dragIdx = useRef<number | null>(null)
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
   const queryClient = useQueryClient()
 
   const { data: config } = useQuery({
@@ -36,41 +35,13 @@ export function CategoryReorderPopover({ repository }: Props) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [open])
 
+  const categories = config ? getAllCategories(config.customCategories, config.categoryOrder) : []
+  const { dragOverIdx, handleDragStart, handleDragOver, handleDrop, handleDragEnd } = useDragReorder(
+    categories,
+    (newOrder) => saveMutation.mutate(newOrder),
+  )
+
   if (!config) return null
-
-  const categories = getAllCategories(config.customCategories, config.categoryOrder)
-
-  function handleDragStart(idx: number) {
-    dragIdx.current = idx
-  }
-
-  function handleDragOver(e: React.DragEvent, idx: number) {
-    e.preventDefault()
-    setDragOverIdx(idx)
-  }
-
-  function handleDrop(idx: number) {
-    const from = dragIdx.current
-    const to = Math.max(0, Math.min(idx, categories.length - 1))
-    if (from === null || from === to) {
-      dragIdx.current = null
-      setDragOverIdx(null)
-      return
-    }
-    const newOrder = [...categories]
-    const spliced = newOrder.splice(from, 1)
-    const moved = spliced[0]
-    if (moved === undefined) return
-    newOrder.splice(to, 0, moved)
-    saveMutation.mutate(newOrder)
-    dragIdx.current = null
-    setDragOverIdx(null)
-  }
-
-  function handleDragEnd() {
-    dragIdx.current = null
-    setDragOverIdx(null)
-  }
 
   return (
     <div className="relative" ref={panelRef}>

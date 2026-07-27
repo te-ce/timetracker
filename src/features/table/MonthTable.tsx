@@ -28,6 +28,7 @@ import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { DaySummaryBody } from '../../shared/DaySummaryBody'
 import { resolveAutoCategory } from '../../shared/autoCategory'
 import { useMonthGridMutations } from './useMonthGridMutations'
+import { useDragReorder } from '../../shared/reorder'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
 
@@ -210,8 +211,14 @@ export function MonthGrid({
   const [notePopover, setNotePopover] = useState<NotePopoverState | null>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const notePopoverRef = useRef<HTMLDivElement>(null)
-  const colDragIdx = useRef<number | null>(null)
-  const [colDragOverIdx, setColDragOverIdx] = useState<number | null>(null)
+  const allCategories = getAllCategories(customCategories, categoryOrder)
+  const {
+    dragOverIdx: colDragOverIdx,
+    handleDragStart: handleColDragStart,
+    handleDragOver: handleColDragOver,
+    handleDrop: handleColDrop,
+    handleDragEnd: handleColDragEnd,
+  } = useDragReorder(allCategories, (newOrder) => onCategoryReorder?.(newOrder))
   const [editingCat, setEditingCat] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [activeDialogDate, setActiveDialogDate] = useState<string | null>(initialLogDate ?? null)
@@ -364,37 +371,6 @@ export function MonthGrid({
     setDotPopover(null)
   }
 
-  function handleColDragStart(idx: number) {
-    colDragIdx.current = idx
-  }
-
-  function handleColDragOver(e: React.DragEvent, idx: number) {
-    e.preventDefault()
-    setColDragOverIdx(idx)
-  }
-
-  function handleColDrop(idx: number, categories: string[]) {
-    const from = colDragIdx.current
-    if (from === null || from === idx) {
-      colDragIdx.current = null
-      setColDragOverIdx(null)
-      return
-    }
-    const newOrder = [...categories]
-    const spliced = newOrder.splice(from, 1)
-    const moved = spliced[0]
-    if (moved === undefined) return
-    newOrder.splice(idx, 0, moved)
-    onCategoryReorder?.(newOrder)
-    colDragIdx.current = null
-    setColDragOverIdx(null)
-  }
-
-  function handleColDragEnd() {
-    colDragIdx.current = null
-    setColDragOverIdx(null)
-  }
-
   const colDragHandlers: ColumnDragHandlers = {
     onDragStart: handleColDragStart,
     onDragOver: handleColDragOver,
@@ -410,7 +386,6 @@ export function MonthGrid({
     }
   }
 
-  const allCategories = getAllCategories(customCategories, categoryOrder)
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, resolveSprintStart(sprintStartDate, year), sprintLengthDays)
 
@@ -467,7 +442,6 @@ export function MonthGrid({
                   onCategoryRename={onCategoryRename}
                   onAutoCategoryChange={onAutoCategoryChange}
                   dragHandlers={colDragHandlers}
-                  allCategories={allCategories}
                   onEditValueChange={setEditValue}
                   onCommitRename={commitRename}
                   onSetEditingCat={setEditingCat}

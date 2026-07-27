@@ -3,7 +3,7 @@ import { Tooltip } from '../../shared/Tooltip'
 export interface ColumnDragHandlers {
   onDragStart: (idx: number) => void
   onDragOver: (e: React.DragEvent, idx: number) => void
-  onDrop: (idx: number, allCats: string[]) => void
+  onDrop: (idx: number) => void
   onDragEnd: () => void
 }
 
@@ -19,7 +19,6 @@ export interface CategoryColumnHeaderProps {
   onCategoryRename?: ((oldName: string, newName: string) => void) | undefined
   onAutoCategoryChange?: ((category: string) => void) | undefined
   dragHandlers: ColumnDragHandlers
-  allCategories: string[]
   onEditValueChange: (v: string) => void
   onCommitRename: (cat: string) => void
   onSetEditingCat: (cat: string | null) => void
@@ -69,7 +68,6 @@ export function CategoryColumnHeader({
   onCategoryRename,
   onAutoCategoryChange,
   dragHandlers,
-  allCategories,
   onEditValueChange,
   onCommitRename,
   onSetEditingCat,
@@ -116,7 +114,7 @@ export function CategoryColumnHeader({
         dragHandlers.onDragStart(catIdx)
       }}
       onDragOver={(e) => dragHandlers.onDragOver(e, catIdx)}
-      onDrop={() => dragHandlers.onDrop(catIdx, allCategories)}
+      onDrop={() => dragHandlers.onDrop(catIdx)}
       onDragEnd={dragHandlers.onDragEnd}
       className={`px-1 py-1.5 text-center w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
     >
