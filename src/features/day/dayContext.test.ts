@@ -143,4 +143,43 @@ describe('composeDayContext', () => {
       expect(result.todayIso).toBe(today)
     })
   })
+
+  describe('planned-stop state', () => {
+    it('is inactive when the viewed date is not today', () => {
+      const window = { id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }
+      const monthData = makeMonthData({ [date]: { windows: [window] } })
+      const result = composeDayContext(date, monthData, undefined, '2026-06-06', '14:00')
+      expect(result.isPlannedStopMode).toBe(false)
+      expect(result.plannedStopTime).toBeNull()
+      expect(result.countdownHours).toBe(0)
+      expect(result.projectedWorkedToday).toBeUndefined()
+    })
+
+    it('activates for a future-end period on today, projecting the full planned duration', () => {
+      const window = { id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }
+      const monthData = makeMonthData({ [date]: { windows: [window] } })
+      const result = composeDayContext(date, monthData, undefined, today, '14:00')
+      expect(result.isPlannedStopMode).toBe(true)
+      expect(result.plannedStopTime).toBe('18:00')
+      expect(result.countdownHours).toBeCloseTo(4)
+      expect(result.projectedWorkedToday).toBeCloseTo(9)
+    })
+
+    it('is inactive when today has no planned-stop period', () => {
+      const window = { id: 'w1', start: '09:00', end: '12:00', category: '_COREMEDIA', subtasks: [] }
+      const monthData = makeMonthData({ [date]: { windows: [window] } })
+      const result = composeDayContext(date, monthData, undefined, today, '14:00')
+      expect(result.isPlannedStopMode).toBe(false)
+      expect(result.plannedStopTime).toBeNull()
+      expect(result.projectedWorkedToday).toBeUndefined()
+    })
+
+    it('respects remainingTimeReference: target-hours disables planned-stop mode', () => {
+      const window = { id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }
+      const monthData = makeMonthData({ [date]: { windows: [window] } })
+      const config = { ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' as const }
+      const result = composeDayContext(date, monthData, config, today, '14:00')
+      expect(result.isPlannedStopMode).toBe(false)
+    })
+  })
 })

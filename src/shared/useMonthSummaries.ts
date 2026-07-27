@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
-import { buildMonthSummaries } from '../features/month/daySummary'
-import { calculateOvertimeToDate } from './overtime'
+import { composeMonthOvertime } from './monthOvertime'
 import { useTodayIso } from './useTodayIso'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
@@ -72,21 +71,13 @@ export function useMonthSummaries(year: number, month: number) {
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
   const todayNow = nowHHMM()
-  const summaries = buildMonthSummaries(year, month, {
+  const { summaries, targetHoursPerDay, overtimeToDate } = composeMonthOvertime(
+    year,
+    month,
     monthData,
-    today: todayIso,
-    globalAutoCategory: config?.autoCategory ?? null,
-    todayNow,
-  })
-
-  const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))
-
-  const overtimeToDate = calculateOvertimeToDate(
-    summaries.workedHoursPerDay,
-    summaries.days.map((d) => d.date),
+    config,
     todayIso,
-    targetHoursPerDay,
-    summaries.projectedWorkedHoursToday,
+    todayNow,
   )
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)

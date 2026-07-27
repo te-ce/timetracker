@@ -9,7 +9,7 @@ import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
 import { invalidateConfig } from '../../shared/queryKeys'
-import { findOpenPeriod, derivePlannedStopState, calculateProjectedWorkedHours } from '../../shared/worktime'
+import { findOpenPeriod } from '../../shared/worktime'
 import { Tooltip } from '../../shared/Tooltip'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
@@ -135,6 +135,10 @@ export function DayView() {
     officeDays,
     totalWorkDays,
     officePercent,
+    isPlannedStopMode,
+    plannedStopTime,
+    countdownHours,
+    projectedWorkedToday,
   } = useDayQuery(selectedDate)
 
   const dayMutations = useDayMutations({
@@ -158,13 +162,6 @@ export function DayView() {
 
   const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
   const liveWindowStart = selectedDate === todayIso ? findOpenPeriod(windows)?.start : undefined
-  const nowHHMM = new Date().toTimeString().slice(0, 5)
-  const { isPlannedStopMode, plannedStopTime, countdownHours } =
-    selectedDate === todayIso
-      ? derivePlannedStopState(windows, nowHHMM, config?.remainingTimeReference ?? 'planned-stop')
-      : { isPlannedStopMode: false, plannedStopTime: null, countdownHours: 0 }
-  const projectedWorkedToday =
-    selectedDate === todayIso && plannedStopTime ? calculateProjectedWorkedHours(windows, nowHHMM) : undefined
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config?.officeStats !== false
   const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
