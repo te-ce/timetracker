@@ -212,6 +212,21 @@ describe('CloudMonthRepository', () => {
     expect(results[0]?.category).toBe('_COREMEDIA')
     expect(results[0]?.hours).toBe(3)
   })
+
+  it('clearCache forces a re-read from storage', async () => {
+    const adapter = new InMemoryStorageAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-06-07', () => ({
+      windows: [{ id: 'w1', start: '09:00', end: '17:00', category: '_COREMEDIA', subtasks: [] }],
+    }))
+    const before = await repo.getMonth(2026, 6)
+    expect(Object.keys(before)).toHaveLength(1)
+
+    repo.clearCache()
+
+    const after = await repo.getMonth(2026, 6)
+    expect(Object.keys(after)).toHaveLength(1)
+  })
 })
 
 describe('CloudSprintExportRepository', () => {
