@@ -4,6 +4,7 @@ import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../share
 import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS, targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
+import { calculateCumulativeOvertime } from '../../shared/overtime'
 
 export interface MonthTableRow {
   date: string
@@ -94,26 +95,20 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     baseRows.push(buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, globalAutoCategory, now))
   }
 
-  // Single running accumulator instead of recomputing the cumulative total from
-  // day 1 for every row (that was O(n²) over the month).
-  let cumWorked = 0
-  let cumTarget = 0
-  return baseRows.map((base) => {
-    if (base.date > today) return { ...base, accumulatedOvertime: null }
+  const dates = baseRows.map((r) => r.date)
+  const targetHoursPerDay = dates.map((date) => targetHoursForDate(date, weekdayHours))
+  const workedHoursPerDay = baseRows.map((r) => r.workedHours)
+  // For today, include the still-to-come portion of a planned-stop period so
+  // the running total reflects the full planned day, not just elapsed time.
+  const projectedWorkedToday =
+    todayNow !== undefined ? calculateProjectedWorkedHours(monthData[today]?.windows ?? [], todayNow) : undefined
+  const accumulatedOvertime = calculateCumulativeOvertime(
+    workedHoursPerDay,
+    dates,
+    targetHoursPerDay,
+    today,
+    projectedWorkedToday,
+  )
 
-    const target = targetHoursForDate(base.date, weekdayHours)
-    // For today, include the still-to-come portion of a planned-stop period so
-    // the running total reflects the full planned day, not just elapsed time.
-    const effectiveHours =
-      base.date === today && todayNow !== undefined
-        ? calculateProjectedWorkedHours(monthData[base.date]?.windows ?? [], todayNow)
-        : base.workedHours
-
-    if (effectiveHours > 0) {
-      cumWorked += effectiveHours
-      cumTarget += target
-    }
-
-    return { ...base, accumulatedOvertime: cumWorked - cumTarget }
-  })
+  return baseRows.map((base, i) => ({ ...base, accumulatedOvertime: accumulatedOvertime[i] ?? null }))
 }

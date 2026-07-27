@@ -25,12 +25,48 @@ export function calculateMonthStats(workedHoursPerDay: number[], targetHoursPerD
 }
 
 /**
+ * Running cumulative over/undertime as of each date in `dates`, considering
+ * only days with tracked hours. Dates after `today` are `null` (not yet
+ * knowable). Days with zero worked hours carry the previous cumulative value
+ * forward unchanged.
+ *
+ * `projectedWorkedToday`, when given, replaces today's hours in the cumulative
+ * total so a planned-stop period's still-to-come portion counts toward the
+ * running over/undertime.
+ *
+ * Single running accumulator instead of recomputing the cumulative total from
+ * day 1 for every entry (that would be O(n²) over a month).
+ */
+export function calculateCumulativeOvertime(
+  workedHoursPerDay: number[],
+  dates: string[],
+  targetHoursPerDay: number[],
+  today: string,
+  projectedWorkedToday?: number,
+): (number | null)[] {
+  let cumWorked = 0
+  let cumTarget = 0
+  return dates.map((date, i) => {
+    if (date > today) return null
+
+    const target = targetHoursPerDay[i] ?? 0
+    const hours = workedHoursPerDay[i] ?? 0
+    const effectiveHours = date === today ? (projectedWorkedToday ?? hours) : hours
+
+    if (effectiveHours > 0) {
+      cumWorked += effectiveHours
+      cumTarget += target
+    }
+
+    return cumWorked - cumTarget
+  })
+}
+
+/**
  * Calculate over/undertime considering only days with tracked hours,
  * up to and including today. Also computes how much work is still needed today.
  *
- * `projectedWorkedToday`, when given, replaces today's hours in the cumulative
- * `value` total so a planned-stop period's still-to-come portion counts toward
- * the running over/undertime. `workedToday` itself stays actual/elapsed —
+ * `workedToday` stays actual/elapsed even when `projectedWorkedToday` is given —
  * callers showing "today so far" (e.g. the overtime bar) should not jump ahead.
  */
 export function calculateOvertimeToDate(
@@ -40,36 +76,27 @@ export function calculateOvertimeToDate(
   targetHoursPerDay: number[],
   projectedWorkedToday?: number,
 ): OvertimeToDate {
-  let totalWorked = 0
-  let targetToDate = 0
-  let workedToday = 0
-  let priorWorked = 0
-  let priorTarget = 0
+  const cumulative = calculateCumulativeOvertime(
+    workedHoursPerDay,
+    dates,
+    targetHoursPerDay,
+    today,
+    projectedWorkedToday,
+  )
 
+  const todayIndex = dates.indexOf(today)
+  const workedToday = todayIndex >= 0 ? (workedHoursPerDay[todayIndex] ?? 0) : 0
+
+  let value = 0
+  let priorOvertime = 0
   for (let i = 0; i < dates.length; i++) {
     const date = dates[i]
     if (date === undefined || date > today) break
-    const hours = workedHoursPerDay[i] ?? 0
-    const target = targetHoursPerDay[i] ?? 0
-    if (date === today) {
-      workedToday = hours
-      const projectedHours = projectedWorkedToday ?? hours
-      if (projectedHours > 0) {
-        totalWorked += projectedHours
-        targetToDate += target
-      }
-      continue
-    }
-    if (hours > 0) {
-      priorWorked += hours
-      priorTarget += target
-      totalWorked += hours
-      targetToDate += target
-    }
+    const c = cumulative[i]
+    if (typeof c !== 'number') continue
+    value = c
+    if (date < today) priorOvertime = c
   }
-
-  const value = totalWorked - targetToDate
-  const priorOvertime = priorWorked - priorTarget
 
   return { value, workedToday, priorOvertime }
 }
