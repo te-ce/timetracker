@@ -4,7 +4,6 @@ import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../share
 import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS, targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
-import { calculateOvertimeToDate } from '../../shared/overtime'
 
 export interface MonthTableRow {
   date: string
@@ -95,30 +94,26 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     baseRows.push(buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, globalAutoCategory, now))
   }
 
-  const dates = baseRows.map((r) => r.date)
-  const workedHoursPerDay = baseRows.map((r) => r.workedHours)
-  const targetHoursPerDay = dates.map((date) => targetHoursForDate(date, weekdayHours))
-
-  return baseRows.map((base, i) => {
+  // Single running accumulator instead of recomputing the cumulative total from
+  // day 1 for every row (that was O(n²) over the month).
+  let cumWorked = 0
+  let cumTarget = 0
+  return baseRows.map((base) => {
     if (base.date > today) return { ...base, accumulatedOvertime: null }
 
+    const target = targetHoursForDate(base.date, weekdayHours)
     // For today, include the still-to-come portion of a planned-stop period so
     // the running total reflects the full planned day, not just elapsed time.
-    const projectedWorkedToday =
+    const effectiveHours =
       base.date === today && todayNow !== undefined
         ? calculateProjectedWorkedHours(monthData[base.date]?.windows ?? [], todayNow)
-        : undefined
+        : base.workedHours
 
-    // Reuses the same cumulative accumulator as the Day view's overtime bar
-    // (shared/overtime.calculateOvertimeToDate) instead of a parallel running-total
-    // loop, so both views agree on accumulated overtime for every edge case.
-    const { value } = calculateOvertimeToDate(
-      workedHoursPerDay.slice(0, i + 1),
-      dates.slice(0, i + 1),
-      base.date,
-      targetHoursPerDay.slice(0, i + 1),
-      projectedWorkedToday,
-    )
-    return { ...base, accumulatedOvertime: value }
+    if (effectiveHours > 0) {
+      cumWorked += effectiveHours
+      cumTarget += target
+    }
+
+    return { ...base, accumulatedOvertime: cumWorked - cumTarget }
   })
 }
