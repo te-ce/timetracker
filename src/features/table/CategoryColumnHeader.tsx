@@ -1,4 +1,4 @@
-import { Tooltip } from '../../shared'
+import { Tooltip } from '../../shared/Tooltip'
 
 export interface ColumnDragHandlers {
   onDragStart: (idx: number) => void

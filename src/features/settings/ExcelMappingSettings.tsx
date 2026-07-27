@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { AppConfig, ConfigRepository } from '../../infra/repositories/types'
-import type { ExcelRow } from '../excel'
-import { buildWorkbookService } from '../excel'
+import type { ExcelRow } from '../excel/excelService'
+import { buildWorkbookService } from '../excel/workbookFactory'
 import { getAllCategories } from '../../shared/categories'
 import { autoMatchCategories } from './excelMapping'
 import { DEFAULT_CATEGORIES } from '../../infra/repositories/types'
@@ -226,9 +226,10 @@ export function ExcelMappingSettings({ repository }: Props) {
     newCustomCategories: string[]
   }) {
     const current = await repository.get()
+    const existingCustomCategoriesSet = new Set(current.customCategories)
     const mergedCustom = [
       ...current.customCategories,
-      ...newCustomCategories.filter((c) => !current.customCategories.includes(c)),
+      ...newCustomCategories.filter((c) => !existingCustomCategoriesSet.has(c)),
     ]
     await repository.save({ ...current, categoryMapping: mapping, customCategories: mergedCustom })
   }

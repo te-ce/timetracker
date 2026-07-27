@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { listSheets } from '../excel'
+import { listSheets } from '../excel/excelService'
 import { useAuthStore } from '../../shared/authStore'
 import { getAccessToken } from '../../infra/auth/msalInstance'
 

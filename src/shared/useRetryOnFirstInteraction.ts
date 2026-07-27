@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 /**
  * Fires `retry` once, on the user's first pointerdown/keydown after `shouldRetry`
@@ -6,13 +6,22 @@ import { useEffect } from 'react'
  * its initial attempt (e.g. local-folder permission requests at startup).
  */
 export function useRetryOnFirstInteraction(shouldRetry: boolean, retry: () => void): void {
+  const retryRef = useRef(retry)
+
+  useEffect(() => {
+    retryRef.current = retry
+  }, [retry])
+
   useEffect(() => {
     if (!shouldRetry) return
-    document.addEventListener('pointerdown', retry, { once: true })
-    document.addEventListener('keydown', retry, { once: true })
-    return () => {
-      document.removeEventListener('pointerdown', retry)
-      document.removeEventListener('keydown', retry)
+    const handler = () => {
+      retryRef.current()
     }
-  }, [shouldRetry, retry])
+    document.addEventListener('pointerdown', handler, { once: true })
+    document.addEventListener('keydown', handler, { once: true })
+    return () => {
+      document.removeEventListener('pointerdown', handler)
+      document.removeEventListener('keydown', handler)
+    }
+  }, [shouldRetry])
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { formatHours } from '../../shared/formatHours'
-import { isSheetExistsError } from '../excel'
+import { isSheetExistsError } from '../excel/excelService'
 
 export type ExportStatus = 'pending' | 'exported'
 

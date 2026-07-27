@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { listLocalXlsxFiles, listLocalSheets } from '../excel'
+import { listLocalXlsxFiles, listLocalSheets } from '../excel/localExcelService'
 
 interface Props {
   repository: ConfigRepository

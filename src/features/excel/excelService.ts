@@ -62,12 +62,15 @@ export async function listRows(sharePointUrl: string, sheet: string, token: stri
   if (!res.ok) throw new Error(`listRows failed: ${res.status} ${res.statusText}`)
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const json = (await res.json()) as { values: unknown[][] }
-  return json.values
-    .filter((row) => typeof row[0] === 'string' && row[0].trim() !== '')
-    .map((row) => ({
-      taskId: String(row[0]).trim(),
-      description: typeof row[2] === 'string' ? row[2].trim() : '',
-    }))
+  return json.values.reduce<ExcelRow[]>((rows, row) => {
+    if (typeof row[0] === 'string' && row[0].trim() !== '') {
+      rows.push({
+        taskId: row[0].trim(),
+        description: typeof row[2] === 'string' ? row[2].trim() : '',
+      })
+    }
+    return rows
+  }, [])
 }
 
 /**

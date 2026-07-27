@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Tooltip } from '../../shared'
+import { Tooltip } from '../../shared/Tooltip'
 import { sprintExportBadgeLabel, sprintExportTooltipText } from './sprintExportReminder'
 import type { Sprint } from './sprint'
 

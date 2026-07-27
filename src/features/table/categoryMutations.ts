@@ -23,10 +23,14 @@ export async function renameCategoryAcrossAllMonths(
     categoryMapping: newMapping,
   })
   const allMonths = await monthRepo.getAllMonths()
-  for (const ym of allMonths) {
-    const year = parseInt(ym.slice(0, 4))
-    const month = parseInt(ym.slice(5, 7))
-    const data = await monthRepo.getMonth(year, month)
+  const monthsData = await Promise.all(
+    allMonths.map(async (ym) => {
+      const year = parseInt(ym.slice(0, 4))
+      const month = parseInt(ym.slice(5, 7))
+      return monthRepo.getMonth(year, month)
+    }),
+  )
+  for (const data of monthsData) {
     for (const [date, day] of Object.entries(data)) {
       const needsRename = day.windows.some(
         (w) => w.category === oldName || w.subtasks.some((s) => s.category === oldName),

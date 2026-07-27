@@ -93,21 +93,24 @@ export class CloudMonthRepository implements MonthRepository {
     const toYm = yearMonth(to)
     const months = await this.getAllMonths()
     const relevant = months.filter((ym) => ym >= fromYm && ym <= toYm)
-    const result: DatedTimeEntry[] = []
-    for (const ym of relevant) {
-      const year = parseInt(ym.slice(0, 4))
-      const month = parseInt(ym.slice(5, 7))
-      const data = await this.getMonth(year, month)
-      for (const [date, day] of Object.entries(data)) {
-        if (date >= from && date <= to) {
-          const categoryHours = calculateDayCategoryHours(day, date, weekdayHours)
-          for (const [category, hours] of Object.entries(categoryHours)) {
-            result.push({ id: `${date}-${category}`, category, hours, date })
+    const perMonth = await Promise.all(
+      relevant.map(async (ym) => {
+        const year = parseInt(ym.slice(0, 4))
+        const month = parseInt(ym.slice(5, 7))
+        const data = await this.getMonth(year, month)
+        const entries: DatedTimeEntry[] = []
+        for (const [date, day] of Object.entries(data)) {
+          if (date >= from && date <= to) {
+            const categoryHours = calculateDayCategoryHours(day, date, weekdayHours)
+            for (const [category, hours] of Object.entries(categoryHours)) {
+              entries.push({ id: `${date}-${category}`, category, hours, date })
+            }
           }
         }
-      }
-    }
-    return result
+        return entries
+      }),
+    )
+    return perMonth.flat()
   }
 
   async getAllMonths(): Promise<string[]> {

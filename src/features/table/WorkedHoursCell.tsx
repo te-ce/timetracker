@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { WorkPeriod, MonthRepository } from '../../infra/repositories/types'
-import { WorkOverview } from '../day'
+import { WorkOverview } from '../day/WorkOverview'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
-import { Tooltip } from '../../shared'
+import { Tooltip } from '../../shared/Tooltip'
 import { DaySummaryBody } from '../../shared/DaySummaryBody'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 

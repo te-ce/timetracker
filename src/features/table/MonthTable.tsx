@@ -3,12 +3,17 @@ import { createPortal } from 'react-dom'
 import { useCloseOnOutsideClickOrEscape } from '../../shared/useCloseOnOutsideClickOrEscape'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { MonthRepository, WorkLocation } from '../../infra/repositories/types'
-import type { DayType, DotPopoverState, NotePopoverState } from '../day'
-import { isDayTypeOverride, DotPopoverPanel, NotePopoverPanel, WorkOverview } from '../day'
+import type { DayType } from '../day/dayType'
+import type { DotPopoverState } from '../day/DotPopoverPanel'
+import type { NotePopoverState } from '../day/NotePopoverPanel'
+import { isDayTypeOverride } from '../day/dayType'
+import { DotPopoverPanel } from '../day/DotPopoverPanel'
+import { NotePopoverPanel } from '../day/NotePopoverPanel'
+import { WorkOverview } from '../day/WorkOverview'
 import { classifyDay } from '../../shared/dayStatus'
 import { buildMonthTable } from './buildMonthTable'
 import { getAllCategories } from '../../shared/categories'
-import { computeSprintGroups } from '../sprint'
+import { computeSprintGroups } from '../sprint/sprintGroups'
 import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
 import { QUERY_KEYS, invalidateMonthByYearMonth } from '../../shared/queryKeys'
@@ -18,12 +23,14 @@ import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
-import { Tooltip } from '../../shared'
+import { Tooltip } from '../../shared/Tooltip'
 import { useUndoStore } from '../../shared/undoStore'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { DaySummaryBody } from '../../shared/DaySummaryBody'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
+
+const EMPTY_CUSTOM_CATEGORIES: string[] = []
 
 async function confirmDayInRepo(repository: MonthRepository, date: string): Promise<void> {
   await repository.updateDay(date, (day) => ({ ...day, confirmed: true }))
@@ -191,7 +198,7 @@ export function MonthGrid({
   month,
   repository,
   autoCategory,
-  customCategories = [],
+  customCategories = EMPTY_CUSTOM_CATEGORIES,
   categoryOrder,
   dayTypes = new Map(),
   confirmedDays = new Set(),

@@ -8,7 +8,8 @@ import { calculateWorkedHours, calcSubtaskHours, findOpenPeriod, isPlannedStop }
 import { getAllCategories } from '../../shared/categories'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
-import { Tooltip, ConfirmDialog } from '../../shared'
+import { Tooltip } from '../../shared/Tooltip'
+import { ConfirmDialog } from '../../shared/ConfirmDialog'
 
 interface Props {
   date: string
@@ -1019,7 +1020,7 @@ interface AddPeriodFormProps {
 }
 
 function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescriptions, onAdd }: AddPeriodFormProps) {
-  const [draftStart, setDraftStart] = useState('')
+  const draftStartRef = useRef('')
   const [draftEnd, setDraftEnd] = useState('')
   const [category, setCategory] = useState(defaultCategory)
   const [prevDefaultCategory, setPrevDefaultCategory] = useState(defaultCategory)
@@ -1035,9 +1036,9 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescri
 
   function handleAdd() {
     if (!canSubmit) return
-    const start = draftStart || nowHHMM()
+    const start = draftStartRef.current || nowHHMM()
     onAdd({ id: crypto.randomUUID(), start, end: draftEnd || null, category, subtasks: [] })
-    setDraftStart('')
+    draftStartRef.current = ''
     setStartResetKey((k) => k + 1)
     setDraftEnd('')
     setCategory(defaultCategory)
@@ -1049,7 +1050,9 @@ function AddPeriodForm({ openPeriod, defaultCategory, categories, categoryDescri
         <NowChip
           key={startResetKey}
           aria-label="Start"
-          onChange={setDraftStart}
+          onChange={(v) => {
+            draftStartRef.current = v
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleAdd()
           }}
@@ -1520,7 +1523,7 @@ export function WorkOverview({
   initialCategory,
 }: Props) {
   const mutations = useWorkPeriodMutations(repository)
-  const sorted = [...windows].sort((a, b) => a.start.localeCompare(b.start))
+  const sorted = windows.toSorted((a, b) => a.start.localeCompare(b.start))
   const openPeriod = findOpenPeriod(windows) ?? null
   const categories = getAllCategories(customCategories, categoryOrder)
   const defaultCategory = initialCategory ?? autoCategory ?? UNCATEGORIZED_CATEGORY

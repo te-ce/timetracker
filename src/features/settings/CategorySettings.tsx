@@ -2,8 +2,8 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import type { ExcelRow } from '../excel'
-import { buildWorkbookService } from '../excel'
+import type { ExcelRow } from '../excel/excelService'
+import { buildWorkbookService } from '../excel/workbookFactory'
 import { getAllCategories, isValidCustomCategoryName } from '../../shared/categories'
 import { autoMatchCategories } from './excelMapping'
 import { useAuthStore } from '../../shared/authStore'
@@ -362,9 +362,10 @@ export function CategorySettings({ repository }: Props) {
       importOrder?: string[] | undefined
     }) => {
       const current = await repository.get()
+      const existingCustomCategoriesSet = new Set(current.customCategories)
       const mergedCustom = [
         ...current.customCategories,
-        ...newCustomCategories.filter((c) => !current.customCategories.includes(c)),
+        ...newCustomCategories.filter((c) => !existingCustomCategoriesSet.has(c)),
       ]
       const update: typeof current = { ...current, categoryMapping: mapping, customCategories: mergedCustom }
       if (importOrder) update.categoryImportOrder = importOrder
@@ -383,6 +384,7 @@ export function CategorySettings({ repository }: Props) {
 
   const { customCategories } = config
   const categories = getAllCategories(customCategories, config.categoryOrder)
+  const customCategoriesSet = new Set(customCategories)
   const savedMapping = config.categoryMapping ? config.categoryMapping : {}
   const activeMapping = localMapping !== null ? localMapping : savedMapping
   const mappedTaskIds = new Set(Object.values(activeMapping))
@@ -497,7 +499,7 @@ export function CategorySettings({ repository }: Props) {
   function handleSaveMapping() {
     if (!localMapping) return
     const rowIdx = new Map(excelRows.map((r, i) => [r.taskId, i]))
-    const importOrder = [...categories].sort((a, b) => {
+    const importOrder = categories.toSorted((a, b) => {
       const ai = localMapping[a] !== undefined ? (rowIdx.get(localMapping[a]) ?? Infinity) : Infinity
       const bi = localMapping[b] !== undefined ? (rowIdx.get(localMapping[b]) ?? Infinity) : Infinity
       return ai - bi
@@ -566,7 +568,7 @@ export function CategorySettings({ repository }: Props) {
             key={cat}
             cat={cat}
             idx={idx}
-            isCustom={customCategories.includes(cat)}
+            isCustom={customCategoriesSet.has(cat)}
             taskId={activeMapping[cat] ?? ''}
             isAutoMatch={autoMatched.has(cat)}
             dragOverIdx={dragOverIdx}

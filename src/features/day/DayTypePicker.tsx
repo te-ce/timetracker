@@ -1,6 +1,6 @@
 import type { MonthRepository } from '../../infra/repositories/types'
 import type { DayType } from './dayType'
-import { useDayTypeOverrideMutations } from '../settings'
+import { useDayTypeOverrideMutations } from '../settings/useDayTypeOverrideMutations'
 import { isDayTypeOverride } from './dayType'
 
 interface Props {
