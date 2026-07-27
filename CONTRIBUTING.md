@@ -102,7 +102,7 @@ src/
 
 - A file belongs to the feature that is its primary consumer
 - Used by 2+ features → move to `shared/`
-- Import across features only through `index.ts` barrel files
+- Import across features via a direct path to the source module, not through a feature's `index.ts` (barrel imports defeat tree-shaking — react-doctor's `no-barrel-import` rule enforces this)
 - `infra/` contains no feature code; features never import concrete adapters or repos
 - No file mixes UI and pure domain logic in a single module
 
