@@ -30,10 +30,8 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 | `AutoCategoryRow.tsx`            | Per-day AutoCategory override row                                  |
 | `ExcelMappingSettings.tsx`       | Map app categories to Excel row Task IDs                           |
 | `BundeslandSettings.tsx`         | German federal state selection (for public holidays)               |
-| `TargetHoursSettings.tsx`        | Configured daily Sollstunden                                       |
-| `OvertimeBarSettings.tsx`        | Overtime bar display thresholds                                    |
+| `BooleanConfigToggle.tsx`        | Generic single-boolean-field AppConfig toggle (checkbox + label)   |
 | `HotkeySettings.tsx`             | Keyboard shortcut configuration                                    |
-| `LaunchAtLoginSettings.tsx`      | Electron launch-at-login toggle                                    |
 | `WindowBehaviorSettings.tsx`     | Electron window hide-on-close behavior                             |
 | `ClearDataSettings.tsx`          | Destructive data reset                                             |
 | `excelMapping.ts`                | ExcelMapping derivation helpers                                    |

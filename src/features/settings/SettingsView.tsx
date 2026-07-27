@@ -1,8 +1,5 @@
 import { AutoCategorySettings } from './AutoCategorySettings'
-import { OvertimeBarSettings } from './OvertimeBarSettings'
-import { OfficeStatsSettings } from './OfficeStatsSettings'
-import { WorkedHoursNavSettings } from './WorkedHoursNavSettings'
-import { WorkedHoursTraySettings } from './WorkedHoursTraySettings'
+import { BooleanConfigToggle } from './BooleanConfigToggle'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
 import { ClearDataSettings } from './ClearDataSettings'
 import { BundeslandSettings } from './BundeslandSettings'
@@ -10,18 +7,13 @@ import { WeeklyScheduleSettings } from './WeeklyScheduleSettings'
 import { CategorySettings } from './CategorySettings'
 import { CloudSyncSettings } from './CloudSyncSettings'
 import { DefaultLocationSettings } from './DefaultLocationSettings'
-import { RemainingTimeSettings } from './RemainingTimeSettings'
-import { RemainingTimeModeSettings } from './RemainingTimeModeSettings'
-import { ShowTotalWorkedSettings } from './ShowTotalWorkedSettings'
 import { HotkeySettings } from './HotkeySettings'
-import { LaunchAtLoginSettings } from './LaunchAtLoginSettings'
 import { StartupViewSettings } from './StartupViewSettings'
 import { WindowBehaviorSettings } from './WindowBehaviorSettings'
 import { LocalExcelFolderSettings } from './LocalExcelFolderSettings'
 import { LocalExcelSettings } from './LocalExcelSettings'
 import { SharePointSettings } from './SharePointSettings'
 import { SheetSelector } from './SheetSelector'
-import { SprintArchiveSettings } from './SprintArchiveSettings'
 import { SettingsTabs } from './SettingsTabs'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
@@ -52,10 +44,34 @@ export function SettingsView() {
             return (
               <>
                 <AutoCategorySettings repository={configRepo} />
-                <OfficeStatsSettings repository={configRepo} />
+                <BooleanConfigToggle
+                  repository={configRepo}
+                  label="Show office stats"
+                  description="Display office vs. remote statistics in the header, overtime bar, and table view. Also shows the work location toggle."
+                  isChecked={(c) => c.officeStats !== false}
+                  applyChange={(c, checked) => ({ ...c, officeStats: checked })}
+                />
                 {showOfficeStats && <DefaultLocationSettings repository={configRepo} />}
-                <RemainingTimeSettings repository={configRepo} />
-                <RemainingTimeModeSettings repository={configRepo} />
+                <BooleanConfigToggle
+                  repository={configRepo}
+                  label="Show countdown to planned stop"
+                  description="When a planned stop time is set on the current work period, show the remaining time until that stop in the badge and tab title. Disable to always show remaining time until the daily target is reached."
+                  isChecked={(c) => c.remainingTimeReference !== 'target-hours'}
+                  applyChange={(c, checked) => ({
+                    ...c,
+                    remainingTimeReference: checked ? 'planned-stop' : 'target-hours',
+                  })}
+                />
+                <BooleanConfigToggle
+                  repository={configRepo}
+                  label="Show remaining until today's target only"
+                  description="When enabled, the remaining time in the badge, overtime bar, and taskbar shows how much time is left until today's target hours are met — without subtracting prior overtime carry-over. Disable to show the time left until your cumulative overtime balance reaches zero."
+                  isChecked={(c) => c.remainingTimeMode === 'until-daily-target'}
+                  applyChange={(c, checked) => ({
+                    ...c,
+                    remainingTimeMode: checked ? 'until-daily-target' : 'until-zero-overtime',
+                  })}
+                />
                 <CategorySettings repository={configRepo} />
               </>
             )
@@ -76,20 +92,62 @@ export function SettingsView() {
                     <SheetSelector repository={configRepo} />
                   </>
                 )}
-                <SprintArchiveSettings repository={configRepo} />
+                <BooleanConfigToggle
+                  repository={configRepo}
+                  label="Archive sprint to separate sheet"
+                  description="After exporting, also write the sprint data to a new sheet named after the sprint dates."
+                  isChecked={(c) => c.archiveSprintSheet === true}
+                  applyChange={(c, checked) => ({ ...c, archiveSprintSheet: checked })}
+                />
               </>
             )
           }
           if (activeTab === 'app') {
             return (
               <>
-                {isElectron && <LaunchAtLoginSettings repository={configRepo} />}
+                {isElectron && (
+                  <BooleanConfigToggle
+                    repository={configRepo}
+                    label="Launch at login"
+                    description="Start Timetracker automatically when you log in."
+                    isChecked={(c) => c.launchAtLogin ?? false}
+                    applyChange={(c, checked) => ({ ...c, launchAtLogin: checked })}
+                    onAfterSave={(checked) => window.electronAPI?.autolaunch.set(checked)}
+                    variant="spaced"
+                  />
+                )}
                 {isElectron && <WindowBehaviorSettings repository={configRepo} />}
-                {isElectron && <WorkedHoursTraySettings repository={configRepo} />}
+                {isElectron && (
+                  <BooleanConfigToggle
+                    repository={configRepo}
+                    label="Show worked hours in tray menu"
+                    description="Display the detailed hours breakdown in the tray icon menu. The remaining/overtime badge next to the icon is always shown."
+                    isChecked={(c) => c.showWorkedHoursInTray !== false}
+                    applyChange={(c, checked) => ({ ...c, showWorkedHoursInTray: checked })}
+                  />
+                )}
                 <StartupViewSettings repository={configRepo} />
-                <OvertimeBarSettings repository={configRepo} />
-                <ShowTotalWorkedSettings repository={configRepo} />
-                <WorkedHoursNavSettings repository={configRepo} />
+                <BooleanConfigToggle
+                  repository={configRepo}
+                  label="Show overtime bar"
+                  description="Display the overtime summary bar on the day, month, and table views. Stats are always shown in the header."
+                  isChecked={(c) => c.showOvertimeBar !== false}
+                  applyChange={(c, checked) => ({ ...c, showOvertimeBar: checked })}
+                />
+                <BooleanConfigToggle
+                  repository={configRepo}
+                  label="Show total hours worked today"
+                  description="When enabled, the overtime bar, header badge, and taskbar display total hours worked today instead of time remaining. Useful if you prefer to track progress rather than countdown."
+                  isChecked={(c) => c.showTotalWorked === true}
+                  applyChange={(c, checked) => ({ ...c, showTotalWorked: checked })}
+                />
+                <BooleanConfigToggle
+                  repository={configRepo}
+                  label="Show worked hours in navigation"
+                  description="Display the remaining/overtime hours badge in the top navigation bar."
+                  isChecked={(c) => c.showWorkedHoursInNav !== false}
+                  applyChange={(c, checked) => ({ ...c, showWorkedHoursInNav: checked })}
+                />
                 <HotkeySettings repository={configRepo} />
               </>
             )
