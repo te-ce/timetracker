@@ -1,4 +1,4 @@
-import { calculateOvertimeToDate } from './monthStats'
+import { calculateOvertimeToDate } from '../../shared/overtime'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
 

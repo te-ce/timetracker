@@ -5,5 +5,10 @@ export { MonthView } from './MonthView'
 export { OvertimeBar } from './OvertimeBar'
 export { StatusLegend } from './StatusLegend'
 export { type DaySummary, type MonthSummaryInput, type MonthSummaryResult, buildMonthSummaries } from './daySummary'
-export { type MonthStats, type OvertimeToDate, calculateMonthStats, calculateOvertimeToDate } from './monthStats'
+export {
+  type MonthStats,
+  type OvertimeToDate,
+  calculateMonthStats,
+  calculateOvertimeToDate,
+} from '../../shared/overtime'
 export { type OvertimeCarryOver, type OvertimeCarryOverInput, calculateOvertimeCarryOver } from './overtimeCarryOver'

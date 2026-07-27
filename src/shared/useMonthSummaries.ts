@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { buildMonthSummaries } from '../features/month/daySummary'
-import { calculateOvertimeToDate } from '../features/month/monthStats'
+import { calculateOvertimeToDate } from './overtime'
 import { useTodayIso } from './useTodayIso'
 import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
 import { QUERY_KEYS } from './queryKeys'
-import { findOpenPeriod, findPlannedStopPeriod } from './worktime'
+import { findOpenPeriod, findPlannedStopPeriod, nowHHMM } from './worktime'
 import { targetHoursForDate } from './weekdayHours'
 import type { DayTypeOverride, MonthData, WorkLocation } from '../infra/repositories/types'
 
@@ -14,11 +14,6 @@ interface MonthMaps {
   workLocations: Map<string, WorkLocation>
   confirmedDays: Set<string>
   dayNotes: Map<string, string>
-}
-
-function nowHHMM(): string {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 function findTodayLiveWindowStart(
@@ -76,8 +71,7 @@ export function useMonthSummaries(year: number, month: number) {
   const weekdayHours = config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
-  const d = new Date()
-  const todayNow = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const todayNow = nowHHMM()
   const summaries = buildMonthSummaries(year, month, {
     monthData,
     today: todayIso,

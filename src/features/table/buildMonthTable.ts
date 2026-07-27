@@ -4,7 +4,7 @@ import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../share
 import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS, targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
-import { calculateOvertimeToDate } from '../month/monthStats'
+import { calculateOvertimeToDate } from '../../shared/overtime'
 
 export interface MonthTableRow {
   date: string
@@ -110,7 +110,7 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
         : undefined
 
     // Reuses the same cumulative accumulator as the Day view's overtime bar
-    // (monthStats.calculateOvertimeToDate) instead of a parallel running-total
+    // (shared/overtime.calculateOvertimeToDate) instead of a parallel running-total
     // loop, so both views agree on accumulated overtime for every edge case.
     const { value } = calculateOvertimeToDate(
       workedHoursPerDay.slice(0, i + 1),

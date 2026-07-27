@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { calculateMonthStats, calculateOvertimeToDate } from './monthStats'
+import { calculateMonthStats, calculateOvertimeToDate } from './overtime'
 
 describe('calculateMonthStats', () => {
   it('calculates totals for a normal month', () => {
