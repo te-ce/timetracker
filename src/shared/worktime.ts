@@ -29,6 +29,29 @@ export function isAfter(a: string, b: string): boolean {
   return parseMinutes(a) > parseMinutes(b)
 }
 
+export interface ElapsedHoursOptions {
+  /**
+   * Tolerate `now` landing up to this many minutes before `start` — treated as
+   * zero rather than wrapped to (almost) 24h. Covers the race between a
+   * minute-tick and the moment a live period/subtask is created.
+   */
+  raceToleranceMinutes?: number
+}
+
+/**
+ * Minutes between `start` and `end` (both "HH:MM"), in hours, wrapping past
+ * midnight when `end` is earlier than `start`.
+ */
+export function elapsedHours(start: string, end: string, options: ElapsedHoursOptions = {}): number {
+  const raceToleranceMinutes = options.raceToleranceMinutes ?? 0
+  const startMins = parseMinutes(start)
+  const endMins = parseMinutes(end)
+  const diff = endMins - startMins
+  if (diff < 0 && diff > -raceToleranceMinutes) return 0
+  const adjusted = diff < 0 ? diff + 24 * 60 : diff
+  return adjusted / 60
+}
+
 export function parseDurationInput(raw: string): number | null {
   const trimmed = raw.trim()
   const hhmmMatch = /^(\d{1,2}):(\d{2})$/.exec(trimmed)
@@ -75,13 +98,7 @@ export function findActivePeriod(windows: WorkPeriod[], nowHHMM: string): WorkPe
  * Closed past periods contribute their fixed duration.
  */
 export function calculateProjectedWorkedHours(windows: WorkPeriod[], nowHHMM: string): number {
-  return windows.reduce((total, w) => {
-    const endTime = w.end ?? nowHHMM
-    const start = parseMinutes(w.start)
-    let end = parseMinutes(endTime)
-    if (end < start) end += 24 * 60
-    return total + (end - start) / 60
-  }, 0)
+  return windows.reduce((total, w) => total + elapsedHours(w.start, w.end ?? nowHHMM), 0)
 }
 
 export function calculateWorkedHours(windows: WorkPeriod[], now?: string): number {
@@ -90,14 +107,7 @@ export function calculateWorkedHours(windows: WorkPeriod[], now?: string): numbe
     const isFuturePlannedStop = w.end !== null && now !== undefined && parseMinutes(w.end) > parseMinutes(now)
     const endTime = w.end === null || isFuturePlannedStop ? now : w.end
     if (endTime == null) return total
-    const start = parseMinutes(w.start)
-    const end = parseMinutes(endTime)
-    const diff = end - start
-    // If now is slightly behind the period's start (minute-boundary race between
-    // nowTime tick and work period creation), treat as zero rather than wrapping.
-    if (diff < 0 && diff > -5) return total
-    const adjusted = diff < 0 ? diff + 24 * 60 : diff // true midnight-spanning
-    return total + adjusted / 60
+    return total + elapsedHours(w.start, endTime, { raceToleranceMinutes: 5 })
   }, 0)
 }
 
@@ -125,10 +135,7 @@ export function derivePlannedStopState(
 }
 
 export function calcSubtaskHours(startedAt: string, stoppedAt: string): number {
-  const startMins = parseMinutes(startedAt)
-  let endMins = parseMinutes(stoppedAt)
-  if (endMins < startMins) endMins += 24 * 60
-  return (endMins - startMins) / 60
+  return elapsedHours(startedAt, stoppedAt)
 }
 
 export function calculateRestarbeitszeit(sollstunden: number, workedHours: number): Restarbeitszeit {

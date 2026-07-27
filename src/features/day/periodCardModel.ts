@@ -1,5 +1,5 @@
 import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
-import { calculateWorkedHours, isPlannedStop, parseMinutes } from '../../shared/worktime'
+import { calculateWorkedHours, isPlannedStop, parseMinutes, elapsedHours } from '../../shared/worktime'
 import { remainderHours } from '../../shared/periodCategories'
 import { isLiveSubtask, isTimedSubtask, type LiveSubtask } from './workPeriodShared'
 
@@ -18,14 +18,7 @@ export interface PeriodCardModel {
 
 function liveElapsedHours(liveSubtask: LiveSubtask | undefined, nowTime: string): number {
   if (!liveSubtask) return 0
-  const startMins = parseMinutes(liveSubtask.startedAt)
-  const endMins = parseMinutes(nowTime)
-  const diff = endMins - startMins
-  // If now is slightly behind startedAt (race between nowTime tick and subtask creation),
-  // treat as zero rather than wrapping around midnight.
-  if (diff < 0 && diff > -5) return 0
-  const adjusted = diff < 0 ? diff + 24 * 60 : diff
-  return adjusted / 60
+  return elapsedHours(liveSubtask.startedAt, nowTime, { raceToleranceMinutes: 5 })
 }
 
 function findOverlappingIds(

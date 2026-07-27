@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
-import { parseMinutes, nowHHMM } from '../../shared/worktime'
+import { parseMinutes, nowHHMM, elapsedHours } from '../../shared/worktime'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
@@ -65,15 +65,7 @@ export function LiveSubtaskBanner({
       subtaskStartInputRef.current?.focus()
     }
   }, [editingTime])
-  const elapsedHours = (() => {
-    const startMins = parseMinutes(subtask.startedAt)
-    const endMins = parseMinutes(nowTime)
-    const diff = endMins - startMins
-    if (diff < 0 && diff > -5) return 0
-    const adjusted = diff < 0 ? diff + 24 * 60 : diff
-    return adjusted / 60
-  })()
-  const elapsed = formatHours(elapsedHours, timeFormat)
+  const elapsed = formatHours(elapsedHours(subtask.startedAt, nowTime, { raceToleranceMinutes: 5 }), timeFormat)
   const description = categoryDescriptions?.[subtask.category]
 
   function changeCategory(cat: string) {

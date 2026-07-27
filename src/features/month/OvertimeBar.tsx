@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTimeFormatStore, type TimeFormat } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
 import { calculateRemaining } from '../../shared/remainingCalc'
+import { elapsedHours } from '../../shared/worktime'
 
 interface Props {
   sollstunden: number
@@ -24,18 +25,6 @@ interface Props {
 function nowHHMMFn() {
   const d = new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
-function minutesFrom(t: string): number {
-  const parts = t.split(':').map(Number)
-  return (parts[0] ?? 0) * 60 + (parts[1] ?? 0)
-}
-
-function liveWindowElapsedHours(start: string, now: string): number {
-  let startMins = minutesFrom(start)
-  let nowMins = minutesFrom(now)
-  if (nowMins < startMins) nowMins += 24 * 60
-  return (nowMins - startMins) / 60
 }
 
 function useNow(enabled: boolean): string {
@@ -175,7 +164,7 @@ export function OvertimeBar({
   const internalNow = useNow(!!liveWindowStart && !nowHHMMProp)
   const nowHHMM = nowHHMMProp ?? internalNow
 
-  const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, nowHHMM) : 0
+  const liveElapsed = liveWindowStart ? elapsedHours(liveWindowStart, nowHHMM) : 0
   const officeStats = getOfficeStats(officeDays, totalWorkDays, officePercent)
   const {
     resultLabel,

@@ -7,6 +7,7 @@ import {
   findPlannedStopPeriod,
   derivePlannedStopState,
   calculateProjectedWorkedHours,
+  elapsedHours,
 } from './worktime'
 import { calculateRemaining } from './remainingCalc'
 import { useTimeFormatStore } from './timeFormatStore'
@@ -16,18 +17,6 @@ export type { ReceiptLine } from './remainingCalc'
 function nowHHMMFn(): string {
   const d = new Date()
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
-function minutesFrom(t: string): number {
-  const parts = t.split(':').map(Number)
-  return (parts[0] ?? 0) * 60 + (parts[1] ?? 0)
-}
-
-function liveWindowElapsedHours(start: string, now: string): number {
-  let startMins = minutesFrom(start)
-  let nowMins = minutesFrom(now)
-  if (nowMins < startMins) nowMins += 24 * 60
-  return (nowMins - startMins) / 60
 }
 
 function buildSummary(sollstunden: number, priorOvertime: number, workedHours: number): string {
@@ -62,8 +51,8 @@ export function useRemainingHours() {
     return () => clearInterval(id)
   }, [hasLiveActivity])
 
-  const liveElapsed = liveWindowStart ? liveWindowElapsedHours(liveWindowStart, currentNow) : 0
-  const plannedLiveElapsed = plannedStopPeriod ? liveWindowElapsedHours(plannedStopPeriod.start, currentNow) : 0
+  const liveElapsed = liveWindowStart ? elapsedHours(liveWindowStart, currentNow) : 0
+  const plannedLiveElapsed = plannedStopPeriod ? elapsedHours(plannedStopPeriod.start, currentNow) : 0
 
   // workedHours from useDayQuery now includes live elapsed for open/planned-stop periods
   // (buildDaySummary passes `now` to calculateWorkedHours). Subtract to get closed-only

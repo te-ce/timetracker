@@ -10,6 +10,7 @@ import {
   findPlannedStopPeriod,
   calculateProjectedWorkedHours,
   derivePlannedStopState,
+  elapsedHours,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
@@ -19,6 +20,32 @@ const makeWindow = (start: string, end: string | null): WorkPeriod => ({
   end,
   category: '',
   subtasks: [],
+})
+
+describe('elapsedHours', () => {
+  it('returns hours between start and end', () => {
+    expect(elapsedHours('09:00', '10:30')).toBe(1.5)
+  })
+
+  it('wraps past midnight when end is before start', () => {
+    expect(elapsedHours('23:00', '01:00')).toBe(2)
+  })
+
+  it('returns 0 when start equals end', () => {
+    expect(elapsedHours('09:00', '09:00')).toBe(0)
+  })
+
+  it('without race tolerance, a small negative diff wraps to nearly 24h', () => {
+    expect(elapsedHours('09:03', '09:00')).toBeCloseTo(23.95, 5)
+  })
+
+  it('with race tolerance, a small negative diff within the window clamps to 0', () => {
+    expect(elapsedHours('09:03', '09:00', { raceToleranceMinutes: 5 })).toBe(0)
+  })
+
+  it('with race tolerance, a negative diff beyond the window still wraps', () => {
+    expect(elapsedHours('09:10', '09:00', { raceToleranceMinutes: 5 })).toBeCloseTo(23.833, 3)
+  })
 })
 
 describe('calculateWorkedHours', () => {
