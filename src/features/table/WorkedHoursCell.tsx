@@ -71,6 +71,13 @@ export function WorkedHoursCell({
         className={`px-2 py-1 text-right cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${className}`}
         data-testid="worked-hours"
         onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            setOpen(true)
+          }
+        }}
+        tabIndex={0}
       >
         <Tooltip content={tooltipContent}>
           <span className="block w-full text-right">

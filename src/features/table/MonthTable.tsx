@@ -101,17 +101,26 @@ interface ConfirmCellProps {
 function ConfirmCell({ date, isNonWorkDay, isConfirmed, onConfirm, onUnconfirm }: ConfirmCellProps) {
   const confirmLabel = isConfirmed ? `Unconfirm ${date}` : `Confirm ${date}`
   const confirmTitle = isConfirmed ? 'Confirmed — click to undo' : 'Confirm day'
+  function toggle() {
+    if (isNonWorkDay) return
+    if (isConfirmed) {
+      onUnconfirm()
+    } else {
+      onConfirm()
+    }
+  }
+
   return (
     <td
       className={`w-10 text-center border-l border-gray-200 dark:border-gray-700 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
-      onClick={() => {
-        if (isNonWorkDay) return
-        if (isConfirmed) {
-          onUnconfirm()
-        } else {
-          onConfirm()
+      onClick={toggle}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          toggle()
         }
       }}
+      tabIndex={isNonWorkDay ? undefined : 0}
       aria-label={confirmLabel}
       data-tooltip={confirmTitle}
     >
@@ -256,6 +265,13 @@ export function MonthGrid({
           <td
             className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline ${rowBg}`}
             onClick={() => onSelectDate(date)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onSelectDate(date)
+              }
+            }}
+            tabIndex={0}
           >
             <Tooltip content={`Open ${date}`}>
               <span data-testid="day-link" className="inline-flex items-center">
@@ -321,7 +337,7 @@ export function MonthGrid({
     locationMutation.mutate({ date, location: next })
   }
 
-  function handleDotClick(e: React.MouseEvent<HTMLElement>, row: MonthTableRow) {
+  function handleDotClick(e: React.SyntheticEvent<HTMLElement>, row: MonthTableRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = dayTypes.get(row.date) ?? row.dayType
     const { displayStatus, reason, leaveType } = classifyRow(row, confirmedDays, todayIso)
@@ -514,6 +530,13 @@ export function MonthGrid({
                     <td
                       className={`sticky left-12 z-10 px-1 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${rowBg}`}
                       onClick={(e) => handleDotClick(e, row)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleDotClick(e, row)
+                        }
+                      }}
+                      tabIndex={0}
                       aria-label={`Day status: ${displayStatus}. Click to change day type.`}
                     >
                       <span className={`inline-block h-2 w-2 rounded-full ${STATUS_DOT[displayStatus]}`} />
@@ -575,6 +598,14 @@ export function MonthGrid({
                             setActiveDialogDate(row.date)
                             setActiveDialogCategory(cat)
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setActiveDialogDate(row.date)
+                              setActiveDialogCategory(cat)
+                            }
+                          }}
+                          tabIndex={0}
                         >
                           <span className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-600 dark:text-gray-300">
                             {val}
