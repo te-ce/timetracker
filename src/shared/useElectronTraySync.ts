@@ -8,6 +8,7 @@ import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
+import { findActivePeriod } from './worktime'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
 function nowHHMM(): string {
@@ -39,7 +40,7 @@ export async function handleStartSubtask(
   today: string,
   windows: WorkPeriod[],
 ): Promise<void> {
-  const openPeriod = windows.find((w) => w.end === null)
+  const openPeriod = findActivePeriod(windows, nowHHMM())
   if (!openPeriod) return
 
   const now = nowHHMM()
@@ -61,7 +62,7 @@ export async function handleStopSubtask(
   today: string,
   windows: WorkPeriod[],
 ): Promise<void> {
-  const openPeriod = windows.find((w) => w.end === null)
+  const openPeriod = findActivePeriod(windows, nowHHMM())
   if (!openPeriod) return
 
   const liveSubtask = openPeriod.subtasks.find((s) => s.startedAt && !s.stoppedAt)
@@ -74,7 +75,7 @@ export async function handleStopAll(monthRepo: MonthRepository, today: string, w
   const now = nowHHMM()
 
   // Stop live subtask if any
-  const openPeriod = windows.find((w) => w.end === null)
+  const openPeriod = findActivePeriod(windows, now)
   if (openPeriod) {
     const liveSubtask = openPeriod.subtasks.find((s) => s.startedAt && !s.stoppedAt)
     if (liveSubtask) {
@@ -92,7 +93,7 @@ export function useElectronTraySync() {
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
 
-  const openPeriod = windows.find((w) => w.end === null)
+  const openPeriod = findActivePeriod(windows, nowHHMM())
   const isTracking = !!openPeriod
   const startedAt = openPeriodToISOStart(openPeriod, todayIso)
 
@@ -128,6 +129,7 @@ export function useElectronTraySync() {
       windows,
       isTracking,
       startedAt,
+      nowHHMM: nowHHMM(),
       remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
       showTotalWorked: config.showTotalWorked === true,
       presentingMode: hideHours,

@@ -1,6 +1,7 @@
 import type { WorkPeriod, WorkPeriodSubtask } from '../infra/repositories/types'
 import type { TimeFormat } from './timeFormatStore'
 import { buildReceipt, buildBadgeLabel, type ReceiptLine } from './remainingCalc'
+import { findActivePeriod } from './worktime'
 
 export type { ReceiptLine }
 
@@ -16,6 +17,7 @@ export interface TrayStateInput {
   windows: WorkPeriod[]
   isTracking: boolean
   startedAt: string | null
+  nowHHMM: string
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
   showTotalWorked?: boolean
   presentingMode?: boolean
@@ -36,15 +38,11 @@ function isLiveSubtask(s: WorkPeriodSubtask): boolean {
   return !!s.startedAt && !s.stoppedAt
 }
 
-function findOpenPeriod(windows: WorkPeriod[]): WorkPeriod | undefined {
-  return windows.find((w) => w.end === null)
-}
-
-function findLiveSubtaskCategory(windows: WorkPeriod[]): string | null {
-  const openPeriod = findOpenPeriod(windows)
-  if (!openPeriod) return null
-  const live = openPeriod.subtasks.find(isLiveSubtask)
-  return live?.category ?? openPeriod.category
+function findLiveSubtaskCategory(windows: WorkPeriod[], nowHHMM: string): string | null {
+  const activePeriod = findActivePeriod(windows, nowHHMM)
+  if (!activePeriod) return null
+  const live = activePeriod.subtasks.find(isLiveSubtask)
+  return live?.category ?? activePeriod.category
 }
 
 export function buildTrayState(input: TrayStateInput): TrayState {
@@ -52,7 +50,7 @@ export function buildTrayState(input: TrayStateInput): TrayState {
   const mode = input.remainingTimeMode ?? 'until-zero-overtime'
   const totalWorked = workedHours + liveElapsed
 
-  const activeSubtaskCategory = findLiveSubtaskCategory(input.windows)
+  const activeSubtaskCategory = findLiveSubtaskCategory(input.windows, input.nowHHMM)
   const presentingMode = input.presentingMode === true
 
   if (presentingMode) {

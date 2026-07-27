@@ -37,6 +37,16 @@ export function findPlannedStopPeriod(windows: WorkPeriod[], nowHHMM: string): W
 }
 
 /**
+ * Returns the WorkPeriod that is currently live-tracked — either fully open
+ * (end: null) or a Planned-Stop WorkPeriod whose declared end hasn't passed yet.
+ * Both are "still running" from the user's perspective; callers that ask
+ * "is tracking active right now" should use this rather than `end === null`.
+ */
+export function findActivePeriod(windows: WorkPeriod[], nowHHMM: string): WorkPeriod | undefined {
+  return findOpenPeriod(windows) ?? findPlannedStopPeriod(windows, nowHHMM)
+}
+
+/**
  * Calculates projected total worked hours for today.
  * Planned-Stop periods contribute their full planned duration (end − start).
  * Open periods (end: null) contribute live elapsed (now − start).

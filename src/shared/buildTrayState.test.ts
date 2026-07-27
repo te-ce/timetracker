@@ -34,6 +34,7 @@ describe('buildTrayState', () => {
     windows: [makePeriod()],
     isTracking: true,
     startedAt: '2026-06-09T09:00:00Z',
+    nowHHMM: '10:00',
   }
 
   describe('badgeLabel', () => {
@@ -171,9 +172,9 @@ describe('buildTrayState', () => {
       expect(result.activeSubtaskCategory).toBe('_MAINT')
     })
 
-    it('returns null when there is no open period', () => {
+    it('returns null when there is no open or planned-stop period', () => {
       const windows = [makePeriod({ end: '17:00' })]
-      const result = buildTrayState({ ...baseInput, windows })
+      const result = buildTrayState({ ...baseInput, windows, nowHHMM: '18:00' })
       expect(result.activeSubtaskCategory).toBeNull()
     })
   })

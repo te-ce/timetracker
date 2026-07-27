@@ -66,7 +66,7 @@ describe('handleStartSubtask', () => {
 
   it('does nothing when no open period exists', async () => {
     const repo = makeMockMonthRepo()
-    const windows = [makeWindow({ end: '17:00' })]
+    const windows = [makeWindow({ start: '00:01', end: '00:02' })]
     await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
     expect(repo.startLiveSubtask).not.toHaveBeenCalled()
   })
@@ -107,7 +107,7 @@ describe('handleStopAll', () => {
 
   it('does nothing when no open period', async () => {
     const repo = makeMockMonthRepo()
-    const windows = [makeWindow({ end: '17:00' })]
+    const windows = [makeWindow({ start: '00:01', end: '00:02' })]
     await handleStopAll(repo, '2026-06-09', windows)
     expect(repo.stopWorkPeriod).not.toHaveBeenCalled()
   })
