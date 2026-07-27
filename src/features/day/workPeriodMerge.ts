@@ -1,5 +1,6 @@
 import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
 import { calculateWorkedHours } from '../../shared/worktime'
+import { remainderHours } from '../../shared/periodCategories'
 
 function hhmm(time: string): string {
   return time.slice(0, 5)
@@ -8,7 +9,7 @@ function hhmm(time: string): string {
 function collectSubtasksFromAbsorbed(merged: WorkPeriod, absorbed: WorkPeriod): WorkPeriodSubtask[] {
   const duration = calculateWorkedHours([absorbed])
   const subtaskedHours = absorbed.subtasks.reduce((sum, s) => sum + s.hours, 0)
-  const remainder = Math.max(0, duration - subtaskedHours)
+  const remainder = remainderHours(duration, subtaskedHours)
   const syntheticSubtask: WorkPeriodSubtask[] =
     absorbed.category !== merged.category && remainder > 0.001
       ? [{ id: crypto.randomUUID(), category: absorbed.category, hours: remainder }]

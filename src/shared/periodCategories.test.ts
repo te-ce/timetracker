@@ -5,6 +5,7 @@ import {
   calculateDayCategoryHours,
   calculateTotalCategorizedHours,
   calculateUncategorizedHours,
+  remainderHours,
   UNCATEGORIZED_CATEGORY,
 } from './periodCategories'
 import { DEFAULT_WEEKDAY_HOURS } from './weekdayHours'
@@ -144,6 +145,20 @@ describe('calculateTotalCategorizedHours', () => {
   it('sums all non-UNCATEGORIZED hours', () => {
     const windows = [period('a', '09:00', '10:00', '_COREMEDIA'), period('b', '10:00', '11:30', '_SUPPORT')]
     expect(calculateTotalCategorizedHours(windows)).toBeCloseTo(2.5)
+  })
+})
+
+describe('remainderHours', () => {
+  it('returns duration minus subtasked hours', () => {
+    expect(remainderHours(2, 1)).toBeCloseTo(1)
+  })
+
+  it('clamps to 0 when subtasked hours exceed duration', () => {
+    expect(remainderHours(1, 2)).toBe(0)
+  })
+
+  it('returns 0 when duration and subtasked hours are equal', () => {
+    expect(remainderHours(1, 1)).toBe(0)
   })
 })
 

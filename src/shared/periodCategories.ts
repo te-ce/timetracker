@@ -28,12 +28,17 @@ export function calculateDayCategoryHours(
   return result
 }
 
+/** Duration left over once subtask hours are carved out, floored at 0. */
+export function remainderHours(duration: number, subtaskedHours: number): number {
+  return Math.max(0, duration - subtaskedHours)
+}
+
 export function calculateCategoryHours(windows: WorkPeriod[], now?: string): Record<string, number> {
   const result: Record<string, number> = {}
   for (const w of windows) {
     const duration = calculateWorkedHours([w], now)
     const subtaskedHours = w.subtasks.reduce((sum, s) => sum + s.hours, 0)
-    const remainder = Math.max(0, duration - subtaskedHours)
+    const remainder = remainderHours(duration, subtaskedHours)
     for (const subtask of w.subtasks) {
       result[subtask.category] = (result[subtask.category] ?? 0) + subtask.hours
     }
