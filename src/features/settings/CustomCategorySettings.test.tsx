@@ -180,7 +180,7 @@ describe('CustomCategorySettings', () => {
     const { repo } = setup({ ...baseConfig, customCategories: ['Alpha', 'Beta'] })
     await screen.findByText('Alpha')
 
-    const items = screen.getAllByRole('listitem')
+    const items = screen.getAllByRole('option')
     fireEvent.dragStart(items[0]!)
     fireEvent.dragOver(items[2]!, { preventDefault: () => {} })
     fireEvent.drop(items[2]!)
@@ -196,7 +196,7 @@ describe('CustomCategorySettings', () => {
     await screen.findByText('Alpha')
     const saveSpy = vi.spyOn(repo, 'save')
 
-    const items = screen.getAllByRole('listitem')
+    const items = screen.getAllByRole('option')
     fireEvent.dragStart(items[0]!)
     fireEvent.dragOver(items[0]!, { preventDefault: () => {} })
     fireEvent.drop(items[0]!)
@@ -208,7 +208,7 @@ describe('CustomCategorySettings', () => {
     setup({ ...baseConfig, customCategories: ['Alpha'] })
     await screen.findByText('Alpha')
 
-    const items = screen.getAllByRole('listitem')
+    const items = screen.getAllByRole('option')
     fireEvent.dragStart(items[0]!)
     fireEvent.dragOver(items[1]!, { preventDefault: () => {} })
     fireEvent.dragEnd(items[0]!)

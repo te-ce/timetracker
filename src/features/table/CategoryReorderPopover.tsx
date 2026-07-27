@@ -51,7 +51,8 @@ export function CategoryReorderPopover({ repository }: Props) {
 
   function handleDrop(idx: number) {
     const from = dragIdx.current
-    if (from === null || from === idx) {
+    const to = Math.max(0, Math.min(idx, categories.length - 1))
+    if (from === null || from === to) {
       dragIdx.current = null
       setDragOverIdx(null)
       return
@@ -60,7 +61,7 @@ export function CategoryReorderPopover({ repository }: Props) {
     const spliced = newOrder.splice(from, 1)
     const moved = spliced[0]
     if (moved === undefined) return
-    newOrder.splice(idx, 0, moved)
+    newOrder.splice(to, 0, moved)
     saveMutation.mutate(newOrder)
     dragIdx.current = null
     setDragOverIdx(null)
@@ -85,10 +86,13 @@ export function CategoryReorderPopover({ repository }: Props) {
       {open && (
         <div className="absolute right-0 top-full z-50 mt-1 w-52 rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 p-3 shadow-lg">
           <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">Drag to reorder</p>
-          <ul className="flex flex-col gap-1">
+          <div role="listbox" aria-label="Categories" className="flex flex-col gap-1">
             {categories.map((cat, idx) => (
-              <li
+              <div
                 key={cat}
+                role="option"
+                aria-selected={false}
+                tabIndex={0}
                 draggable
                 onDragStart={(e) => {
                   const el = e.currentTarget
@@ -102,15 +106,26 @@ export function CategoryReorderPopover({ repository }: Props) {
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={handleDragEnd}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    handleDragStart(idx)
+                    handleDrop(idx - 1)
+                  } else if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    handleDragStart(idx)
+                    handleDrop(idx + 1)
+                  }
+                }}
                 className={`flex items-center gap-2 rounded border px-2 py-1 text-xs cursor-grab active:cursor-grabbing select-none ${dragOverIdx === idx ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : 'bg-white dark:bg-gray-800 dark:border-gray-700'}`}
               >
                 <span className="text-gray-300 dark:text-gray-600" aria-hidden>
                   ⠿
                 </span>
                 <span className="flex-1 truncate">{cat}</span>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>

@@ -162,7 +162,10 @@ function CategorySettingsRow({
   const nameClass = `truncate cursor-pointer ${isCustom ? 'text-indigo-700 dark:text-indigo-300' : ''}`
   const nameTitle = isCustom ? 'Custom — double-click to rename' : 'Double-click to rename'
   return (
-    <li
+    <div
+      role="option"
+      aria-selected={false}
+      tabIndex={0}
       draggable
       onDragStart={(e) => {
         const el = e.currentTarget
@@ -176,6 +179,17 @@ function CategorySettingsRow({
       onDragOver={(e) => onDragOver(e, idx)}
       onDrop={() => onDrop(idx)}
       onDragEnd={onDragEnd}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          onDragStart(idx)
+          onDrop(idx - 1)
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          onDragStart(idx)
+          onDrop(idx + 1)
+        }
+      }}
       className={`flex items-center gap-2 rounded border bg-white dark:bg-gray-800 dark:border-gray-700 px-3 py-1.5 text-sm cursor-grab active:cursor-grabbing ${dragOverClass}`}
     >
       <span className="text-gray-300 dark:text-gray-600 select-none shrink-0" aria-hidden>
@@ -300,7 +314,7 @@ function CategorySettingsRow({
       >
         ✕
       </button>
-    </li>
+    </div>
   )
 }
 
@@ -432,7 +446,8 @@ export function CategorySettings({ repository }: Props) {
 
   function handleDrop(idx: number) {
     const from = dragIdx.current
-    if (from === null || from === idx) {
+    const to = Math.max(0, Math.min(idx, categories.length - 1))
+    if (from === null || from === to) {
       dragIdx.current = null
       setDragOverIdx(null)
       return
@@ -441,7 +456,7 @@ export function CategorySettings({ repository }: Props) {
     const spliced = newOrder.splice(from, 1)
     const moved = spliced[0]
     if (moved === undefined) return
-    newOrder.splice(idx, 0, moved)
+    newOrder.splice(to, 0, moved)
     categoryMutation.mutate({ categoryOrder: newOrder })
     dragIdx.current = null
     setDragOverIdx(null)
@@ -562,7 +577,7 @@ export function CategorySettings({ repository }: Props) {
       </div>
 
       {/* Category list */}
-      <ul className="flex flex-col gap-1">
+      <div role="listbox" aria-label="Categories" className="flex flex-col gap-1">
         {categories.map((cat, idx) => (
           <CategorySettingsRow
             key={cat}
@@ -584,7 +599,7 @@ export function CategorySettings({ repository }: Props) {
             onRemove={handleRemove}
           />
         ))}
-      </ul>
+      </div>
 
       <UnmappedCategoryRowsSection unmappedRows={unmappedRows} onAddAsCategory={handleAddAsCategory} />
 

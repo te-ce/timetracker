@@ -139,7 +139,7 @@ describe('CategoryReorderPopover', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Reorder categories' }))
     await screen.findByText('Drag to reorder')
 
-    const items = screen.getAllByRole('listitem')
+    const items = screen.getAllByRole('option')
     const firstItem = items[0]!
     const secondItem = items[1]!
 
@@ -161,7 +161,7 @@ describe('CategoryReorderPopover', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Reorder categories' }))
     await screen.findByText('Drag to reorder')
 
-    const items = screen.getAllByRole('listitem')
+    const items = screen.getAllByRole('option')
     const firstItem = items[0]!
 
     fireEvent.dragStart(firstItem)
@@ -178,7 +178,7 @@ describe('CategoryReorderPopover', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Reorder categories' }))
     await screen.findByText('Drag to reorder')
 
-    const items = screen.getAllByRole('listitem')
+    const items = screen.getAllByRole('option')
     fireEvent.dragStart(items[0]!)
     fireEvent.dragOver(items[1]!, { preventDefault: () => {} })
     fireEvent.dragEnd(items[0]!)

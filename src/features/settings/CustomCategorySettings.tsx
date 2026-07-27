@@ -76,7 +76,8 @@ export function CustomCategorySettings({ repository }: Props) {
 
   function handleDrop(idx: number) {
     const from = dragIdx.current
-    if (from === null || from === idx) {
+    const to = Math.max(0, Math.min(idx, categories.length - 1))
+    if (from === null || from === to) {
       dragIdx.current = null
       setDragOverIdx(null)
       return
@@ -85,7 +86,7 @@ export function CustomCategorySettings({ repository }: Props) {
     const spliced = newOrder.splice(from, 1)
     const moved = spliced[0]
     if (moved === undefined) return
-    newOrder.splice(idx, 0, moved)
+    newOrder.splice(to, 0, moved)
     saveMutation.mutate({ categoryOrder: newOrder })
     dragIdx.current = null
     setDragOverIdx(null)
@@ -100,10 +101,13 @@ export function CustomCategorySettings({ repository }: Props) {
     <div className="flex flex-col gap-3">
       <span className="text-sm font-medium">Categories</span>
 
-      <ul className="flex flex-col gap-1">
+      <div role="listbox" aria-label="Categories" className="flex flex-col gap-1">
         {categories.map((cat, idx) => (
-          <li
+          <div
             key={cat}
+            role="option"
+            aria-selected={false}
+            tabIndex={0}
             draggable
             onDragStart={(e) => {
               const el = e.currentTarget
@@ -117,6 +121,17 @@ export function CustomCategorySettings({ repository }: Props) {
             onDragOver={(e) => handleDragOver(e, idx)}
             onDrop={() => handleDrop(idx)}
             onDragEnd={handleDragEnd}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                handleDragStart(idx)
+                handleDrop(idx - 1)
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                handleDragStart(idx)
+                handleDrop(idx + 1)
+              }
+            }}
             className={`flex items-center gap-2 rounded border bg-white dark:bg-gray-800 dark:border-gray-700 px-3 py-1.5 text-sm cursor-grab active:cursor-grabbing ${dragOverIdx === idx ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
           >
             <span className="text-gray-300 dark:text-gray-600 select-none" aria-hidden>
@@ -157,9 +172,9 @@ export function CustomCategorySettings({ repository }: Props) {
             >
               ✕
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
       <div className="flex gap-2">
         <input
