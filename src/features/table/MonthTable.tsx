@@ -40,7 +40,6 @@ function classifyRow(row: MonthTableRow, confirmedDays: Set<string>, today: stri
     workedHours: row.workedHours,
     manualTotal,
     isEntriesBalanced: row.isEntriesBalanced,
-    hasAutoCategory: false,
     isConfirmed: confirmedDays.has(row.date),
     isoDate: row.date,
     today,

@@ -13,7 +13,6 @@ export interface DaySummary {
   workedHours: number
   entryTotal: number
   isEntriesBalanced: boolean
-  hasAutoCategory: boolean
   isConfirmed: boolean
   dayStatus: DayStatus
   displayStatus: Exclude<DayStatus, 'today'>
@@ -55,7 +54,6 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
   const dayType: DayType = dayTypeOverride ?? classifyDayType(date)
   const isEntriesBalanced = workedHours > 0 && uncategorizedHours < 0.01
-  const hasAutoCategory = false
 
   const {
     status: dayStatus,
@@ -67,7 +65,6 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
     workedHours,
     manualTotal: entryTotal,
     isEntriesBalanced,
-    hasAutoCategory,
     isConfirmed,
     isoDate: iso,
     today,
@@ -83,7 +80,6 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
     workedHours,
     entryTotal,
     isEntriesBalanced,
-    hasAutoCategory,
     isConfirmed,
     dayStatus,
     displayStatus,

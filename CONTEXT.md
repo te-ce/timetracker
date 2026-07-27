@@ -204,7 +204,6 @@ The computed state of a single day within a month. Combines raw data (WorkPeriod
 - **workedHours**: Σ WorkPeriod durations
 - **entryTotal**: Σ categorized hours (excluding `_UNCATEGORIZED`)
 - **isEntriesBalanced**: `workedHours > 0 && uncategorizedHours < 0.01`
-- **hasAutoCategory**: always `false` — AutoCategory no longer affects day balance
 - **displayStatus**: the DayStatus resolved for display — `today` is collapsed to its underlying work status
 - **statusReason**: human-readable explanation (e.g. "Balanced", "Unaccounted: 1.5 h")
 

@@ -15,7 +15,6 @@ export interface ClassifyDayInput {
   workedHours: number
   manualTotal: number
   isEntriesBalanced: boolean
-  hasAutoCategory: boolean
   isConfirmed: boolean
   isoDate: string
   today: string
@@ -32,16 +31,12 @@ export interface DayClassification {
   leaveType?: 'Vacation' | 'SickDay'
 }
 
-function balanceReason(workedHours: number, manualTotal: number, hasAutoCategory: boolean): string {
+function balanceReason(workedHours: number, manualTotal: number): string {
   if (workedHours === 0 && manualTotal > 0) {
     return `${manualTotal.toFixed(1)} h categorized but no work time recorded`
   }
   if (Math.abs(workedHours - manualTotal) < 0.01) {
     return `${workedHours.toFixed(1)} h worked`
-  }
-  if (hasAutoCategory && manualTotal <= workedHours) {
-    const auto = workedHours - manualTotal
-    return `${workedHours.toFixed(1)} h worked — auto-category fills ${auto.toFixed(1)} h`
   }
   if (manualTotal > workedHours) {
     const over = manualTotal - workedHours
@@ -71,12 +66,11 @@ function classifyTrackedDay(
   workedHours: number,
   manualTotal: number,
   isEntriesBalanced: boolean,
-  hasAutoCategory: boolean,
   isConfirmed: boolean,
   isToday: boolean,
 ): DayClassification {
   const prefix = isToday ? 'Today — ' : ''
-  const balance = balanceReason(workedHours, manualTotal, hasAutoCategory)
+  const balance = balanceReason(workedHours, manualTotal)
 
   if (isConfirmed) {
     const status: DayStatus = isToday ? 'today' : 'confirmed'
@@ -95,7 +89,6 @@ export function classifyDay({
   workedHours,
   manualTotal,
   isEntriesBalanced,
-  hasAutoCategory,
   isConfirmed,
   isoDate,
   today,
@@ -125,5 +118,5 @@ export function classifyDay({
     return { status, displayStatus: 'untracked', reason: `${prefix}No hours recorded` }
   }
 
-  return classifyTrackedDay(workedHours, manualTotal, isEntriesBalanced, hasAutoCategory, isConfirmed, isToday)
+  return classifyTrackedDay(workedHours, manualTotal, isEntriesBalanced, isConfirmed, isToday)
 }

@@ -10,7 +10,6 @@ function classify(overrides: Partial<Parameters<typeof classifyDay>[0]>) {
     workedHours: 0,
     manualTotal: 0,
     isEntriesBalanced: false,
-    hasAutoCategory: false,
     isConfirmed: false,
     isoDate: '2026-05-15',
     today,
@@ -71,10 +70,6 @@ describe('classifyDay', () => {
     expect(classify({ isoDate: '2026-05-20', workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).status).toBe(
       'complete',
     )
-  })
-
-  it('returns needs-review when auto category covers remaining but entries are not balanced', () => {
-    expect(classify({ workedHours: 8, manualTotal: 4, hasAutoCategory: true }).status).toBe('needs-review')
   })
 
   it('returns confirmed for past work days with isConfirmed true', () => {
@@ -192,11 +187,6 @@ describe('classifyDay', () => {
         expect(classify({ workedHours: 8, manualTotal: 8, isEntriesBalanced: true }).reason).not.toContain(
           'categorized',
         )
-      })
-
-      it('reports auto-category fills remaining when hasAutoCategory and manualTotal <= workedHours', () => {
-        const result = classify({ workedHours: 8, manualTotal: 6, hasAutoCategory: true, isEntriesBalanced: true })
-        expect(result.reason).toContain('auto-category fills 2.0 h')
       })
 
       it('reports over-booked when manualTotal > workedHours', () => {

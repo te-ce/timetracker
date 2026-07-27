@@ -65,7 +65,6 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
     overtimeToDate: makeOvertimeToDate(),
     selectedDayType: 'WorkDay',
     isEntriesBalanced: false,
-    hasAutoCategory: false,
     dayClassification: { displayStatus: 'untracked', reason: 'No work periods' },
     todayIso: '2026-06-03',
     officeDays: 0,

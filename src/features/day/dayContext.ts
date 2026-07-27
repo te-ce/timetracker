@@ -37,7 +37,6 @@ export interface DayComputedStats {
   overtimeToDate: OvertimeToDate
   selectedDayType: DayType
   isEntriesBalanced: boolean
-  hasAutoCategory: boolean
   dayClassification: { displayStatus: Exclude<DayStatus, 'today'>; reason: string }
   officeDays: number
   totalWorkDays: number
@@ -56,7 +55,6 @@ const FUTURE_SUMMARY: DaySummary = {
   workedHours: 0,
   entryTotal: 0,
   isEntriesBalanced: false,
-  hasAutoCategory: false,
   isConfirmed: false,
   dayStatus: 'future',
   displayStatus: 'future',
@@ -94,7 +92,6 @@ function fromDaySummary(
     workedHours: s.workedHours,
     selectedDayType: s.dayType,
     isEntriesBalanced: s.isEntriesBalanced,
-    hasAutoCategory: s.hasAutoCategory,
   }
 }
 
