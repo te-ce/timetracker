@@ -1,12 +1,11 @@
 import { useState, useRef, Fragment, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useCloseOnOutsideClickOrEscape } from '../../shared/useCloseOnOutsideClickOrEscape'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type { MonthRepository, WorkLocation } from '../../infra/repositories/types'
 import type { DayType } from '../day/dayType'
 import type { DotPopoverState } from '../day/DotPopoverPanel'
 import type { NotePopoverState } from '../day/NotePopoverPanel'
-import { isDayTypeOverride } from '../day/dayType'
 import { DotPopoverPanel } from '../day/DotPopoverPanel'
 import { NotePopoverPanel } from '../day/NotePopoverPanel'
 import { WorkOverview } from '../day/WorkOverview'
@@ -16,7 +15,7 @@ import { getAllCategories } from '../../shared/categories'
 import { computeSprintGroups } from '../sprint/sprintGroups'
 import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
-import { QUERY_KEYS, invalidateMonthByYearMonth } from '../../shared/queryKeys'
+import { QUERY_KEYS } from '../../shared/queryKeys'
 import { useTodayIso } from '../../shared/useTodayIso'
 import type { MonthTableRow } from './buildMonthTable'
 import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
@@ -24,38 +23,15 @@ import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { Tooltip } from '../../shared/Tooltip'
-import { useUndoStore } from '../../shared/undoStore'
+import { nowHHMM } from '../../shared/worktime'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { DaySummaryBody } from '../../shared/DaySummaryBody'
 import { resolveAutoCategory } from '../../shared/autoCategory'
+import { useMonthGridMutations } from './useMonthGridMutations'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
 
 const EMPTY_CUSTOM_CATEGORIES: string[] = []
-
-async function confirmDayInRepo(repository: MonthRepository, date: string): Promise<void> {
-  await repository.updateDay(date, (day) => ({ ...day, confirmed: true }))
-}
-
-function calendarBase(date: string): 'WorkDay' | 'Weekend' {
-  const [y = 0, m = 0, d = 0] = date.split('-').map(Number)
-  const dow = new Date(y, m - 1, d).getDay()
-  return dow === 0 || dow === 6 ? 'Weekend' : 'WorkDay'
-}
-
-function saveDayTypeInRepo(repository: MonthRepository, date: string, value: string): Promise<void> {
-  if (value === calendarBase(date)) {
-    return repository.updateDay(date, (day) => {
-      const updated = { ...day }
-      delete updated.dayTypeOverride
-      return updated
-    })
-  }
-  if (isDayTypeOverride(value)) {
-    return repository.updateDay(date, (day) => ({ ...day, dayTypeOverride: value }))
-  }
-  return Promise.resolve()
-}
 
 function classifyRow(row: MonthTableRow, confirmedDays: Set<string>, today: string) {
   const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
@@ -249,10 +225,6 @@ export function MonthGrid({
     setActiveDialogCategory(null)
   }, [openLogSignal, todayIso])
 
-  function nowHHMM() {
-    const d = new Date()
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  }
   const [liveNow, setLiveNow] = useState(nowHHMM)
   useEffect(() => {
     const id = setInterval(() => setLiveNow(nowHHMM()), 60_000)
@@ -318,116 +290,12 @@ export function MonthGrid({
     queryFn: () => repository.getMonth(year, month),
   })
 
-  const queryClient = useQueryClient()
-
-  function invalidate() {
-    invalidateMonthByYearMonth(queryClient, year, month)
-  }
-
-  const gridConfirmMutation = useMutation({
-    mutationFn: (row: MonthTableRow) => confirmDayInRepo(repository, row.date),
-    onSuccess: (_, row) => {
-      const { date } = row
-      useUndoStore.getState().push({
-        description: 'Confirm day',
-        undo: async () => {
-          await repository.updateDay(date, (d) => ({ ...d, confirmed: false }))
-          invalidate()
-        },
-        redo: async () => {
-          await confirmDayInRepo(repository, date)
-          invalidate()
-        },
-      })
-      invalidate()
-    },
-  })
-
-  const gridUnconfirmMutation = useMutation({
-    mutationFn: (date: string) => repository.updateDay(date, (day) => ({ ...day, confirmed: false })),
-    onSuccess: (_, date) => {
-      useUndoStore.getState().push({
-        description: 'Unconfirm day',
-        undo: async () => {
-          await confirmDayInRepo(repository, date)
-          invalidate()
-        },
-        redo: async () => {
-          await repository.updateDay(date, (d) => ({ ...d, confirmed: false }))
-          invalidate()
-        },
-      })
-      invalidate()
-    },
-  })
-
-  const dayTypeMutation = useMutation({
-    mutationFn: ({ date, value }: { date: string; value: string }) => saveDayTypeInRepo(repository, date, value),
-    onMutate: ({ date }) => {
-      const prev = monthData[date]
-      return { prevDayTypeOverride: prev?.dayTypeOverride }
-    },
-    onSuccess: (_, { date, value }, context) => {
-      const prevValue = context.prevDayTypeOverride ?? calendarBase(date)
-      useUndoStore.getState().push({
-        description: 'Change day type',
-        undo: async () => {
-          await saveDayTypeInRepo(repository, date, prevValue)
-          invalidate()
-        },
-        redo: async () => {
-          await saveDayTypeInRepo(repository, date, value)
-          invalidate()
-        },
-      })
-      invalidate()
-    },
-  })
-
-  const locationMutation = useMutation({
-    mutationFn: ({ date, location }: { date: string; location: WorkLocation | null }) =>
-      repository.updateDay(date, (day) => {
-        if (!location) {
-          const updated = { ...day }
-          delete updated.location
-          return updated
-        }
-        return { ...day, location }
-      }),
-    onMutate: ({ date }) => {
-      const prev = monthData[date]
-      return { prevLocation: prev?.location ?? null }
-    },
-    onSuccess: (_, { date, location }, context) => {
-      const prevLocation = context.prevLocation
-      useUndoStore.getState().push({
-        description: 'Change location',
-        undo: async () => {
-          await repository.updateDay(date, (day) => {
-            if (!prevLocation) {
-              const updated = { ...day }
-              delete updated.location
-              return updated
-            }
-            return { ...day, location: prevLocation }
-          })
-          invalidate()
-        },
-        redo: async () => {
-          await repository.updateDay(date, (day) => {
-            if (!location) {
-              const updated = { ...day }
-              delete updated.location
-              return updated
-            }
-            return { ...day, location }
-          })
-          invalidate()
-        },
-      })
-      invalidate()
-    },
-  })
+  const {
+    confirm: gridConfirmMutation,
+    unconfirm: gridUnconfirmMutation,
+    dayType: dayTypeMutation,
+    location: locationMutation,
+  } = useMonthGridMutations({ repository, year, month, monthData })
 
   const rows = buildMonthTable({
     year,
