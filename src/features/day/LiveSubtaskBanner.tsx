@@ -117,22 +117,7 @@ export function LiveSubtaskBanner({
   return (
     <div
       data-testid="live-subtask-banner"
-      aria-label="Edit subtask"
-      className={`flex items-center gap-2 text-sm min-h-[2.625rem] mb-2 pb-2 border-b dark:border-gray-700 ${!isEditing ? 'cursor-pointer' : ''}`}
-      onClick={() => {
-        if (!isEditing) {
-          resetCatPending()
-          setEditingCategory(true)
-        }
-      }}
-      onKeyDown={(e) => {
-        if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
-          resetCatPending()
-          setEditingCategory(true)
-        }
-      }}
-      role="button"
-      tabIndex={0}
+      className="flex items-center gap-2 text-sm min-h-[2.625rem] mb-2 pb-2 border-b dark:border-gray-700"
     >
       <span className="w-12 text-right font-mono text-sm tabular-nums shrink-0 flex items-center justify-end gap-1">
         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse shrink-0" />
@@ -152,9 +137,18 @@ export function LiveSubtaskBanner({
         </span>
       ) : (
         <>
-          <span data-testid="live-subtask-category" className="font-medium text-gray-700 dark:text-gray-300 shrink-0">
+          <button
+            type="button"
+            data-testid="live-subtask-category"
+            disabled={isEditing}
+            onClick={() => {
+              resetCatPending()
+              setEditingCategory(true)
+            }}
+            className="font-medium text-gray-700 dark:text-gray-300 shrink-0 text-left appearance-none bg-transparent border-0 p-0 font-inherit enabled:cursor-pointer enabled:hover:text-indigo-600 dark:enabled:hover:text-indigo-400"
+          >
             {subtask.category}
-          </span>
+          </button>
           {description && <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({description})</span>}
         </>
       )}
@@ -213,10 +207,7 @@ export function LiveSubtaskBanner({
         <span className="flex items-center gap-1 text-sm text-gray-400 dark:text-gray-500 tabular-nums whitespace-nowrap shrink-0">
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              enterSubtaskEditMode(false)
-            }}
+            onClick={() => enterSubtaskEditMode(false)}
             className="hover:text-indigo-600 dark:hover:text-indigo-400"
             aria-label={`Edit subtask start time ${subtask.startedAt}`}
           >
@@ -225,10 +216,7 @@ export function LiveSubtaskBanner({
           <span>–</span>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              enterSubtaskEditMode(true)
-            }}
+            onClick={() => enterSubtaskEditMode(true)}
             className="hover:text-indigo-600 dark:hover:text-indigo-400"
             aria-label="Edit subtask end time"
           >
@@ -253,8 +241,7 @@ export function LiveSubtaskBanner({
       ) : subtask.note ? (
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation()
+          onClick={() => {
             setEditingCategory(false)
             resetCatPending()
             setEditingTime(false)
@@ -271,20 +258,14 @@ export function LiveSubtaskBanner({
         <>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              enterSubtaskEditMode(true)
-            }}
+            onClick={() => enterSubtaskEditMode(true)}
             className="text-sm text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-medium border border-amber-200 dark:border-amber-800 rounded px-2 py-1 shrink-0"
           >
             Stop subtask
           </button>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setConfirmingDelete(true)
-            }}
+            onClick={() => setConfirmingDelete(true)}
             className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base leading-none shrink-0 p-1 rounded"
             aria-label="Delete live subtask"
           >

@@ -32,6 +32,7 @@ export function SubtaskRow({
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const timed = isTimedSubtask(sl)
   const stripeBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50 rounded -mx-2 px-2' : ''
+  const rowBg = index % 2 === 1 ? 'bg-gray-50 dark:bg-gray-800/50' : ''
   const timeFormat = useTimeFormatStore((s) => s.format)
 
   if (editing) {
@@ -50,43 +51,40 @@ export function SubtaskRow({
   }
 
   return (
-    <div
-      data-testid="subtask-row"
-      aria-label={`Edit ${sl.category} subtask`}
-      className={`flex items-center gap-2 text-sm group/slice min-h-[2.625rem] ${stripeBg} cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded`}
-      onClick={() => setEditing(true)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') setEditing(true)
-      }}
-      role="button"
-      tabIndex={0}
-    >
-      <span className="w-12 text-right font-mono text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0 whitespace-nowrap">
-        {formatHours(sl.hours, timeFormat)}
-      </span>
-      <span className="font-medium text-gray-700 dark:text-gray-300 shrink-0">{sl.category}</span>
-      {categoryDescriptions?.[sl.category] && (
-        <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[sl.category]})</span>
-      )}
-      {timed && (
-        <span
-          className={`text-sm tabular-nums whitespace-nowrap shrink-0 ${overlaps ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}
-          title={overlaps ? 'Overlaps with another subtask' : undefined}
-        >
-          {sl.startedAt} – {sl.stoppedAt}
-        </span>
-      )}
-      {sl.note ? (
-        <span className="text-sm text-gray-500 dark:text-gray-400 italic truncate flex-1">{sl.note}</span>
-      ) : (
-        <span className="flex-1" />
-      )}
+    <div className={`flex items-center gap-2 text-sm group/slice min-h-[2.625rem] rounded -mx-2 px-2 ${rowBg}`}>
       <button
         type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          setConfirmingDelete(true)
-        }}
+        data-testid="subtask-row"
+        aria-label={`Edit ${sl.category} subtask`}
+        onClick={() => setEditing(true)}
+        className={`flex items-center gap-2 flex-1 min-w-0 text-left appearance-none bg-transparent border-0 p-0 font-inherit cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded ${stripeBg}`}
+      >
+        <span className="w-12 text-right font-mono text-sm text-gray-500 dark:text-gray-400 tabular-nums shrink-0 whitespace-nowrap">
+          {formatHours(sl.hours, timeFormat)}
+        </span>
+        <span className="font-medium text-gray-700 dark:text-gray-300 shrink-0">{sl.category}</span>
+        {categoryDescriptions?.[sl.category] && (
+          <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">
+            ({categoryDescriptions[sl.category]})
+          </span>
+        )}
+        {timed && (
+          <span
+            className={`text-sm tabular-nums whitespace-nowrap shrink-0 ${overlaps ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}
+            title={overlaps ? 'Overlaps with another subtask' : undefined}
+          >
+            {sl.startedAt} – {sl.stoppedAt}
+          </span>
+        )}
+        {sl.note ? (
+          <span className="text-sm text-gray-500 dark:text-gray-400 italic truncate flex-1">{sl.note}</span>
+        ) : (
+          <span className="flex-1" />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={() => setConfirmingDelete(true)}
         className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-base leading-none shrink-0 p-1 rounded"
         aria-label={`Remove ${sl.category} subtask`}
       >
