@@ -4,8 +4,9 @@ import type { MonthData, Day } from '../../infra/repositories/types'
 import { classifyDay } from '../../shared/dayStatus'
 import { classifyDayType } from '../day/dayType'
 import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../shared/worktime'
-import { calculateCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
+import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { toLocalIso } from '../../shared/dateUtils'
+import { DEFAULT_WEEKDAY_HOURS, type WeekdayHours } from '../../shared/weekdayHours'
 
 export interface DaySummary {
   date: string
@@ -26,6 +27,7 @@ export interface MonthSummaryInput {
   today: string
   globalAutoCategory?: string | null
   todayNow?: string
+  weekdayHours?: WeekdayHours
 }
 
 export interface MonthSummaryResult {
@@ -44,10 +46,17 @@ function unpackDay(dayData: Day | undefined) {
   return { windows, dayTypeOverride, isConfirmed }
 }
 
-function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, today: string, now?: string): DaySummary {
+function buildDaySummary(
+  iso: string,
+  date: Date,
+  dayData: Day | undefined,
+  today: string,
+  weekdayHours: WeekdayHours,
+  now?: string,
+): DaySummary {
   const { windows, dayTypeOverride, isConfirmed } = unpackDay(dayData)
   const workedHours = calculateWorkedHours(windows, now)
-  const categoryHours = calculateCategoryHours(windows, now)
+  const categoryHours = calculateDayCategoryHours(dayData ?? { windows: [] }, iso, weekdayHours, now)
   const entryTotal = Object.entries(categoryHours)
     .filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)
     .reduce((sum, [, h]) => sum + h, 0)
@@ -90,7 +99,7 @@ function buildDaySummary(iso: string, date: Date, dayData: Day | undefined, toda
 }
 
 export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
-  const { monthData, today, todayNow } = input
+  const { monthData, today, todayNow, weekdayHours = DEFAULT_WEEKDAY_HOURS } = input
   const daysInMonth = new Date(year, month, 0).getDate()
 
   const days: DaySummary[] = []
@@ -102,7 +111,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     const date = new Date(year, month - 1, d)
     const iso = toLocalIso(date)
     const now = iso === today ? todayNow : iso < today ? '23:59' : undefined
-    const summary = buildDaySummary(iso, date, monthData[iso], today, now)
+    const summary = buildDaySummary(iso, date, monthData[iso], today, weekdayHours, now)
     if (summary.dayType === 'WorkDay') workDayCount++
     workedHoursPerDay.push(summary.workedHours)
     if (iso === today) {

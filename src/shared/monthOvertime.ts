@@ -29,6 +29,7 @@ export function composeMonthOvertime(
     monthData,
     today: todayIso,
     globalAutoCategory: config?.autoCategory ?? null,
+    weekdayHours,
     ...(todayNow !== undefined ? { todayNow } : {}),
   })
   const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))
