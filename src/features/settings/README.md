@@ -30,6 +30,7 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 | `BundeslandSettings.tsx`         | German federal state selection (for public holidays)               |
 | `BooleanConfigToggle.tsx`        | Generic single-boolean-field AppConfig toggle (checkbox + label)   |
 | `useConfigFieldMutation.ts`      | Generic single-field AppConfig read+mutate hook (non-boolean)      |
+| `useDirectoryPicker.ts`          | Generic directory-picker state machine (File System Access API)    |
 | `HotkeySettings.tsx`             | Keyboard shortcut configuration                                    |
 | `WindowBehaviorSettings.tsx`     | Electron window hide-on-close behavior                             |
 | `ClearDataSettings.tsx`          | Destructive data reset                                             |
