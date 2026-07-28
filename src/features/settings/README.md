@@ -26,8 +26,6 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 | `CategorySettings.tsx`           | Enable/disable and reorder the fixed categories                    |
 | `CustomCategorySettings.tsx`     | Add/remove dynamic categories                                      |
 | `AutoCategorySettings.tsx`       | Set the global AutoCategory default                                |
-| `AutoCategoryPicker.tsx`         | Category picker component used by AutoCategorySettings             |
-| `AutoCategoryRow.tsx`            | Per-day AutoCategory override row                                  |
 | `ExcelMappingSettings.tsx`       | Map app categories to Excel row Task IDs                           |
 | `BundeslandSettings.tsx`         | German federal state selection (for public holidays)               |
 | `BooleanConfigToggle.tsx`        | Generic single-boolean-field AppConfig toggle (checkbox + label)   |
