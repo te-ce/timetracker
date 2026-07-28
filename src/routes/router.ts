@@ -6,6 +6,7 @@ import { TableView } from '../features/table/TableView'
 import { SprintView } from '../features/sprint/SprintView'
 import { SettingsView } from '../features/settings/SettingsView'
 import { toLocalIso } from '../shared/dateUtils'
+import { PrototypeRouteComponent, validatePrototypeSearch } from '../prototypes/design-language/PrototypeRoute'
 
 const rootRoute = createRootRoute({
   component: App,
@@ -65,7 +66,14 @@ const settingsRoute = createRoute({
   component: SettingsView,
 })
 
-const routeTree = rootRoute.addChildren([dayRoute, monthRoute, tableRoute, sprintRoute, settingsRoute])
+const prototypeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/prototype',
+  component: PrototypeRouteComponent,
+  validateSearch: validatePrototypeSearch,
+})
+
+const routeTree = rootRoute.addChildren([dayRoute, monthRoute, tableRoute, sprintRoute, settingsRoute, prototypeRoute])
 
 const history = typeof window !== 'undefined' && window.location.protocol === 'file:' ? createHashHistory() : undefined
 
