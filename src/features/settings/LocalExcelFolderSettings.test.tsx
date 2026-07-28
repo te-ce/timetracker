@@ -18,7 +18,6 @@ const mockClearExcelHandle = vi.mocked(folderHandleStore.clearExcelHandle)
 const mockVerifyPermission = vi.mocked(folderHandleStore.verifyPermission)
 
 function makeHandle(name: string): FileSystemDirectoryHandle {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return { name } as FileSystemDirectoryHandle
 }
 

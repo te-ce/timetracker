@@ -66,7 +66,7 @@ E2E tests run against the Vite dev server (started automatically by Playwright's
 ### Before committing
 
 ```bash
-npx tsc --noEmit && npx eslint . && npx vitest run
+npx tsc --noEmit && npx oxlint --type-aware src/ && npx vitest run
 ```
 
 All three must pass. CI enforces this.
@@ -135,6 +135,8 @@ Put ambient declarations in `src/types/`. Do not cast `window` — extend `Windo
 1. **Type guards** — `as Record<string, unknown>` inside a `val is T` predicate is acceptable.
 2. **Unavoidable generic test mocks** — `(stored ?? null) as T | null` inside test helpers only.
 
+A third case is carved out at the config level rather than per-site: `typescript/consistent-type-assertions` is turned off (via an `overrides` block in `.oxlintrc.json`) for `src/infra/storage/*.ts` and all `*.test.{ts,tsx}` files. Two things land there that TypeScript has no assertion-free syntax for: implementing `StorageAdapter`'s `get<T>()`/`put<T>()` against an unconstrained generic `T` (there is no way to assign `unknown`/`any` to an arbitrary `T` without a cast), and building lightweight test doubles for large SDK/browser interfaces (`FileSystemDirectoryHandle`, MSAL's `IPublicClientApplication`) where a fully structural mock would mean reimplementing protocols (e.g. the async-iterator protocol) the test has no interest in. Everywhere else the rule stays `error` — this isn't a general test-file exemption, don't reach for `as` outside these two locations just because a file matches the glob.
+
 | Instead of                           | Use                                                        |
 | ------------------------------------ | ---------------------------------------------------------- |
 | `e.target as HTMLInputElement`       | `e.target instanceof HTMLInputElement &&` guard            |
@@ -150,15 +152,15 @@ Type guard functions live in the feature module closest to their type (e.g. `isD
 
 ## Linting and type-checking
 
-**Never disable or remove existing rules.** No exceptions.
+**Never disable or remove existing rules.** No exceptions, other than the documented `consistent-type-assertions` override above.
 
-- Do not add `// eslint-disable`, `// eslint-disable-next-line`, `/* oxlint-disable */`, `@ts-ignore`, or `@ts-expect-error`
+- Do not add `// oxlint-disable`, `// oxlint-disable-next-line`, `@ts-ignore`, or `@ts-expect-error`
 - Do not remove or weaken flags in `tsconfig.app.json` or `tsconfig.node.json`
-- Do not remove or override rules in `eslint.config.*` or `.oxlintrc`
+- Do not add further rule overrides to `.oxlintrc.json` without discussing it first — the existing one is scoped and justified in the TypeScript standards section, not a precedent for silencing other rules
 - When a rule fires, fix the code — never silence it
 
 ```bash
-npm run lint       # oxlint + ESLint
+npm run lint       # oxlint, with type-aware rules (--type-aware)
 npm run knip       # check for unused exports and files
 npm run format     # Prettier
 ```

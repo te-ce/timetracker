@@ -9,10 +9,20 @@
     "jsx-a11y/prefer-tag-over-role": "off",
     "react/no-children-prop": "off",
     "complexity": ["warn", { "max": 10 }],
-    "max-depth": ["warn", { "max": 4 }]
+    "max-depth": ["warn", { "max": 4 }],
+    "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
+    "typescript/no-unnecessary-condition": "error"
   },
   "env": {
     "builtin": true
   },
-  "ignorePatterns": ["dist", "public/mockServiceWorker.js"]
+  "ignorePatterns": ["dist", "public/mockServiceWorker.js"],
+  "overrides": [
+    {
+      "files": ["src/infra/storage/*.ts", "**/*.test.{ts,tsx}"],
+      "rules": {
+        "typescript/consistent-type-assertions": "off"
+      }
+    }
+  ]
 }

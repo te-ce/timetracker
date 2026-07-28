@@ -25,19 +25,21 @@ function makeWindow(overrides: Partial<WorkPeriod> = {}): WorkPeriod {
 
 function makeMockMonthRepo() {
   const repo = new InMemoryMonthRepository()
-  vi.spyOn(repo, 'startLiveSubtask')
-  vi.spyOn(repo, 'stopLiveSubtask')
-  vi.spyOn(repo, 'stopWorkPeriod')
-  vi.spyOn(repo, 'openWorkPeriod')
-  return repo
+  return {
+    repo,
+    startLiveSubtask: vi.spyOn(repo, 'startLiveSubtask'),
+    stopLiveSubtask: vi.spyOn(repo, 'stopLiveSubtask'),
+    stopWorkPeriod: vi.spyOn(repo, 'stopWorkPeriod'),
+    openWorkPeriod: vi.spyOn(repo, 'openWorkPeriod'),
+  }
 }
 
 describe('handleStartSubtask', () => {
   it('starts a new subtask on the open period', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, startLiveSubtask } = makeMockMonthRepo()
     const windows = [makeWindow()]
     await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
-    expect(repo.startLiveSubtask).toHaveBeenCalledWith(
+    expect(startLiveSubtask).toHaveBeenCalledWith(
       '2026-06-09',
       'wp1',
       expect.objectContaining({ category: '_SUPPORT', hours: 0 }),
@@ -45,19 +47,19 @@ describe('handleStartSubtask', () => {
   })
 
   it('uses HH:MM format for startedAt', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, startLiveSubtask } = makeMockMonthRepo()
     const windows = [makeWindow()]
     await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
-    const subtask = vi.mocked(repo.startLiveSubtask).mock.calls[0]?.[2]
+    const subtask = startLiveSubtask.mock.calls[0]?.[2]
     expect(subtask?.startedAt).toMatch(/^\d{2}:\d{2}$/)
   })
 
   it('relies on startLiveSubtask to settle previous subtask (no separate stop call)', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, startLiveSubtask, stopLiveSubtask } = makeMockMonthRepo()
     const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
     await handleStartSubtask('_INFRA', repo, '2026-06-09', windows)
-    expect(repo.stopLiveSubtask).not.toHaveBeenCalled()
-    expect(repo.startLiveSubtask).toHaveBeenCalledWith(
+    expect(stopLiveSubtask).not.toHaveBeenCalled()
+    expect(startLiveSubtask).toHaveBeenCalledWith(
       '2026-06-09',
       'wp1',
       expect.objectContaining({ category: '_INFRA', startedAt: expect.stringMatching(/^\d{2}:\d{2}$/) }),
@@ -65,73 +67,65 @@ describe('handleStartSubtask', () => {
   })
 
   it('does nothing when no open period exists', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, startLiveSubtask } = makeMockMonthRepo()
     const windows = [makeWindow({ start: '00:01', end: '00:02' })]
     await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
-    expect(repo.startLiveSubtask).not.toHaveBeenCalled()
+    expect(startLiveSubtask).not.toHaveBeenCalled()
   })
 })
 
 describe('handleStopSubtask', () => {
   it('stops the live subtask on the open period', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, stopLiveSubtask } = makeMockMonthRepo()
     const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
     await handleStopSubtask(repo, '2026-06-09', windows)
-    expect(repo.stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.any(String))
+    expect(stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.any(String))
   })
 
   it('does nothing when no live subtask exists', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, stopLiveSubtask } = makeMockMonthRepo()
     const windows = [makeWindow()]
     await handleStopSubtask(repo, '2026-06-09', windows)
-    expect(repo.stopLiveSubtask).not.toHaveBeenCalled()
+    expect(stopLiveSubtask).not.toHaveBeenCalled()
   })
 })
 
 describe('handleStopAll', () => {
   it('stops live subtask and work period', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, stopLiveSubtask, stopWorkPeriod } = makeMockMonthRepo()
     const windows = [makeWindow({ subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '10:00' }] })]
     await handleStopAll(repo, '2026-06-09', windows)
-    expect(repo.stopLiveSubtask).toHaveBeenCalled()
-    expect(repo.stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))
+    expect(stopLiveSubtask).toHaveBeenCalled()
+    expect(stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))
   })
 
   it('stops work period even without live subtask', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, stopLiveSubtask, stopWorkPeriod } = makeMockMonthRepo()
     const windows = [makeWindow()]
     await handleStopAll(repo, '2026-06-09', windows)
-    expect(repo.stopLiveSubtask).not.toHaveBeenCalled()
-    expect(repo.stopWorkPeriod).toHaveBeenCalled()
+    expect(stopLiveSubtask).not.toHaveBeenCalled()
+    expect(stopWorkPeriod).toHaveBeenCalled()
   })
 
   it('does nothing when no open period', async () => {
-    const repo = makeMockMonthRepo()
+    const { repo, stopWorkPeriod } = makeMockMonthRepo()
     const windows = [makeWindow({ start: '00:01', end: '00:02' })]
     await handleStopAll(repo, '2026-06-09', windows)
-    expect(repo.stopWorkPeriod).not.toHaveBeenCalled()
+    expect(stopWorkPeriod).not.toHaveBeenCalled()
   })
 })
 
 describe('handleStartWorkPeriod', () => {
   it('opens a work period in the month repo', async () => {
-    const monthRepo = makeMockMonthRepo()
+    const { repo: monthRepo, openWorkPeriod } = makeMockMonthRepo()
     await handleStartWorkPeriod('_SUPPORT', monthRepo, '2026-06-09')
-    expect(monthRepo.openWorkPeriod).toHaveBeenCalledWith(
-      '2026-06-09',
-      '_SUPPORT',
-      expect.stringMatching(/^\d{2}:\d{2}$/),
-    )
+    expect(openWorkPeriod).toHaveBeenCalledWith('2026-06-09', '_SUPPORT', expect.stringMatching(/^\d{2}:\d{2}$/))
   })
 
   it('starts a new work period for a different category', async () => {
-    const monthRepo = makeMockMonthRepo()
+    const { repo: monthRepo, openWorkPeriod } = makeMockMonthRepo()
     await handleStartWorkPeriod('_INFRA', monthRepo, '2026-06-09')
-    expect(monthRepo.openWorkPeriod).toHaveBeenCalledWith(
-      '2026-06-09',
-      '_INFRA',
-      expect.stringMatching(/^\d{2}:\d{2}$/),
-    )
+    expect(openWorkPeriod).toHaveBeenCalledWith('2026-06-09', '_INFRA', expect.stringMatching(/^\d{2}:\d{2}$/))
   })
 })
 

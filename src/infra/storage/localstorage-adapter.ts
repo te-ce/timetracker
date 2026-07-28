@@ -16,7 +16,6 @@ export class LocalStorageAdapter implements StorageAdapter {
     if (raw === null) return Promise.resolve(null)
     try {
       const data: unknown = JSON.parse(raw)
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return Promise.resolve(data as T)
     } catch {
       console.warn(`[LocalStorageAdapter] Failed to parse JSON for key "${this.prefix + key}", discarding`)

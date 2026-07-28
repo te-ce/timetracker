@@ -12,6 +12,10 @@ function yearMonth(date: string): string {
   return date.slice(0, 7)
 }
 
+function validateIndexEntry(v: unknown): true | null {
+  return v === true ? true : null
+}
+
 export class CloudMonthRepository extends AbstractMonthRepository {
   private adapter: StorageAdapter
   private stores = new Map<string, JsonRecordStore<Day>>()
@@ -20,7 +24,7 @@ export class CloudMonthRepository extends AbstractMonthRepository {
   constructor(adapter: StorageAdapter) {
     super()
     this.adapter = adapter
-    this.indexStore = new JsonRecordStore<true>(adapter, 'months-index.json')
+    this.indexStore = new JsonRecordStore<true>(adapter, 'months-index.json', validateIndexEntry)
   }
 
   private getStore(year: number, month: number): JsonRecordStore<Day> {

@@ -4,9 +4,7 @@ import { ElectronStorageAdapter } from './electron-adapter'
 function makeStub() {
   const store = new Map<string, unknown>()
   return {
-    get: <T>(key: string): Promise<T | null> =>
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      Promise.resolve(store.has(key) ? (store.get(key) as T) : null),
+    get: <T>(key: string): Promise<T | null> => Promise.resolve(store.has(key) ? (store.get(key) as T) : null),
     put: <T>(key: string, data: T): Promise<void> => {
       store.set(key, data)
       return Promise.resolve()

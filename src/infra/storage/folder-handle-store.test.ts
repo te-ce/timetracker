@@ -13,7 +13,6 @@ beforeEach(() => {
 let _v = 0
 async function freshModule() {
   _v++
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return import(`./folder-handle-store?v=${_v}`) as Promise<typeof import('./folder-handle-store')>
 }
 
@@ -23,12 +22,10 @@ async function freshModule() {
 // for the save/load tests and add the method-bearing shape only for
 // verifyPermission tests (which never touch IndexedDB).
 function makeSerializableHandle(name = 'test-dir') {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return { kind: 'directory' as const, name } as unknown as FileSystemDirectoryHandle
 }
 
 function makeHandleWithPermission(query: PermissionState, request: PermissionState) {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return {
     kind: 'directory' as const,
     name: 'dir',
@@ -38,7 +35,6 @@ function makeHandleWithPermission(query: PermissionState, request: PermissionSta
 }
 
 function stubUserActivation(isActive: boolean) {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   vi.stubGlobal('navigator', { userActivation: { isActive } } as unknown as Navigator)
 }
 
@@ -63,7 +59,6 @@ describe('saveHandle / loadHandle', () => {
     await m.saveHandle(first)
     await m.saveHandle(second)
     const loaded = await m.loadHandle()
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     expect((loaded as unknown as { name: string }).name).toBe('second')
   })
 })
@@ -94,9 +89,7 @@ describe('saveExcelHandle / loadExcelHandle / clearExcelHandle', () => {
     const excelHandle = makeSerializableHandle('excel')
     await m.saveHandle(appHandle)
     await m.saveExcelHandle(excelHandle)
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const loadedApp = (await m.loadHandle()) as unknown as { name: string }
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     const loadedExcel = (await m.loadExcelHandle()) as unknown as { name: string }
     expect(loadedApp.name).toBe('app')
     expect(loadedExcel.name).toBe('excel')

@@ -46,8 +46,7 @@ export async function listSheets(sharePointUrl: string, token: string): Promise<
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error(`listSheets failed: ${res.status} ${res.statusText}`)
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const json = (await res.json()) as { value: { name: string }[] }
+  const json: { value: { name: string }[] } = await res.json()
   return json.value.map((ws) => ws.name)
 }
 
@@ -62,8 +61,7 @@ export async function listRows(sharePointUrl: string, sheet: string, token: stri
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error(`listRows failed: ${res.status} ${res.statusText}`)
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const json = (await res.json()) as { values: unknown[][] }
+  const json: { values: unknown[][] } = await res.json()
   return json.values.reduce<ExcelRow[]>((rows, row) => {
     if (typeof row[0] === 'string' && row[0].trim() !== '') {
       rows.push({
@@ -98,8 +96,7 @@ export async function writeSprintData(
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!rangeRes.ok) throw new Error(`writeSprintData range fetch failed: ${rangeRes.status}`)
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  const rangeJson = (await rangeRes.json()) as { address: string }
+  const rangeJson: { address: string } = await rangeRes.json()
   // address looks like "Sheet1!A1:C20" — extract starting row number
   const addressMatch = /!.*?(\d+):/.exec(rangeJson.address)
   const startRow = addressMatch ? parseInt(addressMatch[1] ?? '1', 10) : 1

@@ -8,7 +8,6 @@ function createMockAdapter(): StorageAdapter & { data: Record<string, unknown> }
   return {
     data,
     get<T>(key: string): Promise<T | null> {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return Promise.resolve((data[key] ?? null) as T | null)
     },
     put<T>(key: string, value: T): Promise<void> {
@@ -27,13 +26,24 @@ interface Item {
   value: number
 }
 
+function isItem(v: unknown): Item | null {
+  if (typeof v !== 'object' || v === null) return null
+  if (!('id' in v) || !('value' in v)) return null
+  if (typeof v.id !== 'string' || typeof v.value !== 'number') return null
+  return { id: v.id, value: v.value }
+}
+
+function isString(v: unknown): string | null {
+  return typeof v === 'string' ? v : null
+}
+
 describe('JsonCollectionStore', () => {
   let adapter: ReturnType<typeof createMockAdapter>
   let store: JsonCollectionStore<Item>
 
   beforeEach(() => {
     adapter = createMockAdapter()
-    store = new JsonCollectionStore(adapter, 'items.json')
+    store = new JsonCollectionStore(adapter, 'items.json', isItem)
   })
 
   it('returns empty array when no data exists', async () => {
@@ -104,7 +114,7 @@ describe('JsonRecordStore', () => {
 
   beforeEach(() => {
     adapter = createMockAdapter()
-    store = new JsonRecordStore(adapter, 'records.json')
+    store = new JsonRecordStore(adapter, 'records.json', isString)
   })
 
   it('returns empty record when no data exists', async () => {
@@ -161,15 +171,6 @@ describe('JsonRecordStore', () => {
 })
 
 describe('JsonCollectionStore with validator', () => {
-  function isItem(v: unknown): Item | null {
-    if (typeof v !== 'object' || v === null) return null
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const o = v as Record<string, unknown>
-    if (typeof o['id'] !== 'string' || typeof o['value'] !== 'number') return null
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    return { id: o['id'] as string, value: o['value'] as number }
-  }
-
   it('accepts valid items', async () => {
     const adapter = createMockAdapter()
     adapter.data['items.json'] = [
@@ -213,10 +214,6 @@ describe('JsonCollectionStore with validator', () => {
 })
 
 describe('JsonRecordStore with validator', () => {
-  function isString(v: unknown): string | null {
-    return typeof v === 'string' ? v : null
-  }
-
   it('accepts valid record entries', async () => {
     const adapter = createMockAdapter()
     adapter.data['records.json'] = { a: 'hello', b: 'world' }

@@ -30,7 +30,6 @@ const mockInstance = {
 beforeEach(() => {
   vi.clearAllMocks()
   useAuthStore.setState({ isAuthenticated: false })
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   mockUseMsal.mockReturnValue({
     instance: mockInstance,
     accounts: [],
@@ -47,9 +46,7 @@ describe('CloudSyncSettings', () => {
 
   it('shows synced state and account name when authenticated', () => {
     useAuthStore.setState({ isAuthenticated: true })
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       instance: mockInstance,
       inProgress: 'none',
@@ -66,16 +63,16 @@ describe('CloudSyncSettings', () => {
   })
 
   it('calls clearBootstrapConfig when Change Azure AD configuration is clicked', async () => {
-    const originalLocation = window.location
-    Object.defineProperty(window, 'location', {
-      value: { ...originalLocation, reload: vi.fn() },
-      writable: true,
-      configurable: true,
-    })
+    const originalReload = window.location.reload.bind(window.location)
+    Object.defineProperty(window.location, 'reload', { value: vi.fn(), writable: true, configurable: true })
     render(<CloudSyncSettings />)
     await userEvent.click(screen.getByRole('button', { name: /change azure ad configuration/i }))
     expect(mockClearBootstrapConfig).toHaveBeenCalledOnce()
-    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true })
+    Object.defineProperty(window.location, 'reload', {
+      value: originalReload,
+      writable: true,
+      configurable: true,
+    })
   })
 
   it('calls instance.loginPopup when Sign in is clicked', async () => {
@@ -94,9 +91,7 @@ describe('CloudSyncSettings', () => {
 
   it('calls instance.logoutPopup when Sign out is clicked', async () => {
     useAuthStore.setState({ isAuthenticated: true })
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       instance: mockInstance,
       inProgress: 'none',
@@ -109,10 +104,8 @@ describe('CloudSyncSettings', () => {
 
   it('handles logoutPopup rejection gracefully', async () => {
     useAuthStore.setState({ isAuthenticated: true })
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
       instance: mockInstance,
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
@@ -124,22 +117,20 @@ describe('CloudSyncSettings', () => {
 
   it('calls clearBootstrapConfig when Change Azure AD configuration is clicked while authenticated', async () => {
     useAuthStore.setState({ isAuthenticated: true })
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     mockUseMsal.mockReturnValue({
       instance: mockInstance,
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       accounts: [{ username: 'user@example.com' } as ReturnType<typeof useMsal>['accounts'][0]],
       inProgress: 'none',
     } as unknown as ReturnType<typeof useMsal>)
-    const originalLocation = window.location
-    Object.defineProperty(window, 'location', {
-      value: { ...originalLocation, reload: vi.fn() },
-      writable: true,
-      configurable: true,
-    })
+    const originalReload = window.location.reload.bind(window.location)
+    Object.defineProperty(window.location, 'reload', { value: vi.fn(), writable: true, configurable: true })
     render(<CloudSyncSettings />)
     await userEvent.click(screen.getByRole('button', { name: /change azure ad configuration/i }))
     expect(mockClearBootstrapConfig).toHaveBeenCalledOnce()
-    Object.defineProperty(window, 'location', { value: originalLocation, configurable: true })
+    Object.defineProperty(window.location, 'reload', {
+      value: originalReload,
+      writable: true,
+      configurable: true,
+    })
   })
 })

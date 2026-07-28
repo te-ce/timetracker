@@ -21,7 +21,6 @@ async function getHandleByKey(key: string): Promise<FileSystemDirectoryHandle | 
     const req = tx.objectStore(STORE_NAME).get(key)
     req.onsuccess = () => {
       const handle: unknown = req.result
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       resolve((handle as FileSystemDirectoryHandle | undefined) ?? null)
     }
     req.onerror = () => reject(new Error(`Failed to load handle: ${key}`))

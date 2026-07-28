@@ -6,13 +6,17 @@ function makeToken(token = 'test-token'): () => Promise<string> {
   return () => Promise.resolve(token)
 }
 
-function mockFetch(status: number, body: unknown = null, ok = status >= 200 && status < 300) {
-  return vi.fn().mockResolvedValue({
-    ok,
-    status,
-    statusText: `Status ${status}`,
-    json: () => Promise.resolve(body),
-  })
+function mockFetch(status: number, body: unknown = null) {
+  return vi.fn<typeof fetch>().mockResolvedValue(
+    new Response(body === null ? null : JSON.stringify(body), {
+      status,
+      statusText: `Status ${status}`,
+    }),
+  )
+}
+
+function isPlainHeaders(h: HeadersInit | undefined): h is Record<string, string> {
+  return typeof h === 'object' && !Array.isArray(h) && !(h instanceof Headers)
 }
 
 beforeEach(() => {
@@ -29,13 +33,13 @@ describe('OneDriveStorageAdapter', () => {
     })
 
     it('returns null on 404', async () => {
-      globalThis.fetch = mockFetch(404, null, false)
+      globalThis.fetch = mockFetch(404)
       const adapter = new OneDriveStorageAdapter(makeToken())
       expect(await adapter.get('missing')).toBeNull()
     })
 
     it('throws on non-ok non-404 status', async () => {
-      globalThis.fetch = mockFetch(500, null, false)
+      globalThis.fetch = mockFetch(500)
       const adapter = new OneDriveStorageAdapter(makeToken())
       await expect(adapter.get('config')).rejects.toThrow('OneDrive GET failed: 500')
     })
@@ -45,8 +49,8 @@ describe('OneDriveStorageAdapter', () => {
       globalThis.fetch = fetchSpy
       const adapter = new OneDriveStorageAdapter(makeToken('my-secret'))
       await adapter.get('config')
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const [, opts] = fetchSpy.mock.calls[0] as [string, { headers: Record<string, string> }]
+      const [, opts] = fetchSpy.mock.calls[0] ?? []
+      if (!isPlainHeaders(opts?.headers)) throw new Error('expected plain headers object')
       expect(opts.headers['Authorization']).toBe('Bearer my-secret')
     })
 
@@ -78,7 +82,7 @@ describe('OneDriveStorageAdapter', () => {
     })
 
     it('throws on non-ok response', async () => {
-      globalThis.fetch = mockFetch(403, null, false)
+      globalThis.fetch = mockFetch(403)
       const adapter = new OneDriveStorageAdapter(makeToken())
       await expect(adapter.put('config', {})).rejects.toThrow('OneDrive PUT failed: 403')
     })
@@ -88,8 +92,8 @@ describe('OneDriveStorageAdapter', () => {
       globalThis.fetch = fetchSpy
       const adapter = new OneDriveStorageAdapter(makeToken('tok'))
       await adapter.put('x', {})
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const [, opts] = fetchSpy.mock.calls[0] as [string, { headers: Record<string, string> }]
+      const [, opts] = fetchSpy.mock.calls[0] ?? []
+      if (!isPlainHeaders(opts?.headers)) throw new Error('expected plain headers object')
       expect(opts.headers['Authorization']).toBe('Bearer tok')
     })
   })
@@ -107,13 +111,13 @@ describe('OneDriveStorageAdapter', () => {
     })
 
     it('silently ignores 404 on delete', async () => {
-      globalThis.fetch = mockFetch(404, null, false)
+      globalThis.fetch = mockFetch(404)
       const adapter = new OneDriveStorageAdapter(makeToken())
       await expect(adapter.delete('gone')).resolves.toBeUndefined()
     })
 
     it('throws on non-ok non-404 delete response', async () => {
-      globalThis.fetch = mockFetch(500, null, false)
+      globalThis.fetch = mockFetch(500)
       const adapter = new OneDriveStorageAdapter(makeToken())
       await expect(adapter.delete('config')).rejects.toThrow('OneDrive DELETE failed: 500')
     })

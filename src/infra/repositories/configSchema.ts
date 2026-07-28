@@ -40,12 +40,9 @@ export const appConfigSchema = z
   })
   .passthrough()
   .transform((raw) => {
-    if (!raw.weekdayHours) {
-      const h = raw.sollstunden ?? 8
-      const migrated: WeekdayHours = [0, h, h, h, h, h, 0]
-      return { ...raw, weekdayHours: migrated }
-    }
-    return raw
+    const h = raw.sollstunden ?? 8
+    const fallback: WeekdayHours = [0, h, h, h, h, h, 0]
+    return { ...raw, weekdayHours: raw.weekdayHours ?? fallback }
   })
 
 const workPeriodSubtaskSchema = z.object({
@@ -82,20 +79,16 @@ const sprintExportSchema = z.object({
   exportedAt: z.string().nullable(),
 })
 
-// Validator functions bridge Zod's inferred types to the explicit domain types.
-// The unknown intermediate satisfies no-unsafe-return; Zod guarantees structural validity.
 export function validateDay(v: unknown): Day | null {
   const r = daySchema.safeParse(v)
   if (!r.success) return null
-  const data: unknown = r.data
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return data as Day
+  const data: Day = r.data
+  return data
 }
 
 export function validateSprintExport(v: unknown): SprintExport | null {
   const r = sprintExportSchema.safeParse(v)
   if (!r.success) return null
-  const data: unknown = r.data
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  return data as SprintExport
+  const data: SprintExport = r.data
+  return data
 }

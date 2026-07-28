@@ -17,7 +17,6 @@ const mockSaveHandle = vi.mocked(folderHandleStore.saveHandle)
 const mockVerifyPermission = vi.mocked(folderHandleStore.verifyPermission)
 
 function makeHandle(name: string): FileSystemDirectoryHandle {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return { name } as FileSystemDirectoryHandle
 }
 
@@ -49,7 +48,6 @@ function makeElectronApiStub(overrides: {
     },
     storage: {
       get: <T,>(key: string) =>
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
         Promise.resolve(key === LOCAL_FOLDER_PATH_KEY ? ((overrides.storagePath ?? null) as T | null) : null),
       put: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
@@ -68,8 +66,7 @@ function makeElectronApiStub(overrides: {
 beforeEach(() => {
   vi.clearAllMocks()
   mockLoadHandle.mockResolvedValue(null)
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  mockSaveHandle.mockResolvedValue(undefined as never)
+  mockSaveHandle.mockResolvedValue(undefined)
   mockVerifyPermission.mockResolvedValue(true)
   vi.unstubAllGlobals()
   delete window.electronAPI

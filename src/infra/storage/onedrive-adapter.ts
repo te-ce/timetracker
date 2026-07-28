@@ -21,7 +21,6 @@ export class OneDriveStorageAdapter implements StorageAdapter {
     if (res.status === 404) return null
     if (!res.ok) throw new Error(`OneDrive GET failed: ${res.status} ${res.statusText}`)
     const data: unknown = await res.json()
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return data as T
   }
 

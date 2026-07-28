@@ -15,8 +15,8 @@ const reloadMock = vi.fn()
 beforeEach(() => {
   localStorage.clear()
   reloadMock.mockClear()
-  Object.defineProperty(window, 'location', {
-    value: { ...window.location, reload: reloadMock },
+  Object.defineProperty(window.location, 'reload', {
+    value: reloadMock,
     writable: true,
     configurable: true,
   })

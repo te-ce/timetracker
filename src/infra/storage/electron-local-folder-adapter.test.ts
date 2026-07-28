@@ -4,9 +4,7 @@ import { ElectronLocalFolderStorageAdapter, LOCAL_FOLDER_PATH_KEY } from './elec
 function makeStorageStub() {
   const store = new Map<string, unknown>()
   return {
-    get: <T>(key: string): Promise<T | null> =>
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      Promise.resolve(store.has(key) ? (store.get(key) as T) : null),
+    get: <T>(key: string): Promise<T | null> => Promise.resolve(store.has(key) ? (store.get(key) as T) : null),
     put: <T>(key: string, data: T): Promise<void> => {
       store.set(key, data)
       return Promise.resolve()
@@ -25,7 +23,6 @@ function makeLocalFolderStub() {
     pickFolder: (): Promise<string | null> => Promise.resolve('/chosen/folder'),
     get: <T>(basePath: string, key: string): Promise<T | null> => {
       const k = fileKey(basePath, key)
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return Promise.resolve(files.has(k) ? (files.get(k) as T) : null)
     },
     put: <T>(basePath: string, key: string, data: T): Promise<void> => {

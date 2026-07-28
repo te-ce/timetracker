@@ -7,7 +7,6 @@ function makeMemoryFs() {
   const files = new Map<string, string>()
 
   function makeFileHandle(fullPath: string): FileSystemFileHandle {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return {
       kind: 'file',
       name: fullPath.split('/').pop()!,
@@ -39,7 +38,6 @@ function makeMemoryFs() {
   }
 
   function makeDirectoryHandle(prefix: string): FileSystemDirectoryHandle {
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
     return {
       kind: 'directory',
       name: prefix.split('/').pop() ?? '',

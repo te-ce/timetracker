@@ -15,7 +15,7 @@ interface Props {
   autoCategory: string | null
   customCategories?: string[] | undefined
   categoryOrder?: string[] | undefined
-  categoryDescriptions?: Record<string, string> | undefined | undefined
+  categoryDescriptions?: Record<string, string> | undefined
   initialCategory?: string | undefined
 }
 

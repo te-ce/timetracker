@@ -36,7 +36,6 @@ import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
 import * as workbookServiceMod from '../excel/workbookService'
 
 function resolvedListRows() {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return (workbookServiceMod as unknown as { __listRows: ReturnType<typeof vi.fn> }).__listRows
 }
 

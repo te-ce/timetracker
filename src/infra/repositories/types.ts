@@ -54,11 +54,11 @@ export type DayTypeOverride = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacatio
 
 export interface Day {
   windows: WorkPeriod[]
-  location?: WorkLocation
-  confirmed?: boolean
-  note?: string
-  autoCategoryOverride?: string
-  dayTypeOverride?: DayTypeOverride
+  location?: WorkLocation | undefined
+  confirmed?: boolean | undefined
+  note?: string | undefined
+  autoCategoryOverride?: string | undefined
+  dayTypeOverride?: DayTypeOverride | undefined
 }
 
 export type MonthData = Record<string, Day>

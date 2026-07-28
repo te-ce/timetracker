@@ -81,13 +81,14 @@ export async function writeLocalSprintData(
   }
 
   const rawOutput: unknown = await wb.xlsx.writeBuffer()
-  if (!(rawOutput instanceof ArrayBuffer) && !(rawOutput instanceof Uint8Array)) {
+  const writable = await fileHandle.createWritable()
+  if (rawOutput instanceof ArrayBuffer) {
+    await writable.write(rawOutput)
+  } else if (rawOutput instanceof Uint8Array) {
+    await writable.write(rawOutput.slice())
+  } else {
     throw new Error('writeBuffer returned unexpected type')
   }
-  const writable = await fileHandle.createWritable()
-  const data: unknown = rawOutput
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  await writable.write(data as ArrayBuffer)
   await writable.close()
 }
 
@@ -115,12 +116,13 @@ export async function archiveLocalSprintData(
   }
 
   const rawOutput: unknown = await wb.xlsx.writeBuffer()
-  if (!(rawOutput instanceof ArrayBuffer) && !(rawOutput instanceof Uint8Array)) {
+  const writable = await fileHandle.createWritable()
+  if (rawOutput instanceof ArrayBuffer) {
+    await writable.write(rawOutput)
+  } else if (rawOutput instanceof Uint8Array) {
+    await writable.write(rawOutput.slice())
+  } else {
     throw new Error('writeBuffer returned unexpected type')
   }
-  const writable = await fileHandle.createWritable()
-  const data: unknown = rawOutput
-  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  await writable.write(data as ArrayBuffer)
   await writable.close()
 }

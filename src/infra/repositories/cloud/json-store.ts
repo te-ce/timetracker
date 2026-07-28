@@ -5,10 +5,10 @@ type Validator<T> = (v: unknown) => T | null
 export class JsonCollectionStore<T> {
   private adapter: StorageAdapter
   private key: string
-  private validate: Validator<T> | undefined
+  private validate: Validator<T>
   private cache: T[] | null = null
 
-  constructor(adapter: StorageAdapter, key: string, validate?: Validator<T>) {
+  constructor(adapter: StorageAdapter, key: string, validate: Validator<T>) {
     this.adapter = adapter
     this.key = key
     this.validate = validate
@@ -17,12 +17,6 @@ export class JsonCollectionStore<T> {
   async getAll(): Promise<T[]> {
     if (this.cache) return this.cache
     const raw: unknown = (await this.adapter.get<unknown>(this.key)) ?? []
-    if (!this.validate) {
-      const data: unknown = raw
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.cache = data as T[]
-      return this.cache
-    }
     if (!Array.isArray(raw)) {
       console.warn(`[JsonCollectionStore] ${this.key}: expected array, got`, typeof raw)
       this.cache = []
@@ -78,10 +72,10 @@ export class JsonCollectionStore<T> {
 export class JsonRecordStore<V> {
   private adapter: StorageAdapter
   private key: string
-  private validate: Validator<V> | undefined
+  private validate: Validator<V>
   private cache: Record<string, V> | null = null
 
-  constructor(adapter: StorageAdapter, key: string, validate?: Validator<V>) {
+  constructor(adapter: StorageAdapter, key: string, validate: Validator<V>) {
     this.adapter = adapter
     this.key = key
     this.validate = validate
@@ -90,12 +84,6 @@ export class JsonRecordStore<V> {
   async getAll(): Promise<Record<string, V>> {
     if (this.cache) return this.cache
     const raw: unknown = (await this.adapter.get<unknown>(this.key)) ?? {}
-    if (!this.validate) {
-      const data: unknown = raw
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      this.cache = data as Record<string, V>
-      return this.cache
-    }
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
       console.warn(`[JsonRecordStore] ${this.key}: expected object, got`, typeof raw)
       this.cache = {}

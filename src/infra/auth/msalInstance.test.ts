@@ -1,11 +1,28 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { AuthenticationResult } from '@azure/msal-browser'
+import type { AccountInfo, AuthenticationResult } from '@azure/msal-browser'
 
 vi.mock('./bootstrapConfig', () => ({
   readBootstrapConfig: () => ({ clientId: 'test-client-id', tenantId: 'test-tenant-id' }),
 }))
 
 import * as msalModule from './msalInstance'
+
+function makeAuthResult(accessToken: string, account: AccountInfo): AuthenticationResult {
+  return {
+    authority: 'https://login.microsoftonline.com/tenant',
+    uniqueId: 'unique-id',
+    tenantId: 'tenant',
+    scopes: [],
+    account,
+    idToken: '',
+    idTokenClaims: {},
+    accessToken,
+    fromCache: false,
+    expiresOn: null,
+    tokenType: 'Bearer',
+    correlationId: 'correlation-id',
+  }
+}
 
 describe('getAccessToken', () => {
   beforeEach(() => {
@@ -26,10 +43,9 @@ describe('getAccessToken', () => {
       localAccountId: 'local',
     }
     vi.spyOn(msalModule.msalInstance!, 'getAllAccounts').mockReturnValue([fakeAccount])
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    vi.spyOn(msalModule.msalInstance!, 'acquireTokenSilent').mockResolvedValue({
-      accessToken: 'mock-token-123',
-    } as unknown as AuthenticationResult)
+    vi.spyOn(msalModule.msalInstance!, 'acquireTokenSilent').mockResolvedValue(
+      makeAuthResult('mock-token-123', fakeAccount),
+    )
 
     const token = await msalModule.getAccessToken()
     expect(token).toBe('mock-token-123')
@@ -44,10 +60,9 @@ describe('getAccessToken', () => {
       localAccountId: 'local',
     }
     vi.spyOn(msalModule.msalInstance!, 'getAllAccounts').mockReturnValue([fakeAccount])
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const silentSpy = vi.spyOn(msalModule.msalInstance!, 'acquireTokenSilent').mockResolvedValue({
-      accessToken: 'tok',
-    } as unknown as AuthenticationResult)
+    const silentSpy = vi
+      .spyOn(msalModule.msalInstance!, 'acquireTokenSilent')
+      .mockResolvedValue(makeAuthResult('tok', fakeAccount))
 
     await msalModule.getAccessToken()
 

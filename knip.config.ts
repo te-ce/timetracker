@@ -14,16 +14,6 @@ const config: KnipConfig = {
     '@electron/rebuild',
     // Peer dep of @tailwindcss/vite — not directly imported
     'tailwindcss',
-    // Unified package; individual @typescript-eslint/* packages are imported instead
-    'typescript-eslint',
-    // ESLint plugins — available for configuration but not used in the current minimal eslint.config.js
-    '@eslint/js',
-    'eslint-config-prettier',
-    'eslint-plugin-jsx-a11y',
-    'eslint-plugin-oxlint',
-    'eslint-plugin-react-hooks',
-    'eslint-plugin-react-refresh',
-    'globals',
   ],
   ignoreExportsUsedInFile: true,
 }

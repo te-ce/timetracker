@@ -10,7 +10,6 @@ import { DEFAULT_WEEKDAY_HOURS } from '../../../shared/weekdayHours'
 function adapterWithValue(key: string, value: unknown): StorageAdapter {
   return {
     get<T>(k: string): Promise<T | null> {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       if (k === key) return Promise.resolve(value as T | null)
       return Promise.resolve(null)
     },

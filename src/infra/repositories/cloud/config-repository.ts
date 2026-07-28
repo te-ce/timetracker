@@ -19,9 +19,8 @@ export class CloudConfigRepository implements ConfigRepository {
     if (raw !== null) {
       const parsed = appConfigSchema.safeParse(raw)
       if (parsed.success) {
-        const data: unknown = parsed.data
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        this.cache = data as AppConfig
+        const data: AppConfig = parsed.data
+        this.cache = data
       } else {
         console.warn('[CloudConfigRepository] Stored config failed validation, using defaults', parsed.error.issues)
         this.cache = structuredClone(DEFAULT_APP_CONFIG)
