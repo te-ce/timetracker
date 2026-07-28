@@ -1,24 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
+import { useConfigFieldMutation } from './useConfigFieldMutation'
 
 interface Props {
   repository: ConfigRepository
 }
 
 export function WindowBehaviorSettings({ repository }: Props) {
-  const queryClient = useQueryClient()
-
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => repository.get(),
-  })
-
-  const mutation = useMutation({
-    mutationFn: (patch: { startMinimized?: boolean; closeToTray?: boolean }) =>
-      repository.save({ ...config!, ...patch }),
-    onSuccess: () => invalidateConfig(queryClient),
-  })
+  const { config, mutation } = useConfigFieldMutation<{ startMinimized?: boolean; closeToTray?: boolean }>(
+    repository,
+    (config, patch) => ({ ...config, ...patch }),
+  )
 
   if (!config) return null
 

@@ -1,23 +1,15 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository, WorkLocation } from '../../infra/repositories/types'
+import { useConfigFieldMutation } from './useConfigFieldMutation'
 
 interface Props {
   repository: ConfigRepository
 }
 
 export function DefaultLocationSettings({ repository }: Props) {
-  const queryClient = useQueryClient()
-
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => repository.get(),
-  })
-
-  const mutation = useMutation({
-    mutationFn: (loc: WorkLocation) => repository.save({ ...config!, defaultWorkLocation: loc }),
-    onSuccess: () => invalidateConfig(queryClient),
-  })
+  const { config, mutation } = useConfigFieldMutation<WorkLocation>(repository, (config, loc) => ({
+    ...config,
+    defaultWorkLocation: loc,
+  }))
 
   if (!config) return null
 

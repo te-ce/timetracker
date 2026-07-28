@@ -1,25 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import { BUNDESLAENDER } from '../../shared/holidays'
 import type { Bundesland } from '../../shared/holidays'
+import { useConfigFieldMutation } from './useConfigFieldMutation'
 
 interface Props {
   repository: ConfigRepository
 }
 
 export function BundeslandSettings({ repository }: Props) {
-  const queryClient = useQueryClient()
-
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => repository.get(),
-  })
-
-  const mutation = useMutation({
-    mutationFn: (state: Bundesland | null) => repository.save({ ...config!, federalState: state }),
-    onSuccess: () => invalidateConfig(queryClient),
-  })
+  const { config, mutation } = useConfigFieldMutation<Bundesland | null>(repository, (config, state) => ({
+    ...config,
+    federalState: state,
+  }))
 
   if (!config) return null
 

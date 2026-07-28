@@ -1,7 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
-import type { ConfigRepository } from '../../infra/repositories/types'
-import type { StartupView } from '../../infra/repositories/types'
+import type { ConfigRepository, StartupView } from '../../infra/repositories/types'
+import { useConfigFieldMutation } from './useConfigFieldMutation'
 
 interface Props {
   repository: ConfigRepository
@@ -16,17 +14,10 @@ const OPTIONS: { value: StartupView; label: string }[] = [
 ]
 
 export function StartupViewSettings({ repository }: Props) {
-  const queryClient = useQueryClient()
-
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => repository.get(),
-  })
-
-  const mutation = useMutation({
-    mutationFn: (startupView: StartupView) => repository.save({ ...config!, startupView }),
-    onSuccess: () => invalidateConfig(queryClient),
-  })
+  const { config, mutation } = useConfigFieldMutation<StartupView>(repository, (config, startupView) => ({
+    ...config,
+    startupView,
+  }))
 
   if (!config) return null
 
