@@ -1,0 +1,128 @@
+// @vitest-environment node
+import { describe, it, expect } from 'vitest'
+import { deriveMonthDayCores } from './monthDayCore'
+import type { MonthData, WorkPeriod } from '../infra/repositories/types'
+import type { DayType } from '../features/day/dayType'
+
+function win(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
+  return { id, start, end, category, subtasks: [] }
+}
+
+function openWin(id: string, start: string, category = '_COREMEDIA'): WorkPeriod {
+  return { id, start, end: null, category, subtasks: [] }
+}
+
+describe('deriveMonthDayCores', () => {
+  it('produces one core per day in the month', () => {
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: {},
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+    })
+    expect(days).toHaveLength(31)
+    expect(days[0]!.date).toBe('2026-05-01')
+    expect(days[30]!.date).toBe('2026-05-31')
+  })
+
+  it('classifies weekends and workdays with no dayTypes map or override', () => {
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: {},
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+    })
+    expect(days[0]!.dayType).toBe('WorkDay') // May 1 = Friday
+    expect(days[1]!.dayType).toBe('Weekend') // May 2 = Saturday
+  })
+
+  it('prefers a per-day dayTypeOverride over the dayTypes map', () => {
+    const monthData: MonthData = { '2026-05-01': { windows: [], dayTypeOverride: 'Vacation' } }
+    const dayTypes = new Map<string, DayType>([['2026-05-01', 'PublicHoliday']])
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+      dayTypes,
+    })
+    expect(days[0]!.dayType).toBe('Vacation')
+  })
+
+  it('falls back to the dayTypes map when a day carries no override', () => {
+    const dayTypes = new Map<string, DayType>([['2026-05-01', 'PublicHoliday']])
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: {},
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+      dayTypes,
+    })
+    expect(days[0]!.dayType).toBe('PublicHoliday')
+  })
+
+  it('caps a past day open WorkPeriod at 23:59 rather than counting zero duration', () => {
+    const monthData: MonthData = { '2026-05-18': { windows: [openWin('a', '09:00')] } }
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-19',
+    })
+    expect(days[17]!.workedHours).toBeGreaterThan(14)
+  })
+
+  it('computes isEntriesBalanced from workedHours and uncategorized remainder', () => {
+    const monthData: MonthData = { '2026-05-01': { windows: [win('w1', '09:00', '17:00', '_COREMEDIA')] } }
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+    })
+    expect(days[0]!.isEntriesBalanced).toBe(true)
+
+    const unbalanced: MonthData = { '2026-05-01': { windows: [win('w1', '09:00', '17:00', '_UNCATEGORIZED')] } }
+    const { days: unbalancedDays } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: unbalanced,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+    })
+    expect(unbalancedDays[0]!.isEntriesBalanced).toBe(false)
+  })
+
+  it('projects a planned-stop period on today to its full duration', () => {
+    const today = '2026-05-19'
+    const monthData: MonthData = { [today]: { windows: [win('a', '09:00', '18:00')] } }
+    const { days, projectedWorkedHoursToday } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today,
+      todayNow: '14:00',
+    })
+    const todayIdx = days.findIndex((d) => d.date === today)
+    expect(days[todayIdx]!.workedHours).toBeCloseTo(5)
+    expect(projectedWorkedHoursToday).toBeCloseTo(9)
+  })
+
+  it('leaves projectedWorkedHoursToday undefined when todayNow is not given', () => {
+    const { projectedWorkedHoursToday } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: {},
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+    })
+    expect(projectedWorkedHoursToday).toBeUndefined()
+  })
+})

@@ -1,10 +1,10 @@
 import type { DayType } from '../day'
-import type { Day, MonthData } from '../../infra/repositories/types'
-import { calculateWorkedHours, calculateProjectedWorkedHours } from '../../shared/worktime'
-import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
+import type { MonthData } from '../../infra/repositories/types'
+import { UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS, targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
 import { calculateCumulativeOvertime } from '../../shared/overtime'
+import { deriveMonthDayCores, type MonthDayCore } from '../../shared/monthDayCore'
 
 export interface MonthTableRow {
   date: string
@@ -32,47 +32,22 @@ export interface MonthTableInput {
   globalAutoCategory?: string | null
 }
 
-function padDay(year: number, month: number, day: number): string {
-  const m = String(month).padStart(2, '0')
-  const d = String(day).padStart(2, '0')
-  return `${year}-${m}-${d}`
-}
-
-function classifyWeekday(year: number, month: number, day: number): DayType {
-  const dow = new Date(year, month - 1, day).getDay()
-  return dow === 0 || dow === 6 ? 'Weekend' : 'WorkDay'
-}
-
 type BaseRow = Omit<MonthTableRow, 'accumulatedOvertime'>
 
 function buildDayRow(
-  date: string,
-  day: number,
-  year: number,
-  month: number,
-  dayData: Day | undefined,
-  dayTypes: Map<string, DayType>,
-  weekdayHours: WeekdayHours,
+  core: MonthDayCore,
+  autoCategoryOverride: string | undefined,
   globalAutoCategory: string | null,
-  now?: string,
 ): BaseRow {
-  const workedHours = calculateWorkedHours(dayData?.windows ?? [], now)
-  const categoryHours = calculateDayCategoryHours(dayData ?? { windows: [] }, date, weekdayHours, now)
-  const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
-  const entries: Record<string, number> = Object.fromEntries(
-    Object.entries(categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY),
-  )
-  const hasUnaccountedHours = uncategorizedHours > 0.001
-  const dayType = dayData?.dayTypeOverride ?? dayTypes.get(date) ?? classifyWeekday(year, month, day)
   return {
-    date,
-    dayType,
-    workedHours,
-    entries,
-    autoCategoryHours: uncategorizedHours,
-    resolvedAutoCategory: resolveAutoCategory(dayData?.autoCategoryOverride, globalAutoCategory),
-    isEntriesBalanced: workedHours > 0 && uncategorizedHours < 0.01,
-    hasUnaccountedHours,
+    date: core.date,
+    dayType: core.dayType,
+    workedHours: core.workedHours,
+    entries: Object.fromEntries(Object.entries(core.categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)),
+    autoCategoryHours: core.uncategorizedHours,
+    resolvedAutoCategory: resolveAutoCategory(autoCategoryOverride, globalAutoCategory),
+    isEntriesBalanced: core.isEntriesBalanced,
+    hasUnaccountedHours: core.uncategorizedHours > 0.001,
   }
 }
 
@@ -87,27 +62,30 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     todayNow,
     globalAutoCategory = null,
   } = input
-  const totalDays = new Date(year, month, 0).getDate()
-  const baseRows: BaseRow[] = []
-  for (let d = 1; d <= totalDays; d++) {
-    const date = padDay(year, month, d)
-    const now = date === today ? todayNow : undefined
-    baseRows.push(buildDayRow(date, d, year, month, monthData[date], dayTypes, weekdayHours, globalAutoCategory, now))
-  }
+
+  const { days: cores, projectedWorkedHoursToday } = deriveMonthDayCores({
+    year,
+    month,
+    monthData,
+    weekdayHours,
+    today,
+    dayTypes,
+    ...(todayNow !== undefined ? { todayNow } : {}),
+  })
+
+  const baseRows = cores.map((core) =>
+    buildDayRow(core, monthData[core.date]?.autoCategoryOverride, globalAutoCategory),
+  )
 
   const dates = baseRows.map((r) => r.date)
   const targetHoursPerDay = dates.map((date) => targetHoursForDate(date, weekdayHours))
   const workedHoursPerDay = baseRows.map((r) => r.workedHours)
-  // For today, include the still-to-come portion of a planned-stop period so
-  // the running total reflects the full planned day, not just elapsed time.
-  const projectedWorkedToday =
-    todayNow !== undefined ? calculateProjectedWorkedHours(monthData[today]?.windows ?? [], todayNow) : undefined
   const accumulatedOvertime = calculateCumulativeOvertime(
     workedHoursPerDay,
     dates,
     targetHoursPerDay,
     today,
-    projectedWorkedToday,
+    projectedWorkedHoursToday,
   )
 
   return baseRows.map((base, i) => ({ ...base, accumulatedOvertime: accumulatedOvertime[i] ?? null }))
