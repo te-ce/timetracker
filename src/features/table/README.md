@@ -10,17 +10,16 @@ TableView — spreadsheet-like view of one month. Rows = days (1–31), columns 
 
 ## Files
 
-| File                         | Purpose                                                     |
-| ---------------------------- | ----------------------------------------------------------- |
-| `TableView.tsx`              | Root view — loads data, renders MonthTable                  |
-| `MonthTable.tsx`             | Renders the grid from a pre-built MonthTable data structure |
-| `WorkedHoursCell.tsx`        | Displays daily total worked hours                           |
-| `CategoryColumnHeader.tsx`   | Draggable category column header                            |
-| `CategoryReorderPopover.tsx` | Popover for manual column reorder                           |
-| `buildMonthTable.ts`         | Pure function — derives MonthTable rows from Day records    |
-| `tableConfig.ts`             | Column visibility and ordering configuration                |
-| `categoryMutations.ts`       | Mutations for category column configuration                 |
-| `index.ts`                   | Public API barrel                                           |
+| File                       | Purpose                                                     |
+| -------------------------- | ----------------------------------------------------------- |
+| `TableView.tsx`            | Root view — loads data, renders MonthTable                  |
+| `MonthTable.tsx`           | Renders the grid from a pre-built MonthTable data structure |
+| `WorkedHoursCell.tsx`      | Displays daily total worked hours                           |
+| `CategoryColumnHeader.tsx` | Draggable category column header                            |
+| `buildMonthTable.ts`       | Pure function — derives MonthTable rows from Day records    |
+| `tableConfig.ts`           | Column visibility and ordering configuration                |
+| `categoryMutations.ts`     | Mutations for category column configuration                 |
+| `index.ts`                 | Public API barrel                                           |
 
 ## How it works
 

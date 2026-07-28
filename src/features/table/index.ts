@@ -1,5 +1,4 @@
 export { type ColumnDragHandlers, type CategoryColumnHeaderProps, CategoryColumnHeader } from './CategoryColumnHeader'
-export { CategoryReorderPopover } from './CategoryReorderPopover'
 export { MonthGrid } from './MonthTable'
 export { TableView } from './TableView'
 export { WorkedHoursCell } from './WorkedHoursCell'
