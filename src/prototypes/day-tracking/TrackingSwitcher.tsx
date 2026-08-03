@@ -4,10 +4,10 @@ import { useCallback, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 
 export const TRACKING_VARIANTS = [
-  { key: 'A', name: 'Hero Timer' },
-  { key: 'B', name: 'Time Grid' },
-  { key: 'C', name: 'Category Tiles' },
+  { key: 'A', name: 'Live Chronology' },
+  { key: 'B', name: 'Ribbon + Rows' },
   { key: 'D', name: 'Editable Table' },
+  { key: 'E', name: 'Segment Stream' },
 ] as const
 
 export type TrackingVariantKey = (typeof TRACKING_VARIANTS)[number]['key']

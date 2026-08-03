@@ -4,8 +4,8 @@
 import { TrackingSwitcher, type TrackingVariantKey } from './TrackingSwitcher'
 import { VariantA } from './VariantA'
 import { VariantB } from './VariantB'
-import { VariantC } from './VariantC'
 import { VariantD } from './VariantD'
+import { VariantE } from './VariantE'
 import { withUncategorized, type VariantProps } from './protoShared'
 
 interface Props extends VariantProps {
@@ -24,8 +24,8 @@ export function DayTrackingPrototype({ variant, ...rest }: Props) {
       </div>
       {variant === 'A' && <VariantA {...props} />}
       {variant === 'B' && <VariantB {...props} />}
-      {variant === 'C' && <VariantC {...props} />}
       {variant === 'D' && <VariantD {...props} />}
+      {variant === 'E' && <VariantE {...props} />}
       <TrackingSwitcher current={variant} date={props.date} />
     </section>
   )
