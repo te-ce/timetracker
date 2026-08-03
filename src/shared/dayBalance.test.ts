@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { deriveDayBalance, hasLiveActivity, type DayBalanceInput } from './dayBalance'
+import { calculateProjectedWorkedHours } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
 function period(start: string, end: string | null): WorkPeriod {
@@ -76,6 +77,13 @@ describe('deriveDayBalance projection', () => {
   it('remaining uses projected hours, not elapsed hours', () => {
     const b = derive({ windows: [period('09:00', '15:00')] })
     expect(b.remaining).toBeCloseTo(2)
+  })
+
+  it('projectedWorked matches calculateProjectedWorkedHours exactly (no duplicated formula)', () => {
+    const windows = [period('08:00', '09:00'), period('09:00', null), period('11:00', '15:00')]
+    const now = '12:00'
+    const b = derive({ windows, now })
+    expect(b.projectedWorked).toBe(calculateProjectedWorkedHours(windows, now))
   })
 
   it('projectedRemaining subtracts carry-over and projected hours from the target', () => {

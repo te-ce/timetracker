@@ -1,6 +1,13 @@
 import type { WorkPeriod } from '../infra/repositories/types'
 import { calculateRemaining, type RemainingTimeMode } from './remainingCalc'
-import { derivePlannedStopState, elapsedHours, findOpenPeriod, findPlannedStopPeriod, isPlannedStop } from './worktime'
+import {
+  calculateProjectedWorkedHours,
+  derivePlannedStopState,
+  elapsedHours,
+  findOpenPeriod,
+  findPlannedStopPeriod,
+  isPlannedStop,
+} from './worktime'
 
 export interface DayBalanceInput {
   windows: WorkPeriod[]
@@ -65,9 +72,7 @@ export function deriveDayBalance(input: DayBalanceInput): DayBalance {
   const worked = closedWorked + liveElapsed
 
   const plannedStopPeriod = findPlannedStopPeriod(windows, now)
-  const projectedWorked = plannedStopPeriod
-    ? windows.reduce((total, w) => total + elapsedHours(w.start, w.end ?? now), 0)
-    : worked
+  const projectedWorked = plannedStopPeriod ? calculateProjectedWorkedHours(windows, now) : worked
 
   const { isPlannedStopMode, plannedStopTime, countdownHours } = derivePlannedStopState(
     windows,
