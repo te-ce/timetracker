@@ -70,10 +70,7 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
     officeDays: 0,
     totalWorkDays: 0,
     officePercent: 0,
-    isPlannedStopMode: false,
-    plannedStopTime: null,
-    countdownHours: 0,
-    projectedWorkedToday: undefined,
+    todayWindows: [],
     ...overrides,
   })
 }

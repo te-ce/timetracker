@@ -1,18 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-
-function nowHHMM() {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
-function useNow(): string {
-  const [now, setNow] = useState(nowHHMM)
-  useEffect(() => {
-    const id = setInterval(() => setNow(nowHHMM()), 60_000)
-    return () => clearInterval(id)
-  }, [])
-  return now
-}
+import { useClock } from '../../shared/useClock'
 
 interface NowChipProps {
   onChange: (v: string) => void
@@ -23,7 +10,7 @@ interface NowChipProps {
 }
 
 export function NowChip({ onChange, 'aria-label': ariaLabel, onKeyDown, className, focusOnMount }: NowChipProps) {
-  const now = useNow()
+  const now = useClock()
   const [isNow, setIsNow] = useState(true)
   const [customValue, setCustomValue] = useState(now)
   const inputRef = useRef<HTMLInputElement>(null)

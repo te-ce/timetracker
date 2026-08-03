@@ -9,13 +9,8 @@ import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
-import { findActivePeriod } from './worktime'
+import { findActivePeriod, nowHHMM } from './worktime'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
-
-function nowHHMM(): string {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
 
 function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string): string | null {
   if (!period) return null

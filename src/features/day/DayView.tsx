@@ -8,7 +8,9 @@ import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
 import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
-import { findOpenPeriod } from '../../shared/worktime'
+import { nowHHMM } from '../../shared/worktime'
+import { deriveDayBalance, hasLiveActivity } from '../../shared/dayBalance'
+import { useClock } from '../../shared/useClock'
 import { Tooltip } from '../../shared/Tooltip'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
@@ -134,10 +136,7 @@ export function DayView() {
     officeDays,
     totalWorkDays,
     officePercent,
-    isPlannedStopMode,
-    plannedStopTime,
-    countdownHours,
-    projectedWorkedToday,
+    todayWindows,
   } = useDayQuery(selectedDate)
 
   const dayMutations = useDayMutations({
@@ -153,10 +152,18 @@ export function DayView() {
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
   const { customCategories, categoryOrder, categoryDescriptions } = config
-  const liveWindowStart = selectedDate === todayIso ? findOpenPeriod(windows)?.start : undefined
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config.officeStats
-  const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
+  const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : null
+  const liveNow = useClock(hasLiveActivity(todayWindows, nowHHMM()))
+  const todayBalance = deriveDayBalance({
+    windows: todayWindows,
+    sollstunden,
+    priorOvertime: overtimeToDate.priorOvertime,
+    now: liveNow,
+    remainingTimeReference: config.remainingTimeReference,
+    remainingTimeMode: config.remainingTimeMode,
+  })
   const showOvertimeBar = config.showOvertimeBar
 
   function prevDay() {
@@ -182,18 +189,10 @@ export function DayView() {
 
       {showOvertimeBar && (
         <OvertimeBar
-          sollstunden={sollstunden}
-          priorOvertime={overtimeToDate.priorOvertime}
-          workedToday={overtimeToDate.workedToday}
-          liveWindowStart={liveWindowStart ?? null}
-          plannedStopTime={plannedStopTime}
-          isPlannedStopMode={isPlannedStopMode}
-          countdownHours={countdownHours}
-          projectedWorkedToday={projectedWorkedToday}
-          remainingTimeMode={config.remainingTimeMode}
+          balance={todayBalance}
           showTotalWorked={config.showTotalWorked}
+          officeStats={officeStats}
           onHide={() => hideOvertimeMutation.mutate()}
-          {...officeStats}
         />
       )}
 

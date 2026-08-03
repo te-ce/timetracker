@@ -23,7 +23,7 @@ import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { Tooltip } from '../../shared/Tooltip'
-import { nowHHMM } from '../../shared/worktime'
+import { useClock } from '../../shared/useClock'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { DaySummaryBody } from '../../shared/DaySummaryBody'
 import { resolveAutoCategory } from '../../shared/autoCategory'
@@ -239,11 +239,7 @@ export function MonthGrid({
     setActiveDialogCategory(null)
   }
 
-  const [liveNow, setLiveNow] = useState(nowHHMM)
-  useEffect(() => {
-    const id = setInterval(() => setLiveNow(nowHHMM()), 60_000)
-    return () => clearInterval(id)
-  }, [])
+  const liveNow = useClock()
 
   useEffect(() => {
     if (!activeDialogDate) return

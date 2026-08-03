@@ -20,10 +20,18 @@ function makeOvertimeToDate(priorOvertime = 0): OvertimeToDate {
   return { value: priorOvertime, workedToday: 0, priorOvertime }
 }
 
+/** Closed periods totalling `hours`, always in the past relative to the pinned clock. */
+function closedWindows(hours: number) {
+  if (hours <= 0) return []
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  const end = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  return [{ id: 'closed', start: '00:00', end, category: 'Work', subtasks: [] }]
+}
+
 function stubDayQuery(overrides: Partial<DayQueryResult>): void {
   vi.mocked(useDayQuery).mockReturnValue({
     config: resolveAppConfig(DEFAULT_APP_CONFIG),
-    windows: [],
     workLocation: null,
     autoCategoryOverride: null,
     dayTypeOverride: undefined,
@@ -42,16 +50,20 @@ function stubDayQuery(overrides: Partial<DayQueryResult>): void {
     officeDays: 0,
     totalWorkDays: 0,
     officePercent: 0,
-    isPlannedStopMode: false,
-    plannedStopTime: null,
-    countdownHours: 0,
-    projectedWorkedToday: undefined,
+    todayWindows: [],
     todayIso: '2026-06-03',
     ...overrides,
+    windows: overrides.windows ?? closedWindows(overrides.workedHours ?? 0),
   })
 }
 
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-06-03T12:00:00'))
+})
+
 afterEach(() => {
+  vi.useRealTimers()
   document.title = 'Timetracker'
 })
 
@@ -192,15 +204,14 @@ describe('useRemainingHours', () => {
   })
 
   describe('live tracking', () => {
-    it('subtracts live window elapsed from remaining', () => {
-      const now = new Date()
-      const thirtyMinsAgoHHMM = `${String(now.getHours()).padStart(2, '0')}:${String(Math.max(0, now.getMinutes() - 30)).padStart(2, '0')}`
-      // workedHours includes the live elapsed (buildDaySummary now passes `now` to calculateWorkedHours).
-      // 3h closed + 0.5h live = 3.5h total from the query.
+    it('counts live window elapsed towards remaining', () => {
+      // 3h closed + 0.5h live at the pinned 12:00 clock → 3.5h worked.
       stubDayQuery({
         sollstunden: 8,
-        workedHours: 3.5,
-        windows: [{ id: '1', start: thirtyMinsAgoHHMM, end: null, category: 'Work', subtasks: [] }],
+        windows: [
+          { id: '0', start: '00:00', end: '03:00', category: 'Work', subtasks: [] },
+          { id: '1', start: '11:30', end: null, category: 'Work', subtasks: [] },
+        ],
       })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(4.5, 0)
@@ -224,7 +235,7 @@ describe('useRemainingHours', () => {
     })
 
     it('remaining excludes live tracking when no open window', () => {
-      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
+      stubDayQuery({ sollstunden: 8, workedHours: 3 })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(5)
     })
@@ -440,7 +451,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
     })
 
     it('remaining uses target-based formula when no planned stop', () => {
-      stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
+      stubDayQuery({ sollstunden: 8, workedHours: 3 })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(5)
     })

@@ -4,9 +4,11 @@ import { composeMonthOvertime } from './monthOvertime'
 import { useTodayIso } from './useTodayIso'
 import { useAppConfig } from './useAppConfig'
 import { QUERY_KEYS } from './queryKeys'
-import { findOpenPeriod, findPlannedStopPeriod, nowHHMM } from './worktime'
+import { nowHHMM } from './worktime'
+import { deriveDayBalance, hasLiveActivity } from './dayBalance'
+import { useClock } from './useClock'
 import { targetHoursForDate } from './weekdayHours'
-import type { DayTypeOverride, MonthData, WorkLocation } from '../infra/repositories/types'
+import type { DayTypeOverride, MonthData, WorkLocation, WorkPeriod } from '../infra/repositories/types'
 
 interface MonthMaps {
   dayTypeOverrides: Map<string, DayTypeOverride>
@@ -15,28 +17,12 @@ interface MonthMaps {
   dayNotes: Map<string, string>
 }
 
-function findTodayLiveWindowStart(
-  monthData: MonthData,
-  todayIso: string,
-  year: number,
-  month: number,
-): string | undefined {
+/** Today's WorkPeriods, or none when the viewed month isn't the current one. */
+function todayWindowsIn(monthData: MonthData, todayIso: string, year: number, month: number): WorkPeriod[] {
   const todayYear = parseInt(todayIso.slice(0, 4))
   const todayMonth = parseInt(todayIso.slice(5, 7))
-  if (year !== todayYear || month !== todayMonth) return undefined
-  return findOpenPeriod(monthData[todayIso]?.windows ?? [])?.start
-}
-
-function findTodayPlannedStopTime(
-  monthData: MonthData,
-  todayIso: string,
-  year: number,
-  month: number,
-): string | undefined {
-  const todayYear = parseInt(todayIso.slice(0, 4))
-  const todayMonth = parseInt(todayIso.slice(5, 7))
-  if (year !== todayYear || month !== todayMonth) return undefined
-  return findPlannedStopPeriod(monthData[todayIso]?.windows ?? [], nowHHMM())?.end ?? undefined
+  if (year !== todayYear || month !== todayMonth) return []
+  return monthData[todayIso]?.windows ?? []
 }
 
 function extractMonthMaps(monthData: MonthData): MonthMaps {
@@ -78,8 +64,16 @@ export function useMonthSummaries(year: number, month: number) {
   )
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
-  const todayLiveWindowStart = findTodayLiveWindowStart(monthData, todayIso, year, month)
-  const todayPlannedStopTime = findTodayPlannedStopTime(monthData, todayIso, year, month)
+  const todayWindows = todayWindowsIn(monthData, todayIso, year, month)
+  const liveNow = useClock(hasLiveActivity(todayWindows, nowHHMM()))
+  const todayBalance = deriveDayBalance({
+    windows: todayWindows,
+    sollstunden,
+    priorOvertime: overtimeToDate.priorOvertime,
+    now: liveNow,
+    remainingTimeReference: config.remainingTimeReference,
+    remainingTimeMode: config.remainingTimeMode,
+  })
 
   return {
     config,
@@ -92,7 +86,6 @@ export function useMonthSummaries(year: number, month: number) {
     sollstunden,
     targetHoursPerDay,
     todayIso,
-    todayLiveWindowStart,
-    todayPlannedStopTime,
+    todayBalance,
   }
 }

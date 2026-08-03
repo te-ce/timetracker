@@ -57,18 +57,8 @@ export function TableView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const {
-    config,
-    summaries,
-    dayTypeOverrides,
-    workLocations,
-    confirmedDays,
-    dayNotes,
-    overtimeToDate,
-    sollstunden,
-    todayLiveWindowStart,
-    todayPlannedStopTime,
-  } = useMonthSummaries(year, month)
+  const { config, summaries, dayTypeOverrides, workLocations, confirmedDays, dayNotes, todayBalance } =
+    useMonthSummaries(year, month)
 
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
@@ -229,14 +219,9 @@ export function TableView() {
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
       {showOvertimeBar && (
         <OvertimeBar
-          sollstunden={sollstunden}
-          priorOvertime={overtimeToDate.priorOvertime}
-          workedToday={overtimeToDate.workedToday}
-          liveWindowStart={todayLiveWindowStart ?? null}
-          plannedStopTime={todayPlannedStopTime ?? null}
-          remainingTimeMode={config.remainingTimeMode}
+          balance={todayBalance}
           showTotalWorked={config.showTotalWorked}
-          {...(showOfficeStats ? { officeDays, totalWorkDays, officePercent } : {})}
+          officeStats={showOfficeStats ? { officeDays, totalWorkDays, officePercent } : null}
           onHide={() => hideOvertimeMutation.mutate()}
         />
       )}

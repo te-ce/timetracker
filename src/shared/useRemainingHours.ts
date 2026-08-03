@@ -1,23 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useTodayIso } from './useTodayIso'
 import { useDayQuery } from '../features/day/useDayQuery'
 import { formatHours } from './formatHours'
-import {
-  findOpenPeriod,
-  findPlannedStopPeriod,
-  derivePlannedStopState,
-  calculateProjectedWorkedHours,
-  elapsedHours,
-} from './worktime'
-import { calculateRemaining } from './remainingCalc'
+import { nowHHMM } from './worktime'
+import { deriveDayBalance, hasLiveActivity } from './dayBalance'
+import { useClock } from './useClock'
 import { useTimeFormatStore } from './timeFormatStore'
 export { buildReceipt } from './remainingCalc'
 export type { ReceiptLine } from './remainingCalc'
-
-function nowHHMMFn(): string {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
 
 function buildSummary(sollstunden: number, priorOvertime: number, workedHours: number): string {
   const hasOvertime = priorOvertime >= 0
@@ -32,77 +22,41 @@ function buildSummary(sollstunden: number, priorOvertime: number, workedHours: n
 
 export function useRemainingHours() {
   const todayIso = useTodayIso()
-  const { config, sollstunden, workedHours, overtimeToDate, windows, officeDays, totalWorkDays, officePercent } =
+  const { config, sollstunden, overtimeToDate, windows, officeDays, totalWorkDays, officePercent } =
     useDayQuery(todayIso)
-  const liveWindowStart = findOpenPeriod(windows)?.start ?? null
 
-  const [currentNow, setCurrentNow] = useState(nowHHMMFn)
+  // Detection uses a fresh read rather than the ticked value so a just-closed
+  // period (whose `end` equals the current minute) isn't mistaken for a
+  // planned stop by a tick that hasn't fired yet.
+  const currentNow = useClock(hasLiveActivity(windows, nowHHMM()))
 
-  // Use a fresh real-time value for detection so a just-closed period (whose
-  // `end` equals the current minute) is not mistaken for a planned-stop period
-  // due to a stale `currentNow` tick that hasn't fired yet.
-  const plannedStopPeriod = findPlannedStopPeriod(windows, nowHHMMFn())
-  const hasLiveActivity = !!liveWindowStart || !!plannedStopPeriod
-
-  useEffect(() => {
-    if (!hasLiveActivity) return
-    setCurrentNow(nowHHMMFn())
-    const id = setInterval(() => setCurrentNow(nowHHMMFn()), 60_000)
-    return () => clearInterval(id)
-  }, [hasLiveActivity])
-
-  const liveElapsed = liveWindowStart ? elapsedHours(liveWindowStart, currentNow) : 0
-  const plannedLiveElapsed = plannedStopPeriod ? elapsedHours(plannedStopPeriod.start, currentNow) : 0
-
-  // workedHours from useDayQuery now includes live elapsed for open/planned-stop periods
-  // (buildDaySummary passes `now` to calculateWorkedHours). Subtract to get closed-only
-  // hours so callers that do (workedHours + liveElapsed) still get the correct total.
-  const closedWorkedHours = Math.max(0, workedHours - liveElapsed - plannedLiveElapsed)
-
-  // Full projected worked hours, including the still-to-come portion of a planned-stop
-  // period. Only meaningful (and only computed) when a planned stop actually exists.
-  const projectedWorkedHours = plannedStopPeriod ? calculateProjectedWorkedHours(windows, currentNow) : undefined
-  const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - (projectedWorkedHours ?? workedHours)
-
-  const remainingTimeReference = config.remainingTimeReference
-  const remainingTimeMode = config.remainingTimeMode
-  const { isPlannedStopMode, plannedStopTime, countdownHours } = derivePlannedStopState(
+  const balance = deriveDayBalance({
     windows,
-    currentNow,
-    remainingTimeReference,
-  )
-
-  // workedHours already contains live elapsed, so just subtract once. When the countdown
-  // is off (isPlannedStopMode false) but a planned stop still exists, project the future
-  // portion so remaining/overtime already reflects the scheduled stop.
-  const { remaining } = calculateRemaining({
     sollstunden,
     priorOvertime: overtimeToDate.priorOvertime,
-    workedHours,
-    projectedWorkedHours,
-    remainingTimeMode,
-    isPlannedStopMode,
-    countdownHours,
+    now: currentNow,
+    remainingTimeReference: config.remainingTimeReference,
+    remainingTimeMode: config.remainingTimeMode,
   })
 
   const { format } = useTimeFormatStore()
-  const priorOvertime = overtimeToDate.priorOvertime
-  const summary = buildSummary(sollstunden, priorOvertime, workedHours)
+  const summary = buildSummary(balance.sollstunden, balance.priorOvertime, balance.worked)
 
   useEffect(() => {
-    const label = remaining > 0 ? `(${formatHours(remaining, format)} left) ` : ''
+    const label = balance.remaining > 0 ? `(${formatHours(balance.remaining, format)} left) ` : ''
     document.title = `${label}Timetracker`
-  }, [remaining, format])
+  }, [balance.remaining, format])
 
   return {
-    remaining,
-    projectedRemaining,
-    isPlannedStopMode,
-    plannedStopTime,
-    sollstunden,
-    workedHours: closedWorkedHours,
-    priorOvertime,
-    liveElapsed,
+    balance,
+    remaining: balance.remaining,
+    projectedRemaining: balance.projectedRemaining,
+    isPlannedStopMode: balance.isPlannedStopMode,
+    plannedStopTime: balance.plannedStopTime,
+    sollstunden: balance.sollstunden,
+    workedHours: balance.closedWorked,
+    priorOvertime: balance.priorOvertime,
+    liveElapsed: balance.liveElapsed,
     summary,
     officeDays,
     totalWorkDays,

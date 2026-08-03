@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { WorkPeriodSubtask } from '../../infra/repositories/types'
-import { nowHHMM } from '../../shared/worktime'
+export { useClock as useNow } from '../../shared/useClock'
 
 export type LiveSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt?: undefined }
 export type TimedSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt: string }
@@ -11,15 +11,6 @@ export function isLiveSubtask(s: WorkPeriodSubtask): s is LiveSubtask {
 
 export function isTimedSubtask(s: WorkPeriodSubtask): s is TimedSubtask {
   return !!s.startedAt && !!s.stoppedAt
-}
-
-export function useNow(): string {
-  const [now, setNow] = useState(nowHHMM)
-  useEffect(() => {
-    const id = setInterval(() => setNow(nowHHMM()), 60_000)
-    return () => clearInterval(id)
-  }, [])
-  return now
 }
 
 export function useBlurWarning(isDirty: boolean) {

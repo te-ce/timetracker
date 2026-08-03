@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { deriveDayBalance, emptyDayBalance } from '../../shared/dayBalance'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
@@ -54,6 +55,14 @@ import { useMonthSummaries } from '../../shared/useMonthSummaries'
 type MonthSummariesReturn = ReturnType<typeof useMonthSummaries>
 
 function stubSummariesWithLiveWindow(liveWindowStart: string): void {
+  const liveBalance = deriveDayBalance({
+    windows: [{ id: 'live', start: liveWindowStart, end: null, category: '_OTHER', subtasks: [] }],
+    sollstunden: 8,
+    priorOvertime: 0,
+    now: '12:00',
+    remainingTimeReference: 'planned-stop',
+    remainingTimeMode: 'until-zero-overtime',
+  })
   const stub: MonthSummariesReturn = {
     config: resolveAppConfig(undefined),
     summaries: {
@@ -71,8 +80,7 @@ function stubSummariesWithLiveWindow(liveWindowStart: string): void {
     sollstunden: 8,
     targetHoursPerDay: [],
     todayIso: '2026-06-05',
-    todayLiveWindowStart: liveWindowStart,
-    todayPlannedStopTime: undefined,
+    todayBalance: liveBalance,
   }
   vi.mocked(useMonthSummaries).mockReturnValue(stub)
 }
@@ -95,8 +103,7 @@ function stubSummaries(): void {
     sollstunden: 8,
     targetHoursPerDay: [],
     todayIso: '2026-06-05',
-    todayLiveWindowStart: undefined,
-    todayPlannedStopTime: undefined,
+    todayBalance: emptyDayBalance(8),
   }
   vi.mocked(useMonthSummaries).mockReturnValue(stub)
 }
@@ -258,8 +265,7 @@ describe('TableView', () => {
         sollstunden: 8,
         targetHoursPerDay: [],
         todayIso: '2026-06-05',
-        todayLiveWindowStart: undefined,
-        todayPlannedStopTime: undefined,
+        todayBalance: emptyDayBalance(8),
       })
       render(<TableView />, { wrapper: makeWrapper() })
       expect(screen.queryByRole('status')).not.toBeInTheDocument()

@@ -10,17 +10,13 @@ import {
   type DayComputedStats,
 } from './dayContext'
 import { useAppConfig } from '../../shared/useAppConfig'
+import { nowHHMM } from '../../shared/worktime'
 import type { ResolvedAppConfig } from '../../shared/appConfigDefaults'
 
 export type { DayRawData, DayConfigContext, DayComputedStats, DayContext }
 
 export interface DayQueryResult extends DayContext {
   config: ResolvedAppConfig
-}
-
-function nowHHMM(): string {
-  const d = new Date()
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 export function useDayQuery(date: string): DayQueryResult {

@@ -9,7 +9,6 @@ import { calculateTotalCategorizedHours } from '../../shared/periodCategories'
 import { officeStats } from '../../shared/officeStats'
 import { targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
-import { derivePlannedStopState, calculateProjectedWorkedHours } from '../../shared/worktime'
 
 export interface DayRawData {
   windows: WorkPeriod[]
@@ -37,12 +36,8 @@ export interface DayComputedStats {
   officeDays: number
   totalWorkDays: number
   officePercent: number
-  /** Only meaningful when the viewed date is today — false/null/0 otherwise. */
-  isPlannedStopMode: boolean
-  plannedStopTime: string | null
-  countdownHours: number
-  /** Full planned-stop duration for today, undefined when there's no planned stop. */
-  projectedWorkedToday: number | undefined
+  /** Today's WorkPeriods — empty when today is outside the viewed month. */
+  todayWindows: WorkPeriod[]
 }
 
 export interface DayContext extends DayRawData, DayConfigContext, DayComputedStats {
@@ -80,15 +75,7 @@ function fromDaySummary(
   s: DaySummary,
 ): Omit<
   DayComputedStats,
-  | 'overtimeToDate'
-  | 'manualTotal'
-  | 'officeDays'
-  | 'totalWorkDays'
-  | 'officePercent'
-  | 'isPlannedStopMode'
-  | 'plannedStopTime'
-  | 'countdownHours'
-  | 'projectedWorkedToday'
+  'overtimeToDate' | 'manualTotal' | 'officeDays' | 'totalWorkDays' | 'officePercent' | 'todayWindows'
 > {
   return {
     dayClassification: { displayStatus: s.displayStatus, reason: s.statusReason },
@@ -121,16 +108,6 @@ export function composeDayContext(
   const autoCategory = resolveAutoCategory(dayData?.autoCategoryOverride, config.autoCategory)
   const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])
 
-  const isToday = date === todayIso
-  const plannedStop =
-    isToday && todayNow !== undefined
-      ? derivePlannedStopState(dayData?.windows ?? [], todayNow, config.remainingTimeReference)
-      : { isPlannedStopMode: false, plannedStopTime: null, countdownHours: 0 }
-  const projectedWorkedToday =
-    isToday && plannedStop.plannedStopTime && todayNow !== undefined
-      ? calculateProjectedWorkedHours(dayData?.windows ?? [], todayNow)
-      : undefined
-
   return {
     todayIso,
     ...extractDayFields(dayData),
@@ -140,10 +117,7 @@ export function composeDayContext(
     autoCategory,
     overtimeToDate,
     manualTotal,
-    isPlannedStopMode: plannedStop.isPlannedStopMode,
-    plannedStopTime: plannedStop.plannedStopTime,
-    countdownHours: plannedStop.countdownHours,
-    projectedWorkedToday,
+    todayWindows: monthData[todayIso]?.windows ?? [],
     ...fromDaySummary(daySummary),
     ...officeStats(monthDays, (d) => monthData[d]?.location),
   }

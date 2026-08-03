@@ -38,16 +38,7 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const {
-    config,
-    summaries,
-    overtimeToDate,
-    workLocations,
-    sollstunden,
-    dayNotes,
-    todayLiveWindowStart,
-    todayPlannedStopTime,
-  } = useMonthSummaries(year, month)
+  const { config, summaries, workLocations, dayNotes, todayBalance } = useMonthSummaries(year, month)
 
   const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
 
@@ -77,14 +68,9 @@ export function MonthView() {
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
       {showOvertimeBar && (
         <OvertimeBar
-          sollstunden={sollstunden}
-          priorOvertime={overtimeToDate.priorOvertime}
-          workedToday={overtimeToDate.workedToday}
-          liveWindowStart={todayLiveWindowStart ?? null}
-          plannedStopTime={todayPlannedStopTime ?? null}
-          remainingTimeMode={config.remainingTimeMode}
+          balance={todayBalance}
           showTotalWorked={config.showTotalWorked}
-          {...(showOfficeStats ? { officeDays, totalWorkDays, officePercent } : {})}
+          officeStats={showOfficeStats ? { officeDays, totalWorkDays, officePercent } : null}
           onHide={() => hideOvertimeMutation.mutate()}
         />
       )}
