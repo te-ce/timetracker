@@ -13,6 +13,14 @@ import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
 import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
+// PROTOTYPE — table-UX variants; delete these imports with src/prototypes/table-ux/.
+import { TableUxSwitcher, isTableVariantKey } from '../../prototypes/table-ux/TableUxSwitcher'
+import { VariantA } from '../../prototypes/table-ux/VariantA'
+import { VariantB } from '../../prototypes/table-ux/VariantB'
+import { VariantC } from '../../prototypes/table-ux/VariantC'
+import { VariantD } from '../../prototypes/table-ux/VariantD'
+import { VariantE } from '../../prototypes/table-ux/VariantE'
+import { VariantF } from '../../prototypes/table-ux/VariantF'
 
 async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
   const cfg = await configRepo.get()
@@ -98,7 +106,10 @@ export function TableView() {
   const showOvertimeBar = config.showOvertimeBar
   const showOfficeStats = config.officeStats
 
-  const table = (
+  // PROTOTYPE — table-UX variants (src/prototypes/table-ux/). Remove with the prototype.
+  const variant = isTableVariantKey(search.tableVariant) ? search.tableVariant : 'live'
+
+  const liveTable = (
     <MonthGrid
       view={view}
       expanded={expanded}
@@ -113,6 +124,19 @@ export function TableView() {
       initialLogDate={pendingLogDate}
       openLogSignal={logSignal}
     />
+  )
+
+  const table = (
+    <>
+      {variant === 'live' && liveTable}
+      {variant === 'D' && <VariantD view={view} />}
+      {variant === 'E' && <VariantE view={view} />}
+      {variant === 'F' && <VariantF view={view} />}
+      {variant === 'A' && <VariantA view={view} repository={monthRepo} />}
+      {variant === 'B' && <VariantB view={view} repository={monthRepo} />}
+      {variant === 'C' && <VariantC view={view} repository={monthRepo} />}
+      <TableUxSwitcher current={variant} />
+    </>
   )
 
   const logWorkBtn = (
