@@ -2,6 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { MonthCalendar } from './MonthCalendar'
+import { buildMonthOverview } from './monthOverview'
+import type { DaySummary } from './daySummary'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
@@ -225,6 +227,69 @@ describe('MonthCalendar', () => {
         expect(screen.getByText('10').textContent).not.toContain('✓')
         unmount()
       }
+    })
+  })
+
+  describe('ledger cells', () => {
+    function overviewFor(days: DaySummary[], targetHoursPerDay: number[], today: string) {
+      return buildMonthOverview({ days, targetHoursPerDay, today, cumulativeBalance: 0 })
+    }
+
+    function workDay(date: string, workedHours: number): DaySummary {
+      return {
+        date,
+        dayType: 'WorkDay',
+        workedHours,
+        entryTotal: 0,
+        isEntriesBalanced: true,
+        isConfirmed: false,
+        dayStatus: 'complete',
+        displayStatus: 'complete',
+        statusReason: '',
+        categoryBreakdown: {},
+      }
+    }
+
+    it('shows worked hours and the day balance inside the cell', () => {
+      const overview = overviewFor([workDay('2026-07-01', 9.5)], [8], '2026-07-31')
+      render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
+
+      const cell = screen.getByRole('button', { name: /Wednesday, 1 July 2026/i })
+      expect(cell.textContent).toContain('9.50h')
+      expect(cell.textContent).toContain('+1.50h')
+    })
+
+    it('shows a week total column with the ISO week, its hours and its balance', () => {
+      const overview = overviewFor([workDay('2026-07-01', 9), workDay('2026-07-02', 6)], [8, 8], '2026-07-31')
+      render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
+
+      expect(screen.getByText('KW 27')).toBeInTheDocument()
+      expect(screen.getByText('15.00h')).toBeInTheDocument()
+      expect(screen.getByText('−1.00h')).toBeInTheDocument()
+    })
+
+    it('names the leave instead of leaving a vacation cell blank', () => {
+      const vacation: DaySummary = {
+        ...workDay('2026-07-01', 0),
+        dayType: 'Vacation',
+        dayStatus: 'leave',
+        displayStatus: 'leave',
+        leaveType: 'Vacation',
+      }
+      const overview = overviewFor([vacation], [8], '2026-07-31')
+      render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
+
+      expect(screen.getByRole('button', { name: /Wednesday, 1 July 2026/i }).textContent).toContain('Vacation')
+    })
+
+    it('leaves a day with nothing tracked without a balance', () => {
+      const untracked: DaySummary = { ...workDay('2026-07-01', 0), dayStatus: 'untracked', displayStatus: 'untracked' }
+      const overview = overviewFor([untracked], [8], '2026-07-31')
+      render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
+
+      const cell = screen.getByRole('button', { name: /Wednesday, 1 July 2026/i })
+      expect(cell.textContent).not.toContain('0.00h')
+      expect(cell.textContent).not.toContain('-8.00h')
     })
   })
 

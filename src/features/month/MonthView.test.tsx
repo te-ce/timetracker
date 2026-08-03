@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { deriveDayBalance, emptyDayBalance } from '../../shared/dayBalance'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
@@ -19,7 +18,7 @@ vi.mock('../../infra/auth/msalInstance', () => ({
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
-  useSearch: () => ({ year: 2026, month: 6 }),
+  useSearch: () => ({ year: 2026, month: 7 }),
 }))
 
 vi.mock('../../shared/useMonthView', async (importOriginal) => ({
@@ -27,54 +26,47 @@ vi.mock('../../shared/useMonthView', async (importOriginal) => ({
   useMonthView: vi.fn(),
 }))
 
-vi.mock('./MonthCalendar', () => ({
-  MonthCalendar: () => createElement('div', { 'data-testid': 'month-calendar' }),
-}))
-
-vi.mock('./StatusLegend', () => ({
-  StatusLegend: () => null,
-}))
-
 import { buildMonthView, useMonthView } from '../../shared/useMonthView'
+import type { MonthData } from '../../infra/repositories/types'
 
 /** A month with no data — the base every stub in this file starts from. */
 function emptyMonthView() {
   return {
     ...buildMonthView({
       year: 2026,
-      month: 6,
+      month: 7,
       monthData: {},
       config: resolveAppConfig(undefined),
-      todayIso: '2026-06-05',
+      todayIso: '2026-07-03',
       now: '12:00',
     }),
     isOvertimeReady: true,
   }
 }
 
-type MonthSummariesReturn = ReturnType<typeof useMonthView>
-
-function stubSummariesWithLiveWindow(liveWindowStart: string): void {
-  const liveBalance = deriveDayBalance({
-    windows: [{ id: 'live', start: liveWindowStart, end: null, category: '_OTHER', subtasks: [] }],
-    sollstunden: 8,
-    priorOvertime: 0,
-    now: '12:00',
-    remainingTimeReference: 'planned-stop',
-    remainingTimeMode: 'until-zero-overtime',
-  })
-  const stub: MonthSummariesReturn = {
-    ...emptyMonthView(),
-    todayBalance: liveBalance,
+/** July 2026 up to Fri the 3rd: Wed worked 9h, Thu tracked nothing, Fri worked 8h. */
+function stubTrackedMonth(): void {
+  const monthData: MonthData = {
+    '2026-07-01': { windows: [{ id: 'a', start: '08:00', end: '17:00', category: '_OTHER', subtasks: [] }] },
+    '2026-07-03': { windows: [{ id: 'b', start: '08:00', end: '16:00', category: '_OTHER', subtasks: [] }] },
   }
-  vi.mocked(useMonthView).mockReturnValue(stub)
+  vi.mocked(useMonthView).mockReturnValue({
+    ...buildMonthView({
+      year: 2026,
+      month: 7,
+      monthData,
+      config: resolveAppConfig(undefined),
+      todayIso: '2026-07-03',
+      now: '18:00',
+    }),
+    isOvertimeReady: true,
+  })
 }
 
+type MonthSummariesReturn = ReturnType<typeof useMonthView>
+
 function stubSummaries(): void {
-  const stub: MonthSummariesReturn = {
-    ...emptyMonthView(),
-    todayBalance: emptyDayBalance(8),
-  }
+  const stub: MonthSummariesReturn = emptyMonthView()
   vi.mocked(useMonthView).mockReturnValue(stub)
 }
 
@@ -98,48 +90,56 @@ describe('MonthView', () => {
   describe('layout order', () => {
     it('Reset all button appears after the calendar', () => {
       render(<MonthView />, { wrapper: makeWrapper() })
-      const calendar = screen.getByTestId('month-calendar')
+      const firstDay = screen.getByRole('button', { name: /Wednesday, 1 July 2026/i })
       const resetBtn = screen.getByRole('button', { name: /reset all/i })
-      expect(calendar.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(firstDay.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     })
   })
 
-  describe('OvertimeBar live window', () => {
-    it('shows current elapsed time when today has an open window', () => {
-      stubSummariesWithLiveWindow('09:00')
+  describe('month progress', () => {
+    it('shows worked hours against the month target instead of the overtime bar', () => {
+      stubTrackedMonth()
       render(<MonthView />, { wrapper: makeWrapper() })
-      expect(screen.getByText(/current/)).toBeInTheDocument()
+
+      expect(screen.getByRole('meter', { name: /worked/i })).toHaveAttribute('aria-valuenow', '17')
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
     })
 
-    it('does not show current elapsed time when no open window', () => {
+    it('puts each day hours and balance into its calendar cell', () => {
+      stubTrackedMonth()
       render(<MonthView />, { wrapper: makeWrapper() })
-      expect(screen.queryByText(/current/)).not.toBeInTheDocument()
-    })
-  })
 
-  describe('OvertimeBar visibility', () => {
-    it('renders OvertimeBar by default', () => {
-      render(<MonthView />, { wrapper: makeWrapper() })
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      const wednesday = screen.getByRole('button', { name: /Wednesday, 1 July 2026/i })
+      expect(wednesday.textContent).toContain('9.00h')
+      expect(wednesday.textContent).toContain('+1.00h')
     })
 
-    it('saves showOvertimeBar=false when hide button is clicked', async () => {
+    it('offers the untracked past day for review', () => {
+      stubTrackedMonth()
+      render(<MonthView />, { wrapper: makeWrapper() })
+
+      expect(screen.getByRole('button', { name: /Thu 2.*Nothing tracked/i })).toBeInTheDocument()
+    })
+
+    it('saves showOvertimeBar=false when the balance is hidden', async () => {
       const configRepo = new InMemoryConfigRepository()
       render(<MonthView />, { wrapper: makeWrapper(configRepo) })
-      await userEvent.click(await screen.findByRole('button', { name: /hide overtime bar/i }))
+      await userEvent.click(await screen.findByRole('button', { name: /hide balance/i }))
       await waitFor(async () => {
         const saved = await configRepo.get()
         expect(saved.showOvertimeBar).toBe(false)
       })
     })
 
-    it('hides OvertimeBar when showOvertimeBar is false in config', () => {
+    it('hides the balance when showOvertimeBar is false in config', () => {
       vi.mocked(useMonthView).mockReturnValue({
         ...emptyMonthView(),
         config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false }),
       })
       render(<MonthView />, { wrapper: makeWrapper() })
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+
+      expect(screen.getByRole('meter', { name: /worked/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /hide balance/i })).not.toBeInTheDocument()
     })
   })
 

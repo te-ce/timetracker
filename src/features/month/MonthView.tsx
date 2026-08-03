@@ -3,12 +3,11 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { MonthNav } from './MonthNav'
 import { MonthCalendar } from './MonthCalendar'
-import { OvertimeBar } from './OvertimeBar'
+import { MonthProgressMeter } from './MonthProgressMeter'
+import { MonthAttentionStrip } from './MonthAttentionStrip'
 import { StatusLegend } from './StatusLegend'
+import { buildMonthOverview } from './monthOverview'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
-// PROTOTYPE — month-overview variants, delete with src/prototypes/month-overview/
-import { MonthOverviewPrototype } from '../../prototypes/month-overview/MonthOverviewPrototype'
-import { MonthVariantSwitcher, isMonthVariantKey } from '../../prototypes/month-overview/MonthVariantSwitcher'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
 import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
@@ -17,20 +16,19 @@ import { invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
+import type { WorkLocation } from '../../infra/repositories/types'
 
 export function MonthView() {
   const { monthRepo, configRepo } = useRepositories()
   const navigate = useNavigate()
-  // PROTOTYPE — `variant` selects a month-overview prototype; 'now' is this shipped view.
-  const { year, month, variant } = useSearch({ from: '/month' })
-  const prototypeVariant = isMonthVariantKey(variant) ? variant : 'now'
+  const { year, month } = useSearch({ from: '/month' })
 
   function onSelectDate(date: string) {
     void navigate({ to: '/', search: { date } })
   }
 
   function onMonthChange(y: number, m: number) {
-    void navigate({ to: '/month', search: { year: y, month: m + 1, variant: prototypeVariant } })
+    void navigate({ to: '/month', search: { year: y, month: m + 1 } })
   }
 
   const queryClient = useQueryClient()
@@ -43,10 +41,15 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const view = useMonthView(year, month)
-  const { config, summaries, workLocations, dayNotes, todayBalance, isOvertimeReady } = view
+  const { config, summaries, workLocations, dayNotes, targetHoursPerDay, overtimeToDate, todayIso, isOvertimeReady } =
+    useMonthView(year, month)
 
-  const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
+  const overview = buildMonthOverview({
+    days: summaries.days,
+    targetHoursPerDay,
+    today: todayIso,
+    cumulativeBalance: overtimeToDate.value,
+  })
 
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayDisplayStatusMap: Record<string, DisplayStatus> = {}
@@ -64,36 +67,19 @@ export function MonthView() {
     }
   }
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
+  const dayLocationMap: Record<string, WorkLocation> = Object.fromEntries(workLocations)
 
-  const showOvertimeBar = config.showOvertimeBar
-  const showOfficeStats = config.officeStats
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
-  // PROTOTYPE — throwaway variant gate, remove with src/prototypes/month-overview/
-  if (prototypeVariant !== 'now') {
-    return (
-      <MonthOverviewPrototype
-        variant={prototypeVariant}
-        view={view}
-        onSelectDate={onSelectDate}
-        onMonthChange={onMonthChange}
-      />
-    )
-  }
-
   return (
-    <div className="flex flex-col gap-6">
-      <MonthVariantSwitcher current="now" year={year} month={month} />
+    <div className="flex flex-col gap-4">
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
-      {showOvertimeBar && (
-        <OvertimeBar
-          balance={todayBalance}
-          showTotalWorked={config.showTotalWorked}
-          officeStats={showOfficeStats ? { officeDays, totalWorkDays, officePercent } : null}
-          onHide={() => hideOvertimeMutation.mutate()}
-          isLoading={!isOvertimeReady}
-        />
-      )}
+      <MonthProgressMeter
+        overview={overview}
+        showBalance={config.showOvertimeBar && isOvertimeReady}
+        officeStats={config.officeStats ? officeStats(summaries.days, (date) => workLocations.get(date)) : null}
+        onHideBalance={() => hideOvertimeMutation.mutate()}
+      />
       <MonthCalendar
         year={year}
         month={month - 1}
@@ -102,7 +88,10 @@ export function MonthView() {
         dayDisplayStatusMap={dayDisplayStatusMap}
         daySummaryDataMap={daySummaryDataMap}
         dayNoteMap={dayNoteMap}
+        dayLocationMap={dayLocationMap}
+        overview={overview}
       />
+      <MonthAttentionStrip days={overview.attention} onSelectDate={onSelectDate} />
       <div className="flex items-center justify-between gap-4">
         <StatusLegend />
         <button
