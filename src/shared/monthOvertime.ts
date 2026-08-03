@@ -1,7 +1,7 @@
-import type { AppConfig, MonthData } from '../infra/repositories/types'
+import type { MonthData } from '../infra/repositories/types'
 import { buildMonthSummaries, type MonthSummaryResult } from '../features/month/daySummary'
 import { calculateOvertimeToDate, type OvertimeToDate } from './overtime'
-import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
+import type { ResolvedAppConfig } from './appConfigDefaults'
 import { targetHoursForDate } from './weekdayHours'
 
 export interface MonthOvertimeResult {
@@ -20,15 +20,15 @@ export function composeMonthOvertime(
   year: number,
   month: number,
   monthData: MonthData,
-  config: AppConfig | undefined,
+  config: ResolvedAppConfig,
   todayIso: string,
   todayNow?: string,
 ): MonthOvertimeResult {
-  const weekdayHours = config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours
+  const weekdayHours = config.weekdayHours
   const summaries = buildMonthSummaries(year, month, {
     monthData,
     today: todayIso,
-    globalAutoCategory: config?.autoCategory ?? null,
+    globalAutoCategory: config.autoCategory,
     weekdayHours,
     ...(todayNow !== undefined ? { todayNow } : {}),
   })

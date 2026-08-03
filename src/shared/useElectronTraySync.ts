@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
+import { resolveAppConfig } from './appConfigDefaults'
 import { QUERY_KEYS, invalidateMonth, invalidateConfig } from './queryKeys'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { getAllCategories } from './categories'
@@ -104,18 +105,19 @@ export function useElectronTraySync() {
 
   const toggleShowWorkedHoursInTray = useMutation({
     mutationFn: () =>
-      configRepo.save({ ...config!, showWorkedHoursInTray: !(config!.showWorkedHoursInTray !== false) }),
+      configRepo.save({ ...config!, showWorkedHoursInTray: !resolveAppConfig(config).showWorkedHoursInTray }),
     onSuccess: () => invalidateConfig(queryClient),
   })
   const toggleHoursDisplay = useCallback(() => {
     if (config) toggleShowWorkedHoursInTray.mutate()
   }, [config, toggleShowWorkedHoursInTray])
 
-  const hideHours = config?.showWorkedHoursInTray === false
+  const hideHours = !resolveAppConfig(config).showWorkedHoursInTray
 
   useEffect(() => {
     if (!window.electronAPI || !config) return
-    const categories = getAllCategories(config.customCategories, config.categoryOrder)
+    const resolved = resolveAppConfig(config)
+    const categories = getAllCategories(resolved.customCategories, resolved.categoryOrder)
 
     const trayState = buildTrayState({
       sollstunden,
@@ -130,8 +132,8 @@ export function useElectronTraySync() {
       isTracking,
       startedAt,
       nowHHMM: nowHHMM(),
-      remainingTimeMode: config.remainingTimeMode ?? 'until-zero-overtime',
-      showTotalWorked: config.showTotalWorked === true,
+      remainingTimeMode: resolved.remainingTimeMode,
+      showTotalWorked: resolved.showTotalWorked,
       presentingMode: hideHours,
     })
 

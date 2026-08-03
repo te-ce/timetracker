@@ -64,8 +64,8 @@ export function useRemainingHours() {
   const projectedWorkedHours = plannedStopPeriod ? calculateProjectedWorkedHours(windows, currentNow) : undefined
   const projectedRemaining = sollstunden - overtimeToDate.priorOvertime - (projectedWorkedHours ?? workedHours)
 
-  const remainingTimeReference = config?.remainingTimeReference ?? 'planned-stop'
-  const remainingTimeMode = config?.remainingTimeMode ?? 'until-zero-overtime'
+  const remainingTimeReference = config.remainingTimeReference
+  const remainingTimeMode = config.remainingTimeMode
   const { isPlannedStopMode, plannedStopTime, countdownHours } = derivePlannedStopState(
     windows,
     currentNow,

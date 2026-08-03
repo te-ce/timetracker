@@ -1,14 +1,7 @@
-import type {
-  AppConfig,
-  Day,
-  MonthData,
-  WorkLocation,
-  WorkPeriod,
-  DayTypeOverride,
-} from '../../infra/repositories/types'
+import type { Day, MonthData, WorkLocation, WorkPeriod, DayTypeOverride } from '../../infra/repositories/types'
 import type { DayType } from './dayType'
 import type { DayStatus } from '../../shared/dayStatus'
-import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+import type { ResolvedAppConfig } from '../../shared/appConfigDefaults'
 import type { DaySummary } from '../month/daySummary'
 import { type OvertimeToDate } from '../../shared/overtime'
 import { composeMonthOvertime } from '../../shared/monthOvertime'
@@ -83,16 +76,6 @@ function extractDayFields(dayData: Day | undefined): DayRawData {
   }
 }
 
-function resolveConfigDefaults(config: AppConfig | undefined, date: string) {
-  const weekdayHours = config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours
-  return {
-    sollstunden: targetHoursForDate(date, weekdayHours),
-    weekdayHours,
-    defaultWorkLocation: config?.defaultWorkLocation ?? 'Remote',
-    globalAutoCategory: config?.autoCategory ?? null,
-  }
-}
-
 function fromDaySummary(
   s: DaySummary,
 ): Omit<
@@ -118,7 +101,7 @@ function fromDaySummary(
 export function composeDayContext(
   date: string,
   monthData: MonthData,
-  config: AppConfig | undefined,
+  config: ResolvedAppConfig,
   todayIso: string,
   todayNow?: string,
 ): DayContext {
@@ -133,15 +116,15 @@ export function composeDayContext(
   const dayData = monthData[date]
   const daySummary = monthDays.find((d) => d.date === date) ?? FUTURE_SUMMARY
 
-  const { sollstunden, defaultWorkLocation, globalAutoCategory } = resolveConfigDefaults(config, date)
-  const effectiveLocation: WorkLocation = dayData?.location ?? defaultWorkLocation
-  const autoCategory = resolveAutoCategory(dayData?.autoCategoryOverride, globalAutoCategory)
+  const sollstunden = targetHoursForDate(date, config.weekdayHours)
+  const effectiveLocation: WorkLocation = dayData?.location ?? config.defaultWorkLocation
+  const autoCategory = resolveAutoCategory(dayData?.autoCategoryOverride, config.autoCategory)
   const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])
 
   const isToday = date === todayIso
   const plannedStop =
     isToday && todayNow !== undefined
-      ? derivePlannedStopState(dayData?.windows ?? [], todayNow, config?.remainingTimeReference ?? 'planned-stop')
+      ? derivePlannedStopState(dayData?.windows ?? [], todayNow, config.remainingTimeReference)
       : { isPlannedStopMode: false, plannedStopTime: null, countdownHours: 0 }
   const projectedWorkedToday =
     isToday && plannedStop.plannedStopTime && todayNow !== undefined
@@ -152,7 +135,7 @@ export function composeDayContext(
     todayIso,
     ...extractDayFields(dayData),
     sollstunden,
-    defaultWorkLocation,
+    defaultWorkLocation: config.defaultWorkLocation,
     effectiveLocation,
     autoCategory,
     overtimeToDate,

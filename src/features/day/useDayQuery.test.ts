@@ -45,9 +45,7 @@ describe('useDayQuery', () => {
       const configRepo = new InMemoryConfigRepository()
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
-      await waitFor(() => expect(result.current.config).toBeDefined())
-
-      expect(result.current.windows).toEqual([])
+      await waitFor(() => expect(result.current.windows).toEqual([]))
     })
 
     it('returns windows for the requested date from monthRepo', async () => {
@@ -72,9 +70,8 @@ describe('useDayQuery', () => {
       })
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
-      await waitFor(() => expect(result.current.config).toBeDefined())
+      await waitFor(() => expect(result.current.config.weekdayHours).toEqual([0, 8, 8, 8, 8, 6, 0]))
 
-      expect(result.current.config?.weekdayHours).toEqual([0, 8, 8, 8, 8, 6, 0])
       expect(result.current.sollstunden).toBe(6) // Friday target
     })
 
@@ -85,9 +82,7 @@ describe('useDayQuery', () => {
       const configRepo = new InMemoryConfigRepository()
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
-      await waitFor(() => expect(result.current.config).toBeDefined())
-
-      expect(result.current.windows).toEqual([])
+      await waitFor(() => expect(result.current.windows).toEqual([]))
     })
   })
 
@@ -160,9 +155,8 @@ describe('useDayQuery', () => {
       const configRepo = new InMemoryConfigRepository()
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
-      await waitFor(() => expect(result.current.config).toBeDefined())
+      await waitFor(() => expect(result.current.workLocation).toBe('Office'))
 
-      expect(result.current.workLocation).toBe('Office')
       expect(result.current.effectiveLocation).toBe('Office')
     })
 
@@ -173,9 +167,7 @@ describe('useDayQuery', () => {
       const configRepo = new InMemoryConfigRepository()
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
-      await waitFor(() => expect(result.current.config).toBeDefined())
-
-      expect(result.current.autoCategoryOverride).toBe('_SUPPORT')
+      await waitFor(() => expect(result.current.autoCategoryOverride).toBe('_SUPPORT'))
     })
 
     it('reflects confirmed flag from day data', async () => {
@@ -185,9 +177,7 @@ describe('useDayQuery', () => {
       const configRepo = new InMemoryConfigRepository()
       const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
 
-      await waitFor(() => expect(result.current.config).toBeDefined())
-
-      expect(result.current.isConfirmed).toBe(true)
+      await waitFor(() => expect(result.current.isConfirmed).toBe(true))
     })
   })
 

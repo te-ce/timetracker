@@ -6,6 +6,7 @@ import { useAuthStore } from './shared/authStore'
 import { useThemeStore } from './shared/themeStore'
 import { useTimeFormatStore } from './shared/timeFormatStore'
 import { useUndoStore } from './shared/undoStore'
+import { useAppConfig } from './shared/useAppConfig'
 import { useRemainingHours } from './shared/useRemainingHours'
 import { buildReceipt, buildBadgeLabel } from './shared/remainingCalc'
 import { useElectronTraySync } from './shared/useElectronTraySync'
@@ -257,16 +258,15 @@ function UndoButton() {
 }
 
 function RemainingHoursBadge() {
-  const { configRepo } = useRepositories()
-  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => configRepo.get() })
+  const config = useAppConfig()
   const { remaining, sollstunden, priorOvertime, workedHours, liveElapsed } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
 
-  if (config?.showWorkedHoursInNav === false) return null
+  if (!config.showWorkedHoursInNav) return null
 
-  const showTotalWorked = config?.showTotalWorked === true
+  const showTotalWorked = config.showTotalWorked
   const totalWorked = workedHours + liveElapsed
-  const remainingTimeMode = config?.remainingTimeMode ?? 'until-zero-overtime'
+  const remainingTimeMode = config.remainingTimeMode
 
   const label = buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
   let badgeClass: string
@@ -321,10 +321,9 @@ function RemainingHoursBadge() {
 }
 
 function OfficeStatsBadge() {
-  const { configRepo } = useRepositories()
-  const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => configRepo.get() })
+  const config = useAppConfig()
   const { officeDays, totalWorkDays, officePercent } = useRemainingHours()
-  if (config?.officeStats === false) return null
+  if (!config.officeStats) return null
   if (totalWorkDays === 0) return null
   const tooltipContent = `${officeDays}/${totalWorkDays} days in office this month`
   return (

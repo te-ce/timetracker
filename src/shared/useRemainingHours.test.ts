@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { DayQueryResult } from '../features/day/useDayQuery'
 import type { OvertimeToDate } from '../features/month'
-import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
+import { DEFAULT_APP_CONFIG, resolveAppConfig } from './appConfigDefaults'
 
 vi.mock('../features/day/useDayQuery', () => ({
   useDayQuery: vi.fn(),
@@ -22,7 +22,7 @@ function makeOvertimeToDate(priorOvertime = 0): OvertimeToDate {
 
 function stubDayQuery(overrides: Partial<DayQueryResult>): void {
   vi.mocked(useDayQuery).mockReturnValue({
-    config: DEFAULT_APP_CONFIG,
+    config: resolveAppConfig(DEFAULT_APP_CONFIG),
     windows: [],
     workLocation: null,
     autoCategoryOverride: null,
@@ -407,7 +407,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
         sollstunden: 8,
         workedHours: 2, // planned live elapsed (not full planned duration)
         windows: [ps],
-        config: { ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' },
+        config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' }),
       })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.remaining).toBeCloseTo(5, 0)
@@ -419,7 +419,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
         sollstunden: 8,
         workedHours: 2,
         windows: [ps],
-        config: { ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' },
+        config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' }),
       })
       const { result } = renderHook(() => useRemainingHours())
       expect(result.current.isPlannedStopMode).toBe(false)

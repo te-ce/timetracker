@@ -63,13 +63,13 @@ export function MonthView() {
       workedHours: day.workedHours,
       categoryBreakdown: day.categoryBreakdown,
       ...(day.leaveType !== undefined ? { leaveType: day.leaveType } : {}),
-      ...(config?.categoryDescriptions !== undefined ? { categoryDescriptions: config.categoryDescriptions } : {}),
+      categoryDescriptions: config.categoryDescriptions,
     }
   }
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
 
-  const showOvertimeBar = config?.showOvertimeBar !== false
-  const showOfficeStats = config?.officeStats !== false
+  const showOvertimeBar = config.showOvertimeBar
+  const showOfficeStats = config.officeStats
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
   return (
@@ -82,8 +82,8 @@ export function MonthView() {
           workedToday={overtimeToDate.workedToday}
           liveWindowStart={todayLiveWindowStart ?? null}
           plannedStopTime={todayPlannedStopTime ?? null}
-          remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
-          showTotalWorked={config?.showTotalWorked === true}
+          remainingTimeMode={config.remainingTimeMode}
+          showTotalWorked={config.showTotalWorked}
           {...(showOfficeStats ? { officeDays, totalWorkDays, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />

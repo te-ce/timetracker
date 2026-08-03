@@ -11,7 +11,7 @@ import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/con
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
 import type { DayQueryResult } from './useDayQuery'
 import type { OvertimeToDate } from '../month'
-import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -49,7 +49,7 @@ function makeOvertimeToDate(): OvertimeToDate {
 
 function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
   vi.mocked(useDayQuery).mockReturnValue({
-    config: DEFAULT_APP_CONFIG,
+    config: resolveAppConfig(DEFAULT_APP_CONFIG),
     windows: [],
     workLocation: null,
     autoCategoryOverride: null,
@@ -120,13 +120,16 @@ describe('DayView', () => {
     })
 
     it('hides location toggle button when officeStats disabled in config', () => {
-      stubQuery({ config: { ...DEFAULT_APP_CONFIG, officeStats: false }, effectiveLocation: 'Remote' })
+      stubQuery({
+        config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, officeStats: false }),
+        effectiveLocation: 'Remote',
+      })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.queryByRole('button', { name: /work location/i })).not.toBeInTheDocument()
     })
 
     it('shows location toggle button when officeStats enabled', () => {
-      stubQuery({ config: { ...DEFAULT_APP_CONFIG, officeStats: true }, effectiveLocation: 'Remote' })
+      stubQuery({ config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, officeStats: true }), effectiveLocation: 'Remote' })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.getByRole('button', { name: /work location/i })).toBeInTheDocument()
     })
@@ -161,7 +164,7 @@ describe('DayView', () => {
 
   describe('OvertimeBar visibility', () => {
     it('hides OvertimeBar when showOvertimeBar is false in config', () => {
-      stubQuery({ config: { ...DEFAULT_APP_CONFIG, showOvertimeBar: false } })
+      stubQuery({ config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false }) })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.queryByRole('status')).not.toBeInTheDocument()
     })

@@ -8,13 +8,11 @@ import { MonthGrid } from './MonthTable'
 import { MonthNav } from '../month/MonthNav'
 import { OvertimeBar } from '../month/OvertimeBar'
 import { StatusLegend } from '../month/StatusLegend'
-import { DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthSummaries } from '../../shared/useMonthSummaries'
 import { officeStats } from '../../shared/officeStats'
 import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
-import { resolveTableConfig } from './tableConfig'
 
 async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
   const cfg = await configRepo.get()
@@ -107,9 +105,8 @@ export function TableView() {
     year: 'numeric',
   })
 
-  const showOvertimeBar = config?.showOvertimeBar !== false
-  const showOfficeStats = config?.officeStats !== false
-  const gridConfig = resolveTableConfig(config)
+  const showOvertimeBar = config.showOvertimeBar
+  const showOfficeStats = config.officeStats
 
   const table = (
     <MonthGrid
@@ -117,19 +114,19 @@ export function TableView() {
       month={month}
       expanded={expanded}
       repository={monthRepo}
-      autoCategory={gridConfig.autoCategory}
-      customCategories={gridConfig.customCategories}
-      categoryOrder={config ? config.categoryOrder : undefined}
-      categoryDescriptions={config?.categoryDescriptions}
+      autoCategory={config.autoCategory}
+      customCategories={config.customCategories}
+      categoryOrder={config.categoryOrder}
+      categoryDescriptions={config.categoryDescriptions}
       dayTypes={dayTypeOverrides}
       confirmedDays={confirmedDays}
-      sprintStartDate={gridConfig.sprintStartDate}
-      sprintLengthDays={gridConfig.sprintLengthDays}
+      sprintStartDate={config.sprintStartDate}
+      sprintLengthDays={config.sprintLengthDays}
       workLocations={workLocations}
-      defaultWorkLocation={gridConfig.defaultWorkLocation}
+      defaultWorkLocation={config.defaultWorkLocation}
       dayNotes={dayNotes}
       showOfficeStats={showOfficeStats}
-      weekdayHours={config?.weekdayHours ?? DEFAULT_WEEKDAY_HOURS}
+      weekdayHours={config.weekdayHours}
       onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
       onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}
@@ -237,8 +234,8 @@ export function TableView() {
           workedToday={overtimeToDate.workedToday}
           liveWindowStart={todayLiveWindowStart ?? null}
           plannedStopTime={todayPlannedStopTime ?? null}
-          remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
-          showTotalWorked={config?.showTotalWorked === true}
+          remainingTimeMode={config.remainingTimeMode}
+          showTotalWorked={config.showTotalWorked}
           {...(showOfficeStats ? { officeDays, totalWorkDays, officePercent } : {})}
           onHide={() => hideOvertimeMutation.mutate()}
         />

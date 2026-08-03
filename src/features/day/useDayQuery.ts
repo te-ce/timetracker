@@ -9,12 +9,13 @@ import {
   type DayConfigContext,
   type DayComputedStats,
 } from './dayContext'
-import type { AppConfig } from '../../infra/repositories/types'
+import { useAppConfig } from '../../shared/useAppConfig'
+import type { ResolvedAppConfig } from '../../shared/appConfigDefaults'
 
 export type { DayRawData, DayConfigContext, DayComputedStats, DayContext }
 
 export interface DayQueryResult extends DayContext {
-  config: AppConfig | undefined
+  config: ResolvedAppConfig
 }
 
 function nowHHMM(): string {
@@ -23,15 +24,12 @@ function nowHHMM(): string {
 }
 
 export function useDayQuery(date: string): DayQueryResult {
-  const { monthRepo, configRepo } = useRepositories()
+  const { monthRepo } = useRepositories()
   const todayIso = useTodayIso()
   const year = parseInt(date.slice(0, 4))
   const month = parseInt(date.slice(5, 7))
 
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => configRepo.get(),
-  })
+  const config = useAppConfig()
 
   const { data: monthData = {} } = useQuery({
     queryKey: QUERY_KEYS.month(year, month),

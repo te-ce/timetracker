@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest'
 import { composeMonthOvertime } from './monthOvertime'
 import type { MonthData, WorkPeriod } from '../infra/repositories/types'
 import type { WeekdayHours } from './weekdayHours'
-import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
+import { DEFAULT_APP_CONFIG, resolveAppConfig } from './appConfigDefaults'
 
 function win(id: string, start: string, end: string): WorkPeriod {
   return { id, start, end, category: '_COREMEDIA', subtasks: [] }
@@ -14,12 +14,18 @@ describe('composeMonthOvertime', () => {
   const STD: WeekdayHours = [0, 8, 8, 8, 8, 8, 0]
 
   it('produces one DaySummary per day in the month', () => {
-    const result = composeMonthOvertime(2026, 5, {}, undefined, '2026-05-19')
+    const result = composeMonthOvertime(2026, 5, {}, resolveAppConfig(undefined), '2026-05-19')
     expect(result.summaries.days).toHaveLength(31)
   })
 
   it('produces one target-hours entry per day, aligned with the summaries', () => {
-    const result = composeMonthOvertime(2026, 5, {}, { ...DEFAULT_APP_CONFIG, weekdayHours: STD }, '2026-05-19')
+    const result = composeMonthOvertime(
+      2026,
+      5,
+      {},
+      resolveAppConfig({ ...DEFAULT_APP_CONFIG, weekdayHours: STD }),
+      '2026-05-19',
+    )
     expect(result.targetHoursPerDay).toHaveLength(31)
     expect(result.targetHoursPerDay[0]).toBe(8) // May 1 = Friday
     expect(result.targetHoursPerDay[1]).toBe(0) // May 2 = Saturday
@@ -29,7 +35,13 @@ describe('composeMonthOvertime', () => {
     const monthData: MonthData = {
       '2026-05-01': { windows: [win('1', '08:00', '18:00')] }, // 10h, +2h over an 8h target
     }
-    const result = composeMonthOvertime(2026, 5, monthData, { ...DEFAULT_APP_CONFIG, weekdayHours: STD }, '2026-05-01')
+    const result = composeMonthOvertime(
+      2026,
+      5,
+      monthData,
+      resolveAppConfig({ ...DEFAULT_APP_CONFIG, weekdayHours: STD }),
+      '2026-05-01',
+    )
     expect(result.overtimeToDate.value).toBeCloseTo(2)
     expect(result.overtimeToDate.workedToday).toBe(10)
   })
@@ -42,7 +54,7 @@ describe('composeMonthOvertime', () => {
       2026,
       5,
       monthData,
-      { ...DEFAULT_APP_CONFIG, weekdayHours: STD },
+      resolveAppConfig({ ...DEFAULT_APP_CONFIG, weekdayHours: STD }),
       '2026-05-01',
       '14:00',
     )

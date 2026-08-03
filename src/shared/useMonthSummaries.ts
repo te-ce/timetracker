@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { composeMonthOvertime } from './monthOvertime'
 import { useTodayIso } from './useTodayIso'
-import { DEFAULT_APP_CONFIG } from './appConfigDefaults'
+import { useAppConfig } from './useAppConfig'
 import { QUERY_KEYS } from './queryKeys'
 import { findOpenPeriod, findPlannedStopPeriod, nowHHMM } from './worktime'
 import { targetHoursForDate } from './weekdayHours'
@@ -54,20 +54,17 @@ function extractMonthMaps(monthData: MonthData): MonthMaps {
 }
 
 export function useMonthSummaries(year: number, month: number) {
-  const { monthRepo, configRepo } = useRepositories()
+  const { monthRepo } = useRepositories()
   const todayIso = useTodayIso()
 
-  const { data: config } = useQuery({
-    queryKey: QUERY_KEYS.config,
-    queryFn: () => configRepo.get(),
-  })
+  const config = useAppConfig()
 
   const { data: monthData = {} } = useQuery({
     queryKey: QUERY_KEYS.month(year, month),
     queryFn: () => monthRepo.getMonth(year, month),
   })
 
-  const weekdayHours = config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours
+  const weekdayHours = config.weekdayHours
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
   const todayNow = nowHHMM()

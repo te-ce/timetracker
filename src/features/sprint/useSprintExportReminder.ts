@@ -3,7 +3,7 @@ import { useQuery, useQueries } from '@tanstack/react-query'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import { toLocalIso } from '../../shared/dateUtils'
-import { DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
+import { resolveAppConfig } from '../../shared/appConfigDefaults'
 import { getSprintForDate, getSprintBoundaries, aggregateSprintHours } from './sprint'
 import type { SprintConfig, Sprint } from './sprint'
 import {
@@ -44,7 +44,7 @@ export function useSprintExportReminder(): Sprint[] {
 
   const { data: entries = [] } = useQuery({
     queryKey: ['sprintReminderEntries', oldestStart, today, sprintConfig.startDate, sprintConfig.lengthDays],
-    queryFn: () => monthRepo.findEntriesByDateRange(oldestStart, today, config?.weekdayHours ?? DEFAULT_WEEKDAY_HOURS),
+    queryFn: () => monthRepo.findEntriesByDateRange(oldestStart, today, resolveAppConfig(config).weekdayHours),
     enabled: !!config,
   })
 

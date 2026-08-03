@@ -152,12 +152,12 @@ export function DayView() {
 
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
-  const { customCategories = [], categoryOrder, categoryDescriptions } = config ?? {}
+  const { customCategories, categoryOrder, categoryDescriptions } = config
   const liveWindowStart = selectedDate === todayIso ? findOpenPeriod(windows)?.start : undefined
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
-  const showOfficeStats = config?.officeStats !== false
+  const showOfficeStats = config.officeStats
   const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : {}
-  const showOvertimeBar = config?.showOvertimeBar !== false
+  const showOvertimeBar = config.showOvertimeBar
 
   function prevDay() {
     const d = new Date(selectedDate)
@@ -190,8 +190,8 @@ export function DayView() {
           isPlannedStopMode={isPlannedStopMode}
           countdownHours={countdownHours}
           projectedWorkedToday={projectedWorkedToday}
-          remainingTimeMode={config?.remainingTimeMode ?? 'until-zero-overtime'}
-          showTotalWorked={config?.showTotalWorked === true}
+          remainingTimeMode={config.remainingTimeMode}
+          showTotalWorked={config.showTotalWorked}
           onHide={() => hideOvertimeMutation.mutate()}
           {...officeStats}
         />

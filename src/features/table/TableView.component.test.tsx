@@ -9,7 +9,7 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
-import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
 import type { WorkPeriod } from '../../infra/repositories/types'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
@@ -55,7 +55,7 @@ type MonthSummariesReturn = ReturnType<typeof useMonthSummaries>
 
 function stubSummariesWithLiveWindow(liveWindowStart: string): void {
   const stub: MonthSummariesReturn = {
-    config: undefined,
+    config: resolveAppConfig(undefined),
     summaries: {
       days: [],
       workDayCount: 0,
@@ -79,7 +79,7 @@ function stubSummariesWithLiveWindow(liveWindowStart: string): void {
 
 function stubSummaries(): void {
   const stub: MonthSummariesReturn = {
-    config: undefined,
+    config: resolveAppConfig(undefined),
     summaries: {
       days: [],
       workDayCount: 0,
@@ -242,7 +242,7 @@ describe('TableView', () => {
   describe('OvertimeBar visibility', () => {
     it('hides OvertimeBar when showOvertimeBar is false in config', () => {
       vi.mocked(useMonthSummaries).mockReturnValue({
-        config: { ...DEFAULT_APP_CONFIG, showOvertimeBar: false },
+        config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false }),
         summaries: {
           days: [],
           workDayCount: 0,
