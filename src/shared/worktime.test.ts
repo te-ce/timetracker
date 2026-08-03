@@ -2,7 +2,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   calculateWorkedHours,
-  calculateRestarbeitszeit,
   calcSubtaskHours,
   hasOpenPeriod,
   findOpenPeriod,
@@ -155,28 +154,6 @@ describe('findOpenPeriod', () => {
     const first = makeWindow('09:00', null)
     const second = { ...makeWindow('11:00', null), id: '2' }
     expect(findOpenPeriod([first, second])).toBe(first)
-  })
-})
-
-describe('calculateRestarbeitszeit', () => {
-  it('returns a positive value and isOvertime=false when hours are missing', () => {
-    // Given: 8h target, only 6h worked
-    const result = calculateRestarbeitszeit(8, 6)
-    expect(result.value).toBe(2)
-    expect(result.isOvertime).toBe(false)
-  })
-
-  it('returns a negative value and isOvertime=true when overtime is worked', () => {
-    // Given: 8h target, 9.5h worked
-    const result = calculateRestarbeitszeit(8, 9.5)
-    expect(result.value).toBe(-1.5)
-    expect(result.isOvertime).toBe(true)
-  })
-
-  it('returns value=0 and isOvertime=false when WorkedHours exactly meets Sollstunden', () => {
-    const result = calculateRestarbeitszeit(8, 8)
-    expect(result.value).toBe(0)
-    expect(result.isOvertime).toBe(false)
   })
 })
 

@@ -57,7 +57,3 @@ export function calculateTotalCategorizedHours(windows: WorkPeriod[]): number {
   }
   return total
 }
-
-export function calculateUncategorizedHours(windows: WorkPeriod[]): number {
-  return calculateCategoryHours(windows)[UNCATEGORIZED_CATEGORY] ?? 0
-}

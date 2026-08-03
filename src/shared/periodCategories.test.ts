@@ -4,7 +4,6 @@ import {
   calculateCategoryHours,
   calculateDayCategoryHours,
   calculateTotalCategorizedHours,
-  calculateUncategorizedHours,
   remainderHours,
   UNCATEGORIZED_CATEGORY,
 } from './periodCategories'
@@ -159,20 +158,5 @@ describe('remainderHours', () => {
 
   it('returns 0 when duration and subtasked hours are equal', () => {
     expect(remainderHours(1, 1)).toBe(0)
-  })
-})
-
-describe('calculateUncategorizedHours', () => {
-  it('returns 0 when no uncategorized windows', () => {
-    expect(calculateUncategorizedHours([period('a', '09:00', '10:00', '_COREMEDIA')])).toBe(0)
-  })
-
-  it('returns uncategorized hours', () => {
-    const windows = [period('a', '09:00', '10:00', UNCATEGORIZED_CATEGORY), period('b', '10:00', '11:00', '_COREMEDIA')]
-    expect(calculateUncategorizedHours(windows)).toBeCloseTo(1)
-  })
-
-  it('returns 0 for empty windows', () => {
-    expect(calculateUncategorizedHours([])).toBe(0)
   })
 })

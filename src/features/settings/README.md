@@ -24,9 +24,7 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 | `LocalExcelFolderSettings.tsx`   | Local folder picker for Excel files                                |
 | `SheetSelector.tsx`              | Dropdown to pick the target worksheet                              |
 | `CategorySettings.tsx`           | Enable/disable and reorder the fixed categories                    |
-| `CustomCategorySettings.tsx`     | Add/remove dynamic categories                                      |
 | `AutoCategorySettings.tsx`       | Set the global AutoCategory default                                |
-| `ExcelMappingSettings.tsx`       | Map app categories to Excel row Task IDs                           |
 | `BundeslandSettings.tsx`         | German federal state selection (for public holidays)               |
 | `BooleanConfigToggle.tsx`        | Generic single-boolean-field AppConfig toggle (checkbox + label)   |
 | `useConfigFieldMutation.ts`      | Generic single-field AppConfig read+mutate hook (non-boolean)      |
@@ -35,7 +33,6 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 | `WindowBehaviorSettings.tsx`     | Electron window hide-on-close behavior                             |
 | `ClearDataSettings.tsx`          | Destructive data reset                                             |
 | `excelMapping.ts`                | ExcelMapping derivation helpers                                    |
-| `exportStatus.ts`                | ExportStatus derivation from sprint export records                 |
 | `useCategoryMutations.ts`        | Mutations for category config changes                              |
 | `useDayTypeOverrideMutations.ts` | Mutations for per-day DayType overrides                            |
 | `index.ts`                       | Public API barrel                                                  |

@@ -1,10 +1,5 @@
 import type { WorkPeriod } from '../infra/repositories/types'
 
-export type Restarbeitszeit = {
-  value: number
-  isOvertime: boolean
-}
-
 export function hasOpenPeriod(windows: WorkPeriod[]): boolean {
   return windows.some((w) => w.end === null)
 }
@@ -136,9 +131,4 @@ export function derivePlannedStopState(
 
 export function calcSubtaskHours(startedAt: string, stoppedAt: string): number {
   return elapsedHours(startedAt, stoppedAt)
-}
-
-export function calculateRestarbeitszeit(sollstunden: number, workedHours: number): Restarbeitszeit {
-  const value = sollstunden - workedHours
-  return { value, isOvertime: value < 0 }
 }
