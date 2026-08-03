@@ -70,7 +70,6 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
     officeDays: 0,
     totalWorkDays: 0,
     officePercent: 0,
-    todayWindows: [],
     ...overrides,
   })
 }
@@ -132,15 +131,15 @@ describe('DayView', () => {
     })
   })
 
-  describe('OvertimeBar live tracking on past days', () => {
-    it('does not show live tracking when viewing a past day with an open period', () => {
+  describe('OvertimeBar follows the viewed day', () => {
+    it('shows live tracking for an open period on the viewed day, even when it is not the actual today', () => {
       stubQuery({
         windows: [{ id: 'a', start: '09:00', end: null, category: '_COREMEDIA', subtasks: [] }],
         todayIso: '2026-06-03', // selectedDate '2026-05-15' is in the past
       })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      // LiveWindowBadge renders "{elapsed} current" — should not be present for a past day
-      expect(screen.queryByText(/current/i)).not.toBeInTheDocument()
+      // LiveWindowBadge renders "{elapsed} current" — the bar reflects the viewed day's own data
+      expect(screen.getByText(/current/i)).toBeInTheDocument()
     })
   })
 

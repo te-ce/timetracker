@@ -146,20 +146,16 @@ describe('composeDayContext', () => {
     })
   })
 
-  describe('today windows', () => {
-    it('exposes today’s WorkPeriods when today is in the viewed month', () => {
-      const window = { id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }
-      const monthData = makeMonthData({ [today]: { windows: [window] } })
-      const result = composeDayContext('2026-06-02', monthData, DEFAULTS, today, '14:00')
-      expect(result.todayWindows).toHaveLength(1)
-      expect(result.todayWindows[0]?.id).toBe('w1')
-    })
-
-    it('is empty when today has no data in the viewed month', () => {
-      const window = { id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }
-      const monthData = makeMonthData({ '2026-06-02': { windows: [window] } })
-      const result = composeDayContext('2026-06-02', monthData, DEFAULTS, today, '14:00')
-      expect(result.todayWindows).toEqual([])
+  describe('overtime cutoff follows the viewed day, not the real today', () => {
+    it('excludes days after the viewed date from overtimeToDate even when they precede the real today', () => {
+      // June 2026: viewing June 3rd while the real today is June 5th
+      const monthData: MonthData = {
+        '2026-06-02': { windows: [{ id: 'a', start: '08:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }] }, // +2h vs. 8h target
+        '2026-06-04': { windows: [{ id: 'b', start: '08:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }] }, // +2h, after the viewed date
+      }
+      const result = composeDayContext('2026-06-03', monthData, DEFAULTS, '2026-06-05')
+      // Only June 2 counts — June 4 is after the viewed date and must not leak in
+      expect(result.overtimeToDate.value).toBeCloseTo(2)
     })
   })
 })

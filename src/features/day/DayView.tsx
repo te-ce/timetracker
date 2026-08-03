@@ -136,7 +136,6 @@ export function DayView() {
     officeDays,
     totalWorkDays,
     officePercent,
-    todayWindows,
   } = useDayQuery(selectedDate)
 
   const dayMutations = useDayMutations({
@@ -155,9 +154,9 @@ export function DayView() {
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config.officeStats
   const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : null
-  const liveNow = useClock(hasLiveActivity(todayWindows, nowHHMM()))
-  const todayBalance = deriveDayBalance({
-    windows: todayWindows,
+  const liveNow = useClock(hasLiveActivity(windows, nowHHMM()))
+  const viewedDayBalance = deriveDayBalance({
+    windows,
     sollstunden,
     priorOvertime: overtimeToDate.priorOvertime,
     now: liveNow,
@@ -189,7 +188,7 @@ export function DayView() {
 
       {showOvertimeBar && (
         <OvertimeBar
-          balance={todayBalance}
+          balance={viewedDayBalance}
           showTotalWorked={config.showTotalWorked}
           officeStats={officeStats}
           onHide={() => hideOvertimeMutation.mutate()}

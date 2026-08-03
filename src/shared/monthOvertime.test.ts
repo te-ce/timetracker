@@ -70,6 +70,19 @@ describe('composeMonthOvertime', () => {
     expect(result.overtimeToDate.value).toBeCloseTo(3)
     expect(result.overtimeToDate.priorOvertime).toBeCloseTo(3)
   })
+
+  it('overtimeAsOf decouples the cumulative cutoff from the real todayIso used for day classification', () => {
+    const monthData: MonthData = {
+      '2026-05-01': { windows: [win('1', '08:00', '18:00')] }, // Fri, +2h
+      '2026-05-04': { windows: [win('2', '09:00', '19:00')] }, // Mon, +2h — after real todayIso is 05-19
+    }
+    const config = resolveAppConfig({ ...DEFAULT_APP_CONFIG, weekdayHours: STD })
+    const result = composeMonthOvertime(2026, 5, monthData, config, '2026-05-19', undefined, 0, '2026-05-02')
+    // Cumulative cutoff is 05-02, so only May 1 counts — May 4 (after the cutoff) is excluded
+    expect(result.overtimeToDate.value).toBeCloseTo(2)
+    // Day classification still uses the real todayIso (05-19), not the cutoff — May 1 is 'complete', not 'today'
+    expect(result.summaries.days.find((d) => d.date === '2026-05-01')?.dayStatus).not.toBe('today')
+  })
 })
 
 describe('loadOvertimeCarryOverBeforeMonth', () => {

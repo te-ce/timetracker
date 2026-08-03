@@ -13,9 +13,16 @@ export interface MonthOvertimeResult {
 
 /**
  * Composes a month's DaySummaries with the cumulative overtime-to-date for
- * `todayIso`. Shared by the Day view (which needs one day's slice plus the
+ * `overtimeAsOf`. Shared by the Day view (which needs one day's slice plus the
  * month for office-day stats) and the Month view (which needs the whole grid)
  * so both derive WorkedHours/overtime from the same pipeline.
+ *
+ * `todayIso` drives day classification (DayStatus: past/today/future) and stays
+ * the real calendar date regardless of what's being viewed. `overtimeAsOf`
+ * drives the cumulative-overtime cutoff and defaults to `todayIso` — the Month
+ * and Table views want "up to real today" no matter which row is on screen,
+ * while the Day view passes the viewed date so browsing a past/future day shows
+ * that day's own running balance instead of always today's.
  *
  * `priorMonthsOvertime` seeds the running total with everything carried in
  * from months before this one — see `loadOvertimeCarryOverBeforeMonth` —
@@ -29,6 +36,7 @@ export function composeMonthOvertime(
   todayIso: string,
   todayNow?: string,
   priorMonthsOvertime = 0,
+  overtimeAsOf: string = todayIso,
 ): MonthOvertimeResult {
   const weekdayHours = config.weekdayHours
   const summaries = buildMonthSummaries(year, month, {
@@ -42,9 +50,9 @@ export function composeMonthOvertime(
   const overtimeToDate = calculateOvertimeToDate(
     summaries.workedHoursPerDay,
     summaries.days.map((d) => d.date),
-    todayIso,
+    overtimeAsOf,
     targetHoursPerDay,
-    summaries.projectedWorkedHoursToday,
+    overtimeAsOf === todayIso ? summaries.projectedWorkedHoursToday : undefined,
     priorMonthsOvertime,
   )
   return { summaries, targetHoursPerDay, overtimeToDate }

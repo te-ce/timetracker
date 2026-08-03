@@ -36,8 +36,6 @@ export interface DayComputedStats {
   officeDays: number
   totalWorkDays: number
   officePercent: number
-  /** Today's WorkPeriods — empty when today is outside the viewed month. */
-  todayWindows: WorkPeriod[]
 }
 
 export interface DayContext extends DayRawData, DayConfigContext, DayComputedStats {
@@ -73,10 +71,7 @@ function extractDayFields(dayData: Day | undefined): DayRawData {
 
 function fromDaySummary(
   s: DaySummary,
-): Omit<
-  DayComputedStats,
-  'overtimeToDate' | 'manualTotal' | 'officeDays' | 'totalWorkDays' | 'officePercent' | 'todayWindows'
-> {
+): Omit<DayComputedStats, 'overtimeToDate' | 'manualTotal' | 'officeDays' | 'totalWorkDays' | 'officePercent'> {
   return {
     dayClassification: { displayStatus: s.displayStatus, reason: s.statusReason },
     workedHours: s.workedHours,
@@ -99,7 +94,7 @@ export function composeDayContext(
   const {
     summaries: { days: monthDays },
     overtimeToDate,
-  } = composeMonthOvertime(year, month, monthData, config, todayIso, todayNow, priorMonthsOvertime)
+  } = composeMonthOvertime(year, month, monthData, config, todayIso, todayNow, priorMonthsOvertime, date)
 
   const dayData = monthData[date]
   const daySummary = monthDays.find((d) => d.date === date) ?? FUTURE_SUMMARY
@@ -118,7 +113,6 @@ export function composeDayContext(
     autoCategory,
     overtimeToDate,
     manualTotal,
-    todayWindows: monthData[todayIso]?.windows ?? [],
     ...fromDaySummary(daySummary),
     ...officeStats(monthDays, (d) => monthData[d]?.location),
   }

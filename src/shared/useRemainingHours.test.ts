@@ -50,7 +50,6 @@ function stubDayQuery(overrides: Partial<DayQueryResult>): void {
     officeDays: 0,
     totalWorkDays: 0,
     officePercent: 0,
-    todayWindows: [],
     todayIso: '2026-06-03',
     ...overrides,
     windows: overrides.windows ?? closedWindows(overrides.workedHours ?? 0),
