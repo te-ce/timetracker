@@ -6,6 +6,9 @@ import { MonthCalendar } from './MonthCalendar'
 import { OvertimeBar } from './OvertimeBar'
 import { StatusLegend } from './StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
+// PROTOTYPE — month-overview variants, delete with src/prototypes/month-overview/
+import { MonthOverviewPrototype } from '../../prototypes/month-overview/MonthOverviewPrototype'
+import { MonthVariantSwitcher, isMonthVariantKey } from '../../prototypes/month-overview/MonthVariantSwitcher'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
 import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
@@ -18,14 +21,16 @@ import type { DaySummaryData } from '../../shared/DaySummaryBody'
 export function MonthView() {
   const { monthRepo, configRepo } = useRepositories()
   const navigate = useNavigate()
-  const { year, month } = useSearch({ from: '/month' })
+  // PROTOTYPE — `variant` selects a month-overview prototype; 'now' is this shipped view.
+  const { year, month, variant } = useSearch({ from: '/month' })
+  const prototypeVariant = isMonthVariantKey(variant) ? variant : 'now'
 
   function onSelectDate(date: string) {
     void navigate({ to: '/', search: { date } })
   }
 
   function onMonthChange(y: number, m: number) {
-    void navigate({ to: '/month', search: { year: y, month: m + 1 } })
+    void navigate({ to: '/month', search: { year: y, month: m + 1, variant: prototypeVariant } })
   }
 
   const queryClient = useQueryClient()
@@ -38,7 +43,8 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const { config, summaries, workLocations, dayNotes, todayBalance, isOvertimeReady } = useMonthView(year, month)
+  const view = useMonthView(year, month)
+  const { config, summaries, workLocations, dayNotes, todayBalance, isOvertimeReady } = view
 
   const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
 
@@ -63,8 +69,21 @@ export function MonthView() {
   const showOfficeStats = config.officeStats
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
+  // PROTOTYPE — throwaway variant gate, remove with src/prototypes/month-overview/
+  if (prototypeVariant !== 'now') {
+    return (
+      <MonthOverviewPrototype
+        variant={prototypeVariant}
+        view={view}
+        onSelectDate={onSelectDate}
+        onMonthChange={onMonthChange}
+      />
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
+      <MonthVariantSwitcher current="now" year={year} month={month} />
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
       {showOvertimeBar && (
         <OvertimeBar

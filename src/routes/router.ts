@@ -7,6 +7,7 @@ import { SprintView } from '../features/sprint/SprintView'
 import { SettingsView } from '../features/settings/SettingsView'
 import { toLocalIso } from '../shared/dateUtils'
 import { PrototypeRouteComponent, validatePrototypeSearch } from '../prototypes/design-language/PrototypeRoute'
+import { isMonthVariantKey } from '../prototypes/month-overview/MonthVariantSwitcher'
 
 const rootRoute = createRootRoute({
   component: App,
@@ -31,6 +32,8 @@ const monthRoute = createRoute({
     return {
       year: Number(search.year) || now.getFullYear(),
       month: Number(search.month) || now.getMonth() + 1,
+      // PROTOTYPE — month-overview variants, see src/prototypes/month-overview/
+      ...(isMonthVariantKey(search.variant) ? { variant: search.variant } : {}),
     }
   },
 })
