@@ -53,6 +53,45 @@ describe('MonthCalendar', () => {
     expect(btn('20').className).toContain('bg-gray-50/60')
   })
 
+  it('gives every day the same rectangle, whatever it holds', () => {
+    const overview = buildMonthOverview({
+      days: [
+        {
+          date: '2026-05-19',
+          dayType: 'WorkDay',
+          workedHours: 9.5,
+          entryTotal: 0,
+          isEntriesBalanced: true,
+          isConfirmed: false,
+          dayStatus: 'complete',
+          displayStatus: 'complete',
+          statusReason: '',
+          categoryBreakdown: {},
+        },
+      ],
+      targetHoursPerDay: [8],
+      today: '2026-05-31',
+      cumulativeBalance: 0,
+    })
+    render(
+      <MonthCalendar
+        year={2026}
+        month={4}
+        onSelectDate={vi.fn()}
+        dayStatusMap={{ '2026-05-19': 'complete', '2026-05-23': 'non-working' }}
+        overview={overview}
+      />,
+    )
+
+    // A cell with hours, a bar and a delta, and an empty weekend cell, are the same size.
+    const full = screen.getByRole('button', { name: /Tuesday, 19 May 2026/i })
+    const empty = screen.getByRole('button', { name: /Saturday, 23 May 2026/i })
+    const sizeClasses = (el: HTMLElement) => el.className.split(' ').filter((c) => c.startsWith('min-h-'))
+
+    expect(sizeClasses(full)).toHaveLength(1)
+    expect(sizeClasses(empty)).toEqual(sizeClasses(full))
+  })
+
   describe('today', () => {
     function todayCell(dayDisplayStatusMap?: Record<string, DisplayStatus>) {
       render(

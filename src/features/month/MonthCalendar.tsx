@@ -245,7 +245,7 @@ function DayCell({
         onClick={() => onSelectDate(iso)}
         aria-label={label}
         aria-current={isToday ? 'date' : undefined}
-        className={`relative flex w-full flex-col gap-1 rounded-lg px-2 pb-3 pt-1.5 text-left text-sm ${STATUS_CELL[cellStatus]} border transition-colors${todayRing}`}
+        className={`relative flex h-full min-h-[4.75rem] w-full flex-col gap-1 rounded-lg px-2 pb-3 pt-1.5 text-left text-sm ${STATUS_CELL[cellStatus]} border transition-colors${todayRing}`}
       >
         <span className="flex items-start justify-between">
           <span
