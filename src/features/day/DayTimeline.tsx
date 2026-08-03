@@ -61,6 +61,7 @@ export function DayTimeline({
   const categories = getAllCategories(customCategories, categoryOrder)
   const [loggingFor, setLoggingFor] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<PendingDelete | null>(null)
+  const [editingTimesFor, setEditingTimesFor] = useState<string | null>(null)
   const defaultCategory = initialCategory ?? autoCategory ?? UNCATEGORIZED_CATEGORY
 
   function addPeriod(start: string, end: string | null, category: string) {
@@ -135,6 +136,9 @@ export function DayTimeline({
                   running={active?.period.id === item.period.id}
                   categories={categories}
                   categoryDescriptions={categoryDescriptions}
+                  editing={editingTimesFor === item.period.id}
+                  onStartEditing={() => setEditingTimesFor(item.period.id)}
+                  onStopEditing={() => setEditingTimesFor(null)}
                   onSaveTimes={(start, end) =>
                     mutations.saveWithAbsorbed.mutate({
                       date,
@@ -169,6 +173,7 @@ export function DayTimeline({
                   segment.subtask &&
                   setDeleting({ kind: 'subtask', periodId: segment.periodId, subtask: segment.subtask })
                 }
+                onEditPeriodTimes={() => setEditingTimesFor(item.period.id)}
                 trailing={
                   item.last ? (
                     <>

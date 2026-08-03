@@ -14,8 +14,16 @@ interface SegmentRowProps {
   mutations: ReturnType<typeof useWorkPeriodMutations>
   overlaps: boolean
   onDeleteSubtask: () => void
+  /** Clicking a main stretch's time edits the work period it belongs to. */
+  onEditPeriodTimes: () => void
   /** Per-period actions, rendered on the period's last segment. */
   trailing?: React.ReactNode
+}
+
+function timeEditLabel(segment: DaySegment): string {
+  const category = categoryLabel(segment.category)
+  if (!segment.subtask) return `Edit work period times ${segment.start}–${segment.end ?? 'now'}`
+  return segment.placed ? `Edit ${category} subtask times` : `Edit ${category} subtask duration`
 }
 
 /** One stretch of the day: the period's own category, or a subtask inside it. */
@@ -27,6 +35,7 @@ export function SegmentRow({
   mutations,
   overlaps,
   onDeleteSubtask,
+  onEditPeriodTimes,
   trailing,
 }: SegmentRowProps) {
   const timeFormat = useTimeFormatStore((s) => s.format)
@@ -62,13 +71,16 @@ export function SegmentRow({
       <span className="flex w-4 shrink-0 justify-center self-stretch" aria-hidden="true">
         <span className={`w-1 rounded-full ${segment.live ? 'bg-emerald-400' : 'bg-indigo-200 dark:bg-indigo-900'}`} />
       </span>
-      <span
-        className={`w-24 shrink-0 font-mono text-xs tabular-nums ${
+      <button
+        type="button"
+        onClick={subtask ? () => setEditing(true) : onEditPeriodTimes}
+        aria-label={timeEditLabel(segment)}
+        className={`w-24 shrink-0 text-left font-mono text-xs tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
           overlaps ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
         }`}
       >
         {segment.placed ? `${segment.start}–${segment.end ?? 'now'}` : '· · · ·'}
-      </span>
+      </button>
       <span
         className={`w-14 shrink-0 text-right font-mono text-sm tabular-nums ${
           segment.live ? 'font-semibold text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'

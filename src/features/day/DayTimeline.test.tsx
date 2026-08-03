@@ -246,7 +246,7 @@ describe('DayTimeline', () => {
     const { repo } = setup([period('a', '10:00', '13:00', 'Work', [{ id: 's1', category: 'Review', hours: 0.5 }])])
 
     // When the user opens the subtask and rewrites it
-    await userEvent.click(await screen.findByRole('button', { name: /edit Review subtask/i }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit Review subtask' }))
     await userEvent.clear(screen.getByLabelText(/subtask hours/i))
     await userEvent.type(screen.getByLabelText(/subtask hours/i), '1:00')
     await userEvent.selectOptions(screen.getByLabelText(/^category$/i), 'Meeting')
@@ -300,6 +300,86 @@ describe('DayTimeline', () => {
     // Then no panel is rendered
     expect(await screen.findByRole('list', { name: /day timeline/i })).toBeInTheDocument()
     expect(screen.queryByRole('complementary', { name: /day totals/i })).not.toBeInTheDocument()
+  })
+
+  it('opens and focuses the work period’s time editor when its main stretch time is clicked', async () => {
+    // Given a finished work period with no subtasks
+    setup([period('a', '08:00', '09:30', 'Work')])
+
+    // When the user clicks the time on the main stretch row
+    await userEvent.click(await screen.findByRole('button', { name: /edit work period times 08:00–09:30/i }))
+
+    // Then the work period's own time editor is open with the start time focused
+    expect(screen.getByLabelText(/work period 1 start/i)).toHaveFocus()
+    expect(screen.getByLabelText(/work period 1 end/i)).toBeInTheDocument()
+  })
+
+  it('focuses the start time when the work period title time is clicked', async () => {
+    // Given a finished work period
+    setup([period('a', '08:00', '09:30', 'Work')])
+
+    // When the title time is clicked
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+
+    // Then typing goes straight into the start time
+    expect(screen.getByLabelText(/work period 1 start/i)).toHaveFocus()
+  })
+
+  it('saves work period times on Enter and abandons them on Escape', async () => {
+    // Given a finished work period
+    const { repo } = setup([period('a', '08:00', '09:30', 'Work')])
+
+    // When the user types a new start and presses Escape
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+    fireEvent.change(screen.getByLabelText(/work period 1 start/i), { target: { value: '07:00' } })
+    await userEvent.keyboard('{Escape}')
+
+    // Then nothing is stored and the editor is closed
+    expect(await getWindows(repo)).toMatchObject([{ start: '08:00' }])
+    expect(screen.queryByLabelText(/work period 1 start/i)).not.toBeInTheDocument()
+
+    // When the user types a new start and presses Enter
+    await userEvent.click(screen.getByRole('button', { name: /edit times of work period 1/i }))
+    fireEvent.change(screen.getByLabelText(/work period 1 start/i), { target: { value: '07:00' } })
+    await userEvent.keyboard('{Enter}')
+
+    // Then it is stored
+    await vi.waitFor(async () => {
+      expect((await getWindows(repo))[0]).toMatchObject({ start: '07:00', end: '09:30' })
+    })
+  })
+
+  it('edits a subtask inline when its time is clicked', async () => {
+    // Given a period with a timed Review subtask
+    const { repo } = setup([
+      period('a', '10:00', '13:00', 'Work', [
+        { id: 's1', category: 'Review', hours: 0.5, startedAt: '11:00', stoppedAt: '11:30' },
+      ]),
+    ])
+
+    // When the user clicks the subtask's time
+    await userEvent.click(await screen.findByRole('button', { name: /edit Review subtask times/i }))
+
+    // Then the subtask's own times are editable in place, end time focused
+    expect(screen.getByLabelText(/subtask end time/i)).toHaveFocus()
+    fireEvent.change(screen.getByLabelText(/subtask end time/i), { target: { value: '12:00' } })
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await vi.waitFor(async () => {
+      const [edited] = await getWindows(repo)
+      expect(edited?.subtasks[0]).toMatchObject({ startedAt: '11:00', stoppedAt: '12:00', hours: 1 })
+    })
+  })
+
+  it('edits a retro-logged subtask’s duration when its empty time is clicked', async () => {
+    // Given a subtask logged from memory, which has no times to click
+    setup([period('a', '10:00', '13:00', 'Work', [{ id: 's1', category: '_MAINT', hours: 0.5 }])])
+
+    // When its duration placeholder is clicked
+    await userEvent.click(await screen.findByRole('button', { name: /edit _MAINT subtask duration/i }))
+
+    // Then the duration field is focused
+    expect(screen.getByLabelText(/subtask hours/i)).toHaveFocus()
   })
 
   it('logs a whole work period on a day that is not today', async () => {

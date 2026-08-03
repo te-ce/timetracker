@@ -136,7 +136,8 @@ describe('WorkedHoursCell', () => {
       setup([windowWithSubtask])
       await userEvent.click(screen.getByText('8.00'))
 
-      expect(await screen.findByRole('button', { name: /edit Meeting subtask/i })).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: 'Edit Meeting subtask' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Edit Meeting subtask duration' })).toBeInTheDocument()
     })
 
     it('logs an untracked subtask on an existing work period', async () => {

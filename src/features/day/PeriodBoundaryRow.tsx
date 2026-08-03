@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { WorkPeriod } from '../../infra/repositories/types'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
@@ -11,6 +11,9 @@ interface PeriodBoundaryRowProps {
   running: boolean
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
+  editing: boolean
+  onStartEditing: () => void
+  onStopEditing: () => void
   onSaveTimes: (start: string, end: string | null) => void
   onChangeCategory: (category: string) => void
   onDelete: () => void
@@ -24,20 +27,42 @@ export function PeriodBoundaryRow({
   running,
   categories,
   categoryDescriptions,
+  editing,
+  onStartEditing,
+  onStopEditing,
   onSaveTimes,
   onChangeCategory,
   onDelete,
 }: PeriodBoundaryRowProps) {
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const [editing, setEditing] = useState(false)
   const [start, setStart] = useState(period.start)
   const [end, setEnd] = useState(period.end ?? '')
+  const [seenEditing, setSeenEditing] = useState(editing)
+  const startInputRef = useRef<HTMLInputElement>(null)
   const label = `work period ${ordinal}, ${period.start} to ${period.end ?? 'now'}`
 
-  function startEditing() {
-    setStart(period.start)
-    setEnd(period.end ?? '')
-    setEditing(true)
+  // Opening the editor — from this row or from one of its main stretches —
+  // starts from what is stored and puts the caret on the start time.
+  if (editing !== seenEditing) {
+    setSeenEditing(editing)
+    if (editing) {
+      setStart(period.start)
+      setEnd(period.end ?? '')
+    }
+  }
+
+  useEffect(() => {
+    if (editing) startInputRef.current?.focus()
+  }, [editing])
+
+  function save() {
+    onSaveTimes(start, end || null)
+    onStopEditing()
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') save()
+    if (e.key === 'Escape') onStopEditing()
   }
 
   return (
@@ -48,10 +73,12 @@ export function PeriodBoundaryRow({
       {editing ? (
         <span className="flex items-center gap-1">
           <input
+            ref={startInputRef}
             type="time"
             aria-label={`Work period ${ordinal} start`}
             value={start}
             onChange={(e) => setStart(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
           <span className="text-gray-400">–</span>
@@ -60,26 +87,20 @@ export function PeriodBoundaryRow({
             aria-label={`Work period ${ordinal} end`}
             value={end}
             onChange={(e) => setEnd(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
           />
-          <button
-            type="button"
-            onClick={() => {
-              onSaveTimes(start, end || null)
-              setEditing(false)
-            }}
-            className="ml-1 font-medium text-indigo-600 dark:text-indigo-400"
-          >
+          <button type="button" onClick={save} className="ml-1 font-medium text-indigo-600 dark:text-indigo-400">
             Save
           </button>
-          <button type="button" onClick={() => setEditing(false)} className="ml-1 text-gray-500 dark:text-gray-400">
+          <button type="button" onClick={onStopEditing} className="ml-1 text-gray-500 dark:text-gray-400">
             Cancel
           </button>
         </span>
       ) : (
         <button
           type="button"
-          onClick={startEditing}
+          onClick={onStartEditing}
           aria-label={`Edit times of ${label}`}
           className={`font-mono font-semibold tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
             running ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
