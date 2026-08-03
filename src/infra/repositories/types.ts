@@ -48,9 +48,11 @@ export interface WorkPeriod {
   subtasks: WorkPeriodSubtask[]
 }
 
-export type WorkLocation = 'Office' | 'Remote'
+export const WORK_LOCATIONS = ['Office', 'Remote'] as const
+export type WorkLocation = (typeof WORK_LOCATIONS)[number]
 
-export type DayTypeOverride = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'SickDay'
+export const DAY_TYPE_OVERRIDES = ['WorkDay', 'Weekend', 'PublicHoliday', 'Vacation', 'SickDay'] as const
+export type DayTypeOverride = (typeof DAY_TYPE_OVERRIDES)[number]
 
 export interface Day {
   windows: WorkPeriod[]
@@ -105,41 +107,19 @@ export interface MonthRepository {
   closeOpenWorkPeriod(date: string, category: string, now: string): Promise<void>
 }
 
-export interface AppConfig {
-  weekdayHours: import('../../shared/weekdayHours').WeekdayHours
-  autoCategory: string | null
-  federalState: string | null
-  sprintLengthDays: number
-  sprintStartDate: string | null
-  customCategories: string[]
-  categoryOrder?: string[] | undefined
-  defaultWorkLocation?: WorkLocation | null | undefined
-  sharepointUrl?: string | null | undefined
-  targetSheet?: string | null | undefined
-  categoryMapping?: Record<string, string> | undefined
-  categoryDescriptions?: Record<string, string> | undefined
-  categoryImportOrder?: string[] | undefined
-  localExcelFile?: string | null | undefined
-  launchAtLogin?: boolean | undefined
-  startMinimized?: boolean | undefined
-  closeToTray?: boolean | undefined
-  hotkeys?: import('../../shared/hotkeyConfig').HotkeyConfig | undefined
-  showOvertimeBar?: boolean | undefined
-  officeStats?: boolean | undefined
-  showWorkedHoursInNav?: boolean | undefined
-  showWorkedHoursInTray?: boolean | undefined
-  remainingTimeReference?: 'planned-stop' | 'target-hours' | undefined
-  remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target' | undefined
-  showTotalWorked?: boolean | undefined
-  startupView?: StartupView | undefined
-  archiveSprintSheet?: boolean | undefined
-}
+/**
+ * AppConfig is inferred from `appConfigSchema` — the schema is the single
+ * field list. Adding a field in only one of the two used to typecheck and
+ * silently skip validation; now it cannot.
+ */
+export type { AppConfig } from './configSchema'
 
-export type StartupView = 'last' | 'day' | 'month' | 'table' | 'table-with-log'
+export const STARTUP_VIEWS = ['last', 'day', 'month', 'table', 'table-with-log'] as const
+export type StartupView = (typeof STARTUP_VIEWS)[number]
 
 export interface ConfigRepository {
-  get(): Promise<AppConfig>
-  save(config: AppConfig): Promise<void>
+  get(): Promise<import('./configSchema').AppConfig>
+  save(config: import('./configSchema').AppConfig): Promise<void>
 }
 
 export interface SprintExport {

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { appConfigSchema } from './configSchema'
+import { appConfigSchema, validateDay } from './configSchema'
+import { DAY_TYPE_OVERRIDES } from './types'
 import { DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 
 describe('appConfigSchema migration', () => {
@@ -60,5 +61,22 @@ describe('appConfigSchema migration', () => {
     }
     const result = appConfigSchema.safeParse(cfg)
     expect(result.success).toBe(false)
+  })
+})
+
+describe('validateDay dayTypeOverride', () => {
+  it.each(DAY_TYPE_OVERRIDES)('keeps a day whose dayTypeOverride is %s', (override) => {
+    const day = {
+      windows: [{ id: 'w1', start: '09:00', end: '17:00', category: '_OTHER', subtasks: [] }],
+      dayTypeOverride: override,
+    }
+    const result = validateDay(day)
+    expect(result).not.toBeNull()
+    expect(result?.dayTypeOverride).toBe(override)
+    expect(result?.windows).toHaveLength(1)
+  })
+
+  it('drops a day whose dayTypeOverride is not a DayTypeOverride', () => {
+    expect(validateDay({ windows: [], dayTypeOverride: 'Holiday' })).toBeNull()
   })
 })

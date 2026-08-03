@@ -1,10 +1,10 @@
 export type DayType = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'SickDay'
 
 import type { DayTypeOverride } from '../../infra/repositories/types'
+import { DAY_TYPE_OVERRIDES } from '../../infra/repositories/types'
 
-const DAY_TYPE_OVERRIDES: readonly string[] = ['WorkDay', 'Weekend', 'PublicHoliday', 'Vacation', 'SickDay']
 export function isDayTypeOverride(v: string): v is DayTypeOverride {
-  return DAY_TYPE_OVERRIDES.includes(v)
+  return DAY_TYPE_OVERRIDES.some((o) => o === v)
 }
 
 export function classifyDayType(date: Date, holidayDates?: Set<string>): DayType {
