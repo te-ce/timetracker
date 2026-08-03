@@ -5,16 +5,19 @@ export function invalidateMonth(client: QueryClient, date: string): void {
   const d = parseLocalDate(date)
   void client.invalidateQueries({ queryKey: QUERY_KEYS.month(d.getFullYear(), d.getMonth() + 1) })
   void client.invalidateQueries({ queryKey: QUERY_KEYS.overtimeCarryOverAll })
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.allMonthsData })
 }
 
 export function invalidateMonthByYearMonth(client: QueryClient, year: number, month: number): void {
   void client.invalidateQueries({ queryKey: QUERY_KEYS.month(year, month) })
   void client.invalidateQueries({ queryKey: QUERY_KEYS.overtimeCarryOverAll })
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.allMonthsData })
 }
 
 export function invalidateMonthAll(client: QueryClient): void {
   void client.invalidateQueries({ queryKey: QUERY_KEYS.monthAll })
   void client.invalidateQueries({ queryKey: QUERY_KEYS.overtimeCarryOverAll })
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.allMonthsData })
 }
 
 export function invalidateConfig(client: QueryClient): void {
@@ -30,6 +33,8 @@ export const QUERY_KEYS = {
 
   month: (year: number, month: number) => ['month', year, month] as const,
   monthAll: ['month'] as const,
+
+  allMonthsData: ['allMonthsData'] as const,
 
   overtimeCarryOver: (year: number, month: number) => ['overtimeCarryOver', year, month] as const,
   overtimeCarryOverAll: ['overtimeCarryOver'] as const,

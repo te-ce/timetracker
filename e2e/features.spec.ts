@@ -284,3 +284,27 @@ test.describe('sprint view', () => {
     await expect(page.getByLabel('Length')).toBeVisible()
   })
 })
+
+// ─── Test 8: Stats view aggregates every stored month ────────────────────────
+
+test.describe('stats view', () => {
+  test('shows all-time totals and fun facts from the stored months', async ({ page }) => {
+    await page.addInitScript(
+      (seed: Record<string, string>) => {
+        for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
+      },
+      seedBase({
+        'timetracker_months/2026-05.json': JSON.stringify(CONFIRMED_DAY_SEED),
+        'timetracker_months-index.json': JSON.stringify({ '2026-05': true }),
+      }),
+    )
+
+    await page.goto('/stats')
+
+    const totals = page.getByRole('region', { name: 'All-time statistics' })
+    await expect(totals).toContainText('8.00h')
+    await expect(totals).toContainText('1 day across 1 month')
+    await expect(page.getByRole('region', { name: 'Hours by category' })).toContainText(CATEGORY)
+    await expect(page.getByRole('region', { name: 'Fun facts' })).toContainText('Earliest start ever: 09:00')
+  })
+})

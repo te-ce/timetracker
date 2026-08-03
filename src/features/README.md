@@ -10,6 +10,7 @@ Feature verticals. Each feature owns its components, hooks, and domain logic as 
 | [`month/`](month/README.md)       | `/` (default)       | Monthly calendar grid, day status dots, overtime carry-over    |
 | [`table/`](table/README.md)       | `/table`            | Spreadsheet-like view of hours per category per day            |
 | [`sprint/`](sprint/README.md)     | `/sprint`           | Sprint report, aggregated TimeEntry hours, Excel export        |
+| [`stats/`](stats/README.md)       | `/stats`            | All-time totals, records, weekday/category splits, fun facts   |
 | [`settings/`](settings/README.md) | `/settings`         | All app configuration — categories, AutoFill, sync, MSAL setup |
 | [`excel/`](excel/README.md)       | (service, no route) | WorkbookService — reads/writes SharePoint or local Excel files |
 

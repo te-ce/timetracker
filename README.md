@@ -73,6 +73,7 @@ src/
 │   ├── month/     # MonthGrid, DaySummary derivation, calendar
 │   ├── table/     # Monthly table view, category hour aggregation
 │   ├── sprint/    # Sprint report, Excel export
+│   ├── stats/     # All-time statistics and fun facts over every tracked month
 │   ├── settings/  # App config, category mapping, AutoFill rules
 │   └── excel/     # WorkbookService (Graph API + local folder adapters)
 ├── shared/        # Cross-cutting utilities used by 2+ features

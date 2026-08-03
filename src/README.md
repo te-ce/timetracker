@@ -26,6 +26,7 @@ main.tsx
             ├─ /day/:date → DayView      (features/day)
             ├─ /table     → TableView    (features/table)
             ├─ /sprint    → SprintView   (features/sprint)
+            ├─ /stats     → StatsView    (features/stats)
             └─ /settings  → SettingsView (features/settings)
 ```
 

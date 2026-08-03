@@ -4,6 +4,7 @@ import { DayView } from '../features/day/DayView'
 import { MonthView } from '../features/month/MonthView'
 import { TableView } from '../features/table/TableView'
 import { SprintView } from '../features/sprint/SprintView'
+import { StatsView } from '../features/stats/StatsView'
 import { SettingsView } from '../features/settings/SettingsView'
 import { toLocalIso } from '../shared/dateUtils'
 import { PrototypeRouteComponent, validatePrototypeSearch } from '../prototypes/design-language/PrototypeRoute'
@@ -64,6 +65,12 @@ const sprintRoute = createRoute({
   }),
 })
 
+const statsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/stats',
+  component: StatsView,
+})
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
@@ -77,7 +84,15 @@ const prototypeRoute = createRoute({
   validateSearch: validatePrototypeSearch,
 })
 
-const routeTree = rootRoute.addChildren([dayRoute, monthRoute, tableRoute, sprintRoute, settingsRoute, prototypeRoute])
+const routeTree = rootRoute.addChildren([
+  dayRoute,
+  monthRoute,
+  tableRoute,
+  sprintRoute,
+  statsRoute,
+  settingsRoute,
+  prototypeRoute,
+])
 
 const history = typeof window !== 'undefined' && window.location.protocol === 'file:' ? createHashHistory() : undefined
 
