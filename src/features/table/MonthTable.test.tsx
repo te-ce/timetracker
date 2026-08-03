@@ -125,6 +125,32 @@ describe('MonthGrid', () => {
     expect(rows.length).toBe(39)
   })
 
+  describe('running balance column', () => {
+    it('carries the balance onto days without tracked hours', () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [{ id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }] },
+        },
+      })
+      const untrackedDay = screen.getByRole('row', { name: '2026-05-05' })
+      const balanceCell = within(untrackedDay).getAllByRole('cell')[3]
+      expect(balanceCell?.textContent).toBe('+1.00')
+    })
+  })
+
+  describe('row colour', () => {
+    it('keeps confirmed days neutral so colour is left for days needing attention', () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [{ id: 'w1', start: '09:00', end: '17:00', category: '_COREMEDIA', subtasks: [] }] },
+        },
+        confirmedDays: new Set(['2026-05-04']),
+      })
+      const row = screen.getByRole('row', { name: '2026-05-04' })
+      expect(row.className).not.toMatch(/bg-emerald/)
+    })
+  })
+
   describe('column header alignment', () => {
     it('category column headers are centered', async () => {
       setup()
@@ -134,10 +160,10 @@ describe('MonthGrid', () => {
       }
     })
 
-    it('Worked header is centered', () => {
+    it('Worked header is right-aligned over its numbers', () => {
       setup()
       const header = screen.getByRole('columnheader', { name: /worked/i })
-      expect(header.className).toContain('text-center')
+      expect(header.className).toContain('text-right')
     })
   })
 

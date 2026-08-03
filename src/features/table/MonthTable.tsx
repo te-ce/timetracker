@@ -14,7 +14,8 @@ import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
 import type { MonthTableRow } from './buildMonthTable'
 import type { MonthView } from '../../shared/useMonthView'
-import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
+import { STATUS_DOT, STATUS_ROW_BG, type DisplayStatus } from '../../shared/statusColors'
+import { targetHoursForDate } from '../../shared/weekdayHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { Tooltip } from '../../shared/Tooltip'
@@ -24,7 +25,28 @@ import { resolveAutoCategory } from '../../shared/autoCategory'
 import { useMonthGridMutations } from './useMonthGridMutations'
 import { useDragReorder } from '../../shared/reorder'
 
-const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
+const TODAY_ROW_BG: [string, string] = ['bg-amber-100 dark:bg-amber-900/40', 'bg-amber-100 dark:bg-amber-900/40']
+
+// Rows read as a ledger: neutral zebra carries the eye across 12+ category columns, and colour is
+// spent only where it means "look here". Confirmed/complete days stay uncoloured — the ✓ and the
+// dot already say so — while the statuses that need action keep their tint.
+const NEUTRAL_ROW_BG: [string, string] = ['bg-white dark:bg-gray-900', 'bg-gray-50/70 dark:bg-gray-800/40']
+
+function rowBackgroundPair(status: DisplayStatus, isToday: boolean): [string, string] {
+  if (isToday) return TODAY_ROW_BG
+  if (status === 'needs-review' || status === 'leave') return STATUS_ROW_BG[status]
+  return NEUTRAL_ROW_BG
+}
+
+function isMonday(isoDate: string): boolean {
+  return new Date(isoDate + 'T12:00').getDay() === 1
+}
+
+function overtimeTextClass(value: number): string {
+  if (value > 0.01) return 'text-emerald-600 dark:text-emerald-400'
+  if (value < -0.01) return 'text-red-600 dark:text-red-400'
+  return 'text-gray-400 dark:text-gray-500'
+}
 
 function classifyRow(row: MonthTableRow, confirmedDays: Set<string>, today: string) {
   const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
@@ -343,7 +365,7 @@ export function MonthGrid({
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm">
             <tr>
-              <th className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-left w-12 border-b dark:border-gray-700">
+              <th className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-left w-12 border-b dark:border-gray-700 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Day
               </th>
               <th
@@ -352,11 +374,11 @@ export function MonthGrid({
               >
                 <span className="sr-only">Status</span>
               </th>
-              <th className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-center w-16 border-b dark:border-gray-700">
+              <th className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-right w-16 border-b dark:border-gray-700 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Worked
               </th>
               <th
-                className="px-1 py-1.5 text-center w-14 border-b border-l border-gray-200 dark:border-gray-700 text-xs"
+                className="px-1.5 py-1.5 text-right w-16 border-b border-l border-gray-200 dark:border-gray-700 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400"
                 data-tooltip="Accumulated over/undertime up to this date"
               >
                 ±
@@ -418,8 +440,9 @@ export function MonthGrid({
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const isToday = row.date === todayIso
                 const { displayStatus, reason, leaveType } = classifyRow(row, confirmedDays, todayIso)
-                const bgPair = isToday ? TODAY_ROW_BG : STATUS_ROW_BG[displayStatus]
+                const bgPair = rowBackgroundPair(displayStatus, isToday)
                 const rowBg = bgPair[globalRowIdx % 2]!
+                const weekEdgeClass = isMonday(row.date) ? 'border-t border-gray-300 dark:border-gray-600' : ''
                 const loc = workLocations.get(row.date) ?? defaultWorkLocation
                 const locIcon = loc === 'Office' ? '🏢' : '🏠'
                 const rowOpacityClass =
@@ -440,7 +463,7 @@ export function MonthGrid({
                 }
                 globalRowIdx++
                 return (
-                  <tr key={row.date} aria-label={row.date} className={`${rowBg} ${rowOpacityClass}`}>
+                  <tr key={row.date} aria-label={row.date} className={`${rowBg} ${rowOpacityClass} ${weekEdgeClass}`}>
                     {renderDayCell(row.date, dayLabel, rowBg)}
                     <td
                       className={`sticky left-12 z-10 px-1 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${rowBg}`}
@@ -466,21 +489,16 @@ export function MonthGrid({
                       categoryOrder={categoryOrder}
                       categoryDescriptions={categoryDescriptions}
                       daySummaryData={daySummaryData}
+                      targetHours={targetHoursForDate(row.date, config.weekdayHours)}
                       className={`sticky left-[4.25rem] z-10 ${rowBg}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
                     />
-                    <td className="px-1 py-0.5 w-14 text-right text-xs border-l border-gray-200 dark:border-gray-700 tabular-nums">
+                    <td className="px-1.5 py-0.5 w-16 text-right text-xs font-semibold border-l border-gray-200 dark:border-gray-700 tabular-nums">
                       <Tooltip content={<DaySummaryBody {...daySummaryData} timeFormat={timeFormat} dark />}>
                         <span className="block w-full text-right">
-                          {row.accumulatedOvertime !== null && row.workedHours > 0 && (
-                            <span
-                              className={
-                                row.accumulatedOvertime > 0
-                                  ? 'text-green-600 dark:text-green-400'
-                                  : row.accumulatedOvertime < 0
-                                    ? 'text-red-600 dark:text-red-400'
-                                    : 'text-gray-400 dark:text-gray-500'
-                              }
-                            >
+                          {/* Every past day carries the balance, not only the tracked ones — the
+                              question this column answers is "where do I stand as of this date". */}
+                          {row.accumulatedOvertime !== null && (
+                            <span className={overtimeTextClass(row.accumulatedOvertime)}>
                               {row.accumulatedOvertime > 0 ? '+' : ''}
                               {formatHoursCompact(row.accumulatedOvertime, timeFormat)}
                             </span>
@@ -508,7 +526,7 @@ export function MonthGrid({
                       return (
                         <td
                           key={cat}
-                          className={`px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem] cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
+                          className={`px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem] border-l border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
                           onClick={() => {
                             setActiveDialogDate(row.date)
                             setActiveDialogCategory(cat)
@@ -522,7 +540,7 @@ export function MonthGrid({
                           }}
                           tabIndex={0}
                         >
-                          <span className="inline-block w-full rounded px-1 py-0.5 text-right text-xs text-gray-600 dark:text-gray-300">
+                          <span className="inline-block w-full rounded px-1 py-0.5 text-right text-xs tabular-nums text-gray-700 dark:text-gray-200">
                             {val}
                           </span>
                         </td>
@@ -576,10 +594,12 @@ export function MonthGrid({
                   {groupRows}
                   {group.label && (
                     <tr className="bg-indigo-50/40 dark:bg-indigo-900/20 border-t dark:border-gray-700">
-                      <td className="sticky left-0 z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-xs font-medium">
+                      <td
+                        colSpan={2}
+                        className="sticky left-0 z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+                      >
                         {group.label} Total
                       </td>
-                      <td className="sticky left-12 z-10 bg-indigo-50/40 dark:bg-indigo-900/20"></td>
                       <td
                         className="sticky left-[4.25rem] z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-right text-xs font-medium"
                         data-testid={`sprint-worked-${group.label}`}
@@ -623,7 +643,7 @@ export function MonthGrid({
               >
                 {formatHoursCompact(totalWorked, timeFormat)}
               </td>
-              <td className="w-14 border-l border-gray-200 dark:border-gray-700"></td>
+              <td className="w-16 border-l border-gray-200 dark:border-gray-700"></td>
               <td></td>
               <td className="w-px border-l border-gray-300 dark:border-gray-600"></td>
               {allCategories.map((cat) => {

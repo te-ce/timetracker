@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import type { WorkPeriod, MonthRepository } from '../../infra/repositories/types'
 import { DayTimeline } from '../day/DayTimeline'
@@ -19,6 +19,17 @@ interface Props {
   categoryDescriptions?: Record<string, string> | undefined
   daySummaryData?: DaySummaryData | undefined
   className?: string | undefined
+  /** Day's target hours — draws a fill behind the number so days are comparable without reading. */
+  targetHours?: number | undefined
+}
+
+/** Fill proportional to worked/target, capped so a big overtime day still reads as "over". */
+function fillStyle(workedHours: number, targetHours: number | undefined): CSSProperties {
+  if (!targetHours || workedHours <= 0) return {}
+  const ratio = Math.min(1, workedHours / targetHours)
+  const color = workedHours + 0.01 >= targetHours ? 'rgb(16 185 129 / 0.22)' : 'rgb(59 130 246 / 0.18)'
+  const stop = (ratio * 100).toFixed(1)
+  return { backgroundImage: `linear-gradient(to right, ${color} ${stop}%, transparent ${stop}%)` }
 }
 
 export function WorkedHoursCell({
@@ -32,6 +43,7 @@ export function WorkedHoursCell({
   categoryDescriptions,
   daySummaryData,
   className = '',
+  targetHours,
 }: Props) {
   const [open, setOpen] = useState(false)
   const modalRef = useRef<HTMLDivElement>(null)
@@ -68,7 +80,8 @@ export function WorkedHoursCell({
     ) : undefined
     return (
       <td
-        className={`px-2 py-1 text-right cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${className}`}
+        className={`px-2 py-1 text-right tabular-nums cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${className}`}
+        style={fillStyle(workedHours, targetHours)}
         data-testid="worked-hours"
         onClick={() => setOpen(true)}
         onKeyDown={(e) => {

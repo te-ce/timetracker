@@ -15,7 +15,7 @@ function makeWindow(id: string, start: string, end: string | null): WorkPeriod {
   return { id, start, end, category: '_UNCATEGORIZED', subtasks: [] }
 }
 
-function setup(initialWindows: WorkPeriod[] = [], workedHours = 8) {
+function setup(initialWindows: WorkPeriod[] = [], workedHours = 8, targetHours?: number) {
   const repo = new InMemoryMonthRepository(
     initialWindows.length > 0 ? { '2024-01': { [DATE]: { windows: initialWindows } } } : {},
   )
@@ -32,6 +32,7 @@ function setup(initialWindows: WorkPeriod[] = [], workedHours = 8) {
               repository={repo}
               autoCategory={null}
               customCategories={CATEGORIES}
+              targetHours={targetHours}
             />
           </tr>
         </tbody>
@@ -42,6 +43,24 @@ function setup(initialWindows: WorkPeriod[] = [], workedHours = 8) {
 }
 
 describe('WorkedHoursCell', () => {
+  it('fills the cell proportionally to the target so days compare without reading', () => {
+    setup([], 4, 8)
+    const cell = screen.getByTestId('worked-hours')
+    expect(cell.style.backgroundImage).toContain('50.0%')
+  })
+
+  it('marks a day that reached its target with the on-target fill colour', () => {
+    setup([], 8, 8)
+    const cell = screen.getByTestId('worked-hours')
+    expect(cell.style.backgroundImage).toContain('16 185 129')
+    expect(cell.style.backgroundImage).toContain('100.0%')
+  })
+
+  it('draws no fill without a target', () => {
+    setup([], 8)
+    expect(screen.getByTestId('worked-hours').style.backgroundImage).toBe('')
+  })
+
   it('displays worked hours as text when not editing', () => {
     setup()
     expect(screen.getByText('8.00')).toBeInTheDocument()
