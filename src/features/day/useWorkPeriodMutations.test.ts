@@ -173,6 +173,92 @@ describe('useWorkPeriodMutations', () => {
       const data = await repo.getMonth(2026, 5)
       expect(data[date]?.windows[0]?.subtasks).toHaveLength(1)
     })
+
+    it('stopPeriod registers an undo command that reopens the period', async () => {
+      const repo = makeRepo([period('a', '09:00', null)])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.stopPeriod.mutate({ date, periodId: 'a', endTime: '10:00' })
+        await flush()
+      })
+
+      expect((await repo.getMonth(2026, 5))[date]?.windows[0]?.end).toBe('10:00')
+      expect(useUndoStore.getState().canUndo).toBe(true)
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows[0]?.end).toBeNull()
+    })
+
+    it('stopPeriod undo then redo re-stops the period', async () => {
+      const repo = makeRepo([period('a', '09:00', null)])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.stopPeriod.mutate({ date, periodId: 'a', endTime: '10:00' })
+        await flush()
+      })
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+      await act(async () => {
+        await useUndoStore.getState().redo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows[0]?.end).toBe('10:00')
+    })
+
+    it('startLiveSubtask registers an undo command that removes the started subtask', async () => {
+      const repo = makeRepo([period('a', '09:00', null)])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.startLiveSubtask.mutate({
+          date,
+          periodId: 'a',
+          subtask: { id: 's1', category: 'Alpha', hours: 0, startedAt: '09:30' },
+        })
+        await flush()
+      })
+
+      expect((await repo.getMonth(2026, 5))[date]?.windows[0]?.subtasks).toHaveLength(1)
+      expect(useUndoStore.getState().canUndo).toBe(true)
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows[0]?.subtasks ?? []).toHaveLength(0)
+    })
+
+    it('stopLiveSubtask registers an undo command that restores the running subtask', async () => {
+      const liveSubtask: WorkPeriodSubtask = { id: 's1', category: 'Alpha', hours: 0, startedAt: '09:30' }
+      const p: WorkPeriod = { ...period('a', '09:00', null), subtasks: [liveSubtask] }
+      const repo = makeRepo([p])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.stopLiveSubtask.mutate({ date, periodId: 'a', subtaskId: 's1', stoppedAt: '10:00' })
+        await flush()
+      })
+
+      const stopped = (await repo.getMonth(2026, 5))[date]?.windows[0]?.subtasks[0]
+      expect(stopped?.stoppedAt).toBe('10:00')
+      expect(useUndoStore.getState().canUndo).toBe(true)
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const data = await repo.getMonth(2026, 5)
+      expect(data[date]?.windows[0]?.subtasks[0]?.stoppedAt).toBeUndefined()
+    })
   })
 
   describe('saveWithAbsorbed — atomic merge', () => {

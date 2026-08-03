@@ -85,8 +85,9 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       repository.removeSubtask(date, periodId, subtaskId),
   )
 
-  const startLiveSubtask = useMutation({
-    mutationFn: ({
+  const startLiveSubtask = useUndoableDayMutation(
+    'Start subtask',
+    ({
       date,
       periodId,
       subtask,
@@ -95,11 +96,11 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       periodId: string
       subtask: WorkPeriodSubtask & { startedAt: string }
     }) => repository.startLiveSubtask(date, periodId, subtask),
-    onSuccess: (_, { date }) => invalidate(date),
-  })
+  )
 
-  const stopLiveSubtask = useMutation({
-    mutationFn: ({
+  const stopLiveSubtask = useUndoableDayMutation(
+    'Stop subtask',
+    ({
       date,
       periodId,
       subtaskId,
@@ -110,11 +111,11 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       subtaskId: string
       stoppedAt: string
     }) => repository.stopLiveSubtask(date, periodId, subtaskId, stoppedAt),
-    onSuccess: (_, { date }) => invalidate(date),
-  })
+  )
 
-  const stopPeriod = useMutation({
-    mutationFn: async ({
+  const stopPeriod = useUndoableDayMutation(
+    'Stop tracking',
+    ({
       date,
       periodId,
       endTime,
@@ -126,13 +127,8 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
       endTime: string
       liveSubtaskId?: string | undefined
       stoppedAt?: string | undefined
-    }) => {
-      await repository.stopWorkPeriod(date, periodId, endTime, liveSubtaskId, stoppedAt)
-    },
-    onSuccess: (_, { date }) => {
-      invalidate(date)
-    },
-  })
+    }) => repository.stopWorkPeriod(date, periodId, endTime, liveSubtaskId, stoppedAt),
+  )
 
   return {
     save,
