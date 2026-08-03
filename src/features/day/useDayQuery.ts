@@ -11,6 +11,7 @@ import {
 } from './dayContext'
 import { useAppConfig } from '../../shared/useAppConfig'
 import { nowHHMM } from '../../shared/worktime'
+import { loadOvertimeCarryOverBeforeMonth } from '../../shared/monthOvertime'
 import type { ResolvedAppConfig } from '../../shared/appConfigDefaults'
 
 export type { DayRawData, DayConfigContext, DayComputedStats, DayContext }
@@ -32,5 +33,13 @@ export function useDayQuery(date: string): DayQueryResult {
     queryFn: () => monthRepo.getMonth(year, month),
   })
 
-  return { config, ...composeDayContext(date, monthData, config, todayIso, nowHHMM()) }
+  const { data: priorMonthsOvertime = 0 } = useQuery({
+    queryKey: QUERY_KEYS.overtimeCarryOver(year, month),
+    queryFn: () => loadOvertimeCarryOverBeforeMonth(monthRepo, year, month, config.weekdayHours),
+  })
+
+  return {
+    config,
+    ...composeDayContext(date, monthData, config, todayIso, nowHHMM(), priorMonthsOvertime),
+  }
 }

@@ -91,6 +91,7 @@ export function composeDayContext(
   config: ResolvedAppConfig,
   todayIso: string,
   todayNow?: string,
+  priorMonthsOvertime = 0,
 ): DayContext {
   const year = parseInt(date.slice(0, 4))
   const month = parseInt(date.slice(5, 7))
@@ -98,7 +99,7 @@ export function composeDayContext(
   const {
     summaries: { days: monthDays },
     overtimeToDate,
-  } = composeMonthOvertime(year, month, monthData, config, todayIso, todayNow)
+  } = composeMonthOvertime(year, month, monthData, config, todayIso, todayNow, priorMonthsOvertime)
 
   const dayData = monthData[date]
   const daySummary = monthDays.find((d) => d.date === date) ?? FUTURE_SUMMARY

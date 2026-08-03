@@ -181,6 +181,21 @@ describe('useDayQuery', () => {
     })
   })
 
+  describe('overtime carry-over across months', () => {
+    it('carries prior month overtime into the new month instead of resetting to zero', async () => {
+      // April 2026: one WorkDay tracked, 10h worked against an 8h target → +2h overtime
+      const monthRepo = new InMemoryMonthRepository({
+        '2026-04': { '2026-04-01': { windows: [period('p1', '08:00', '18:00')] } },
+      })
+      const configRepo = new InMemoryConfigRepository()
+      const { result } = renderHook(() => useDayQuery('2026-05-01'), {
+        wrapper: makeWrapper(monthRepo, configRepo),
+      })
+
+      await waitFor(() => expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(2))
+    })
+  })
+
   describe('date routing', () => {
     it('queries the correct year and month from the date string', async () => {
       const monthRepo = new InMemoryMonthRepository({

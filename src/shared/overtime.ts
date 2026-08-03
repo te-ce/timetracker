@@ -43,6 +43,7 @@ export function calculateCumulativeOvertime(
   targetHoursPerDay: number[],
   today: string,
   projectedWorkedToday?: number,
+  initialOvertime = 0,
 ): (number | null)[] {
   let cumWorked = 0
   let cumTarget = 0
@@ -58,7 +59,7 @@ export function calculateCumulativeOvertime(
       cumTarget += target
     }
 
-    return cumWorked - cumTarget
+    return initialOvertime + cumWorked - cumTarget
   })
 }
 
@@ -75,6 +76,7 @@ export function calculateOvertimeToDate(
   today: string,
   targetHoursPerDay: number[],
   projectedWorkedToday?: number,
+  initialOvertime = 0,
 ): OvertimeToDate {
   const cumulative = calculateCumulativeOvertime(
     workedHoursPerDay,
@@ -82,13 +84,14 @@ export function calculateOvertimeToDate(
     targetHoursPerDay,
     today,
     projectedWorkedToday,
+    initialOvertime,
   )
 
   const todayIndex = dates.indexOf(today)
   const workedToday = todayIndex >= 0 ? (workedHoursPerDay[todayIndex] ?? 0) : 0
 
-  let value = 0
-  let priorOvertime = 0
+  let value = initialOvertime
+  let priorOvertime = initialOvertime
   for (let i = 0; i < dates.length; i++) {
     const date = dates[i]
     if (date === undefined || date > today) break

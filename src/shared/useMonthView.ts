@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
-import { composeMonthOvertime } from './monthOvertime'
+import { composeMonthOvertime, loadOvertimeCarryOverBeforeMonth } from './monthOvertime'
 import { buildMonthTable } from '../features/table/buildMonthTable'
 import { useTodayIso } from './useTodayIso'
 import { useAppConfig } from './useAppConfig'
@@ -51,6 +51,8 @@ export interface MonthViewInput {
   todayIso: string
   /** Wall-clock "HH:MM" the live parts of the month are derived against. */
   now: string
+  /** Cumulative overtime carried in from months before this one — see `loadOvertimeCarryOverBeforeMonth`. */
+  priorMonthsOvertime?: number
 }
 
 /**
@@ -60,7 +62,7 @@ export interface MonthViewInput {
  * of re-deriving from monthData themselves.
  */
 export function buildMonthView(input: MonthViewInput) {
-  const { year, month, monthData, config, todayIso, now } = input
+  const { year, month, monthData, config, todayIso, now, priorMonthsOvertime = 0 } = input
   const weekdayHours = config.weekdayHours
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
@@ -71,6 +73,7 @@ export function buildMonthView(input: MonthViewInput) {
     config,
     todayIso,
     now,
+    priorMonthsOvertime,
   )
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
@@ -125,8 +128,13 @@ export function useMonthView(year: number, month: number): MonthView {
     queryFn: () => monthRepo.getMonth(year, month),
   })
 
+  const { data: priorMonthsOvertime = 0 } = useQuery({
+    queryKey: QUERY_KEYS.overtimeCarryOver(year, month),
+    queryFn: () => loadOvertimeCarryOverBeforeMonth(monthRepo, year, month, config.weekdayHours),
+  })
+
   const todayWindows = monthData[todayIso]?.windows ?? []
   const now = useClock(hasLiveActivity(todayWindows, nowHHMM()))
 
-  return buildMonthView({ year, month, monthData, config, todayIso, now })
+  return buildMonthView({ year, month, monthData, config, todayIso, now, priorMonthsOvertime })
 }

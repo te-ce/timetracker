@@ -6,21 +6,23 @@ Cross-cutting utilities used by 2+ features. No feature-specific code lives here
 
 ### Domain utilities
 
-| File                   | Purpose                                                                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `autoCategory.ts`      | `resolveAutoCategory()` — resolves the effective category for a day from global default + per-day overrides |
-| `categories.ts`        | Fixed category list, category helpers, `UNCATEGORIZED_CATEGORY` sentinel                                    |
-| `dateUtils.ts`         | Date manipulation, formatting, ISO parsing helpers                                                          |
-| `dayStatus.ts`         | `deriveDayStatus()` — maps WorkedHours + DayType + balance → `DayStatus`                                    |
-| `formatHours.ts`       | Decimal hours → `"HH:MM"` or `"H.Xh"` formatting                                                            |
-| `holidays.ts`          | German public holiday calculation by Bundesland                                                             |
-| `hotkeyConfig.ts`      | Hotkey definitions and resolution                                                                           |
-| `periodCategories.ts`  | `calculateCategoryHours()` — derives per-category hours from a WorkPeriod array                             |
-| `worktime.ts`          | Worked hours calculation, `Sollstunden` resolution                                                          |
-| `appConfigDefaults.ts` | `resolveAppConfig()` — `AppConfig` with every field at its effective value                                  |
-| `dayBalance.ts`        | `deriveDayBalance()` — closed/live/projected hours, remaining, planned-stop state                           |
-| `statusColors.ts`      | Tailwind color classes for each `DayStatus`                                                                 |
-| `queryKeys.ts`         | Centralized TanStack Query key factory (`QUERY_KEYS.*`)                                                     |
+| File                   | Purpose                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `autoCategory.ts`      | `resolveAutoCategory()` — resolves the effective category for a day from global default + per-day overrides  |
+| `categories.ts`        | Fixed category list, category helpers, `UNCATEGORIZED_CATEGORY` sentinel                                     |
+| `dateUtils.ts`         | Date manipulation, formatting, ISO parsing helpers                                                           |
+| `dayStatus.ts`         | `deriveDayStatus()` — maps WorkedHours + DayType + balance → `DayStatus`                                     |
+| `formatHours.ts`       | Decimal hours → `"HH:MM"` or `"H.Xh"` formatting                                                             |
+| `holidays.ts`          | German public holiday calculation by Bundesland                                                              |
+| `hotkeyConfig.ts`      | Hotkey definitions and resolution                                                                            |
+| `periodCategories.ts`  | `calculateCategoryHours()` — derives per-category hours from a WorkPeriod array                              |
+| `worktime.ts`          | Worked hours calculation, `Sollstunden` resolution                                                           |
+| `appConfigDefaults.ts` | `resolveAppConfig()` — `AppConfig` with every field at its effective value                                   |
+| `dayBalance.ts`        | `deriveDayBalance()` — closed/live/projected hours, remaining, planned-stop state                            |
+| `overtimeCarryOver.ts` | `calculateOvertimeCarryOver()` — cumulative overtime carried in from prior months                            |
+| `monthOvertime.ts`     | `composeMonthOvertime()` + `loadOvertimeCarryOverBeforeMonth()` — month overtime pipeline, cross-month carry |
+| `statusColors.ts`      | Tailwind color classes for each `DayStatus`                                                                  |
+| `queryKeys.ts`         | Centralized TanStack Query key factory (`QUERY_KEYS.*`)                                                      |
 
 ### Stores (Zustand)
 

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { composeMonthOvertime } from './monthOvertime'
+import { composeMonthOvertime, loadOvertimeCarryOverBeforeMonth } from './monthOvertime'
+import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
 import type { MonthData, WorkPeriod } from '../infra/repositories/types'
 import type { WeekdayHours } from './weekdayHours'
 import { DEFAULT_APP_CONFIG, resolveAppConfig } from './appConfigDefaults'
@@ -62,5 +63,47 @@ describe('composeMonthOvertime', () => {
     // full planned duration (10h) since a planned-stop period is present.
     expect(result.overtimeToDate.workedToday).toBeCloseTo(6)
     expect(result.overtimeToDate.value).toBeCloseTo(2)
+  })
+
+  it('composeMonthOvertime seeds the running total from priorMonthsOvertime', () => {
+    const result = composeMonthOvertime(2026, 5, {}, resolveAppConfig(undefined), '2026-05-01', undefined, 3)
+    expect(result.overtimeToDate.value).toBeCloseTo(3)
+    expect(result.overtimeToDate.priorOvertime).toBeCloseTo(3)
+  })
+})
+
+describe('loadOvertimeCarryOverBeforeMonth', () => {
+  const STD: WeekdayHours = [0, 8, 8, 8, 8, 8, 0]
+
+  it('returns 0 when no prior months are tracked', async () => {
+    const monthRepo = new InMemoryMonthRepository({})
+    const result = await loadOvertimeCarryOverBeforeMonth(monthRepo, 2026, 5, STD)
+    expect(result).toBe(0)
+  })
+
+  it('sums overtime from a single prior month', async () => {
+    const monthRepo = new InMemoryMonthRepository({
+      '2026-04': { '2026-04-01': { windows: [win('1', '08:00', '18:00')] } }, // 10h vs. 8h target = +2h
+    })
+    const result = await loadOvertimeCarryOverBeforeMonth(monthRepo, 2026, 5, STD)
+    expect(result).toBeCloseTo(2)
+  })
+
+  it('accumulates across multiple prior months', async () => {
+    const monthRepo = new InMemoryMonthRepository({
+      '2026-03': { '2026-03-02': { windows: [win('1', '08:00', '18:00')] } }, // Mon, +2h
+      '2026-04': { '2026-04-01': { windows: [win('1', '08:00', '14:00')] } }, // Wed, -2h
+    })
+    const result = await loadOvertimeCarryOverBeforeMonth(monthRepo, 2026, 5, STD)
+    expect(result).toBeCloseTo(0)
+  })
+
+  it('ignores months at or after the target month', async () => {
+    const monthRepo = new InMemoryMonthRepository({
+      '2026-04': { '2026-04-01': { windows: [win('1', '08:00', '18:00')] } }, // +2h, counted
+      '2026-05': { '2026-05-01': { windows: [win('1', '08:00', '20:00')] } }, // +4h, NOT counted (target month)
+    })
+    const result = await loadOvertimeCarryOverBeforeMonth(monthRepo, 2026, 5, STD)
+    expect(result).toBeCloseTo(2)
   })
 })
