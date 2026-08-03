@@ -349,6 +349,41 @@ describe('DayTimeline', () => {
     })
   })
 
+  it('abandons an untouched work period time edit as soon as focus leaves it', async () => {
+    // Given the work period time editor is open and unchanged
+    const { repo } = setup([period('a', '08:00', '09:30', 'Work')])
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+    expect(screen.getByLabelText(/work period 1 start/i)).toHaveFocus()
+
+    // When focus moves away
+    await userEvent.click(document.body)
+
+    // Then the editor is gone and nothing was written
+    await vi.waitFor(() => {
+      expect(screen.queryByLabelText(/work period 1 start/i)).not.toBeInTheDocument()
+    })
+    expect(await getWindows(repo)).toMatchObject([{ start: '08:00', end: '09:30' }])
+  })
+
+  it('warns before throwing away a changed work period time edit', async () => {
+    // Given a pending change to the times
+    const { repo } = setup([period('a', '08:00', '09:30', 'Work')])
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+    fireEvent.change(screen.getByLabelText(/work period 1 start/i), { target: { value: '07:00' } })
+
+    // When focus leaves once, the edit survives and says what a second click will do
+    await userEvent.click(document.body)
+    expect(await screen.findByText(/click outside again to cancel/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/work period 1 start/i)).toBeInTheDocument()
+
+    // When focus leaves again, the change is dropped
+    await userEvent.click(document.body)
+    await vi.waitFor(() => {
+      expect(screen.queryByLabelText(/work period 1 start/i)).not.toBeInTheDocument()
+    })
+    expect(await getWindows(repo)).toMatchObject([{ start: '08:00' }])
+  })
+
   it('edits a subtask inline when its time is clicked', async () => {
     // Given a period with a timed Review subtask
     const { repo } = setup([

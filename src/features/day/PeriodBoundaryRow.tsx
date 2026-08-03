@@ -3,6 +3,7 @@ import type { WorkPeriod } from '../../infra/repositories/types'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { CategoryPicker } from './CategoryPicker'
+import { BlurCancelHint, useBlurWarning } from './workPeriodShared'
 
 interface PeriodBoundaryRowProps {
   period: WorkPeriod
@@ -40,6 +41,14 @@ export function PeriodBoundaryRow({
   const [seenEditing, setSeenEditing] = useState(editing)
   const startInputRef = useRef<HTMLInputElement>(null)
   const label = `work period ${ordinal}, ${period.start} to ${period.end ?? 'now'}`
+  const isDirty = start !== period.start || (end || null) !== period.end
+  const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
+
+  // Focus leaving an untouched editor drops it straight away; a changed one asks
+  // once first. Same contract as the subtask editor.
+  useEffect(() => {
+    if (cancelToken > 0) onStopEditing()
+  }, [cancelToken, onStopEditing])
 
   // Opening the editor — from this row or from one of its main stretches —
   // starts from what is stored and puts the caret on the start time.
@@ -71,7 +80,8 @@ export function PeriodBoundaryRow({
       className="flex flex-wrap items-center gap-3 pb-0.5 pt-3 text-xs"
     >
       {editing ? (
-        <span className="flex items-center gap-1">
+        <span className="relative flex items-center gap-1" onBlur={handleBlur} onFocus={handleFocus}>
+          {pendingCancel && <BlurCancelHint />}
           <input
             ref={startInputRef}
             type="time"
