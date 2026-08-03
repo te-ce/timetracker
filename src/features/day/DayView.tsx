@@ -14,6 +14,10 @@ import { useClock } from '../../shared/useClock'
 import { Tooltip } from '../../shared/Tooltip'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
+// PROTOTYPE — day-tracking UX variants, mounted only when `?proto=` is present.
+import { DayTrackingPrototype } from '../../prototypes/day-tracking/DayTrackingPrototype'
+import { getAllCategories } from '../../shared/categories'
+import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -114,10 +118,10 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
 export function DayView() {
   const { monthRepo, configRepo } = useRepositories()
   const navigate = useNavigate()
-  const { date: selectedDate } = useSearch({ from: '/' })
+  const { date: selectedDate, proto } = useSearch({ from: '/' })
 
   function setSelectedDate(date: string) {
-    void navigate({ to: '/', search: { date } })
+    void navigate({ to: '/', search: { date, ...(proto ? { proto } : {}) } })
   }
 
   const {
@@ -233,6 +237,17 @@ export function DayView() {
         >
           This day counts as {sollstunden}h On Leave — no work periods expected.
         </div>
+      ) : proto ? (
+        <DayTrackingPrototype
+          variant={proto}
+          date={selectedDate}
+          windows={windows}
+          repository={monthRepo}
+          categories={getAllCategories(customCategories, categoryOrder)}
+          categoryDescriptions={categoryDescriptions}
+          defaultCategory={autoCategory ?? autoCategoryOverride ?? UNCATEGORIZED_CATEGORY}
+          nowTime={liveNow}
+        />
       ) : (
         <section aria-label="Work periods">
           <h3 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>
