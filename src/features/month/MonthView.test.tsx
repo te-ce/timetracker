@@ -22,8 +22,9 @@ vi.mock('@tanstack/react-router', () => ({
   useSearch: () => ({ year: 2026, month: 6 }),
 }))
 
-vi.mock('../../shared/useMonthSummaries', () => ({
-  useMonthSummaries: vi.fn(),
+vi.mock('../../shared/useMonthView', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../shared/useMonthView')>()),
+  useMonthView: vi.fn(),
 }))
 
 vi.mock('./MonthCalendar', () => ({
@@ -34,9 +35,21 @@ vi.mock('./StatusLegend', () => ({
   StatusLegend: () => null,
 }))
 
-import { useMonthSummaries } from '../../shared/useMonthSummaries'
+import { buildMonthView, useMonthView } from '../../shared/useMonthView'
 
-type MonthSummariesReturn = ReturnType<typeof useMonthSummaries>
+/** A month with no data — the base every stub in this file starts from. */
+function emptyMonthView() {
+  return buildMonthView({
+    year: 2026,
+    month: 6,
+    monthData: {},
+    config: resolveAppConfig(undefined),
+    todayIso: '2026-06-05',
+    now: '12:00',
+  })
+}
+
+type MonthSummariesReturn = ReturnType<typeof useMonthView>
 
 function stubSummariesWithLiveWindow(liveWindowStart: string): void {
   const liveBalance = deriveDayBalance({
@@ -48,48 +61,18 @@ function stubSummariesWithLiveWindow(liveWindowStart: string): void {
     remainingTimeMode: 'until-zero-overtime',
   })
   const stub: MonthSummariesReturn = {
-    config: resolveAppConfig(undefined),
-    summaries: {
-      days: [],
-      workDayCount: 0,
-      workedHoursPerDay: [],
-      hasAnyTrackedHours: false,
-      projectedWorkedHoursToday: 0,
-    },
-    dayTypeOverrides: new Map(),
-    workLocations: new Map(),
-    confirmedDays: new Set(),
-    dayNotes: new Map(),
-    overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
-    sollstunden: 8,
-    targetHoursPerDay: [],
-    todayIso: '2026-06-05',
+    ...emptyMonthView(),
     todayBalance: liveBalance,
   }
-  vi.mocked(useMonthSummaries).mockReturnValue(stub)
+  vi.mocked(useMonthView).mockReturnValue(stub)
 }
 
 function stubSummaries(): void {
   const stub: MonthSummariesReturn = {
-    config: resolveAppConfig(undefined),
-    summaries: {
-      days: [],
-      workDayCount: 0,
-      workedHoursPerDay: [],
-      hasAnyTrackedHours: false,
-      projectedWorkedHoursToday: 0,
-    },
-    dayTypeOverrides: new Map(),
-    workLocations: new Map(),
-    confirmedDays: new Set(),
-    dayNotes: new Map(),
-    overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
-    sollstunden: 8,
-    targetHoursPerDay: [],
-    todayIso: '2026-06-05',
+    ...emptyMonthView(),
     todayBalance: emptyDayBalance(8),
   }
-  vi.mocked(useMonthSummaries).mockReturnValue(stub)
+  vi.mocked(useMonthView).mockReturnValue(stub)
 }
 
 function makeWrapper(configRepo?: InMemoryConfigRepository) {
@@ -148,24 +131,9 @@ describe('MonthView', () => {
     })
 
     it('hides OvertimeBar when showOvertimeBar is false in config', () => {
-      vi.mocked(useMonthSummaries).mockReturnValue({
+      vi.mocked(useMonthView).mockReturnValue({
+        ...emptyMonthView(),
         config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false }),
-        summaries: {
-          days: [],
-          workDayCount: 0,
-          workedHoursPerDay: [],
-          hasAnyTrackedHours: false,
-          projectedWorkedHoursToday: 0,
-        },
-        dayTypeOverrides: new Map(),
-        workLocations: new Map(),
-        confirmedDays: new Set(),
-        dayNotes: new Map(),
-        overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 },
-        sollstunden: 8,
-        targetHoursPerDay: [],
-        todayIso: '2026-06-05',
-        todayBalance: emptyDayBalance(8),
       })
       render(<MonthView />, { wrapper: makeWrapper() })
       expect(screen.queryByRole('status')).not.toBeInTheDocument()

@@ -17,7 +17,8 @@ Cross-cutting utilities used by 2+ features. No feature-specific code lives here
 | `hotkeyConfig.ts`      | Hotkey definitions and resolution                                                                           |
 | `periodCategories.ts`  | `calculateCategoryHours()` — derives per-category hours from a WorkPeriod array                             |
 | `worktime.ts`          | Worked hours calculation, `Sollstunden` resolution                                                          |
-| `appConfigDefaults.ts` | Default values for `AppConfig`                                                                              |
+| `appConfigDefaults.ts` | `resolveAppConfig()` — `AppConfig` with every field at its effective value                                  |
+| `dayBalance.ts`        | `deriveDayBalance()` — closed/live/projected hours, remaining, planned-stop state                           |
 | `statusColors.ts`      | Tailwind color classes for each `DayStatus`                                                                 |
 | `queryKeys.ts`         | Centralized TanStack Query key factory (`QUERY_KEYS.*`)                                                     |
 
@@ -32,15 +33,16 @@ Cross-cutting utilities used by 2+ features. No feature-specific code lives here
 
 ### Hooks
 
-| File                                | Purpose                                                          |
-| ----------------------------------- | ---------------------------------------------------------------- |
-| `useCloseOnOutsideClickOrEscape.ts` | Dismiss a popover/dropdown on outside click or Escape key        |
-| `useElectronTraySync.ts`            | Keeps the Electron tray icon in sync with tracking state         |
-| `useGoalNotification.ts`            | Fires a notification when daily hours goal is met                |
-| `useMsalSync.ts`                    | Keeps authStore in sync with MSAL account state                  |
-| `useMonthSummaries.ts`              | Loads and derives DaySummaries for the selected month            |
-| `usePrefetchCurrentMonth.ts`        | Prefetches the current month's data on app load                  |
-| `useRemainingHours.ts`              | Computes remaining hours for the day (Sollstunden − WorkedHours) |
+| File                                | Purpose                                                              |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| `useCloseOnOutsideClickOrEscape.ts` | Dismiss a popover/dropdown on outside click or Escape key            |
+| `useElectronTraySync.ts`            | Keeps the Electron tray icon in sync with tracking state             |
+| `useGoalNotification.ts`            | Fires a notification when daily hours goal is met                    |
+| `useMsalSync.ts`                    | Keeps authStore in sync with MSAL account state                      |
+| `useMonthView.ts`                   | `buildMonthView()` — the month view-model; `useMonthView()` loads it |
+| `usePrefetchCurrentMonth.ts`        | Prefetches the current month's data on app load                      |
+| `useRemainingHours.ts`              | Today's DayBalance for the nav badge and the tray                    |
+| `useClock.ts`                       | Wall-clock "HH:MM", ticking once a minute                            |
 
 ### UI components
 

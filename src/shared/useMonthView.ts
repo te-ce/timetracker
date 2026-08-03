@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { composeMonthOvertime } from './monthOvertime'
+import { buildMonthTable } from '../features/table/buildMonthTable'
 import { useTodayIso } from './useTodayIso'
 import { useAppConfig } from './useAppConfig'
 import { QUERY_KEYS } from './queryKeys'
@@ -9,6 +10,7 @@ import { deriveDayBalance, hasLiveActivity } from './dayBalance'
 import { useClock } from './useClock'
 import { targetHoursForDate } from './weekdayHours'
 import type { DayTypeOverride, MonthData, WorkLocation, WorkPeriod } from '../infra/repositories/types'
+import type { ResolvedAppConfig } from './appConfigDefaults'
 
 interface MonthMaps {
   dayTypeOverrides: Map<string, DayTypeOverride>
@@ -39,43 +41,65 @@ function extractMonthMaps(monthData: MonthData): MonthMaps {
   return { dayTypeOverrides, workLocations, confirmedDays, dayNotes }
 }
 
-export function useMonthSummaries(year: number, month: number) {
-  const { monthRepo } = useRepositories()
-  const todayIso = useTodayIso()
+export type MonthView = ReturnType<typeof buildMonthView>
 
-  const config = useAppConfig()
+export interface MonthViewInput {
+  year: number
+  month: number
+  monthData: MonthData
+  config: ResolvedAppConfig
+  todayIso: string
+  /** Wall-clock "HH:MM" the live parts of the month are derived against. */
+  now: string
+}
 
-  const { data: monthData = {} } = useQuery({
-    queryKey: QUERY_KEYS.month(year, month),
-    queryFn: () => monthRepo.getMonth(year, month),
-  })
-
+/**
+ * The month view-model: DaySummaries, grid rows, day-type/location/note maps,
+ * overtime and today's balance, all derived from one MonthData against one
+ * `now`. The calendar, the grid and the day view read fields off this instead
+ * of re-deriving from monthData themselves.
+ */
+export function buildMonthView(input: MonthViewInput) {
+  const { year, month, monthData, config, todayIso, now } = input
   const weekdayHours = config.weekdayHours
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
-  const todayNow = nowHHMM()
   const { summaries, targetHoursPerDay, overtimeToDate } = composeMonthOvertime(
     year,
     month,
     monthData,
     config,
     todayIso,
-    todayNow,
+    now,
   )
 
   const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
   const todayWindows = todayWindowsIn(monthData, todayIso, year, month)
-  const liveNow = useClock(hasLiveActivity(todayWindows, nowHHMM()))
   const todayBalance = deriveDayBalance({
     windows: todayWindows,
     sollstunden,
     priorOvertime: overtimeToDate.priorOvertime,
-    now: liveNow,
+    now,
     remainingTimeReference: config.remainingTimeReference,
     remainingTimeMode: config.remainingTimeMode,
   })
 
+  const rows = buildMonthTable({
+    year,
+    month,
+    monthData,
+    dayTypes: dayTypeOverrides,
+    weekdayHours,
+    today: todayIso,
+    todayNow: now,
+    globalAutoCategory: config.autoCategory,
+  })
+
   return {
+    year,
+    month,
+    monthData,
+    rows,
     config,
     summaries,
     dayTypeOverrides,
@@ -88,4 +112,21 @@ export function useMonthSummaries(year: number, month: number) {
     todayIso,
     todayBalance,
   }
+}
+
+/** Loads the month and feeds buildMonthView from the app's clock. */
+export function useMonthView(year: number, month: number): MonthView {
+  const { monthRepo } = useRepositories()
+  const todayIso = useTodayIso()
+  const config = useAppConfig()
+
+  const { data: monthData = {} } = useQuery({
+    queryKey: QUERY_KEYS.month(year, month),
+    queryFn: () => monthRepo.getMonth(year, month),
+  })
+
+  const todayWindows = monthData[todayIso]?.windows ?? []
+  const now = useClock(hasLiveActivity(todayWindows, nowHHMM()))
+
+  return buildMonthView({ year, month, monthData, config, todayIso, now })
 }

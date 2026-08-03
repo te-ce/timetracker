@@ -10,7 +10,7 @@ import { OvertimeBar } from '../month/OvertimeBar'
 import { StatusLegend } from '../month/StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
-import { useMonthSummaries } from '../../shared/useMonthSummaries'
+import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
 import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 
@@ -57,8 +57,8 @@ export function TableView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const { config, summaries, dayTypeOverrides, workLocations, confirmedDays, dayNotes, todayBalance } =
-    useMonthSummaries(year, month)
+  const view = useMonthView(year, month)
+  const { config, summaries, workLocations, todayBalance } = view
 
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
@@ -100,23 +100,10 @@ export function TableView() {
 
   const table = (
     <MonthGrid
-      year={year}
-      month={month}
+      view={view}
       expanded={expanded}
       repository={monthRepo}
-      autoCategory={config.autoCategory}
-      customCategories={config.customCategories}
-      categoryOrder={config.categoryOrder}
-      categoryDescriptions={config.categoryDescriptions}
-      dayTypes={dayTypeOverrides}
-      confirmedDays={confirmedDays}
-      sprintStartDate={config.sprintStartDate}
-      sprintLengthDays={config.sprintLengthDays}
-      workLocations={workLocations}
-      defaultWorkLocation={config.defaultWorkLocation}
-      dayNotes={dayNotes}
       showOfficeStats={showOfficeStats}
-      weekdayHours={config.weekdayHours}
       onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
       onCategoryRename={(oldName, newName) => categoryRenameMutation.mutate({ oldName, newName })}
       onAutoCategoryChange={(cat) => autoCategoryMutation.mutate(cat)}

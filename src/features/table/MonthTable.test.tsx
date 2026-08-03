@@ -4,57 +4,99 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory'
 import { MonthGrid } from './MonthTable'
 import { DEFAULT_CATEGORIES, UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
-import type { MonthData, WorkPeriod } from '../../infra/repositories/types'
+import type { DayTypeOverride, MonthData, WorkLocation, WorkPeriod } from '../../infra/repositories/types'
+import { buildMonthView } from '../../shared/useMonthView'
+import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
+import { toLocalIso } from '../../shared/dateUtils'
+import { nowHHMM } from '../../shared/worktime'
 import { useUndoStore } from '../../shared/undoStore'
 
 function w(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
   return { id, start, end, category, subtasks: [] }
 }
 
-function setup(
-  opts: {
-    monthData?: MonthData
-    autoCategory?: string
-    confirmedDays?: Set<string>
-    dayTypes?: Map<string, import('../day/dayType').DayType>
-    workLocations?: Map<string, import('../../infra/repositories/types').WorkLocation>
-    defaultWorkLocation?: import('../../infra/repositories/types').WorkLocation | null
-    onCategoryReorder?: (order: string[]) => void
-    onCategoryRename?: (oldName: string, newName: string) => void
-    onAutoCategoryChange?: (category: string) => void
-    onSelectDate?: (isoDate: string) => void
-    onClearDay?: (date: string) => void
-    sprintStartDate?: string | null
-    sprintLengthDays?: number
-    customCategories?: string[]
-    expanded?: boolean
-    showOfficeStats?: boolean
-    openLogSignal?: number
-  } = {},
-) {
-  const repo = new InMemoryMonthRepository(opts.monthData ? { '2026-05': opts.monthData } : {})
+interface SetupOptions {
+  monthData?: MonthData
+  autoCategory?: string
+  confirmedDays?: Set<string>
+  dayTypes?: Map<string, DayTypeOverride>
+  workLocations?: Map<string, WorkLocation>
+  defaultWorkLocation?: WorkLocation | null
+  onCategoryReorder?: (order: string[]) => void
+  onCategoryRename?: (oldName: string, newName: string) => void
+  onAutoCategoryChange?: (category: string) => void
+  onSelectDate?: (isoDate: string) => void
+  onClearDay?: (date: string) => void
+  sprintStartDate?: string | null
+  sprintLengthDays?: number
+  customCategories?: string[]
+  expanded?: boolean
+  showOfficeStats?: boolean
+  openLogSignal?: number
+}
+
+/**
+ * Day-level flags live on MonthData in production, so the per-day maps a test
+ * asks for are folded back into the month before the view is built.
+ */
+function foldIntoMonthData(opts: SetupOptions): MonthData {
+  const monthData: MonthData = structuredClone(opts.monthData ?? {})
+  function dayAt(date: string) {
+    const existing = monthData[date] ?? { windows: [] }
+    monthData[date] = existing
+    return existing
+  }
+  for (const date of opts.confirmedDays ?? []) dayAt(date).confirmed = true
+  for (const [date, dayType] of opts.dayTypes ?? []) dayAt(date).dayTypeOverride = dayType
+  for (const [date, location] of opts.workLocations ?? []) dayAt(date).location = location
+  return monthData
+}
+
+function makeView(year: number, month: number, monthData: MonthData = {}, autoCategory = '_COREMEDIA') {
+  return buildMonthView({
+    year,
+    month,
+    monthData,
+    config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, autoCategory }),
+    todayIso: toLocalIso(new Date()),
+    now: nowHHMM(),
+  })
+}
+
+function setup(opts: SetupOptions = {}) {
+  const monthData = foldIntoMonthData(opts)
+  const repo = new InMemoryMonthRepository({ '2026-05': structuredClone(monthData) })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+  const config = resolveAppConfig({
+    ...DEFAULT_APP_CONFIG,
+    autoCategory: opts.autoCategory ?? '_COREMEDIA',
+    ...(opts.customCategories ? { customCategories: opts.customCategories } : {}),
+    ...(opts.defaultWorkLocation !== undefined ? { defaultWorkLocation: opts.defaultWorkLocation } : {}),
+    ...(opts.sprintStartDate !== undefined ? { sprintStartDate: opts.sprintStartDate } : {}),
+    ...(opts.sprintLengthDays !== undefined ? { sprintLengthDays: opts.sprintLengthDays } : {}),
+  })
+
+  const view = buildMonthView({
+    year: 2026,
+    month: 5,
+    monthData,
+    config,
+    todayIso: toLocalIso(new Date()),
+    now: nowHHMM(),
+  })
 
   function ui(signal?: number) {
     return (
       <QueryClientProvider client={queryClient}>
         <MonthGrid
-          year={2026}
-          month={5}
+          view={view}
           repository={repo}
-          autoCategory={opts.autoCategory ?? '_COREMEDIA'}
-          customCategories={opts.customCategories}
-          confirmedDays={opts.confirmedDays}
-          dayTypes={opts.dayTypes}
-          workLocations={opts.workLocations}
-          defaultWorkLocation={opts.defaultWorkLocation}
           onCategoryReorder={opts.onCategoryReorder}
           onCategoryRename={opts.onCategoryRename}
           onAutoCategoryChange={opts.onAutoCategoryChange}
           onSelectDate={opts.onSelectDate}
           onClearDay={opts.onClearDay}
-          sprintStartDate={opts.sprintStartDate}
-          sprintLengthDays={opts.sprintLengthDays}
           expanded={opts.expanded}
           showOfficeStats={opts.showOfficeStats}
           openLogSignal={signal}
@@ -165,7 +207,7 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid year={2026} month={5} repository={repo} autoCategory="_COREMEDIA" onCategoryRename={onRename} />
+          <MonthGrid view={makeView(2026, 5)} repository={repo} onCategoryRename={onRename} />
         </QueryClientProvider>,
       )
       return { repo }
@@ -218,7 +260,7 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid year={2026} month={5} repository={repo} autoCategory="_COREMEDIA" onCategoryReorder={vi.fn()} />
+          <MonthGrid view={makeView(2026, 5)} repository={repo} onCategoryReorder={vi.fn()} />
         </QueryClientProvider>,
       )
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
@@ -429,7 +471,7 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid year={2026} month={6} repository={repo} autoCategory="_COREMEDIA" />
+          <MonthGrid view={makeView(2026, 6)} repository={repo} />
         </QueryClientProvider>,
       )
       return { repo }

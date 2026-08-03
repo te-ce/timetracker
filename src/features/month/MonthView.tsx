@@ -6,7 +6,7 @@ import { MonthCalendar } from './MonthCalendar'
 import { OvertimeBar } from './OvertimeBar'
 import { StatusLegend } from './StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
-import { useMonthSummaries } from '../../shared/useMonthSummaries'
+import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
 import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
@@ -38,7 +38,7 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const { config, summaries, workLocations, dayNotes, todayBalance } = useMonthSummaries(year, month)
+  const { config, summaries, workLocations, dayNotes, todayBalance } = useMonthView(year, month)
 
   const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
 

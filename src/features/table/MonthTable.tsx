@@ -1,29 +1,23 @@
 import { useState, useRef, Fragment, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useCloseOnOutsideClickOrEscape } from '../../shared/useCloseOnOutsideClickOrEscape'
-import { useQuery } from '@tanstack/react-query'
 import type { MonthRepository, WorkLocation } from '../../infra/repositories/types'
-import type { DayType } from '../day/dayType'
 import type { DotPopoverState } from '../day/DotPopoverPanel'
 import type { NotePopoverState } from '../day/NotePopoverPanel'
 import { DotPopoverPanel } from '../day/DotPopoverPanel'
 import { NotePopoverPanel } from '../day/NotePopoverPanel'
 import { WorkOverview } from '../day/WorkOverview'
 import { classifyDay } from '../../shared/dayStatus'
-import { buildMonthTable } from './buildMonthTable'
 import { getAllCategories } from '../../shared/categories'
 import { computeSprintGroups } from '../sprint/sprintGroups'
 import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
-import { QUERY_KEYS } from '../../shared/queryKeys'
-import { useTodayIso } from '../../shared/useTodayIso'
 import type { MonthTableRow } from './buildMonthTable'
+import type { MonthView } from '../../shared/useMonthView'
 import { STATUS_DOT, STATUS_ROW_BG } from '../../shared/statusColors'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
-import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { Tooltip } from '../../shared/Tooltip'
-import { useClock } from '../../shared/useClock'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { DaySummaryBody } from '../../shared/DaySummaryBody'
 import { resolveAutoCategory } from '../../shared/autoCategory'
@@ -31,8 +25,6 @@ import { useMonthGridMutations } from './useMonthGridMutations'
 import { useDragReorder } from '../../shared/reorder'
 
 const TODAY_ROW_BG: [string, string] = ['bg-amber-200 dark:bg-amber-800', 'bg-amber-300/70 dark:bg-amber-900/70']
-
-const EMPTY_CUSTOM_CATEGORIES: string[] = []
 
 function classifyRow(row: MonthTableRow, confirmedDays: Set<string>, today: string) {
   const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
@@ -48,46 +40,22 @@ function classifyRow(row: MonthTableRow, confirmedDays: Set<string>, today: stri
 }
 
 interface Props {
-  year: number
-  month: number
+  view: MonthView
   repository: MonthRepository
-  autoCategory: string | null
-  customCategories?: string[] | undefined
-  categoryOrder?: string[] | undefined
-  dayTypes?: Map<string, DayType> | undefined
-  confirmedDays?: Set<string> | undefined
-  sprintStartDate?: string | null | undefined
-  sprintLengthDays?: number | undefined
-  workLocations?: Map<string, WorkLocation> | undefined
-  defaultWorkLocation?: WorkLocation | null | undefined
-  categoryDescriptions?: Record<string, string> | undefined
-  dayNotes?: Map<string, string> | undefined
+  expanded?: boolean | undefined
+  showOfficeStats?: boolean | undefined
+  initialLogDate?: string | undefined
+  openLogSignal?: number | undefined
   onCategoryReorder?: ((order: string[]) => void) | undefined
   onCategoryRename?: ((oldName: string, newName: string) => void) | undefined
   onAutoCategoryChange?: ((category: string) => void) | undefined
   onNoteChange?: ((date: string, note: string) => void) | undefined
   onSelectDate?: ((isoDate: string) => void) | undefined
   onClearDay?: ((date: string) => void) | undefined
-  expanded?: boolean | undefined
-  showOfficeStats?: boolean | undefined
-  weekdayHours?: WeekdayHours | undefined
-  initialLogDate?: string | undefined
-  openLogSignal?: number | undefined
 }
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
   return sprintStartDate ?? `${year}-01-01`
-}
-
-function resolveWorkLocation(
-  workLocations: Map<string, WorkLocation>,
-  date: string,
-  defaultWorkLocation: WorkLocation | null,
-): WorkLocation {
-  const stored = workLocations.get(date)
-  if (stored !== undefined) return stored
-  if (defaultWorkLocation !== null) return defaultWorkLocation
-  return 'Remote'
 }
 
 interface ConfirmCellProps {
@@ -180,32 +148,31 @@ function scrollContainerClass(expanded: boolean | undefined): string {
 }
 
 export function MonthGrid({
-  year,
-  month,
+  view,
   repository,
-  autoCategory,
-  customCategories = EMPTY_CUSTOM_CATEGORIES,
-  categoryOrder,
-  dayTypes = new Map(),
-  confirmedDays = new Set(),
-  sprintStartDate = null,
-  sprintLengthDays = 14,
-  workLocations = new Map(),
-  defaultWorkLocation = null,
-  categoryDescriptions,
-  dayNotes = new Map(),
+  expanded,
+  showOfficeStats = true,
+  initialLogDate,
+  openLogSignal,
   onCategoryReorder,
   onCategoryRename,
   onAutoCategoryChange,
   onNoteChange,
   onSelectDate,
   onClearDay,
-  expanded,
-  showOfficeStats = true,
-  weekdayHours = DEFAULT_WEEKDAY_HOURS,
-  initialLogDate,
-  openLogSignal,
 }: Props) {
+  const { year, month, monthData, rows, todayIso, config } = view
+  const {
+    autoCategory,
+    customCategories,
+    categoryOrder,
+    categoryDescriptions,
+    sprintStartDate,
+    sprintLengthDays,
+    defaultWorkLocation,
+  } = config
+  const dayTypes = view.dayTypeOverrides
+  const { confirmedDays, workLocations, dayNotes } = view
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
   const [notePopover, setNotePopover] = useState<NotePopoverState | null>(null)
@@ -230,16 +197,12 @@ export function MonthGrid({
     setActiveDialogCategory(null)
   }
 
-  const todayIso = useTodayIso()
-
   const [seenLogSignal, setSeenLogSignal] = useState(openLogSignal)
   if (openLogSignal !== seenLogSignal) {
     setSeenLogSignal(openLogSignal)
     setActiveDialogDate(todayIso)
     setActiveDialogCategory(null)
   }
-
-  const liveNow = useClock()
 
   useEffect(() => {
     if (!activeDialogDate) return
@@ -302,28 +265,12 @@ export function MonthGrid({
   useCloseOnOutsideClickOrEscape(!!dotPopover, popoverRef, closeDotPopover, { escapeKey: true })
   useCloseOnOutsideClickOrEscape(!!notePopover, notePopoverRef, closeNotePopover)
 
-  const { data: monthData = {} } = useQuery({
-    queryKey: QUERY_KEYS.month(year, month),
-    queryFn: () => repository.getMonth(year, month),
-  })
-
   const {
     confirm: gridConfirmMutation,
     unconfirm: gridUnconfirmMutation,
     dayType: dayTypeMutation,
     location: locationMutation,
   } = useMonthGridMutations({ repository, year, month, monthData })
-
-  const rows = buildMonthTable({
-    year,
-    month,
-    monthData,
-    dayTypes,
-    weekdayHours,
-    today: todayIso,
-    todayNow: liveNow,
-    globalAutoCategory: autoCategory,
-  })
 
   function getCellValue(row: MonthTableRow, category: string): string {
     const manual = row.entries[category] ?? 0
@@ -333,7 +280,7 @@ export function MonthGrid({
   }
 
   function cycleLocation(date: string) {
-    const effective: WorkLocation = workLocations.get(date) ?? defaultWorkLocation ?? 'Remote'
+    const effective: WorkLocation = workLocations.get(date) ?? defaultWorkLocation
     const next: WorkLocation = effective === 'Remote' ? 'Office' : 'Remote'
     locationMutation.mutate({ date, location: next })
   }
@@ -356,7 +303,7 @@ export function MonthGrid({
       reason,
       workedHours: row.workedHours,
       categoryBreakdown,
-      ...(categoryDescriptions !== undefined ? { categoryDescriptions } : {}),
+      categoryDescriptions,
       ...(leaveType !== undefined ? { leaveType } : {}),
     })
   }
@@ -473,7 +420,7 @@ export function MonthGrid({
                 const { displayStatus, reason, leaveType } = classifyRow(row, confirmedDays, todayIso)
                 const bgPair = isToday ? TODAY_ROW_BG : STATUS_ROW_BG[displayStatus]
                 const rowBg = bgPair[globalRowIdx % 2]!
-                const loc = resolveWorkLocation(workLocations, row.date, defaultWorkLocation)
+                const loc = workLocations.get(row.date) ?? defaultWorkLocation
                 const locIcon = loc === 'Office' ? '🏢' : '🏠'
                 const rowOpacityClass =
                   isNonWorkDay && row.workedHours === 0 && Object.keys(row.entries).length === 0 ? 'opacity-50' : ''
@@ -488,7 +435,7 @@ export function MonthGrid({
                   reason,
                   workedHours: row.workedHours,
                   categoryBreakdown: rowCategoryBreakdown,
-                  ...(categoryDescriptions !== undefined ? { categoryDescriptions } : {}),
+                  categoryDescriptions,
                   ...(leaveType !== undefined ? { leaveType } : {}),
                 }
                 globalRowIdx++
