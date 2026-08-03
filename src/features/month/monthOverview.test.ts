@@ -59,6 +59,23 @@ describe('buildMonthOverview', () => {
     expect(overview.weeks[0]?.balance).toBe(-2)
   })
 
+  it('marks a week whose every day is still to come, so it can be left blank', () => {
+    const overview = buildMonthOverview({
+      days: [
+        daySummary('2026-07-01', { workedHours: 8 }),
+        daySummary('2026-07-02', { workedHours: 0, displayStatus: 'future', dayStatus: 'future' }),
+        // Next ISO week, entirely in the future.
+        daySummary('2026-07-06', { workedHours: 0, displayStatus: 'future', dayStatus: 'future' }),
+        daySummary('2026-07-07', { workedHours: 0, displayStatus: 'future', dayStatus: 'future' }),
+      ],
+      targetHoursPerDay: [8, 8, 8, 8],
+      today: '2026-07-01',
+      cumulativeBalance: 0,
+    })
+
+    expect(overview.weeks.map((w) => w.isFuture)).toEqual([false, true])
+  })
+
   it('gives each day its own hours, target and balance, and no balance where none is knowable', () => {
     const days = [
       daySummary('2026-07-01', { workedHours: 9.5 }),

@@ -21,6 +21,8 @@ export interface MonthOverviewWeek {
   /** Target for tracked days only — the same rule the overtime math uses. */
   target: number
   balance: number
+  /** Every day of the week is still to come, so its totals say nothing yet. */
+  isFuture: boolean
 }
 
 export interface AttentionDay {
@@ -75,9 +77,10 @@ export function buildMonthOverview(input: MonthOverviewInput): MonthOverview {
     const isoWeek = isoWeekOf(summary.date)
     let week = weeks.at(-1)
     if (!week || week.isoWeek !== isoWeek) {
-      week = { isoWeek, days: [], worked: 0, target: 0, balance: 0 }
+      week = { isoWeek, days: [], worked: 0, target: 0, balance: 0, isFuture: true }
       weeks.push(week)
     }
+    if (summary.date <= input.today) week.isFuture = false
     const targetHours = input.targetHoursPerDay[i] ?? 0
     const hasBalance = summary.workedHours > 0 && summary.date <= input.today
     week.days.push({

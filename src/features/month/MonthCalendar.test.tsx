@@ -374,6 +374,22 @@ describe('MonthCalendar', () => {
       expect(screen.getByRole('button', { name: /Wednesday, 1 July 2026/i }).textContent).toContain('Vacation')
     })
 
+    it('leaves a week that has not happened yet without totals', () => {
+      const overview = overviewFor(
+        [workDay('2026-07-01', 9), { ...workDay('2026-07-06', 0), dayStatus: 'future', displayStatus: 'future' }],
+        [8, 8],
+        '2026-07-01',
+      )
+      render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
+
+      // The past week reports itself (once in the day cell, once as the week total);
+      // the coming week shows its number only.
+      expect(screen.getByText('KW 27')).toBeInTheDocument()
+      expect(screen.getAllByText('9.00h')).toHaveLength(2)
+      expect(screen.getByText('KW 28')).toBeInTheDocument()
+      expect(screen.queryByText('0.00h')).not.toBeInTheDocument()
+    })
+
     it('leaves a day with nothing tracked without a balance', () => {
       const untracked: DaySummary = { ...workDay('2026-07-01', 0), dayStatus: 'untracked', displayStatus: 'untracked' }
       const overview = overviewFor([untracked], [8], '2026-07-31')

@@ -146,10 +146,14 @@ function WeekTotalCell({ week, timeFormat }: { week: MonthOverviewWeek; timeForm
   return (
     <div className="flex flex-col justify-center rounded-lg border border-dashed px-2 py-1.5 text-right dark:border-gray-700">
       <p className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">KW {week.isoWeek}</p>
-      <p className="text-sm font-semibold tabular-nums">{formatHours(week.worked, timeFormat)}</p>
-      <p className={`text-xs tabular-nums ${balanceInk(week.balance)}`}>
-        {formatSignedHours(week.balance, timeFormat)}
-      </p>
+      {!week.isFuture && (
+        <>
+          <p className="text-sm font-semibold tabular-nums">{formatHours(week.worked, timeFormat)}</p>
+          <p className={`text-xs tabular-nums ${balanceInk(week.balance)}`}>
+            {formatSignedHours(week.balance, timeFormat)}
+          </p>
+        </>
+      )}
     </div>
   )
 }
