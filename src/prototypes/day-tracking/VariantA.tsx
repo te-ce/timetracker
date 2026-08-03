@@ -5,6 +5,7 @@ import { useState } from 'react'
 import type { WorkPeriod } from '../../infra/repositories/types'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
+import { parseMinutes } from '../../shared/worktime'
 import { LogSubtaskForm } from './LogSubtaskForm'
 import {
   categoryLabel,
@@ -16,6 +17,7 @@ import {
   periodDuration,
   sortedPeriods,
   useProtoActions,
+  type Gap,
   type ProtoActions,
   type VariantProps,
 } from './protoShared'
@@ -85,38 +87,44 @@ export function VariantA({ date, windows, repository, categories, defaultCategor
         </ul>
       </div>
 
-      <ol className="flex flex-col gap-2">
-        {periods.map((w) => (
-          <li key={w.id} className="flex flex-col gap-1">
-            <PeriodGroup
-              key={`${w.id}:${w.start}:${w.end ?? ''}`}
-              w={w}
-              nowTime={nowTime}
-              categories={categories}
-              actions={actions}
-              activeSubtaskId={active?.subtask?.id}
-            />
-            {w.end && gapAfter.has(w.end) && (
-              <div className="flex items-center gap-2 pl-14 text-xs text-gray-400 dark:text-gray-500">
-                <span className="h-px w-6 border-t border-dashed border-gray-300 dark:border-gray-600" />
-                <span>
-                  gap {formatHours(gapAfter.get(w.end)?.hours ?? 0, timeFormat)} · {w.end}–{gapAfter.get(w.end)?.end}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const gap = gapAfter.get(w.end ?? '')
-                    if (gap) actions.addPeriod(gap.start, gap.end, defaultCategory)
-                  }}
-                  className="underline decoration-dotted hover:text-indigo-600 dark:hover:text-indigo-400"
-                >
-                  fill
-                </button>
-              </div>
-            )}
-          </li>
-        ))}
-      </ol>
+      <div className="flex items-stretch gap-4">
+        <DayRibbon periods={periods} gaps={[...gapAfter.values()]} nowTime={nowTime} />
+
+        <ol className="flex min-w-0 flex-1 flex-col gap-2">
+          {periods.map((w) => (
+            <li key={w.id} className="flex flex-col gap-1">
+              <PeriodGroup
+                key={`${w.id}:${w.start}:${w.end ?? ''}`}
+                w={w}
+                nowTime={nowTime}
+                categories={categories}
+                actions={actions}
+                activeSubtaskId={active?.subtask?.id}
+              />
+              {w.end && gapAfter.has(w.end) && (
+                <div className="flex items-center gap-2 pl-6 text-xs text-amber-700 dark:text-amber-500">
+                  <span aria-hidden="true">☕</span>
+                  <span>
+                    break {formatHours(gapAfter.get(w.end)?.hours ?? 0, timeFormat)} · {w.end}–
+                    {gapAfter.get(w.end)?.end}
+                  </span>
+                  <span className="h-px w-8 border-t border-dashed border-amber-300 dark:border-amber-800/70" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const gap = gapAfter.get(w.end ?? '')
+                      if (gap) actions.addPeriod(gap.start, gap.end, defaultCategory)
+                    }}
+                    className="underline decoration-dotted hover:text-indigo-600 dark:hover:text-indigo-400"
+                  >
+                    fill
+                  </button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ol>
+      </div>
 
       {active ? (
         <p className="text-xs text-gray-400 dark:text-gray-500">
@@ -146,6 +154,74 @@ export function VariantA({ date, windows, repository, categories, defaultCategor
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * The day's shape, borrowed from the dropped variant B. Positions are percentages
+ * so the stripe stretches to whatever height the ledger next to it happens to be.
+ */
+function DayRibbon({ periods, gaps, nowTime }: { periods: WorkPeriod[]; gaps: Gap[]; nowTime: string }) {
+  const nowMins = parseMinutes(nowTime)
+  const firstMins = periods.length > 0 ? Math.min(...periods.map((w) => parseMinutes(w.start))) : nowMins
+  const lastMins = Math.max(nowMins, ...periods.map((w) => parseMinutes(w.end ?? nowTime)))
+  const axisStart = Math.floor(firstMins / 60) * 60
+  const axisEnd = Math.max(axisStart + 120, Math.ceil(lastMins / 60) * 60)
+  const span = axisEnd - axisStart
+
+  const pct = (time: string) => ((parseMinutes(time) - axisStart) / span) * 100
+  const height = (from: string, to: string) => ((parseMinutes(to) - parseMinutes(from)) / span) * 100
+
+  const ticks: number[] = []
+  for (let m = axisStart; m <= axisEnd; m += 60) ticks.push(m)
+
+  return (
+    <div className="relative w-[4.5rem] shrink-0">
+      {ticks.map((m) => (
+        <span
+          key={m}
+          className="absolute inset-x-0 flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500"
+          style={{ top: `${((m - axisStart) / span) * 100}%` }}
+        >
+          <span className="w-9 -translate-y-1/2 text-right font-mono">
+            {String(Math.floor((m % 1440) / 60)).padStart(2, '0')}:00
+          </span>
+          <span className="h-px flex-1 -translate-y-1/2 bg-gray-200 dark:bg-gray-700" />
+        </span>
+      ))}
+
+      <div className="absolute inset-y-0 right-0 w-6 overflow-hidden rounded bg-gray-100 dark:bg-gray-800/70">
+        {periods.flatMap((w) =>
+          deriveSegments(w, nowTime)
+            .filter((seg) => seg.placed && seg.start)
+            .map((seg) => (
+              <span
+                key={seg.key}
+                title={`${categoryLabel(seg.category)} ${seg.start}–${seg.end ?? nowTime}`}
+                className={`absolute inset-x-0 ${colorFor(seg.category)} ${seg.kind === 'main' ? '' : 'opacity-50'} ${
+                  seg.live ? 'animate-pulse' : ''
+                }`}
+                style={{
+                  top: `${pct(seg.start ?? w.start)}%`,
+                  height: `${height(seg.start ?? w.start, seg.end ?? nowTime)}%`,
+                  minHeight: '2px',
+                }}
+              />
+            )),
+        )}
+        {gaps.map((g) => (
+          <span
+            key={g.start}
+            title={`break ${g.start}–${g.end}`}
+            className="absolute inset-x-0 bg-white dark:bg-gray-900"
+            style={{ top: `${pct(g.start)}%`, height: `${height(g.start, g.end)}%` }}
+          />
+        ))}
+      </div>
+      <span className="absolute -right-1 flex w-8 items-center" style={{ top: `${pct(nowTime)}%` }} aria-hidden="true">
+        <span className="h-0.5 w-full bg-red-500" />
+      </span>
     </div>
   )
 }

@@ -3,7 +3,6 @@
 // Real repository, real data, real mutations — only the rendering differs.
 import { TrackingSwitcher, type TrackingVariantKey } from './TrackingSwitcher'
 import { VariantA } from './VariantA'
-import { VariantB } from './VariantB'
 import { VariantD } from './VariantD'
 import { VariantE } from './VariantE'
 import { withUncategorized, type VariantProps } from './protoShared'
@@ -23,7 +22,6 @@ export function DayTrackingPrototype({ variant, ...rest }: Props) {
         <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>
       </div>
       {variant === 'A' && <VariantA {...props} />}
-      {variant === 'B' && <VariantB {...props} />}
       {variant === 'D' && <VariantD {...props} />}
       {variant === 'E' && <VariantE {...props} />}
       <TrackingSwitcher current={variant} date={props.date} />

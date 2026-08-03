@@ -25,6 +25,7 @@ import {
 } from './protoShared'
 
 type StreamItem =
+  | { type: 'periodStart'; key: string; period: WorkPeriod; index: number; duration: number }
   | { type: 'segment'; key: string; seg: Segment; period: WorkPeriod; first: boolean; last: boolean }
   | { type: 'gap'; key: string; gap: Gap }
 
@@ -33,8 +34,15 @@ function buildStream(windows: WorkPeriod[], nowTime: string): StreamItem[] {
   const gaps = new Map(findGaps(windows).map((g) => [g.start, g]))
   const items: StreamItem[] = []
 
-  periods.forEach((w) => {
+  periods.forEach((w, periodIndex) => {
     const segments = deriveSegments(w, nowTime)
+    items.push({
+      type: 'periodStart',
+      key: `head:${w.id}`,
+      period: w,
+      index: periodIndex + 1,
+      duration: periodDuration(w, nowTime),
+    })
     segments.forEach((seg, i) => {
       items.push({
         type: 'segment',
@@ -63,8 +71,13 @@ export function VariantE({ date, windows, repository, categories, defaultCategor
   const totals = [...categoryTotals(windows, nowTime).entries()]
     .filter(([, h]) => h > 0.001)
     .toSorted((a, b) => b[1] - a[1])
-  const untracked = findGaps(windows).reduce((sum, g) => sum + g.hours, 0)
+  const gaps = findGaps(windows)
+  const untracked = gaps.reduce((sum, g) => sum + g.hours, 0)
+  const breakCount = gaps.length
   const maxTotal = Math.max(0.01, ...totals.map(([, h]) => h))
+  const ordered = sortedPeriods(windows)
+  const dayStart = ordered[0]?.start
+  const dayEnd = ordered.at(-1)?.end ?? undefined
 
   return (
     <div className="flex flex-col gap-3">
@@ -143,29 +156,70 @@ export function VariantE({ date, windows, repository, categories, defaultCategor
           {stream.length === 0 && (
             <li className="py-4 text-sm text-gray-400 dark:text-gray-500">Nothing tracked today yet.</li>
           )}
-          {stream.map((item) =>
-            item.type === 'gap' ? (
-              <li key={item.key} className="flex items-center gap-3 py-1 pl-6 text-xs text-gray-400 dark:text-gray-500">
-                <span className="w-24 shrink-0 font-mono tabular-nums">
-                  {item.gap.start}–{item.gap.end}
-                </span>
-                <span className="w-14 shrink-0 text-right font-mono tabular-nums">
-                  {formatHours(item.gap.hours, timeFormat)}
-                </span>
-                <span className="flex-1 border-t border-dashed border-gray-300 dark:border-gray-600" />
-                <span>untracked</span>
-                <button
-                  type="button"
-                  onClick={() => actions.addPeriod(item.gap.start, item.gap.end, defaultCategory)}
-                  className="font-medium text-indigo-600 underline decoration-dotted dark:text-indigo-400"
-                >
-                  fill
-                </button>
-              </li>
-            ) : (
+          {stream.map((item) => {
+            if (item.type === 'gap') {
+              return (
+                <li key={item.key} className="flex items-center gap-3 py-2 text-xs">
+                  <span className="w-4 shrink-0" />
+                  <span className="w-24 shrink-0 font-mono tabular-nums text-gray-500 dark:text-gray-400">
+                    {item.gap.start}–{item.gap.end}
+                  </span>
+                  <span className="w-14 shrink-0 text-right font-mono tabular-nums text-gray-500 dark:text-gray-400">
+                    {formatHours(item.gap.hours, timeFormat)}
+                  </span>
+                  <span className="flex items-center gap-2 text-amber-700 dark:text-amber-500">
+                    <span aria-hidden="true">☕</span>
+                    <span className="font-medium">break</span>
+                  </span>
+                  <span className="h-px flex-1 border-t border-dashed border-amber-300 dark:border-amber-800/70" />
+                  <button
+                    type="button"
+                    onClick={() => actions.addPeriod(item.gap.start, item.gap.end, defaultCategory)}
+                    className="font-medium text-indigo-600 underline decoration-dotted dark:text-indigo-400"
+                  >
+                    it was work — fill
+                  </button>
+                </li>
+              )
+            }
+            if (item.type === 'periodStart') {
+              const open = item.period.end === null
+              return (
+                <li key={item.key} className="flex items-center gap-3 pb-0.5 pt-2 text-xs">
+                  <span className="w-4 shrink-0" />
+                  <span
+                    className={`font-mono font-semibold tabular-nums ${
+                      open ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
+                    }`}
+                  >
+                    {item.period.start} → {item.period.end ?? 'now'}
+                  </span>
+                  <span className="font-mono tabular-nums text-gray-500 dark:text-gray-400">
+                    {formatHours(item.duration, timeFormat)}
+                  </span>
+                  <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                    work period {item.index}
+                    {item.index === 1 ? ' · first start of the day' : ''}
+                    {open ? ' · open' : ''}
+                  </span>
+                  <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+                  {!open && (
+                    <button
+                      type="button"
+                      onClick={() => actions.remove(item.period.id)}
+                      aria-label={`Delete period starting ${item.period.start}`}
+                      className="text-gray-400 hover:text-red-500"
+                    >
+                      ×
+                    </button>
+                  )}
+                </li>
+              )
+            }
+            return (
               <StreamRow key={item.key} item={item} categories={categories} actions={actions} dayTotal={dayTotal} />
-            ),
-          )}
+            )
+          })}
         </ol>
 
         <aside className="w-56 shrink-0">
@@ -197,14 +251,24 @@ export function VariantE({ date, windows, repository, categories, defaultCategor
               ))}
               {totals.length === 0 && <li className="text-xs text-gray-400 dark:text-gray-500">nothing yet</li>}
             </ul>
-            <div className="border-t pt-2 text-xs dark:border-gray-700">
+            <div className="flex flex-col gap-0.5 border-t pt-2 text-xs dark:border-gray-700">
               <p className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">segments</span>
-                <span className="font-mono tabular-nums">{stream.filter((i) => i.type === 'segment').length}</span>
+                <span className="text-gray-500 dark:text-gray-400">started</span>
+                <span className="font-mono tabular-nums">{dayStart ?? '—'}</span>
               </p>
               <p className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">untracked gaps</span>
-                <span className="font-mono tabular-nums">{formatHours(untracked, timeFormat)}</span>
+                <span className="text-gray-500 dark:text-gray-400">{active ? 'running since' : 'last stop'}</span>
+                <span className="font-mono tabular-nums">{active ? active.since : (dayEnd ?? '—')}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">breaks</span>
+                <span className="font-mono tabular-nums">
+                  {breakCount > 0 ? `${breakCount} · ${formatHours(untracked, timeFormat)}` : 'none'}
+                </span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-gray-500 dark:text-gray-400">at desk</span>
+                <span className="font-mono tabular-nums">{formatHours(dayTotal + untracked, timeFormat)}</span>
               </p>
             </div>
           </div>
@@ -245,8 +309,8 @@ function StreamRow({ item, categories, actions, dayTotal }: StreamRowProps) {
     >
       <span className="relative flex w-4 shrink-0 justify-center self-stretch" aria-hidden="true">
         <span
-          className={`w-0.5 ${first ? 'mt-1.5' : ''} ${last ? 'mb-1.5' : ''} ${
-            period.end === null ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-gray-700'
+          className={`w-1 ${first ? 'mt-1 rounded-t-full' : ''} ${last ? 'mb-1 rounded-b-full' : ''} ${
+            period.end === null ? 'bg-emerald-400' : 'bg-indigo-300 dark:bg-indigo-800'
           }`}
         />
       </span>
@@ -365,16 +429,6 @@ function StreamRow({ item, categories, actions, dayTotal }: StreamRowProps) {
             type="button"
             onClick={() => actions.removeSubtask(period.id, seg.subtask?.id ?? '')}
             aria-label={`Remove ${seg.category} subtask`}
-            className="text-gray-400 hover:text-red-500"
-          >
-            ×
-          </button>
-        )}
-        {last && !seg.subtask && period.end !== null && (
-          <button
-            type="button"
-            onClick={() => actions.remove(period.id)}
-            aria-label={`Delete period starting ${period.start}`}
             className="text-gray-400 hover:text-red-500"
           >
             ×

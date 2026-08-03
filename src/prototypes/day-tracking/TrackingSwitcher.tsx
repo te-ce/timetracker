@@ -5,7 +5,6 @@ import { useNavigate } from '@tanstack/react-router'
 
 export const TRACKING_VARIANTS = [
   { key: 'A', name: 'Live Chronology' },
-  { key: 'B', name: 'Ribbon + Rows' },
   { key: 'D', name: 'Editable Table' },
   { key: 'E', name: 'Segment Stream' },
 ] as const

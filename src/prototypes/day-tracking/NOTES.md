@@ -25,21 +25,24 @@ Drop the param (or click "exit proto") to get the production UI back.
 `deriveSegments()` in `protoShared.ts` encodes 1–3: it turns a period into the flat chain of segments
 that actually happened (main stretch → subtask → main stretch …), which is what every variant renders.
 
-## The four variants
+## The variants (round 3)
 
-| Key | Name            | Primary affordance                        | Bet                                                                                                                                                                                   |
-| --- | --------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A   | Live Chronology | One chronological ledger, live row inside | Past and running work in one order-of-events list; day totals + stacked bar on top; the running row is emphasised but not a hero.                                                     |
-| B   | Ribbon + Rows   | Proportional ribbon beside full rows      | Keep the shape of the day (proportions, gaps, now line) in a narrow ribbon; rows stay permanently expanded so short periods and details never need a click.                           |
-| D   | Editable Table  | Every cell is an input                    | Dense keyboard-first grid, nothing collapsed: each period is followed by its main stretch and every subtask, with share-of-day per row.                                               |
-| E   | Segment Stream  | One flat stream + always-on sidebar       | Since only one thing runs at a time, dissolve the period/subtask nesting: a single chronological stream of segments, period reduced to a gutter bracket, numbers in a sticky sidebar. |
+| Key | Name            | Primary affordance                            | Bet                                                                                                                                                                                               |
+| --- | --------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | Live Chronology | Time stripe + one chronological ledger        | Cumulative total, stacked category bar and "tracking X since HH:MM" on top; the day's shape as a proportional stripe down the left; past and running work in one order-of-events list.            |
+| D   | Editable Table  | Every cell is an input                        | Dense keyboard-first grid, nothing collapsed. Kept as the raw-data option — feedback so far: undirected, too much on screen at once.                                                              |
+| E   | Segment Stream  | Flat segment stream + always-on right sidebar | One chain of segments (period reduced to a gutter bracket plus a labelled boundary row); breaks called out as breaks; totals, first start, running-since, breaks and at-desk in a sticky sidebar. |
 
-Round-1 variant C (category tiles) was dropped — too cluttered, and it hid the main-category /
-subtask distinction the model depends on.
+Dropped along the way: **C** (category tiles — cluttered, hid the main/subtask distinction) and
+**B** (ribbon + rows — its proportional time stripe was folded into A, which made B redundant).
+
+A and E deliberately diverge on where the numbers live: A puts the day overview on top and the
+shape in a left stripe; E puts the numbers in a right sidebar and answers "when did I start / where
+are my breaks" with labelled boundary rows instead of a stripe.
 
 Every variant supports: start (pick main category) · one-click stop at now · start subtask (only when
 something is running and no subtask is live) · stop subtask → back to main · retro-log a duration
-(`30m`, `0:30`, `0.5`) · fill an untracked gap · edit times/categories · delete.
+(`30m`, `0:30`, `0.5`) · turn a break into work · edit times/categories · delete.
 
 ## Deliberate prototype limits
 
