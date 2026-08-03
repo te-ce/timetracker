@@ -49,8 +49,62 @@ describe('MonthCalendar', () => {
     expect(btn('15').className).toContain('bg-emerald-100')
     // Untracked gets blue
     expect(btn('16').className).toContain('bg-blue-100')
-    // Future gets white
-    expect(btn('20').className).toContain('bg-white')
+    // Future is faded and dashed
+    expect(btn('20').className).toContain('bg-gray-50/60')
+    expect(btn('20').className).toContain('border-dashed')
+  })
+
+  describe('today', () => {
+    function todayCell(dayDisplayStatusMap?: Record<string, DisplayStatus>) {
+      render(
+        <MonthCalendar
+          year={2026}
+          month={4}
+          onSelectDate={vi.fn()}
+          dayStatusMap={{ '2026-05-19': 'today' }}
+          {...(dayDisplayStatusMap ? { dayDisplayStatusMap } : {})}
+        />,
+      )
+      return screen.getByRole('button', { name: /Tuesday, 19 May 2026/i })
+    }
+
+    it("wears its own status color, so today's progress is visible, plus an amber ring", () => {
+      const cell = todayCell({ '2026-05-19': 'complete' })
+
+      expect(cell.className).toContain('bg-emerald-100')
+      expect(cell.className).toContain('ring-amber-500')
+    })
+
+    it('says so in words, not only in color', () => {
+      expect(todayCell({ '2026-05-19': 'complete' }).textContent).toContain('Today')
+    })
+
+    it('keeps the ring on a neutral cell while its status is still unknown', () => {
+      const cell = todayCell()
+
+      expect(cell.className).toContain('bg-white')
+      expect(cell.className).toContain('ring-amber-500')
+    })
+
+    it('stands apart from a day that has not happened yet', () => {
+      render(
+        <MonthCalendar
+          year={2026}
+          month={4}
+          onSelectDate={vi.fn()}
+          dayStatusMap={{ '2026-05-19': 'today', '2026-05-20': 'future' }}
+          dayDisplayStatusMap={{ '2026-05-19': 'untracked' }}
+        />,
+      )
+      const today = screen.getByRole('button', { name: /Tuesday, 19 May 2026/i })
+      const future = screen.getByRole('button', { name: /Wednesday, 20 May 2026/i })
+
+      // A future day recedes: dashed, faded, no ring.
+      expect(future.className).toContain('border-dashed')
+      expect(future.className).not.toContain('ring-amber')
+      expect(today.className).not.toContain('border-dashed')
+      expect(future.className).not.toBe(today.className)
+    })
   })
 
   it('actual today gets orange circle indicator', () => {

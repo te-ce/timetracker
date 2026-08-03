@@ -220,6 +220,11 @@ function DayCell({
   const label = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const dots = buildDots(status, displayStatus)
   const showBar = status !== 'non-working' && status !== 'leave'
+  const isTodayCell = isToday || status === 'today'
+  // Today wears its real state rather than the neutral 'today' surface — otherwise a day with
+  // 6h logged looks exactly like one with nothing. The amber ring carries "this is today".
+  const cellStatus = isTodayCell ? (displayStatus ?? 'today') : status
+  const todayRing = isTodayCell ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400' : ''
 
   const hasTooltipContent = summaryData != null || note != null
   const tooltipContent = hasTooltipContent ? (
@@ -240,7 +245,7 @@ function DayCell({
         onClick={() => onSelectDate(iso)}
         aria-label={label}
         aria-current={isToday ? 'date' : undefined}
-        className={`relative flex w-full flex-col gap-1 rounded-lg px-2 pb-3 pt-1.5 text-left text-sm ${STATUS_CELL[status]} border transition-colors`}
+        className={`relative flex w-full flex-col gap-1 rounded-lg px-2 pb-3 pt-1.5 text-left text-sm ${STATUS_CELL[cellStatus]} border transition-colors${todayRing}`}
       >
         <span className="flex items-start justify-between">
           <span
@@ -249,6 +254,11 @@ function DayCell({
             {date.getDate()}
           </span>
           <span className="flex items-center gap-1 pt-0.5 text-[10px] leading-none" aria-hidden="true">
+            {isTodayCell && (
+              <span className="text-[9px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                Today
+              </span>
+            )}
             {note && <span>✎</span>}
             {location === 'Office' && <span>⌂</span>}
             {displayStatus === 'confirmed' && (

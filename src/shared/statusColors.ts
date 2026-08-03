@@ -33,7 +33,10 @@ export const STATUS_CELL: Record<DayStatus, string> = {
     'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50',
   untracked:
     'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50',
-  future: 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700',
+  // Days that have not happened yet recede — dashed and faded — so today and the untracked
+  // past days are what catch the eye.
+  future:
+    'border-dashed bg-gray-50/60 text-gray-400 hover:bg-gray-100 dark:bg-gray-900/40 dark:text-gray-500 dark:hover:bg-gray-800',
   today: 'bg-white text-gray-900 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700',
   'non-working': 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500',
   leave: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
