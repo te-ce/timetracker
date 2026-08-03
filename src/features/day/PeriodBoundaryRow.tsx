@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import type { WorkPeriod } from '../../infra/repositories/types'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
@@ -45,10 +45,13 @@ export function PeriodBoundaryRow({
   const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
 
   // Focus leaving an untouched editor drops it straight away; a changed one asks
-  // once first. Same contract as the subtask editor.
+  // once first. Same contract as the subtask editor. Only a *new* cancel token
+  // closes the editor — `onStopEditing` is a fresh closure on every parent
+  // render, so depending on it would re-close the editor the moment it reopens.
+  const stopEditing = useEffectEvent(onStopEditing)
   useEffect(() => {
-    if (cancelToken > 0) onStopEditing()
-  }, [cancelToken, onStopEditing])
+    if (cancelToken > 0) stopEditing()
+  }, [cancelToken])
 
   // Opening the editor — from this row or from one of its main stretches —
   // starts from what is stored and puts the caret on the start time.

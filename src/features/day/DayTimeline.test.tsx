@@ -365,6 +365,27 @@ describe('DayTimeline', () => {
     expect(await getWindows(repo)).toMatchObject([{ start: '08:00', end: '09:30' }])
   })
 
+  it('can reopen the work period time editor after focus dropped it', async () => {
+    // Given an editor that was abandoned by clicking away
+    setup([period('a', '08:00', '09:30', 'Work')])
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+    await userEvent.click(document.body)
+    await vi.waitFor(() => {
+      expect(screen.queryByLabelText(/work period 1 start/i)).not.toBeInTheDocument()
+    })
+
+    // When the time is clicked again
+    await userEvent.click(screen.getByRole('button', { name: /edit times of work period 1/i }))
+
+    // Then the editor is back and focused
+    expect(await screen.findByLabelText(/work period 1 start/i)).toHaveFocus()
+
+    // And it can be abandoned and reopened again from the main stretch time
+    await userEvent.click(document.body)
+    await userEvent.click(screen.getByRole('button', { name: /edit work period times 08:00–09:30/i }))
+    expect(await screen.findByLabelText(/work period 1 start/i)).toHaveFocus()
+  })
+
   it('warns before throwing away a changed work period time edit', async () => {
     // Given a pending change to the times
     const { repo } = setup([period('a', '08:00', '09:30', 'Work')])
