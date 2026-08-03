@@ -226,4 +226,40 @@ describe('buildTrayState', () => {
       expect(buildTrayState(baseInput).presentingMode).toBe(false)
     })
   })
+
+  describe('isOvertimeReady', () => {
+    it('shows a loading placeholder for the badge and blanks the receipt while overtime is not ready', () => {
+      const result = buildTrayState({ ...baseInput, isOvertimeReady: false })
+      expect(result.badgeLabel).toBe('…')
+      expect(result.receiptLines).toEqual([])
+    })
+
+    it('shows the real badge and receipt once overtime is ready', () => {
+      const result = buildTrayState({ ...baseInput, isOvertimeReady: true })
+      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.receiptLines.length).toBeGreaterThan(0)
+    })
+
+    it('defaults to ready when isOvertimeReady is omitted, for callers that have not adopted it', () => {
+      const result = buildTrayState(baseInput)
+      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.receiptLines.length).toBeGreaterThan(0)
+    })
+
+    it('shows the real worked-hours badge even while not ready when showTotalWorked is true, since it does not depend on the carry-over', () => {
+      const result = buildTrayState({ ...baseInput, isOvertimeReady: false, showTotalWorked: true })
+      expect(result.badgeLabel).toBe('3.00h worked')
+      expect(result.receiptLines).toEqual([])
+    })
+
+    it('shows the real badge even while not ready in until-daily-target mode, since remaining does not depend on the carry-over there', () => {
+      const result = buildTrayState({
+        ...baseInput,
+        isOvertimeReady: false,
+        remainingTimeMode: 'until-daily-target',
+      })
+      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.receiptLines).toEqual([])
+    })
+  })
 })

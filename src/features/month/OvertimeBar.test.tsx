@@ -231,3 +231,39 @@ describe('showTotalWorked mode', () => {
     expect(status).toHaveAttribute('aria-label', expect.stringContaining('remaining'))
   })
 })
+
+describe('isLoading', () => {
+  it('skeletons the overtime-dependent numbers instead of showing a value seeded from an unresolved carry-over', () => {
+    const { container } = render(<OvertimeBar balance={balance({ windows: WORKED_3H, priorOvertime: 2 })} isLoading />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveAttribute('aria-label', 'Loading overtime…')
+    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0)
+  })
+
+  it('still shows the worked-hours figure while overtime is loading', () => {
+    render(<OvertimeBar balance={balance({ windows: WORKED_3H })} isLoading />)
+    expect(screen.getByText(/3\.00h worked/)).toBeInTheDocument()
+  })
+
+  it('shows the real result instead of a skeleton when showTotalWorked is true, since worked hours do not depend on the carry-over', () => {
+    render(<OvertimeBar balance={balance({ windows: WORKED_3H })} showTotalWorked isLoading />)
+    expect(screen.getByText(/3\.00h worked today/)).toBeInTheDocument()
+  })
+
+  it('does not skeleton anything in until-daily-target mode, since neither required nor remaining depends on the carry-over there', () => {
+    const { container } = render(
+      <OvertimeBar
+        balance={balance({ windows: WORKED_3H, priorOvertime: 2, remainingTimeMode: 'until-daily-target' })}
+        isLoading
+      />,
+    )
+    const status = screen.getByRole('status')
+    expect(status).not.toHaveAttribute('aria-label', 'Loading overtime…')
+    expect(container.querySelectorAll('.animate-pulse')).toHaveLength(0)
+  })
+
+  it('shows real numbers when isLoading is false', () => {
+    const { container } = render(<OvertimeBar balance={balance({ windows: WORKED_3H, priorOvertime: 2 })} />)
+    expect(container.querySelectorAll('.animate-pulse')).toHaveLength(0)
+  })
+})

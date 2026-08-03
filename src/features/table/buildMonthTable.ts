@@ -32,6 +32,8 @@ export interface MonthTableInput {
   globalAutoCategory?: string | null
   /** Cumulative overtime carried in from months before this one — see `loadOvertimeCarryOverBeforeMonth`. */
   priorMonthsOvertime?: number
+  /** False while `priorMonthsOvertime` is still loading — nulls out every row's `accumulatedOvertime` rather than showing a value seeded from a not-yet-resolved carry-over. */
+  overtimeReady?: boolean
 }
 
 type BaseRow = Omit<MonthTableRow, 'accumulatedOvertime'>
@@ -64,6 +66,7 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     todayNow,
     globalAutoCategory = null,
     priorMonthsOvertime = 0,
+    overtimeReady = true,
   } = input
 
   const { days: cores, projectedWorkedHoursToday } = deriveMonthDayCores({
@@ -92,5 +95,8 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     priorMonthsOvertime,
   )
 
-  return baseRows.map((base, i) => ({ ...base, accumulatedOvertime: accumulatedOvertime[i] ?? null }))
+  return baseRows.map((base, i) => ({
+    ...base,
+    accumulatedOvertime: overtimeReady ? (accumulatedOvertime[i] ?? null) : null,
+  }))
 }

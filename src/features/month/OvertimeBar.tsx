@@ -13,6 +13,17 @@ interface Props {
   officeStats?: OfficeStats | null | undefined
   onHide?: (() => void) | undefined
   showTotalWorked?: boolean | undefined
+  /** True while the prior-months overtime carry-over is still loading — skeletons the numbers derived from it instead of showing a value seeded from a not-yet-resolved carry-over. */
+  isLoading?: boolean | undefined
+}
+
+function Skeleton({ className = '' }: { className?: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block h-3.5 animate-pulse rounded bg-gray-200 dark:bg-gray-700 align-middle ${className}`}
+    />
+  )
 }
 
 function formatRemaining(remaining: number, fmt: TimeFormat): string {
@@ -24,6 +35,25 @@ function formatRemaining(remaining: number, fmt: TimeFormat): string {
 function formatResult(remaining: number, totalWorked: number, fmt: TimeFormat, showTotalWorked: boolean): string {
   if (showTotalWorked) return `${formatHours(totalWorked, fmt)} worked today`
   return formatRemaining(remaining, fmt)
+}
+
+interface LoadingState {
+  overtimeUnknown: boolean
+  resultUnknown: boolean
+  ariaLabel: string
+}
+
+/** Only requiredToday/remaining (and thus resultLabel) depend on the still-loading prior-months carry-over — see `calculateRemaining`. In 'until-daily-target' mode neither depends on it, so nothing is ever unknown there. */
+function deriveLoadingState(
+  balance: DayBalance,
+  isLoading: boolean,
+  showTotalWorked: boolean,
+  summary: string,
+): LoadingState {
+  const overtimeUnknown = isLoading && balance.remainingTimeMode !== 'until-daily-target'
+  const resultUnknown = overtimeUnknown && !showTotalWorked
+  const ariaLabel = overtimeUnknown ? 'Loading overtime…' : summary
+  return { overtimeUnknown, resultUnknown, ariaLabel }
 }
 
 interface BarData {
@@ -71,19 +101,66 @@ function LiveWindowBadge({ elapsed, fmt }: { elapsed: number; fmt: TimeFormat })
   )
 }
 
-export function OvertimeBar({ balance, officeStats, onHide, showTotalWorked = false }: Props) {
+interface RequiredBadgeProps {
+  balance: DayBalance
+  overtimeUnknown: boolean
+  overtimeSign: string
+  overtimeLabel: string
+  overtimeClass: string
+  fmt: TimeFormat
+}
+
+/** "X required (target ± overtime)" — the parenthetical (and, while loading, the required figure itself) depends on the still-loading prior-months carry-over. */
+function RequiredBadge({
+  balance,
+  overtimeUnknown,
+  overtimeSign,
+  overtimeLabel,
+  overtimeClass,
+  fmt,
+}: RequiredBadgeProps) {
+  const { sollstunden, priorOvertime, requiredToday, remainingTimeMode } = balance
+  return (
+    <>
+      <span className="font-medium text-gray-700 dark:text-gray-200">
+        {overtimeUnknown ? <Skeleton className="w-10" /> : formatHours(requiredToday, fmt)} required
+      </span>
+      {remainingTimeMode !== 'until-daily-target' && (
+        <>
+          <span className="text-gray-400 dark:text-gray-500">(</span>
+          <span className="font-medium text-gray-500 dark:text-gray-400">{formatHours(sollstunden, fmt)}</span>
+          <span>target</span>
+          {overtimeUnknown ? (
+            <Skeleton className="w-14" />
+          ) : (
+            <>
+              <span className="text-gray-300 dark:text-gray-600">{overtimeSign}</span>
+              <span className={`font-medium ${overtimeClass}`}>
+                {formatHours(Math.abs(priorOvertime), fmt)} {overtimeLabel}
+              </span>
+            </>
+          )}
+          <span className="text-gray-400 dark:text-gray-500">)</span>
+        </>
+      )}
+    </>
+  )
+}
+
+export function OvertimeBar({ balance, officeStats, onHide, showTotalWorked = false, isLoading = false }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const { sollstunden, priorOvertime, closedWorked, liveElapsed, worked, requiredToday, plannedStopTime } = balance
+  const { closedWorked, liveElapsed, worked, plannedStopTime } = balance
   const { resultLabel, overtimeLabel, overtimeSign, overtimeClass, summary, resultClass } = buildBarData(
     balance,
     timeFormat,
     showTotalWorked,
   )
+  const { overtimeUnknown, resultUnknown, ariaLabel } = deriveLoadingState(balance, isLoading, showTotalWorked, summary)
 
   return (
     <div
       role="status"
-      aria-label={summary}
+      aria-label={ariaLabel}
       className="rounded-lg border bg-gray-50 dark:bg-gray-900 dark:border-gray-700 px-4 py-3"
     >
       <div className="flex items-center justify-between gap-4">
@@ -91,24 +168,14 @@ export function OvertimeBar({ balance, officeStats, onHide, showTotalWorked = fa
           className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400"
           aria-hidden="true"
         >
-          {/* Required: X required (target ± overtime) */}
-          <span className="font-medium text-gray-700 dark:text-gray-200">
-            {formatHours(requiredToday, timeFormat)} required
-          </span>
-          {balance.remainingTimeMode !== 'until-daily-target' && (
-            <>
-              <span className="text-gray-400 dark:text-gray-500">(</span>
-              <span className="font-medium text-gray-500 dark:text-gray-400">
-                {formatHours(sollstunden, timeFormat)}
-              </span>
-              <span>target</span>
-              <span className="text-gray-300 dark:text-gray-600">{overtimeSign}</span>
-              <span className={`font-medium ${overtimeClass}`}>
-                {formatHours(Math.abs(priorOvertime), timeFormat)} {overtimeLabel}
-              </span>
-              <span className="text-gray-400 dark:text-gray-500">)</span>
-            </>
-          )}
+          <RequiredBadge
+            balance={balance}
+            overtimeUnknown={overtimeUnknown}
+            overtimeSign={overtimeSign}
+            overtimeLabel={overtimeLabel}
+            overtimeClass={overtimeClass}
+            fmt={timeFormat}
+          />
           {/* − separator */}
           <span className="text-gray-300 dark:text-gray-600">−</span>
           {/* Worked: totalWorked worked (past + current) */}
@@ -136,7 +203,7 @@ export function OvertimeBar({ balance, officeStats, onHide, showTotalWorked = fa
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-lg font-bold tabular-nums ${resultClass}`} aria-hidden="true">
-            {resultLabel}
+            {resultUnknown ? <Skeleton className="w-16 h-5" /> : resultLabel}
           </span>
           {onHide && (
             <button

@@ -58,7 +58,7 @@ export function TableView() {
   })
 
   const view = useMonthView(year, month)
-  const { config, summaries, workLocations, todayBalance } = view
+  const { config, summaries, workLocations, todayBalance, isOvertimeReady } = view
 
   const hideOvertimeMutation = useHideOvertimeBar(configRepo)
 
@@ -210,6 +210,7 @@ export function TableView() {
           showTotalWorked={config.showTotalWorked}
           officeStats={showOfficeStats ? { officeDays, totalWorkDays, officePercent } : null}
           onHide={() => hideOvertimeMutation.mutate()}
+          isLoading={!isOvertimeReady}
         />
       )}
       <div className="flex justify-end gap-2">

@@ -22,7 +22,7 @@ function buildSummary(sollstunden: number, priorOvertime: number, workedHours: n
 
 export function useRemainingHours() {
   const todayIso = useTodayIso()
-  const { config, sollstunden, overtimeToDate, windows, officeDays, totalWorkDays, officePercent } =
+  const { config, sollstunden, overtimeToDate, windows, officeDays, totalWorkDays, officePercent, isOvertimeReady } =
     useDayQuery(todayIso)
 
   // Detection uses a fresh read rather than the ticked value so a just-closed
@@ -61,5 +61,6 @@ export function useRemainingHours() {
     officeDays,
     totalWorkDays,
     officePercent,
+    isOvertimeReady,
   }
 }

@@ -21,6 +21,8 @@ export interface TrayStateInput {
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
   showTotalWorked?: boolean
   presentingMode?: boolean
+  /** False while the prior-months overtime carry-over is still loading — see `useDayQuery`'s `isOvertimeReady`. */
+  isOvertimeReady?: boolean
 }
 
 export interface TrayState {
@@ -66,8 +68,17 @@ export function buildTrayState(input: TrayStateInput): TrayState {
     }
   }
 
-  const receiptLines = buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, remaining, timeFormat, mode)
-  const badgeLabel = buildBadgeLabel(remaining, totalWorked, timeFormat, input.showTotalWorked === true)
+  // buildReceipt's carry-over line always reflects priorOvertime, in every mode, so it's unreliable
+  // whenever the carry-over is still loading — even in modes/settings where the badge label itself
+  // doesn't depend on it.
+  const isOvertimeReady = input.isOvertimeReady ?? true
+  const showTotalWorked = input.showTotalWorked === true
+  const resultUnknown = !isOvertimeReady && mode !== 'until-daily-target' && !showTotalWorked
+
+  const receiptLines = isOvertimeReady
+    ? buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, remaining, timeFormat, mode)
+    : []
+  const badgeLabel = resultUnknown ? '…' : buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
 
   return {
     receiptLines,

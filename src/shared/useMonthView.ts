@@ -3,7 +3,7 @@ import { useRepositories } from '../infra/repositories/RepositoryContext'
 import { composeMonthOvertime, loadOvertimeCarryOverBeforeMonth } from './monthOvertime'
 import { buildMonthTable } from '../features/table/buildMonthTable'
 import { useTodayIso } from './useTodayIso'
-import { useAppConfig } from './useAppConfig'
+import { useAppConfigState } from './useAppConfig'
 import { QUERY_KEYS } from './queryKeys'
 import { nowHHMM } from './worktime'
 import { deriveDayBalance, hasLiveActivity } from './dayBalance'
@@ -53,6 +53,8 @@ export interface MonthViewInput {
   now: string
   /** Cumulative overtime carried in from months before this one — see `loadOvertimeCarryOverBeforeMonth`. */
   priorMonthsOvertime?: number
+  /** False while `priorMonthsOvertime` is still loading — see `buildMonthTable`'s `overtimeReady`. */
+  overtimeReady?: boolean
 }
 
 /**
@@ -62,7 +64,7 @@ export interface MonthViewInput {
  * of re-deriving from monthData themselves.
  */
 export function buildMonthView(input: MonthViewInput) {
-  const { year, month, monthData, config, todayIso, now, priorMonthsOvertime = 0 } = input
+  const { year, month, monthData, config, todayIso, now, priorMonthsOvertime = 0, overtimeReady = true } = input
   const weekdayHours = config.weekdayHours
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
@@ -97,6 +99,7 @@ export function buildMonthView(input: MonthViewInput) {
     todayNow: now,
     globalAutoCategory: config.autoCategory,
     priorMonthsOvertime,
+    overtimeReady,
   })
 
   return {
@@ -119,23 +122,39 @@ export function buildMonthView(input: MonthViewInput) {
 }
 
 /** Loads the month and feeds buildMonthView from the app's clock. */
-export function useMonthView(year: number, month: number): MonthView {
+export function useMonthView(year: number, month: number) {
   const { monthRepo } = useRepositories()
   const todayIso = useTodayIso()
-  const config = useAppConfig()
+  const { config, isPending: isConfigPending } = useAppConfigState()
 
-  const { data: monthData = {} } = useQuery({
+  const monthQuery = useQuery({
     queryKey: QUERY_KEYS.month(year, month),
     queryFn: () => monthRepo.getMonth(year, month),
   })
+  const monthData = monthQuery.data ?? {}
 
-  const { data: priorMonthsOvertime = 0 } = useQuery({
+  const carryOverQuery = useQuery({
     queryKey: QUERY_KEYS.overtimeCarryOver(year, month),
     queryFn: () => loadOvertimeCarryOverBeforeMonth(monthRepo, year, month, config.weekdayHours),
+    enabled: !isConfigPending,
   })
+  const priorMonthsOvertime = carryOverQuery.data ?? 0
+  const isOvertimeReady = !monthQuery.isPending && !carryOverQuery.isPending
 
   const todayWindows = monthData[todayIso]?.windows ?? []
   const now = useClock(hasLiveActivity(todayWindows, nowHHMM()))
 
-  return buildMonthView({ year, month, monthData, config, todayIso, now, priorMonthsOvertime })
+  return {
+    ...buildMonthView({
+      year,
+      month,
+      monthData,
+      config,
+      todayIso,
+      now,
+      priorMonthsOvertime,
+      overtimeReady: isOvertimeReady,
+    }),
+    isOvertimeReady,
+  }
 }

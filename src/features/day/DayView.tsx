@@ -136,6 +136,7 @@ export function DayView() {
     officeDays,
     totalWorkDays,
     officePercent,
+    isOvertimeReady,
   } = useDayQuery(selectedDate)
 
   const dayMutations = useDayMutations({
@@ -192,6 +193,7 @@ export function DayView() {
           showTotalWorked={config.showTotalWorked}
           officeStats={officeStats}
           onHide={() => hideOvertimeMutation.mutate()}
+          isLoading={!isOvertimeReady}
         />
       )}
 

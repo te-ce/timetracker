@@ -84,7 +84,7 @@ export async function handleStopAll(monthRepo: MonthRepository, today: string, w
 export function useElectronTraySync() {
   const { configRepo, monthRepo } = useRepositories()
   const queryClient = useQueryClient()
-  const { workedHours, sollstunden, priorOvertime, liveElapsed, remaining } = useRemainingHours()
+  const { workedHours, sollstunden, priorOvertime, liveElapsed, remaining, isOvertimeReady } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
@@ -130,6 +130,7 @@ export function useElectronTraySync() {
       remainingTimeMode: resolved.remainingTimeMode,
       showTotalWorked: resolved.showTotalWorked,
       presentingMode: hideHours,
+      isOvertimeReady,
     })
 
     window.electronAPI.tray.sync(trayState)
@@ -146,6 +147,7 @@ export function useElectronTraySync() {
     windows,
     resolvedAutoCategory,
     hideHours,
+    isOvertimeReady,
   ])
 
   const onStartSubtask = useCallback(

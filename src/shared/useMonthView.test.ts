@@ -46,4 +46,19 @@ describe('useMonthView', () => {
 
     await waitFor(() => expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(2))
   })
+
+  it('reports isOvertimeReady as false until the month and carry-over queries resolve, then true, with rows nulled out until then', async () => {
+    const monthRepo = new InMemoryMonthRepository({
+      '2026-04': { '2026-04-01': { windows: [period('p1', '08:00', '18:00')] } },
+      '2026-05': { '2026-05-01': { windows: [period('p2', '08:00', '10:00')] } },
+    })
+    const configRepo = new InMemoryConfigRepository()
+    const { result } = renderHook(() => useMonthView(2026, 5), { wrapper: makeWrapper(monthRepo, configRepo) })
+
+    expect(result.current.isOvertimeReady).toBe(false)
+    expect(result.current.rows.find((r) => r.date === '2026-05-01')?.accumulatedOvertime).toBeNull()
+
+    await waitFor(() => expect(result.current.isOvertimeReady).toBe(true))
+    expect(result.current.rows.find((r) => r.date === '2026-05-01')?.accumulatedOvertime).not.toBeNull()
+  })
 })

@@ -55,14 +55,17 @@ import { buildMonthView, useMonthView } from '../../shared/useMonthView'
 
 /** A month with no data — the base every stub in this file starts from. */
 function emptyMonthView() {
-  return buildMonthView({
-    year: 2026,
-    month: 6,
-    monthData: {},
-    config: resolveAppConfig(undefined),
-    todayIso: '2026-06-05',
-    now: '12:00',
-  })
+  return {
+    ...buildMonthView({
+      year: 2026,
+      month: 6,
+      monthData: {},
+      config: resolveAppConfig(undefined),
+      todayIso: '2026-06-05',
+      now: '12:00',
+    }),
+    isOvertimeReady: true,
+  }
 }
 
 type MonthSummariesReturn = ReturnType<typeof useMonthView>

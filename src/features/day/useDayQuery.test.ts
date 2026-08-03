@@ -7,9 +7,27 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
-import type { WorkPeriod } from '../../infra/repositories/types'
+import type { AppConfig, ConfigRepository, WorkPeriod } from '../../infra/repositories/types'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import { useDayQuery } from './useDayQuery'
+
+/** Resolves `get()` after a delay, to simulate the real cloud config repository still loading. */
+class DelayedConfigRepository implements ConfigRepository {
+  private config: AppConfig
+  private delayMs: number
+  constructor(initialConfig: AppConfig, delayMs = 20) {
+    this.config = structuredClone(initialConfig)
+    this.delayMs = delayMs
+  }
+  get(): Promise<AppConfig> {
+    const config = structuredClone(this.config)
+    return new Promise((resolve) => setTimeout(() => resolve(config), this.delayMs))
+  }
+  save(config: AppConfig): Promise<void> {
+    this.config = structuredClone(config)
+    return Promise.resolve()
+  }
+}
 
 vi.mock('../../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -22,7 +40,7 @@ function period(id: string, start: string, end: string, category = '_COREMEDIA')
   return { id, start, end, category, subtasks: [] }
 }
 
-function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo: InMemoryConfigRepository) {
+function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo: ConfigRepository) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const repos = {
     monthRepo,
@@ -193,6 +211,42 @@ describe('useDayQuery', () => {
       })
 
       await waitFor(() => expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(2))
+    })
+
+    it('waits for the real config before computing carry-over, instead of caching a value seeded from default weekdayHours', async () => {
+      // April 1, 2026 is a Wednesday. Default weekdayHours target Wed=8h → +2h overtime for 10h worked.
+      // A custom config with Wed=4h changes the correct answer to +6h — if the carry-over query fired
+      // before this config resolved, it would compute (and permanently cache, since the query key
+      // doesn't vary with weekdayHours) the wrong +2h.
+      const monthRepo = new InMemoryMonthRepository({
+        '2026-04': { '2026-04-01': { windows: [period('p1', '08:00', '18:00')] } },
+      })
+      const configRepo = new DelayedConfigRepository({
+        ...DEFAULT_APP_CONFIG,
+        weekdayHours: [0, 8, 8, 4, 8, 8, 0],
+      })
+      const { result } = renderHook(() => useDayQuery('2026-05-01'), {
+        wrapper: makeWrapper(monthRepo, configRepo),
+      })
+
+      await waitFor(() => expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(6))
+    })
+  })
+
+  describe('isOvertimeReady', () => {
+    it('is false until both the month and carry-over queries resolve, then true', async () => {
+      const monthRepo = new InMemoryMonthRepository({
+        '2026-04': { '2026-04-01': { windows: [period('p1', '08:00', '18:00')] } },
+      })
+      const configRepo = new InMemoryConfigRepository()
+      const { result } = renderHook(() => useDayQuery('2026-05-01'), {
+        wrapper: makeWrapper(monthRepo, configRepo),
+      })
+
+      expect(result.current.isOvertimeReady).toBe(false)
+
+      await waitFor(() => expect(result.current.isOvertimeReady).toBe(true))
+      expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(2)
     })
   })
 

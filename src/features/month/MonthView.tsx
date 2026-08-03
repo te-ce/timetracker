@@ -38,7 +38,7 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const { config, summaries, workLocations, dayNotes, todayBalance } = useMonthView(year, month)
+  const { config, summaries, workLocations, dayNotes, todayBalance, isOvertimeReady } = useMonthView(year, month)
 
   const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
 
@@ -72,6 +72,7 @@ export function MonthView() {
           showTotalWorked={config.showTotalWorked}
           officeStats={showOfficeStats ? { officeDays, totalWorkDays, officePercent } : null}
           onHide={() => hideOvertimeMutation.mutate()}
+          isLoading={!isOvertimeReady}
         />
       )}
       <MonthCalendar
