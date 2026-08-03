@@ -49,9 +49,8 @@ describe('MonthCalendar', () => {
     expect(btn('15').className).toContain('bg-emerald-100')
     // Untracked gets blue
     expect(btn('16').className).toContain('bg-blue-100')
-    // Future is faded and dashed
+    // Future is faded
     expect(btn('20').className).toContain('bg-gray-50/60')
-    expect(btn('20').className).toContain('border-dashed')
   })
 
   describe('today', () => {
@@ -99,10 +98,10 @@ describe('MonthCalendar', () => {
       const today = screen.getByRole('button', { name: /Tuesday, 19 May 2026/i })
       const future = screen.getByRole('button', { name: /Wednesday, 20 May 2026/i })
 
-      // A future day recedes: dashed, faded, no ring.
-      expect(future.className).toContain('border-dashed')
+      // A future day recedes: faded, no ring — but its border stays solid like every other cell.
+      expect(future.className).toContain('bg-gray-50/60')
+      expect(future.className).not.toContain('border-dashed')
       expect(future.className).not.toContain('ring-amber')
-      expect(today.className).not.toContain('border-dashed')
       expect(future.className).not.toBe(today.className)
     })
   })
