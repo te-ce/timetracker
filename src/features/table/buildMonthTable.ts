@@ -30,6 +30,8 @@ export interface MonthTableInput {
   /** Current HH:MM time — passed to today's row so open periods count as live. */
   todayNow?: string
   globalAutoCategory?: string | null
+  /** Cumulative overtime carried in from months before this one — see `loadOvertimeCarryOverBeforeMonth`. */
+  priorMonthsOvertime?: number
 }
 
 type BaseRow = Omit<MonthTableRow, 'accumulatedOvertime'>
@@ -61,6 +63,7 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     today = '9999-12-31',
     todayNow,
     globalAutoCategory = null,
+    priorMonthsOvertime = 0,
   } = input
 
   const { days: cores, projectedWorkedHoursToday } = deriveMonthDayCores({
@@ -86,6 +89,7 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     targetHoursPerDay,
     today,
     projectedWorkedHoursToday,
+    priorMonthsOvertime,
   )
 
   return baseRows.map((base, i) => ({ ...base, accumulatedOvertime: accumulatedOvertime[i] ?? null }))

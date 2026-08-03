@@ -205,6 +205,22 @@ describe('buildMonthTable', () => {
       expect(rows[3]!.accumulatedOvertime).toBeCloseTo(0) // May 4: +2-2=0
     })
 
+    it('seeds accumulatedOvertime from priorMonthsOvertime instead of resetting to zero', () => {
+      const monthData: MonthData = {
+        '2026-05-04': { windows: [win('2', '09:00', '15:00')] }, // 6h vs. 8h target = -2h
+      }
+      const rows = buildMonthTable({
+        year: 2026,
+        month: 5,
+        monthData,
+        dayTypes: new Map(),
+        weekdayHours: STD,
+        today: '2026-05-04',
+        priorMonthsOvertime: 5,
+      })
+      expect(rows[3]!.accumulatedOvertime).toBeCloseTo(3) // 5 carried in - 2h today
+    })
+
     it('projects a planned-stop period on today to its full duration in accumulatedOvertime', () => {
       // May 1 (Thu, today): period ends at 18:00 (10h), but now is only 14:00 (6h elapsed)
       const monthData: MonthData = {

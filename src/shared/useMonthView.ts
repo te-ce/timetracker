@@ -96,6 +96,7 @@ export function buildMonthView(input: MonthViewInput) {
     today: todayIso,
     todayNow: now,
     globalAutoCategory: config.autoCategory,
+    priorMonthsOvertime,
   })
 
   return {
