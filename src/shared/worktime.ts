@@ -20,10 +20,6 @@ export function nowHHMM(): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export function isAfter(a: string, b: string): boolean {
-  return parseMinutes(a) > parseMinutes(b)
-}
-
 export interface ElapsedHoursOptions {
   /**
    * Tolerate `now` landing up to this many minutes before `start` — treated as

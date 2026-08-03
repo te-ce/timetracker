@@ -8,6 +8,7 @@ interface CategoryPickerProps {
   compact?: boolean
   focusOnMount?: boolean
   categoryDescriptions?: Record<string, string> | undefined
+  ariaLabel?: string
 }
 
 export function CategoryPicker({
@@ -17,6 +18,7 @@ export function CategoryPicker({
   compact,
   focusOnMount,
   categoryDescriptions,
+  ariaLabel = 'Category',
 }: CategoryPickerProps) {
   const selectRef = useRef<HTMLSelectElement>(null)
 
@@ -31,7 +33,7 @@ export function CategoryPicker({
   return (
     <select
       ref={selectRef}
-      aria-label="Category"
+      aria-label={ariaLabel}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className={selectClass}

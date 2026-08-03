@@ -94,6 +94,7 @@ export interface MonthRepository {
   removeSubtask(date: string, periodId: string, subtaskId: string): Promise<void>
   startLiveSubtask(date: string, periodId: string, subtask: WorkPeriodSubtask & { startedAt: string }): Promise<void>
   stopLiveSubtask(date: string, periodId: string, subtaskId: string, stoppedAt: string): Promise<void>
+  resumeSubtask(date: string, periodId: string, subtaskId: string, now: string): Promise<void>
   stopWorkPeriod(
     date: string,
     periodId: string,

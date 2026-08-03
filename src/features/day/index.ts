@@ -4,7 +4,7 @@ export { DayView } from './DayView'
 export { type DotPopoverState, DotPopoverPanel } from './DotPopoverPanel'
 export { IncompleteBanner } from './IncompleteBanner'
 export { type NotePopoverState, NotePopoverPanel } from './NotePopoverPanel'
-export { WorkOverview } from './WorkOverview'
+export { DayTimeline } from './DayTimeline'
 export {
   type DayRawData,
   type DayConfigContext,

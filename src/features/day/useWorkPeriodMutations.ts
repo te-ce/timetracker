@@ -113,6 +113,12 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     }) => repository.stopLiveSubtask(date, periodId, subtaskId, stoppedAt),
   )
 
+  const resumeSubtask = useUndoableDayMutation(
+    'Resume subtask',
+    ({ date, periodId, subtaskId, now }: { date: string; periodId: string; subtaskId: string; now: string }) =>
+      repository.resumeSubtask(date, periodId, subtaskId, now),
+  )
+
   const stopPeriod = useUndoableDayMutation(
     'Stop tracking',
     ({
@@ -139,6 +145,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     deleteSubtask,
     startLiveSubtask,
     stopLiveSubtask,
+    resumeSubtask,
     stopPeriod,
   }
 }

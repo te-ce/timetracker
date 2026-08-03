@@ -74,6 +74,23 @@ export function stopLiveSubtask(day: Day, periodId: string, subtaskId: string, s
   }
 }
 
+export function resumeSubtask(day: Day, periodId: string, subtaskId: string, now: string): Day {
+  return {
+    ...day,
+    windows: day.windows.map((w) => {
+      if (w.id !== periodId) return w
+      const target = w.subtasks.find((s) => s.id === subtaskId)
+      if (!target?.startedAt) return w
+      const subtasks = w.subtasks.map((s) => {
+        if (s.id === subtaskId) return { ...s, stoppedAt: undefined }
+        if (!s.startedAt || s.stoppedAt) return s
+        return { ...s, hours: calcSubtaskHours(s.startedAt, now), stoppedAt: now }
+      })
+      return { ...w, subtasks, end: null }
+    }),
+  }
+}
+
 export function stopPeriod(
   day: Day,
   periodId: string,

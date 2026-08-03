@@ -37,6 +37,32 @@ The **base period category** gets the remainder: `periodDuration − Σ subtask 
 `startedAt`/`stoppedAt` are optional wall-clock timestamps for live subtask tracking.  
 Subtasks are displayed and edited inside the WorkPeriod dialog in DayView.
 
+### Retro-logged WorkPeriodSubtask
+
+A WorkPeriodSubtask with `hours` but no `startedAt`/`stoppedAt` — work the user remembers but never tracked ("that was about 30 minutes").
+It cannot be placed on the clock, so it is shown without times and its hours are carved out of the surrounding **Segment** of the period's own category.
+
+## Segment
+
+One contiguous stretch inside a WorkPeriod attributed to a single category: either the period's own (main) category or a subtask that interrupted it.
+Because only one thing is ever tracked at a time, a WorkPeriod is exactly a chain of Segments — main stretch → subtask → main stretch → …
+Derived by `deriveSegments()` in `src/features/day/daySegments.ts`; the sole rendering unit of the day timeline.
+Retro-logged subtasks appear as Segments with `placed: false` (no times).
+
+## Break
+
+Time between two WorkPeriods on the same day — the day is at the desk, but not working.
+Measured from the latest `end` seen so far to the next `start`, so back-to-back and overlapping WorkPeriods produce no Break, and the stretch before an Open WorkPeriod does.
+Derived by `findBreaks()` in `src/features/day/dayBreaks.ts`. Never persisted; always derived.
+**AtDesk** = WorkedHours + Σ Break hours.
+
+## ActiveTracking
+
+What is being tracked at this moment — at most one thing per day: the Open (or Planned-Stop) WorkPeriod's own category, or the live subtask inside it.
+Starting a subtask pauses the main category; stopping the subtask resumes it.
+Planned-Stop WorkPeriods only count as ActiveTracking while the viewed day is today.
+Derived by `findActiveTracking()` in `src/features/day/dayStreamModel.ts`.
+
 ## TimeEntry
 
 An aggregated `{ id, category, hours }` record produced by `findEntriesByDateRange`.  

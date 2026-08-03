@@ -748,7 +748,7 @@ describe('MonthGrid', () => {
       })
     })
 
-    it('clicking a category cell pre-selects that category in the AddPeriodForm', async () => {
+    it('clicking a category cell pre-selects that category for the next work period', async () => {
       // autoCategory defaults to '_COREMEDIA'; cell[6] = '_LEAVE' (first category column)
       setup({
         monthData: {
@@ -762,10 +762,7 @@ describe('MonthGrid', () => {
 
       await screen.findByText('Work periods')
 
-      // Last combobox is the AddPeriodForm category select
-      const selects = screen.getAllByRole('combobox')
-      const addFormSelect = selects[selects.length - 1]!
-      expect(addFormSelect).toHaveValue('_LEAVE')
+      expect(screen.getByLabelText(/category for the new work period/i)).toHaveValue('_LEAVE')
     })
 
     it('category cells have no tooltip', async () => {

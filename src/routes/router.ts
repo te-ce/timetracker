@@ -7,7 +7,6 @@ import { SprintView } from '../features/sprint/SprintView'
 import { SettingsView } from '../features/settings/SettingsView'
 import { toLocalIso } from '../shared/dateUtils'
 import { PrototypeRouteComponent, validatePrototypeSearch } from '../prototypes/design-language/PrototypeRoute'
-import { isTrackingVariantKey } from '../prototypes/day-tracking/TrackingSwitcher'
 
 const rootRoute = createRootRoute({
   component: App,
@@ -20,8 +19,6 @@ const dayRoute = createRoute({
   validateSearch: (search: Record<string, unknown>) => ({
     date:
       typeof search.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.date) ? search.date : toLocalIso(new Date()),
-    // PROTOTYPE — day-tracking UX variants; remove with src/prototypes/day-tracking/.
-    ...(isTrackingVariantKey(search.proto) ? { proto: search.proto } : {}),
   }),
 })
 

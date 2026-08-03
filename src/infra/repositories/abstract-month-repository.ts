@@ -18,6 +18,7 @@ import {
   removeSubtask as removeSubtaskFromDay,
   startLiveSubtask as doStartLiveSubtask,
   stopLiveSubtask as doStopLiveSubtask,
+  resumeSubtask as doResumeSubtask,
   stopPeriod as doStopPeriod,
 } from './day-updaters'
 import { mergeAdjacentInto } from './work-period-merge'
@@ -131,6 +132,10 @@ export abstract class AbstractMonthRepository implements MonthRepository {
 
   stopLiveSubtask(date: string, periodId: string, subtaskId: string, stoppedAt: string): Promise<void> {
     return this.updateDay(date, (day) => doStopLiveSubtask(day, periodId, subtaskId, stoppedAt))
+  }
+
+  resumeSubtask(date: string, periodId: string, subtaskId: string, now: string): Promise<void> {
+    return this.updateDay(date, (day) => doResumeSubtask(day, periodId, subtaskId, now))
   }
 
   stopWorkPeriod(

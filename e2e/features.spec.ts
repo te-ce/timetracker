@@ -36,11 +36,10 @@ test.describe('daily booking', () => {
     await page.goto(`/?date=${TEST_DATE}`)
 
     const workSection = page.getByRole('region', { name: 'Work periods' })
-    await workSection.getByRole('button', { name: /now/i }).click()
-    await workSection.getByLabel('Start').fill('09:00')
-    await workSection.getByLabel('End').fill('17:00')
-    await workSection.getByRole('button', { name: 'Add period' }).click()
-    await expect(workSection.getByRole('button', { name: /Edit start time 09:00/ })).toBeVisible({
+    await workSection.getByLabel('New work period start').fill('09:00')
+    await workSection.getByLabel('New work period end').fill('17:00')
+    await workSection.getByRole('button', { name: 'Add work period' }).click()
+    await expect(workSection.getByRole('listitem', { name: /work period 1, 09:00 to 17:00/i })).toBeVisible({
       timeout: 10_000,
     })
 
@@ -156,11 +155,10 @@ test.describe('auto category', () => {
     await page.goto(`/?date=${TEST_DATE}`)
 
     const workSection = page.getByRole('region', { name: 'Work periods' })
-    await workSection.getByRole('button', { name: /now/i }).click()
-    await workSection.getByLabel('Start').fill('09:00')
-    await workSection.getByLabel('End').fill('17:00')
-    await workSection.getByRole('button', { name: 'Add period' }).click()
-    await expect(workSection.getByRole('button', { name: /Edit start time 09:00/ })).toBeVisible()
+    await workSection.getByLabel('New work period start').fill('09:00')
+    await workSection.getByLabel('New work period end').fill('17:00')
+    await workSection.getByRole('button', { name: 'Add work period' }).click()
+    await expect(workSection.getByRole('listitem', { name: /work period 1, 09:00 to 17:00/i })).toBeVisible()
 
     await expect(page.getByText('main', { exact: true }).first()).toBeVisible()
   })

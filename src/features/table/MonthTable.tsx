@@ -6,7 +6,7 @@ import type { DotPopoverState } from '../day/DotPopoverPanel'
 import type { NotePopoverState } from '../day/NotePopoverPanel'
 import { DotPopoverPanel } from '../day/DotPopoverPanel'
 import { NotePopoverPanel } from '../day/NotePopoverPanel'
-import { WorkOverview } from '../day/WorkOverview'
+import { DayTimeline } from '../day/DayTimeline'
 import { classifyDay } from '../../shared/dayStatus'
 import { getAllCategories } from '../../shared/categories'
 import { computeSprintGroups } from '../sprint/sprintGroups'
@@ -677,7 +677,8 @@ export function MonthGrid({
                 </button>
               </div>
               <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">
-                <WorkOverview
+                <DayTimeline
+                  showTotals={false}
                   date={activeDialogDate}
                   windows={monthData[activeDialogDate]?.windows ?? []}
                   repository={repository}

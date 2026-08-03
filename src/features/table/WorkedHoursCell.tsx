@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { WorkPeriod, MonthRepository } from '../../infra/repositories/types'
-import { WorkOverview } from '../day/WorkOverview'
+import { DayTimeline } from '../day/DayTimeline'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { Tooltip } from '../../shared/Tooltip'
@@ -114,7 +114,8 @@ export function WorkedHoursCell({
               </button>
             </div>
             <div className="px-5 py-4 overflow-y-auto max-h-[70vh]">
-              <WorkOverview
+              <DayTimeline
+                showTotals={false}
                 date={date}
                 windows={windows}
                 repository={repository}

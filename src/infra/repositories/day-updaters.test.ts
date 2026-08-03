@@ -8,6 +8,7 @@ import {
   removeSubtask,
   startLiveSubtask,
   stopLiveSubtask,
+  resumeSubtask,
   stopPeriod,
 } from './day-updaters'
 import type { Day, WorkPeriod, WorkPeriodSubtask } from './types'
@@ -26,6 +27,10 @@ function subtask(id: string, category: string, hours: number): WorkPeriodSubtask
 
 function liveSubtask(id: string, category: string, startedAt: string): WorkPeriodSubtask & { startedAt: string } {
   return { id, category, hours: 0, startedAt }
+}
+
+function timedSubtask(id: string, category: string, startedAt: string, stoppedAt: string): WorkPeriodSubtask {
+  return { id, category, hours: 0, startedAt, stoppedAt }
 }
 
 describe('upsertWindow', () => {
@@ -236,6 +241,61 @@ describe('stopLiveSubtask', () => {
     const result = stopLiveSubtask(day, 'w1', 's1', '10:00')
     const s2 = result.windows.find((w) => w.id === 'w2')?.subtasks[0]
     expect(s2?.startedAt).toBe('13:00')
+  })
+})
+
+describe('resumeSubtask', () => {
+  it('clears stoppedAt on the matching slice and reopens the period', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', '11:00'), subtasks: [timedSubtask('s1', '_SUPPORT', '09:00', '10:00')] }],
+    }
+    const result = resumeSubtask(day, 'w1', 's1', '10:30')
+    expect(result.windows[0]?.end).toBeNull()
+    const s1 = result.windows[0]?.subtasks.find((s) => s.id === 's1')
+    expect(s1?.startedAt).toBe('09:00')
+    expect(s1?.stoppedAt).toBeUndefined()
+  })
+
+  it('auto-stops any other currently-live slice at `now`', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [
+        {
+          ...win('w1', '09:00', null),
+          subtasks: [timedSubtask('s1', '_SUPPORT', '09:00', '10:00'), liveSubtask('s2', '_RELEASE', '10:00')],
+        },
+      ],
+    }
+    const result = resumeSubtask(day, 'w1', 's1', '11:00')
+    const subtasks = result.windows[0]?.subtasks ?? []
+    const s1 = subtasks.find((s) => s.id === 's1')
+    const s2 = subtasks.find((s) => s.id === 's2')
+    expect(s1?.stoppedAt).toBeUndefined()
+    expect(s2?.stoppedAt).toBe('11:00')
+    expect(s2?.hours).toBe(1)
+  })
+
+  it('is a no-op when the subtask has no startedAt', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [{ ...win('w1', '09:00', '11:00'), subtasks: [subtask('s1', '_SUPPORT', 1)] }],
+    }
+    const result = resumeSubtask(day, 'w1', 's1', '10:30')
+    expect(result.windows[0]?.end).toBe('11:00')
+    expect(result.windows[0]?.subtasks[0]?.startedAt).toBeUndefined()
+  })
+
+  it('does not touch other periods', () => {
+    const day = {
+      ...emptyDay(),
+      windows: [
+        { ...win('w1', '09:00', '11:00'), subtasks: [timedSubtask('s1', '_SUPPORT', '09:00', '10:00')] },
+        win('w2', '13:00', '17:00'),
+      ],
+    }
+    const result = resumeSubtask(day, 'w1', 's1', '10:30')
+    expect(result.windows.find((w) => w.id === 'w2')?.end).toBe('17:00')
   })
 })
 
