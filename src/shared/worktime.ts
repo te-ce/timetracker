@@ -92,12 +92,28 @@ export function calculateProjectedWorkedHours(windows: WorkPeriod[], nowHHMM: st
   return windows.reduce((total, w) => total + elapsedHours(w.start, w.end ?? nowHHMM), 0)
 }
 
+/**
+ * True when the period is planned for later in the day and hasn't begun yet.
+ * A period whose end is before its start runs past midnight, so its wrap is
+ * real and it counts as under way — only same-day periods can be "not yet".
+ */
+function hasNotStartedYet(period: WorkPeriod, now: string): boolean {
+  if (period.end === null) return false
+  if (parseMinutes(period.end) < parseMinutes(period.start)) return false
+  return parseMinutes(now) < parseMinutes(period.start)
+}
+
 export function calculateWorkedHours(windows: WorkPeriod[], now?: string): number {
   return windows.reduce((total, w) => {
-    // When now is provided, treat a future end as live (use now instead of end).
-    const isFuturePlannedStop = w.end !== null && now !== undefined && parseMinutes(w.end) > parseMinutes(now)
-    const endTime = w.end === null || isFuturePlannedStop ? now : w.end
-    if (endTime == null) return total
+    // When now is provided, treat a future end as live (accrue up to now).
+    if (now !== undefined && w.end !== null && parseMinutes(w.end) > parseMinutes(now)) {
+      // Except while it is still to come: the elapsed wrap would otherwise
+      // credit a period planned for later today with almost a full day.
+      if (hasNotStartedYet(w, now)) return total
+      return total + elapsedHours(w.start, now, { raceToleranceMinutes: 5 })
+    }
+    const endTime = w.end ?? now
+    if (endTime === undefined) return total
     return total + elapsedHours(w.start, endTime, { raceToleranceMinutes: 5 })
   }, 0)
 }

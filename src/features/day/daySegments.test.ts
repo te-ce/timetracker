@@ -26,6 +26,17 @@ describe('deriveSegments', () => {
     })
   })
 
+  it('lays out nothing for a period planned for later today', () => {
+    // Given a period that starts after now
+    const p = period('10:00', '13:00')
+
+    // When the day is derived mid-morning
+    const segments = deriveSegments(p, '08:19')
+
+    // Then no stretch is drawn — the period has not begun
+    expect(segments).toEqual([])
+  })
+
   it('splits the main stretch around a timed subtask', () => {
     // Given a three-hour WorkPeriod interrupted by a half-hour subtask
     const p = period('10:00', '13:00', [

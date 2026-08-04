@@ -52,6 +52,15 @@ describe('calculateWorkedHours', () => {
     expect(calculateWorkedHours([])).toBe(0)
   })
 
+  it('credits nothing to a period planned for later today', () => {
+    // Without a guard the elapsed wrap would credit this with almost 24 hours.
+    expect(calculateWorkedHours([makeWindow('10:00', '13:00')], '08:19')).toBe(0)
+  })
+
+  it('still accrues a period that is under way past midnight', () => {
+    expect(calculateWorkedHours([makeWindow('22:00', '02:00')], '00:30')).toBe(2.5)
+  })
+
   it('returns the duration in decimal hours for a single WorkPeriod', () => {
     expect(calculateWorkedHours([makeWindow('09:00', '17:00')])).toBe(8)
   })

@@ -13,8 +13,16 @@ vi.mock('../../infra/auth/msalInstance', () => ({
 }))
 
 // The timeline shows live tracking, planned stops and breaks relative to now, so
-// these tests run against today.
-const DATE = toLocalIso(new Date())
+// these tests run against today — but at a pinned wall-clock time. Left on the
+// real clock, the fixtures' 08:00–17:00 periods are still in the future when the
+// suite runs in the morning, and a period that hasn't started has no elapsed
+// stretch to render.
+const PINNED_NOW = (() => {
+  const d = new Date()
+  d.setHours(18, 30, 0, 0)
+  return d
+})()
+const DATE = toLocalIso(PINNED_NOW)
 const MONTH_KEY = DATE.slice(0, 7)
 
 function period(
@@ -76,6 +84,15 @@ async function getWindows(repo: InMemoryMonthRepository, date = DATE): Promise<W
 }
 
 describe('DayTimeline', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(PINNED_NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('lists work periods, their segments and the breaks between them in clock order', async () => {
     // Given a morning period, a half-hour break, then an afternoon period
     setup([period('a', '08:00', '09:30', 'Work'), period('b', '10:00', '13:00', 'Review')])
