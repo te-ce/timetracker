@@ -57,9 +57,10 @@ export function DayTimeline({
   isBalanceLoading = false,
 }: DayTimelineProps) {
   const timeFormat = useTimeFormatStore((s) => s.format)
-  const now = useClock(hasLiveActivity(windows, nowHHMM()))
   // Planned stops and live segments only make sense while looking at today.
   const dayOptions = { isToday: date === toLocalIso(new Date()) }
+  // Keep ticking on today even with no open period, so "Start tracking at" stays current.
+  const now = useClock(dayOptions.isToday || hasLiveActivity(windows, nowHHMM()))
   const mutations = useWorkPeriodMutations(repository)
   const stream = buildDayStream(windows, now, dayOptions)
   const stats = deriveDayStats(windows, now, dayOptions)
