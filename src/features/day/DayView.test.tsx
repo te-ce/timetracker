@@ -103,19 +103,6 @@ describe('DayView', () => {
   })
 
   describe('office stats', () => {
-    it('shows office percentage and day count in OvertimeBar', () => {
-      stubQuery({ officeDays: 3, totalWorkDays: 5, officePercent: 60 })
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.getByText(/60%\s*office/i)).toBeInTheDocument()
-      expect(screen.getByText(/3\/5\s*days/i)).toBeInTheDocument()
-    })
-
-    it('hides office stats when no work days tracked', () => {
-      stubQuery({ officeDays: 0, totalWorkDays: 0, officePercent: 0 })
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.queryByText(/office/i)).not.toBeInTheDocument()
-    })
-
     it('hides location toggle button when officeStats disabled in config', () => {
       stubQuery({
         config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, officeStats: false }),
@@ -139,41 +126,23 @@ describe('DayView', () => {
         todayIso: '2026-06-03', // selectedDate '2026-05-15' is in the past
       })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      // LiveWindowBadge renders "{elapsed} current" — the bar reflects the viewed day's own data
-      expect(screen.getByText(/current/i)).toBeInTheDocument()
+      // "Worked today" in the totals panel reflects the viewed day's own live elapsed time
+      expect(screen.getByRole('status', { name: /required/i })).toBeInTheDocument()
     })
   })
 
-  describe('OvertimeBar placement', () => {
-    it('renders OvertimeBar outside the work-periods section', () => {
+  describe('overtime balance placement', () => {
+    it('renders the required/overtime/remaining block inside the work-periods section', () => {
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      const bar = screen.getByRole('status')
+      const balance = screen.getByRole('status', { name: /required/i })
       const section = screen.getByRole('region', { name: /work periods/i })
-      expect(section).not.toContainElement(bar)
+      expect(section).toContainElement(balance)
     })
 
-    it('always renders OvertimeBar even when workedToday is zero', () => {
+    it('always shows the balance block even when workedToday is zero', () => {
       stubQuery({ overtimeToDate: { value: 0, workedToday: 0, priorOvertime: 0 } })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.getByRole('status')).toBeInTheDocument()
-    })
-  })
-
-  describe('OvertimeBar visibility', () => {
-    it('hides OvertimeBar when showOvertimeBar is false in config', () => {
-      stubQuery({ config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false }) })
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    })
-
-    it('saves showOvertimeBar=false when hide button is clicked', async () => {
-      const configRepo = new InMemoryConfigRepository()
-      render(<DayView />, { wrapper: makeWrapper(monthRepo, configRepo) })
-      await userEvent.click(await screen.findByRole('button', { name: /hide overtime bar/i }))
-      await waitFor(async () => {
-        const saved = await configRepo.get()
-        expect(saved.showOvertimeBar).toBe(false)
-      })
+      expect(screen.getByRole('status', { name: /required/i })).toBeInTheDocument()
     })
   })
 

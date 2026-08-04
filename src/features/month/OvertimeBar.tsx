@@ -17,7 +17,7 @@ interface Props {
   isLoading?: boolean | undefined
 }
 
-function Skeleton({ className = '' }: { className?: string }) {
+export function Skeleton({ className = '' }: { className?: string }) {
   return (
     <span
       aria-hidden="true"
@@ -26,7 +26,7 @@ function Skeleton({ className = '' }: { className?: string }) {
   )
 }
 
-function formatRemaining(remaining: number, fmt: TimeFormat): string {
+export function formatRemaining(remaining: number, fmt: TimeFormat): string {
   if (remaining > 0) return `${formatHours(remaining, fmt)} remaining`
   if (remaining === 0) return 'Done'
   return `${formatHours(Math.abs(remaining), fmt)} overtime today`
@@ -37,14 +37,14 @@ function formatResult(remaining: number, totalWorked: number, fmt: TimeFormat, s
   return formatRemaining(remaining, fmt)
 }
 
-interface LoadingState {
+export interface LoadingState {
   overtimeUnknown: boolean
   resultUnknown: boolean
   ariaLabel: string
 }
 
 /** Only requiredToday/remaining (and thus resultLabel) depend on the still-loading prior-months carry-over — see `calculateRemaining`. In 'until-daily-target' mode neither depends on it, so nothing is ever unknown there. */
-function deriveLoadingState(
+export function deriveLoadingState(
   balance: DayBalance,
   isLoading: boolean,
   showTotalWorked: boolean,
@@ -56,7 +56,7 @@ function deriveLoadingState(
   return { overtimeUnknown, resultUnknown, ariaLabel }
 }
 
-interface BarData {
+export interface BarData {
   resultLabel: string
   overtimeLabel: string
   overtimeSign: string
@@ -65,7 +65,7 @@ interface BarData {
   resultClass: string
 }
 
-function buildBarData(balance: DayBalance, fmt: TimeFormat, showTotalWorked: boolean): BarData {
+export function buildBarData(balance: DayBalance, fmt: TimeFormat, showTotalWorked: boolean): BarData {
   const { sollstunden, priorOvertime, closedWorked, liveElapsed, worked, remaining, requiredToday } = balance
   const hasOvertime = priorOvertime >= 0
   const overtimeLabel = hasOvertime ? 'overtime' : 'undertime'

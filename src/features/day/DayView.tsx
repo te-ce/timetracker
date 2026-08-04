@@ -1,13 +1,11 @@
 import { DayNoteEditor } from './DayNoteEditor'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
-import { OvertimeBar } from '../month/OvertimeBar'
 import { DayTimeline } from './DayTimeline'
 import { DayTypePicker } from './DayTypePicker'
 import { toLocalIso } from '../../shared/dateUtils'
 import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
 import type { DayStatus } from '../../shared/dayStatus'
-import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 import { nowHHMM } from '../../shared/worktime'
 import { deriveDayBalance, hasLiveActivity } from '../../shared/dayBalance'
 import { useClock } from '../../shared/useClock'
@@ -112,7 +110,7 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
 }
 
 export function DayView() {
-  const { monthRepo, configRepo } = useRepositories()
+  const { monthRepo } = useRepositories()
   const navigate = useNavigate()
   const { date: selectedDate } = useSearch({ from: '/' })
 
@@ -133,9 +131,6 @@ export function DayView() {
     sollstunden,
     overtimeToDate,
     todayIso,
-    officeDays,
-    totalWorkDays,
-    officePercent,
     isOvertimeReady,
   } = useDayQuery(selectedDate)
 
@@ -149,12 +144,9 @@ export function DayView() {
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
-  const hideOvertimeMutation = useHideOvertimeBar(configRepo)
-
   const { customCategories, categoryOrder, categoryDescriptions } = config
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config.officeStats
-  const officeStats = showOfficeStats && totalWorkDays > 0 ? { officeDays, totalWorkDays, officePercent } : null
   const liveNow = useClock(hasLiveActivity(windows, nowHHMM()))
   const viewedDayBalance = deriveDayBalance({
     windows,
@@ -164,7 +156,6 @@ export function DayView() {
     remainingTimeReference: config.remainingTimeReference,
     remainingTimeMode: config.remainingTimeMode,
   })
-  const showOvertimeBar = config.showOvertimeBar
 
   function prevDay() {
     const d = new Date(selectedDate)
@@ -186,16 +177,6 @@ export function DayView() {
         onNext={nextDay}
         onToday={() => setSelectedDate(toLocalIso(new Date()))}
       />
-
-      {showOvertimeBar && (
-        <OvertimeBar
-          balance={viewedDayBalance}
-          showTotalWorked={config.showTotalWorked}
-          officeStats={officeStats}
-          onHide={() => hideOvertimeMutation.mutate()}
-          isLoading={!isOvertimeReady}
-        />
-      )}
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-4 shrink-0">
@@ -244,6 +225,8 @@ export function DayView() {
             customCategories={customCategories}
             categoryOrder={categoryOrder}
             categoryDescriptions={categoryDescriptions}
+            balance={viewedDayBalance}
+            isBalanceLoading={!isOvertimeReady}
           />
         </section>
       )}

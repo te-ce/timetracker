@@ -17,6 +17,7 @@ import { derivePeriodWarnings } from './daySegments'
 import { SubtaskForm } from './SubtaskForm'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { hasLiveActivity } from '../../shared/dayBalance'
+import type { DayBalance } from '../../shared/dayBalance'
 import { nowHHMM } from '../../shared/worktime'
 import { useClock } from '../../shared/useClock'
 import { toLocalIso } from '../../shared/dateUtils'
@@ -37,6 +38,9 @@ interface DayTimelineProps {
   initialCategory?: string | undefined
   /** Off where the host is too narrow for it, e.g. the month table's day dialog. */
   showTotals?: boolean
+  /** The required/overtime/remaining block in the totals panel, in place of a separate OvertimeBar. */
+  balance?: DayBalance | undefined
+  isBalanceLoading?: boolean | undefined
 }
 
 export function DayTimeline({
@@ -49,6 +53,8 @@ export function DayTimeline({
   categoryDescriptions,
   initialCategory,
   showTotals = true,
+  balance,
+  isBalanceLoading = false,
 }: DayTimelineProps) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const now = useClock(hasLiveActivity(windows, nowHHMM()))
@@ -214,7 +220,7 @@ export function DayTimeline({
           })}
         </ol>
 
-        {showTotals && <DayTotalsPanel stats={stats} />}
+        {showTotals && <DayTotalsPanel stats={stats} balance={balance} isLoading={isBalanceLoading} />}
       </div>
 
       {deleting && (
