@@ -127,6 +127,21 @@ describe('DayTimeline', () => {
     })
   })
 
+  it('starts an open work period at a manually chosen start time', async () => {
+    // Given a day with nothing tracked
+    const { repo } = setup()
+
+    // When the user opens the start-time editor and sets a custom time
+    await userEvent.click(await screen.findByRole('button', { name: /edit start time/i }))
+    fireEvent.change(screen.getByLabelText(/^start time$/i), { target: { value: '07:15' } })
+    await userEvent.click(screen.getByRole('button', { name: /start tracking/i }))
+
+    // Then the open WorkPeriod begins at that time
+    await vi.waitFor(async () => {
+      expect(await getWindows(repo)).toMatchObject([{ start: '07:15', end: null }])
+    })
+  })
+
   it('stops the running work period with one click and offers no second start', async () => {
     // Given a work period that is running
     const { repo } = setup([period('a', '09:00', null, 'Work')])
@@ -149,10 +164,9 @@ describe('DayTimeline', () => {
     // Given work running on Work
     const { repo } = setup([period('a', '09:00', null, 'Work')])
 
-    // When the user starts a subtask on a different category
-    await userEvent.click(await screen.findByRole('button', { name: /start subtask/i }))
-    await userEvent.selectOptions(screen.getByLabelText(/subtask category/i), 'Review')
-    await userEvent.click(screen.getByRole('button', { name: /^start$/i }))
+    // When the user picks a different category and starts a subtask
+    await userEvent.selectOptions(await screen.findByLabelText(/subtask category/i), 'Review')
+    await userEvent.click(screen.getByRole('button', { name: /start subtask/i }))
 
     // Then that subtask is the live one
     await vi.waitFor(async () => {
@@ -170,6 +184,23 @@ describe('DayTimeline', () => {
       const [tracked] = await getWindows(repo)
       expect(tracked?.end).toBeNull()
       expect(tracked?.subtasks[0]?.stoppedAt).toMatch(/^\d{2}:\d{2}$/)
+    })
+  })
+
+  it('starts a live subtask at a manually chosen start time', async () => {
+    // Given work running on Work
+    const { repo } = setup([period('a', '09:00', null, 'Work')])
+
+    // When the user opens the subtask start-time editor and sets a custom time
+    await userEvent.selectOptions(await screen.findByLabelText(/subtask category/i), 'Review')
+    await userEvent.click(screen.getByRole('button', { name: /edit subtask start time/i }))
+    fireEvent.change(screen.getByLabelText(/^subtask start time$/i), { target: { value: '10:45' } })
+    await userEvent.click(screen.getByRole('button', { name: /start subtask/i }))
+
+    // Then the live subtask begins at that time
+    await vi.waitFor(async () => {
+      const [tracked] = await getWindows(repo)
+      expect(tracked?.subtasks).toMatchObject([{ category: 'Review', startedAt: '10:45' }])
     })
   })
 
