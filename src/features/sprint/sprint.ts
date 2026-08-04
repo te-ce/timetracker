@@ -11,6 +11,8 @@ export interface Sprint {
   end: string
 }
 
+export type ExportStatus = 'pending' | 'exported'
+
 function addDays(isoDate: string, days: number): string {
   const d = new Date(isoDate)
   d.setUTCDate(d.getUTCDate() + days)
@@ -28,6 +30,20 @@ export function getSprintForDate(date: string, config: SprintConfig): Sprint {
   const daysSinceStart = Math.floor((new Date(date).getTime() - new Date(config.startDate).getTime()) / msPerDay)
   const index = Math.floor(daysSinceStart / config.lengthDays)
   return getSprintBoundaries(index, config)
+}
+
+export interface SprintDayProgress {
+  day: number
+  total: number
+  pct: number
+}
+
+export function sprintDayProgress(sprint: Sprint, today: string): SprintDayProgress {
+  const msPerDay = 86_400_000
+  const total = Math.round((new Date(sprint.end).getTime() - new Date(sprint.start).getTime()) / msPerDay) + 1
+  const elapsed = Math.round((new Date(today).getTime() - new Date(sprint.start).getTime()) / msPerDay) + 1
+  const day = Math.min(Math.max(elapsed, 0), total)
+  return { day, total, pct: total > 0 ? Math.min(Math.max((day / total) * 100, 0), 100) : 0 }
 }
 
 export function aggregateSprintHours(entries: DatedTimeEntry[], sprint: Sprint): Record<string, number> {

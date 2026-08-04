@@ -4,8 +4,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
 import { SprintConfigPanel } from './SprintConfigPanel'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+import { SheetExistsError } from '../excel'
 
-function setup(overrides: { sprintStartDate?: string; sprintLengthDays?: number } = {}) {
+function setup(
+  overrides: {
+    sprintStartDate?: string
+    sprintLengthDays?: number
+    exportStatus?: 'pending' | 'exported'
+    exportReady?: boolean
+    onExport?: (overwrite: boolean) => Promise<void>
+  } = {},
+) {
   const repo = new InMemoryConfigRepository({
     ...DEFAULT_APP_CONFIG,
     sprintLengthDays: overrides.sprintLengthDays ?? 14,
@@ -15,7 +24,13 @@ function setup(overrides: { sprintStartDate?: string; sprintLengthDays?: number 
   const onConfigChanged = vi.fn()
   render(
     <QueryClientProvider client={queryClient}>
-      <SprintConfigPanel repository={repo} onConfigChanged={onConfigChanged} />
+      <SprintConfigPanel
+        repository={repo}
+        onConfigChanged={onConfigChanged}
+        exportStatus={overrides.exportStatus}
+        exportReady={overrides.exportReady}
+        onExport={overrides.onExport}
+      />
     </QueryClientProvider>,
   )
   return { repo, onConfigChanged }
@@ -109,6 +124,71 @@ describe('SprintConfigPanel', () => {
     await waitFor(async () => {
       const config = await repo.get()
       expect(config.sprintStartDate).toBe('2024-01-01')
+    })
+  })
+
+  describe('export', () => {
+    it('does not show an export button when onExport is not provided', async () => {
+      setup()
+      await screen.findByDisplayValue('2024-01-01')
+      expect(screen.queryByRole('button', { name: /export/i })).not.toBeInTheDocument()
+    })
+
+    it('shows the export button after the Save button when onExport is provided', async () => {
+      setup({ onExport: vi.fn().mockResolvedValue(undefined) })
+      await screen.findByDisplayValue('2024-01-01')
+      const buttons = screen.getAllByRole('button')
+      const saveIndex = buttons.findIndex((b) => /save/i.test(b.textContent))
+      const exportIndex = buttons.findIndex((b) => /^export$/i.test(b.textContent))
+      expect(exportIndex).toBeGreaterThan(saveIndex)
+    })
+
+    it('calls onExport when the export button is clicked', async () => {
+      const onExport = vi.fn().mockResolvedValue(undefined)
+      setup({ onExport })
+      await screen.findByDisplayValue('2024-01-01')
+      await userEvent.click(screen.getByRole('button', { name: /^export$/i }))
+      expect(onExport).toHaveBeenCalledOnce()
+    })
+
+    it('keeps the export button enabled even when exportReady is false', async () => {
+      setup({ onExport: vi.fn().mockResolvedValue(undefined), exportReady: false })
+      await screen.findByDisplayValue('2024-01-01')
+      expect(screen.getByRole('button', { name: /^export$/i })).toBeEnabled()
+    })
+
+    it('shows the ExportStatus badge', async () => {
+      setup({ onExport: vi.fn().mockResolvedValue(undefined), exportStatus: 'exported' })
+      await screen.findByDisplayValue('2024-01-01')
+      expect(screen.getByText(/exported/i)).toBeInTheDocument()
+    })
+
+    it('shows an error message when export fails', async () => {
+      const onExport = vi.fn().mockRejectedValue(new Error('Network error'))
+      setup({ onExport })
+      await screen.findByDisplayValue('2024-01-01')
+      await userEvent.click(screen.getByRole('button', { name: /^export$/i }))
+      expect(await screen.findByRole('alert')).toHaveTextContent('Network error')
+    })
+
+    it('switches to "Export and overwrite" when the archive sheet already exists, then re-exports with overwrite', async () => {
+      const onExport = vi
+        .fn<(overwrite: boolean) => Promise<void>>()
+        .mockRejectedValueOnce(new SheetExistsError('Sprint 3'))
+        .mockResolvedValueOnce(undefined)
+      setup({ onExport })
+      await screen.findByDisplayValue('2024-01-01')
+
+      await userEvent.click(screen.getByRole('button', { name: /^export$/i }))
+      expect(await screen.findByRole('alert')).toHaveTextContent('Worksheet "Sprint 3" already exists')
+      expect(onExport).toHaveBeenNthCalledWith(1, false)
+
+      const confirmBtn = screen.getByRole('button', { name: /export and overwrite/i })
+      await userEvent.click(confirmBtn)
+      expect(onExport).toHaveBeenNthCalledWith(2, true)
+
+      expect(screen.getByRole('button', { name: /^export$/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /export and overwrite/i })).not.toBeInTheDocument()
     })
   })
 })

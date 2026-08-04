@@ -2,13 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
+import { useSprintExportAction } from './useSprintExportAction'
+import type { ExportStatus } from './sprint'
 
 interface Props {
   repository: ConfigRepository
   onConfigChanged?: () => void
+  exportStatus?: ExportStatus | undefined
+  exportReady?: boolean | undefined
+  onExport?: ((overwrite: boolean) => Promise<void>) | undefined
 }
 
-export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
+export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, exportReady, onExport }: Props) {
   const queryClient = useQueryClient()
   const [startDate, setStartDate] = useState('')
   const [lengthDays, setLengthDays] = useState('')
@@ -42,10 +47,13 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
     },
   })
 
+  const { exporting, exportError, needsOverwriteConfirm, handleExport } = useSprintExportAction(onExport)
+
   return (
-    <div className="flex items-end gap-3 rounded-xl border bg-white dark:bg-gray-800 dark:border-gray-700 p-4 shadow-sm">
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Start date
+    <div className="flex flex-wrap items-center gap-6 border-b border-gray-200 pb-3 dark:border-gray-700">
+      <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <span aria-hidden>📅</span>
+        Start
         <input
           type="date"
           aria-label="Start date"
@@ -54,11 +62,13 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') saveMutation.mutate()
           }}
-          className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
+          className="border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm font-medium">
-        Length (days)
+
+      <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        <span aria-hidden>#</span>
+        Length
         <input
           type="number"
           aria-label="Length"
@@ -68,16 +78,45 @@ export function SprintConfigPanel({ repository, onConfigChanged }: Props) {
           onKeyDown={(e) => {
             if (e.key === 'Enter') saveMutation.mutate()
           }}
-          className="w-20 rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          className="w-10 border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
         />
+        <span className="text-gray-400 dark:text-gray-500">days</span>
       </label>
+
       <button
         type="button"
         onClick={() => saveMutation.mutate()}
-        className="rounded-lg bg-indigo-600 dark:bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700 dark:hover:bg-indigo-400"
+        className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
       >
         Save
       </button>
+
+      {onExport && (
+        <div className="ml-auto flex items-center gap-3">
+          <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+            <span
+              className={`h-2 w-2 rounded-full ${exportStatus === 'exported' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+            />
+            {exportStatus === 'exported' ? 'Exported' : 'Pending'}
+          </span>
+          {exportError && (
+            <p role="alert" className="text-xs text-red-600">
+              {exportError}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleExport()}
+            disabled={exporting}
+            className="rounded-full bg-gray-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
+            data-tooltip={
+              !exportReady ? 'Configure SharePoint URL, sheet, and category mapping in Settings first' : undefined
+            }
+          >
+            {exporting ? 'Exporting…' : needsOverwriteConfirm ? 'Export and overwrite' : 'Export'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

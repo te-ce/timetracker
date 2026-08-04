@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from './sprint'
+import { getSprintBoundaries, getSprintForDate, aggregateSprintHours, sprintDayProgress } from './sprint'
 import type { DatedTimeEntry } from '../../infra/repositories/types'
 
 const config = { startDate: '2024-01-01', lengthDays: 14 }
@@ -67,5 +67,21 @@ describe('aggregateSprintHours', () => {
 
   it('returns an empty object when there are no entries', () => {
     expect(aggregateSprintHours([], sprint)).toEqual({})
+  })
+})
+
+describe('sprintDayProgress', () => {
+  const sprint = getSprintBoundaries(0, config) // 2024-01-01 → 2024-01-14
+
+  it('reports the elapsed day and sprint length for a date mid-sprint', () => {
+    expect(sprintDayProgress(sprint, '2024-01-06')).toEqual({ day: 6, total: 14, pct: (6 / 14) * 100 })
+  })
+
+  it('clamps day to 0 for a date before the sprint starts', () => {
+    expect(sprintDayProgress(sprint, '2023-12-20')).toEqual({ day: 0, total: 14, pct: 0 })
+  })
+
+  it('clamps day to the sprint length for a date after it ends', () => {
+    expect(sprintDayProgress(sprint, '2024-02-01')).toEqual({ day: 14, total: 14, pct: 100 })
   })
 })

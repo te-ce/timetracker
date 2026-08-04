@@ -397,7 +397,7 @@ test.describe('sprint view', () => {
 
   test('sprint report panel is visible with seeded data', async ({ page }) => {
     await page.goto('/sprint')
-    await expect(page.getByRole('heading', { name: 'Sprint Report' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Sprint report' })).toBeVisible()
   })
 
   test('export button is enabled even when SharePoint URL is not configured', async ({ page }) => {

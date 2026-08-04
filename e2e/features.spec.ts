@@ -246,7 +246,7 @@ test.describe('sprint view', () => {
   test('sprint view loads with report and config panels', async ({ page }) => {
     await page.goto('/sprint')
 
-    await expect(page.getByRole('heading', { name: 'Sprint Report' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Sprint report' })).toBeVisible()
     await expect(page.getByLabel('Start date')).toBeVisible()
     await expect(page.getByLabel('Length')).toBeVisible()
   })

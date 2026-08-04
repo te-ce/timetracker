@@ -61,7 +61,7 @@ describe('SprintView', () => {
     it('does not render sprint navigation', async () => {
       render(<SprintView />, { wrapper: makeWrapper() })
       await waitFor(() => expect(screen.getByTestId('sprint-config-panel')).toBeInTheDocument())
-      expect(screen.queryByRole('button', { name: /prev/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /previous sprint/i })).not.toBeInTheDocument()
     })
   })
 
@@ -76,23 +76,24 @@ describe('SprintView', () => {
     it('shows sprint date range in heading', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG_WITH_SPRINT) })
       await waitFor(() => {
-        const heading = screen.getByText(/sprint \d+/i).closest('h2')
-        expect(heading?.textContent).toMatch(/\d{4}-\d{2}-\d{2}/)
+        expect(
+          screen.getByText(new RegExp(`${CONFIG_WITH_SPRINT.sprintStartDate}.*\\d{4}-\\d{2}-\\d{2}`)),
+        ).toBeInTheDocument()
       })
     })
 
     it('shows Prev and Next navigation buttons', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG_WITH_SPRINT) })
       await waitFor(() => {
-        expect(screen.getByText(/← Prev/)).toBeInTheDocument()
-        expect(screen.getByText(/Next →/)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /previous sprint/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /next sprint/i })).toBeInTheDocument()
       })
     })
 
     it('Current button is disabled when viewing current sprint', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG_WITH_SPRINT) })
-      await waitFor(() => screen.getByText(/← Prev/))
-      const currentBtn = screen.getByText('Current')
+      await waitFor(() => screen.getByRole('button', { name: /previous sprint/i }))
+      const currentBtn = screen.getByRole('button', { name: /^current$/i })
       expect(currentBtn).toHaveClass('opacity-40')
     })
 
@@ -101,7 +102,7 @@ describe('SprintView', () => {
       await waitFor(() => screen.getByText(/sprint \d+/i))
 
       const initialSprint = screen.getByText(/sprint \d+/i).textContent
-      await userEvent.click(screen.getByText(/← Prev/))
+      await userEvent.click(screen.getByRole('button', { name: /previous sprint/i }))
 
       await waitFor(() => {
         const newSprint = screen.getByText(/sprint \d+/i).textContent
@@ -113,9 +114,9 @@ describe('SprintView', () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG_WITH_SPRINT) })
       await waitFor(() => screen.getByText(/sprint \d+/i))
 
-      await userEvent.click(screen.getByText(/← Prev/))
+      await userEvent.click(screen.getByRole('button', { name: /previous sprint/i }))
       await waitFor(() => {
-        expect(screen.getByText('Current')).not.toHaveClass('opacity-40')
+        expect(screen.getByRole('button', { name: /^current$/i })).not.toHaveClass('opacity-40')
       })
     })
 
@@ -124,13 +125,13 @@ describe('SprintView', () => {
       await waitFor(() => screen.getByText(/sprint \d+/i))
 
       const originalSprint = screen.getByText(/sprint \d+/i).textContent
-      await userEvent.click(screen.getByText(/← Prev/))
+      await userEvent.click(screen.getByRole('button', { name: /previous sprint/i }))
       await waitFor(() => {
         const changed = screen.getByText(/sprint \d+/i).textContent
         expect(changed).not.toBe(originalSprint)
       })
 
-      await userEvent.click(screen.getByText('Current'))
+      await userEvent.click(screen.getByRole('button', { name: /^current$/i }))
       await waitFor(() => {
         expect(screen.getByText(/sprint \d+/i).textContent).toBe(originalSprint)
       })
@@ -165,9 +166,9 @@ describe('SprintView', () => {
     it('shows correct sprint total', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG, MONTH_DATA) })
       await waitFor(() => {
-        const totalEl = screen.getByText(/total:/i)
-        expect(totalEl.textContent).toMatch(/5:00/)
-        expect(totalEl.textContent).toMatch(/5\.00h/)
+        const totalRow = screen.getByText('Total').closest('tr')
+        expect(totalRow?.textContent).toMatch(/5:00/)
+        expect(totalRow?.textContent).toMatch(/5\.00h/)
       })
     })
 
@@ -183,17 +184,18 @@ describe('SprintView', () => {
       }
       render(<SprintView />, { wrapper: makeWrapper(CONFIG, withOutlier) })
       await waitFor(() => {
-        const totalEl = screen.getByText(/total:/i)
-        expect(totalEl.textContent).toMatch(/5:00/)
-        expect(totalEl.textContent).toMatch(/5\.00h/)
+        const totalRow = screen.getByText('Total').closest('tr')
+        expect(totalRow?.textContent).toMatch(/5:00/)
+        expect(totalRow?.textContent).toMatch(/5\.00h/)
       })
     })
 
     it('shows 0:00 / 0.00h total when sprint has no entries', async () => {
       render(<SprintView />, { wrapper: makeWrapper(CONFIG) })
-      await waitFor(() => expect(screen.getByText(/total:/i)).toBeInTheDocument())
-      expect(screen.getByText(/total:/i).textContent).toMatch(/0:00/)
-      expect(screen.getByText(/total:/i).textContent).toMatch(/0\.00h/)
+      await waitFor(() => expect(screen.getByText('Total')).toBeInTheDocument())
+      const totalRow = screen.getByText('Total').closest('tr')
+      expect(totalRow?.textContent).toMatch(/0:00/)
+      expect(totalRow?.textContent).toMatch(/0\.00h/)
     })
   })
 })
