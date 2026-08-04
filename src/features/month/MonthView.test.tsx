@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/react'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -9,7 +8,7 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
-import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
+import { resolveAppConfig } from '../../shared/appConfigDefaults'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -97,12 +96,12 @@ describe('MonthView', () => {
   })
 
   describe('month progress', () => {
-    it('shows worked hours against the month target instead of the overtime bar', () => {
+    it('shows worked hours against the month target, and today alongside it', () => {
       stubTrackedMonth()
       render(<MonthView />, { wrapper: makeWrapper() })
 
       expect(screen.getByRole('meter', { name: /worked/i })).toHaveAttribute('aria-valuenow', '17')
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(within(screen.getByRole('status')).getByText('Today')).toBeInTheDocument()
     })
 
     it('puts each day hours and balance into its calendar cell', () => {
@@ -119,27 +118,6 @@ describe('MonthView', () => {
       render(<MonthView />, { wrapper: makeWrapper() })
 
       expect(screen.getByRole('button', { name: /Thu 2.*Nothing tracked/i })).toBeInTheDocument()
-    })
-
-    it('saves showOvertimeBar=false when the balance is hidden', async () => {
-      const configRepo = new InMemoryConfigRepository()
-      render(<MonthView />, { wrapper: makeWrapper(configRepo) })
-      await userEvent.click(await screen.findByRole('button', { name: /hide balance/i }))
-      await waitFor(async () => {
-        const saved = await configRepo.get()
-        expect(saved.showOvertimeBar).toBe(false)
-      })
-    })
-
-    it('hides the balance when showOvertimeBar is false in config', () => {
-      vi.mocked(useMonthView).mockReturnValue({
-        ...emptyMonthView(),
-        config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false }),
-      })
-      render(<MonthView />, { wrapper: makeWrapper() })
-
-      expect(screen.getByRole('meter', { name: /worked/i })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /hide balance/i })).not.toBeInTheDocument()
     })
   })
 

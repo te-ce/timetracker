@@ -1,48 +1,88 @@
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import type { OfficeStats } from '../../shared/officeStats'
+import type { DayBalance } from '../../shared/dayBalance'
 import { balanceInk, formatSignedHours } from './monthBalanceFormat'
+import { Skeleton, buildBarData, deriveLoadingState } from './OvertimeBar'
 import type { MonthOverview } from './monthOverview'
 
 interface Props {
   overview: MonthOverview
-  /** Whether the cumulative over/undertime is shown — the `showOvertimeBar` setting. */
-  showBalance: boolean
   officeStats: OfficeStats | null
-  onHideBalance: () => void
+  /** Today's balance, shown alongside the month total — the day-level half of the merged bar. */
+  todayBalance: DayBalance
+  isTodayLoading?: boolean | undefined
 }
 
-export function MonthProgressMeter({ overview, showBalance, officeStats, onHideBalance }: Props) {
+export function MonthProgressMeter({ overview, officeStats, todayBalance, isTodayLoading = false }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
+  const { requiredToday, worked: workedToday, priorOvertime, plannedStopTime } = todayBalance
+  const { resultLabel, summary } = buildBarData(todayBalance, timeFormat, false)
+  const monthSummary = `${formatHours(overview.worked, timeFormat)} of ${formatHours(overview.targetFullMonth, timeFormat)} worked this month`
+  const { overtimeUnknown, resultUnknown, ariaLabel } = deriveLoadingState(
+    todayBalance,
+    isTodayLoading,
+    false,
+    `${monthSummary}. Today: ${summary}`,
+  )
+  const isTodayOver = todayBalance.remaining <= 0
 
   return (
-    <section className="rounded-xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
+    <section
+      role="status"
+      aria-label={ariaLabel}
+      className="rounded-xl border bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+    >
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Worked this month</p>
-          <p className="text-2xl font-bold tabular-nums">
-            {formatHours(overview.worked, timeFormat)}
-            <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">
-              of {formatHours(overview.targetFullMonth, timeFormat)}
-            </span>
-          </p>
+        <div className="flex flex-wrap items-end gap-6">
+          <div>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Worked this month</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {formatHours(overview.worked, timeFormat)}
+              <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">
+                of {formatHours(overview.targetFullMonth, timeFormat)}
+              </span>
+            </p>
+          </div>
+
+          <div className="border-l pl-6 dark:border-gray-700">
+            <p className="text-xs text-gray-500 dark:text-gray-400">Today</p>
+            <p className="text-lg font-semibold tabular-nums">
+              {formatHours(workedToday, timeFormat)}
+              <span className="ml-1 text-sm font-normal text-gray-500 dark:text-gray-400">
+                of {overtimeUnknown ? <Skeleton className="w-10" /> : formatHours(requiredToday, timeFormat)}
+              </span>
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {showBalance && (
-            <span className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs dark:border-gray-600">
-              <span className="text-gray-500 dark:text-gray-400">Balance</span>
-              <span className={`font-semibold tabular-nums ${balanceInk(overview.cumulativeBalance)}`}>
-                {formatSignedHours(overview.cumulativeBalance, timeFormat)}
+          <span className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs dark:border-gray-600">
+            <span className="text-gray-500 dark:text-gray-400">Overtime</span>
+            {overtimeUnknown ? (
+              <Skeleton className="w-10" />
+            ) : (
+              <span className={`font-semibold tabular-nums ${balanceInk(priorOvertime)}`}>
+                {formatSignedHours(priorOvertime, timeFormat)}
               </span>
-              <button
-                type="button"
-                onClick={onHideBalance}
-                aria-label="Hide balance"
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-              >
-                ×
-              </button>
+            )}
+          </span>
+
+          <span
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums ${
+              overtimeUnknown
+                ? ''
+                : isTodayOver
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+            }`}
+          >
+            {resultUnknown ? <Skeleton className="w-16" /> : resultLabel}
+          </span>
+
+          {plannedStopTime && (
+            <span className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
+              projected {plannedStopTime}
             </span>
           )}
 

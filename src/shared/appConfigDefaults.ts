@@ -12,7 +12,6 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   sharepointUrl: null,
   targetSheet: null,
   categoryMapping: {},
-  showOvertimeBar: true,
 }
 
 /**
@@ -42,7 +41,6 @@ export interface ResolvedAppConfig {
   startMinimized: boolean
   closeToTray: boolean
   hotkeys: HotkeyConfig
-  showOvertimeBar: boolean
   officeStats: boolean
   showWorkedHoursInNav: boolean
   showWorkedHoursInTray: boolean
@@ -73,7 +71,6 @@ export function resolveAppConfig(config: AppConfig | undefined): ResolvedAppConf
     startMinimized: config?.startMinimized ?? false,
     closeToTray: config?.closeToTray ?? true,
     hotkeys: config?.hotkeys ?? defaultHotkeyConfig(),
-    showOvertimeBar: config?.showOvertimeBar ?? true,
     officeStats: config?.officeStats ?? true,
     showWorkedHoursInNav: config?.showWorkedHoursInNav ?? true,
     showWorkedHoursInTray: config?.showWorkedHoursInTray ?? true,

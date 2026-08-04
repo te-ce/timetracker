@@ -6,13 +6,13 @@ import type { ConfigRepository } from '../../infra/repositories/types'
 import { renameCategoryAcrossAllMonths } from './categoryMutations'
 import { MonthGrid } from './MonthTable'
 import { MonthNav } from '../month/MonthNav'
-import { OvertimeBar } from '../month/OvertimeBar'
+import { MonthProgressMeter } from '../month/MonthProgressMeter'
+import { buildMonthOverview } from '../month/monthOverview'
 import { StatusLegend } from '../month/StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
-import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 // PROTOTYPE — table-UX variants; delete these imports with src/prototypes/table-ux/.
 import { TableUxSwitcher, isTableVariantKey } from '../../prototypes/table-ux/TableUxSwitcher'
 import { VariantA } from '../../prototypes/table-ux/VariantA'
@@ -66,11 +66,25 @@ export function TableView() {
   })
 
   const view = useMonthView(year, month)
-  const { config, summaries, workLocations, todayBalance, isOvertimeReady } = view
-
-  const hideOvertimeMutation = useHideOvertimeBar(configRepo)
+  const {
+    config,
+    summaries,
+    workLocations,
+    targetHoursPerDay,
+    overtimeToDate,
+    todayIso,
+    todayBalance,
+    isOvertimeReady,
+  } = view
 
   const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
+
+  const overview = buildMonthOverview({
+    days: summaries.days,
+    targetHoursPerDay,
+    today: todayIso,
+    cumulativeBalance: overtimeToDate.value,
+  })
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [clearDayDate, setClearDayDate] = useState<string | null>(null)
@@ -103,7 +117,6 @@ export function TableView() {
     year: 'numeric',
   })
 
-  const showOvertimeBar = config.showOvertimeBar
   const showOfficeStats = config.officeStats
 
   // PROTOTYPE — table-UX variants (src/prototypes/table-ux/). Remove with the prototype.
@@ -228,15 +241,12 @@ export function TableView() {
   return (
     <div className="flex flex-col gap-6">
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
-      {showOvertimeBar && (
-        <OvertimeBar
-          balance={todayBalance}
-          showTotalWorked={config.showTotalWorked}
-          officeStats={showOfficeStats ? { officeDays, totalWorkDays, officePercent } : null}
-          onHide={() => hideOvertimeMutation.mutate()}
-          isLoading={!isOvertimeReady}
-        />
-      )}
+      <MonthProgressMeter
+        overview={overview}
+        officeStats={showOfficeStats ? { officeDays, totalWorkDays, officePercent } : null}
+        todayBalance={todayBalance}
+        isTodayLoading={!isOvertimeReady}
+      />
       <div className="flex justify-end gap-2">
         {logWorkBtn}
         {expandBtn}

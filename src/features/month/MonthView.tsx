@@ -10,7 +10,6 @@ import { buildMonthOverview } from './monthOverview'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
-import { useHideOvertimeBar } from '../../shared/useHideOvertimeBar'
 import { useRepositories } from '../../infra/repositories/RepositoryContext'
 import { invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import type { DayStatus } from '../../shared/dayStatus'
@@ -19,7 +18,7 @@ import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import type { WorkLocation } from '../../infra/repositories/types'
 
 export function MonthView() {
-  const { monthRepo, configRepo } = useRepositories()
+  const { monthRepo } = useRepositories()
   const navigate = useNavigate()
   const { year, month } = useSearch({ from: '/month' })
 
@@ -41,8 +40,17 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const { config, summaries, workLocations, dayNotes, targetHoursPerDay, overtimeToDate, todayIso, isOvertimeReady } =
-    useMonthView(year, month)
+  const {
+    config,
+    summaries,
+    workLocations,
+    dayNotes,
+    targetHoursPerDay,
+    overtimeToDate,
+    todayIso,
+    todayBalance,
+    isOvertimeReady,
+  } = useMonthView(year, month)
 
   const overview = buildMonthOverview({
     days: summaries.days,
@@ -69,16 +77,14 @@ export function MonthView() {
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)
   const dayLocationMap: Record<string, WorkLocation> = Object.fromEntries(workLocations)
 
-  const hideOvertimeMutation = useHideOvertimeBar(configRepo)
-
   return (
     <div className="flex flex-col gap-4">
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
       <MonthProgressMeter
         overview={overview}
-        showBalance={config.showOvertimeBar && isOvertimeReady}
         officeStats={config.officeStats ? officeStats(summaries.days, (date) => workLocations.get(date)) : null}
-        onHideBalance={() => hideOvertimeMutation.mutate()}
+        todayBalance={todayBalance}
+        isTodayLoading={!isOvertimeReady}
       />
       <MonthCalendar
         year={year}

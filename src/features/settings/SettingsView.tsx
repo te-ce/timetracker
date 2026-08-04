@@ -129,15 +129,8 @@ export function SettingsView() {
                 <StartupViewSettings repository={configRepo} />
                 <BooleanConfigToggle
                   repository={configRepo}
-                  label="Show overtime bar"
-                  description="Display the overtime summary bar on the day, month, and table views. Stats are always shown in the header."
-                  isChecked={(c) => c.showOvertimeBar !== false}
-                  applyChange={(c, checked) => ({ ...c, showOvertimeBar: checked })}
-                />
-                <BooleanConfigToggle
-                  repository={configRepo}
                   label="Show total hours worked today"
-                  description="When enabled, the overtime bar, header badge, and taskbar display total hours worked today instead of time remaining. Useful if you prefer to track progress rather than countdown."
+                  description="When enabled, the header badge and taskbar display total hours worked today instead of time remaining. Useful if you prefer to track progress rather than countdown."
                   isChecked={(c) => c.showTotalWorked === true}
                   applyChange={(c, checked) => ({ ...c, showTotalWorked: checked })}
                 />

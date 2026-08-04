@@ -42,7 +42,6 @@ const appConfigFields = z.object({
   startMinimized: z.boolean().optional(),
   closeToTray: z.boolean().optional(),
   hotkeys: hotkeyConfigSchema.optional(),
-  showOvertimeBar: z.boolean().optional(),
   officeStats: z.boolean().optional(),
   showWorkedHoursInNav: z.boolean().optional(),
   showWorkedHoursInTray: z.boolean().optional(),

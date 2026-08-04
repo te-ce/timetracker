@@ -11,8 +11,8 @@ function wrapper({ children }: { children: React.ReactNode }) {
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
 }
 
-const isChecked = (config: AppConfig) => config.showOvertimeBar !== false
-const applyChange = (config: AppConfig, checked: boolean): AppConfig => ({ ...config, showOvertimeBar: checked })
+const isChecked = (config: AppConfig) => config.officeStats !== false
+const applyChange = (config: AppConfig, checked: boolean): AppConfig => ({ ...config, officeStats: checked })
 
 describe('BooleanConfigToggle', () => {
   it('renders a checkbox reflecting isChecked', async () => {
@@ -20,7 +20,7 @@ describe('BooleanConfigToggle', () => {
     render(
       <BooleanConfigToggle
         repository={repo}
-        label="Show overtime bar"
+        label="Show office stats"
         description="desc"
         isChecked={isChecked}
         applyChange={applyChange}
@@ -32,11 +32,11 @@ describe('BooleanConfigToggle', () => {
   })
 
   it('reflects a false config value as unchecked', async () => {
-    const repo = new InMemoryConfigRepository({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false })
+    const repo = new InMemoryConfigRepository({ ...DEFAULT_APP_CONFIG, officeStats: false })
     render(
       <BooleanConfigToggle
         repository={repo}
-        label="Show overtime bar"
+        label="Show office stats"
         description="desc"
         isChecked={isChecked}
         applyChange={applyChange}
@@ -52,7 +52,7 @@ describe('BooleanConfigToggle', () => {
     render(
       <BooleanConfigToggle
         repository={repo}
-        label="Show overtime bar"
+        label="Show office stats"
         description="desc"
         isChecked={isChecked}
         applyChange={applyChange}
@@ -62,7 +62,7 @@ describe('BooleanConfigToggle', () => {
     await userEvent.click(await screen.findByRole('checkbox'))
     await waitFor(async () => {
       const saved = await repo.get()
-      expect(saved.showOvertimeBar).toBe(false)
+      expect(saved.officeStats).toBe(false)
     })
   })
 
@@ -93,7 +93,7 @@ describe('BooleanConfigToggle', () => {
     render(
       <BooleanConfigToggle
         repository={repo}
-        label="Show overtime bar"
+        label="Show office stats"
         description="desc"
         isChecked={isChecked}
         applyChange={applyChange}

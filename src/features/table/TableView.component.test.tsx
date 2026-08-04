@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { deriveDayBalance, emptyDayBalance } from '../../shared/dayBalance'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
@@ -10,7 +10,7 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
-import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
+import { resolveAppConfig } from '../../shared/appConfigDefaults'
 import type { WorkPeriod } from '../../infra/repositories/types'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
@@ -116,15 +116,17 @@ describe('TableView', () => {
   })
 
   describe('OvertimeBar live window', () => {
-    it('shows current elapsed time when today has an open window', () => {
+    it('reflects the elapsed time when today has an open window', () => {
       stubSummariesWithLiveWindow('09:00')
       render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.getByText(/current/)).toBeInTheDocument()
+      expect(screen.getByText('3.00h')).toBeInTheDocument()
     })
 
-    it('does not show current elapsed time when no open window', () => {
+    it('shows nothing worked when no open window', () => {
       render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.queryByText(/current/)).not.toBeInTheDocument()
+      expect(screen.queryByText('3.00h')).not.toBeInTheDocument()
+      const bar = within(screen.getByRole('status'))
+      expect(bar.getByText('Today').nextElementSibling).toHaveTextContent('0.00h')
     })
   })
 
@@ -229,27 +231,6 @@ describe('TableView', () => {
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
       const data = await monthRepo.getMonth(2026, 6)
       expect(data['2026-06-05']?.windows).toHaveLength(1)
-    })
-  })
-
-  describe('OvertimeBar visibility', () => {
-    it('hides OvertimeBar when showOvertimeBar is false in config', () => {
-      vi.mocked(useMonthView).mockReturnValue({
-        ...emptyMonthView(),
-        config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, showOvertimeBar: false }),
-      })
-      render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    })
-
-    it('saves showOvertimeBar=false when hide button is clicked', async () => {
-      const configRepo = new InMemoryConfigRepository()
-      render(<TableView />, { wrapper: makeWrapper(undefined, configRepo) })
-      await userEvent.click(await screen.findByRole('button', { name: /hide overtime bar/i }))
-      await waitFor(async () => {
-        const saved = await configRepo.get()
-        expect(saved.showOvertimeBar).toBe(false)
-      })
     })
   })
 
