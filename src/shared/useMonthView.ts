@@ -82,6 +82,7 @@ export function buildMonthView(input: MonthViewInput) {
     sollstunden,
     priorOvertime: overtimeToDate.priorOvertime,
     now,
+    isToday: true,
     remainingTimeReference: config.remainingTimeReference,
     remainingTimeMode: config.remainingTimeMode,
   })

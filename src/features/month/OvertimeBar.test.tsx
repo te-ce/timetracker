@@ -24,6 +24,7 @@ function balance(options: BalanceOptions = {}): DayBalance {
     sollstunden: options.sollstunden ?? 8,
     priorOvertime: options.priorOvertime ?? 0,
     now: options.now ?? '12:00',
+    isToday: true,
     remainingTimeReference: options.remainingTimeReference ?? 'target-hours',
     remainingTimeMode: options.remainingTimeMode ?? 'until-zero-overtime',
   })

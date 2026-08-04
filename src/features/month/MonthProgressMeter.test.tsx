@@ -111,6 +111,7 @@ describe('MonthProgressMeter', () => {
         sollstunden: 8,
         priorOvertime: -3.5,
         now: '12:00',
+        isToday: true,
         remainingTimeReference: 'planned-stop',
         remainingTimeMode: 'until-zero-overtime',
       })

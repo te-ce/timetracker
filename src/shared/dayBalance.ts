@@ -14,6 +14,8 @@ export interface DayBalanceInput {
   sollstunden: number
   priorOvertime: number
   now: string
+  /** A planned stop only makes sense on today's day — past days already happened. */
+  isToday: boolean
   remainingTimeReference: 'planned-stop' | 'target-hours'
   remainingTimeMode: RemainingTimeMode
 }
@@ -47,13 +49,17 @@ export interface DayBalance {
  * elapsed back out of a total that already contained it, in two places, with
  * two different formulas.
  */
-function splitWorked(windows: WorkPeriod[], now: string): { closedWorked: number; liveElapsed: number } {
+function splitWorked(
+  windows: WorkPeriod[],
+  now: string,
+  isToday: boolean,
+): { closedWorked: number; liveElapsed: number } {
   let closedWorked = 0
   let liveElapsed = 0
   for (const w of windows) {
-    if (w.end === null || isPlannedStop(w, now)) {
+    if (isToday && (w.end === null || isPlannedStop(w, now))) {
       liveElapsed += elapsedHours(w.start, now, { raceToleranceMinutes: 5 })
-    } else {
+    } else if (w.end !== null) {
       closedWorked += elapsedHours(w.start, w.end, { raceToleranceMinutes: 5 })
     }
   }
@@ -66,19 +72,17 @@ function splitWorked(windows: WorkPeriod[], now: string): { closedWorked: number
  * for the nav badge, the overtime bar, the tray and the day view.
  */
 export function deriveDayBalance(input: DayBalanceInput): DayBalance {
-  const { windows, sollstunden, priorOvertime, now, remainingTimeReference, remainingTimeMode } = input
+  const { windows, sollstunden, priorOvertime, now, isToday, remainingTimeReference, remainingTimeMode } = input
 
-  const { closedWorked, liveElapsed } = splitWorked(windows, now)
+  const { closedWorked, liveElapsed } = splitWorked(windows, now, isToday)
   const worked = closedWorked + liveElapsed
 
-  const plannedStopPeriod = findPlannedStopPeriod(windows, now)
+  const plannedStopPeriod = isToday ? findPlannedStopPeriod(windows, now) : undefined
   const projectedWorked = plannedStopPeriod ? calculateProjectedWorkedHours(windows, now) : worked
 
-  const { isPlannedStopMode, plannedStopTime, countdownHours } = derivePlannedStopState(
-    windows,
-    now,
-    remainingTimeReference,
-  )
+  const { isPlannedStopMode, plannedStopTime, countdownHours } = isToday
+    ? derivePlannedStopState(windows, now, remainingTimeReference)
+    : { isPlannedStopMode: false, plannedStopTime: null, countdownHours: 0 }
 
   const { remaining, requiredToday } = calculateRemaining({
     sollstunden,
@@ -116,6 +120,7 @@ export function emptyDayBalance(sollstunden = 0, priorOvertime = 0): DayBalance 
     sollstunden,
     priorOvertime,
     now: '00:00',
+    isToday: true,
     remainingTimeReference: 'planned-stop',
     remainingTimeMode: 'until-zero-overtime',
   })

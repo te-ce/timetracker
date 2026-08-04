@@ -121,12 +121,14 @@ export function DayView() {
   const { customCategories, categoryOrder, categoryDescriptions } = config
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config.officeStats
-  const liveNow = useClock(hasLiveActivity(windows, nowHHMM()))
+  const isToday = selectedDate === todayIso
+  const liveNow = useClock(isToday && hasLiveActivity(windows, nowHHMM()))
   const viewedDayBalance = deriveDayBalance({
     windows,
     sollstunden,
     priorOvertime: overtimeToDate.priorOvertime,
     now: liveNow,
+    isToday,
     remainingTimeReference: config.remainingTimeReference,
     remainingTimeMode: config.remainingTimeMode,
   })

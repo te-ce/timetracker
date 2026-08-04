@@ -64,6 +64,7 @@ function stubSummariesWithLiveWindow(liveWindowStart: string): void {
     sollstunden: 8,
     priorOvertime: 0,
     now: '12:00',
+    isToday: true,
     remainingTimeReference: 'planned-stop',
     remainingTimeMode: 'until-zero-overtime',
   })

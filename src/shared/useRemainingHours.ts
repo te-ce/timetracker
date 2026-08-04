@@ -35,6 +35,7 @@ export function useRemainingHours() {
     sollstunden,
     priorOvertime: overtimeToDate.priorOvertime,
     now: currentNow,
+    isToday: true,
     remainingTimeReference: config.remainingTimeReference,
     remainingTimeMode: config.remainingTimeMode,
   })

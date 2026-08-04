@@ -14,6 +14,7 @@ function derive(overrides: Partial<DayBalanceInput> = {}) {
     sollstunden: 8,
     priorOvertime: 0,
     now: '12:00',
+    isToday: true,
     remainingTimeReference: 'target-hours',
     remainingTimeMode: 'until-zero-overtime',
     ...overrides,
@@ -89,6 +90,12 @@ describe('deriveDayBalance projection', () => {
   it('projectedRemaining subtracts carry-over and projected hours from the target', () => {
     const b = derive({ windows: [period('09:00', '15:00')], priorOvertime: 1 })
     expect(b.projectedRemaining).toBeCloseTo(1)
+  })
+
+  it('does not project a past day, even when a period end is later than the current wall-clock time', () => {
+    const b = derive({ windows: [period('09:00', '15:00')], now: '12:00', isToday: false })
+    expect(b.hasPlannedStop).toBe(false)
+    expect(b.projectedWorked).toBeCloseTo(b.worked)
   })
 })
 
