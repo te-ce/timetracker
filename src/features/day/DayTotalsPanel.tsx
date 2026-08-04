@@ -71,20 +71,33 @@ function BalanceRows({ balance, isLoading, timeFormat }: BalanceRowsProps) {
   )
 }
 
+interface ProjectedTotals {
+  isProjected: boolean
+  worked: number
+  atDesk: number
+}
+
+/** Once a planned stop exists, the worked/at-desk figures shown reflect the projected total rather than the elapsed one — matching the projection the remaining-hours row already uses. */
+function projectedTotals(stats: DayStats, balance: DayBalance | undefined): ProjectedTotals {
+  if (!balance?.hasPlannedStop) return { isProjected: false, worked: stats.worked, atDesk: stats.atDesk }
+  return { isProjected: true, worked: balance.projectedWorked, atDesk: balance.projectedWorked + stats.breakHours }
+}
+
 /** The numbers the day is judged by, kept on screen next to the timeline. */
 export function DayTotalsPanel({ stats, balance, isLoading = false }: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const largest = Math.max(0.01, ...stats.categoryTotals.map((t) => t.hours))
+  const { isProjected, worked: displayWorked, atDesk: displayAtDesk } = projectedTotals(stats, balance)
 
   return (
     <aside aria-label="Day totals" className="w-56 shrink-0">
       <div className="sticky top-2 flex flex-col gap-3 rounded-lg border p-3 dark:border-gray-700">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            Worked today
+            Worked today{isProjected && <span className="text-blue-500 dark:text-blue-400"> · projected</span>}
           </p>
           <p className="font-mono text-2xl font-semibold tabular-nums text-gray-800 dark:text-gray-100">
-            {formatHours(stats.worked, timeFormat)}
+            {formatHours(displayWorked, timeFormat)}
           </p>
           {balance && <BalanceRows balance={balance} isLoading={isLoading} timeFormat={timeFormat} />}
         </div>
@@ -128,7 +141,7 @@ export function DayTotalsPanel({ stats, balance, isLoading = false }: Props) {
           </div>
           <div className="flex justify-between">
             <dt className="text-gray-500 dark:text-gray-400">at desk</dt>
-            <dd className="font-mono tabular-nums">{formatHours(stats.atDesk, timeFormat)}</dd>
+            <dd className="font-mono tabular-nums">{formatHours(displayAtDesk, timeFormat)}</dd>
           </div>
         </dl>
       </div>
