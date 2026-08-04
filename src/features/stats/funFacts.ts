@@ -2,7 +2,7 @@ import { formatHours } from '../../shared/formatHours'
 import { formatSignedHours } from '../month/monthBalanceFormat'
 import { parseLocalDate } from '../../shared/dateUtils'
 import type { TimeFormat } from '../../shared/timeFormatStore'
-import { formatClock, type AllTimeStats } from './allTimeStats'
+import type { AllTimeStats } from './allTimeStats'
 
 export interface FunFact {
   id: string
@@ -120,36 +120,12 @@ function weekFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
     })
   }
 
-  if (weeks.avgHours > 0) {
-    facts.push({
-      id: 'avg-week',
-      icon: '📈',
-      text: `An average tracked week comes to ${formatHours(weeks.avgHours, format)}.`,
-    })
-  }
-
-  if (weeks.completeWeeks > 0) {
-    facts.push({
-      id: 'perfect-weeks',
-      icon: '💯',
-      text: `${weeks.perfectWeeks} of ${weeks.completeWeeks} finished ${plural(weeks.completeWeeks, 'week')} had every single workday tracked.`,
-    })
-  }
-
   return facts
 }
 
 function extremeFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
   const facts: FunFact[] = []
   const { extremes } = stats
-
-  if (extremes.medianDayHours > 0) {
-    facts.push({
-      id: 'median-day',
-      icon: '⚖️',
-      text: `Half your tracked days run longer than ${formatHours(extremes.medianDayHours, format)}.`,
-    })
-  }
 
   if (extremes.bestDayBalance && extremes.bestDayBalance.balance > 0) {
     facts.push({
@@ -189,22 +165,6 @@ function extremeFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
 function disciplineFacts(stats: AllTimeStats): FunFact[] {
   const facts: FunFact[] = []
   const { discipline } = stats
-
-  if (discipline.confirmedDays > 0) {
-    facts.push({
-      id: 'confirmed',
-      icon: '🔒',
-      text: `${discipline.confirmedPercent}% of your tracked days are confirmed (${discipline.confirmedDays} of ${stats.trackedDays}).`,
-    })
-  }
-
-  if (discipline.distinctCategories > 0) {
-    facts.push({
-      id: 'category-spread',
-      icon: '🗂️',
-      text: `You've booked time to ${discipline.distinctCategories} different ${plural(discipline.distinctCategories, 'category', 'categories')}, and ${discipline.singleCategoryDays} ${plural(discipline.singleCategoryDays, 'day')} ran on a single one.`,
-    })
-  }
 
   if (discipline.subtaskCount > 0) {
     facts.push({
@@ -248,22 +208,6 @@ function overviewFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
     text: `Your tracked time adds up to ${round1(stats.totalHours / 24)} full 24-hour days — ${round1(stats.totalHours / 40)} forty-hour work weeks.`,
   })
 
-  if (stats.longestStreak && stats.longestStreak.length > 1) {
-    facts.push({
-      id: 'longest-streak',
-      icon: '🔥',
-      text: `Longest run: ${stats.longestStreak.length} tracked workdays in a row, ${formatFactDate(stats.longestStreak.from)} → ${formatFactDate(stats.longestStreak.to)}.`,
-    })
-  }
-
-  if (stats.currentStreak > 1) {
-    facts.push({
-      id: 'current-streak',
-      icon: '⚡',
-      text: `You're on a ${stats.currentStreak}-workday streak right now.`,
-    })
-  }
-
   if (stats.busiestWeekday && stats.busiestWeekday.trackedDays > 0) {
     facts.push({
       id: 'busiest-weekday',
@@ -277,14 +221,6 @@ function overviewFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
       id: 'busiest-month',
       icon: '🏆',
       text: `Biggest month so far: ${stats.busiestMonth.label} with ${formatHours(stats.busiestMonth.hours, format)} over ${stats.busiestMonth.trackedDays} days.`,
-    })
-  }
-
-  if (stats.avgStartMinutes !== null && stats.avgEndMinutes !== null) {
-    facts.push({
-      id: 'rhythm',
-      icon: '🕰️',
-      text: `Your typical day runs ${formatClock(stats.avgStartMinutes)} → ${formatClock(stats.avgEndMinutes)}.`,
     })
   }
 
@@ -335,35 +271,11 @@ function recordFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
     })
   }
 
-  if (stats.trackedDays > 0) {
-    facts.push({
-      id: 'target-hit-rate',
-      icon: '✅',
-      text: `You hit or beat the daily target on ${Math.round((stats.daysAtOrOverTarget / stats.trackedDays) * 100)}% of tracked days.`,
-    })
-  }
-
-  if (stats.periodCount > 0) {
-    facts.push({
-      id: 'periods',
-      icon: '🧩',
-      text: `${stats.periodCount} work periods logged — ${round1(stats.avgPeriodsPerTrackedDay)} per tracked day.`,
-    })
-  }
-
   if (stats.daysWorkedOffSchedule > 0) {
     facts.push({
       id: 'off-schedule',
       icon: '🌙',
       text: `${stats.daysWorkedOffSchedule} day${stats.daysWorkedOffSchedule === 1 ? '' : 's'} tracked outside your normal schedule — weekends, holidays or leave.`,
-    })
-  }
-
-  if (stats.location.officeDays > 0) {
-    facts.push({
-      id: 'office-split',
-      icon: '🏢',
-      text: `${stats.location.officePercent}% of tracked days were in the office (${stats.location.officeDays} of ${stats.trackedDays}).`,
     })
   }
 
@@ -395,14 +307,6 @@ export function buildFunFacts(stats: AllTimeStats, format: TimeFormat): FunFact[
     ...extremeFacts(stats, format),
     ...disciplineFacts(stats),
   ]
-
-  if (stats.firstTrackedDate !== null && stats.calendarSpanDays > stats.trackedDays) {
-    facts.push({
-      id: 'coverage',
-      icon: '🗓️',
-      text: `You've tracked ${stats.trackedDays} of the ${stats.calendarSpanDays} calendar days since ${formatFactDate(stats.firstTrackedDate)}.`,
-    })
-  }
 
   return facts
 }

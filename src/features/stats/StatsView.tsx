@@ -2,7 +2,7 @@ import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
 import { balanceInk, formatSignedHours } from '../month/monthBalanceFormat'
 import { useAllTimeStats } from './useAllTimeStats'
-import { buildFunFacts, formatMinutes } from './funFacts'
+import { buildFunFacts, formatFactDate, formatMinutes } from './funFacts'
 import { StatBarList, type StatBarRow } from './StatBarList'
 import { formatClock, type AllTimeStats } from './allTimeStats'
 import type { TimeFormat } from '../../shared/timeFormatStore'
@@ -25,6 +25,12 @@ function HeadlineCard({
       {detail && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{detail}</p>}
     </div>
   )
+}
+
+/** "Usually 08:05 → 16:15" — the average tracked day's start and end. */
+function usualDayDetail(stats: AllTimeStats): string {
+  if (stats.avgStartMinutes === null || stats.avgEndMinutes === null) return 'Between periods on a tracked day'
+  return `Usually ${formatClock(stats.avgStartMinutes)} → ${formatClock(stats.avgEndMinutes)}`
 }
 
 function weekdayRows(stats: AllTimeStats, format: TimeFormat): StatBarRow[] {
@@ -88,7 +94,7 @@ export function StatsView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <section aria-label="All-time statistics" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section aria-label="All-time statistics" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <HeadlineCard
           label="Total tracked"
           value={formatHours(stats.totalHours, timeFormat)}
@@ -103,18 +109,17 @@ export function StatsView() {
         <HeadlineCard
           label="Average day"
           value={formatHours(stats.avgHoursPerTrackedDay, timeFormat)}
-          detail={
-            stats.avgStartMinutes !== null && stats.avgEndMinutes !== null
-              ? `${formatClock(stats.avgStartMinutes)} → ${formatClock(stats.avgEndMinutes)}`
-              : undefined
-          }
+          detail={`Median ${formatHours(stats.extremes.medianDayHours, timeFormat)}`}
         />
         <HeadlineCard
-          label="Current streak"
-          value={`${stats.currentStreak}`}
-          detail={
-            stats.longestStreak ? `Best: ${stats.longestStreak.length} workdays in a row` : 'Consecutive workdays'
-          }
+          label="Longest workday streak"
+          value={`${stats.longestStreak?.length ?? 0}`}
+          detail="Workdays in a row — broken by a vacation or sick day"
+        />
+        <HeadlineCard
+          label="Office share"
+          value={`${stats.location.officePercent}%`}
+          detail={`${stats.location.officeDays} of ${stats.trackedDays} tracked days`}
         />
       </section>
 
@@ -125,23 +130,19 @@ export function StatsView() {
           detail={stats.weeks.bestWeek?.label}
         />
         <HeadlineCard
-          label="Median day"
-          value={formatHours(stats.extremes.medianDayHours, timeFormat)}
-          detail={`Average week ${formatHours(stats.weeks.avgHours, timeFormat)}`}
+          label="Longest day"
+          value={stats.longestDay ? formatHours(stats.longestDay.hours, timeFormat) : '—'}
+          detail={stats.longestDay ? formatFactDate(stats.longestDay.date) : undefined}
         />
         <HeadlineCard
-          label="Perfect weeks"
-          value={`${stats.weeks.perfectWeeks}/${stats.weeks.completeWeeks}`}
-          detail="Finished weeks with every workday tracked"
+          label="Shortest day"
+          value={stats.shortestTrackedDay ? formatHours(stats.shortestTrackedDay.hours, timeFormat) : '—'}
+          detail={stats.shortestTrackedDay ? formatFactDate(stats.shortestTrackedDay.date) : undefined}
         />
         <HeadlineCard
           label="Typical break"
           value={formatMinutes(stats.breaks.avgMinutesPerDay)}
-          detail={
-            stats.rhythm.mostCommonStartSlot !== null
-              ? `Usual start ${stats.rhythm.mostCommonStartSlot}`
-              : 'Between periods on a tracked day'
-          }
+          detail={usualDayDetail(stats)}
         />
       </section>
 

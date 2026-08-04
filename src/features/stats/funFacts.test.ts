@@ -34,17 +34,6 @@ describe('buildFunFacts', () => {
     expect(textOf(WEEK, 'full-days')).toContain('full 24-hour days')
   })
 
-  it('reports the longest streak with its date range', () => {
-    expect(textOf(WEEK, 'longest-streak')).toBe(
-      'Longest run: 3 tracked workdays in a row, Mon, 6 Jul 2026 → Wed, 8 Jul 2026.',
-    )
-  })
-
-  it('omits the current-streak fact when the streak is a single day', () => {
-    const oneDay: MonthData = { '2026-07-06': WEEK['2026-07-06'] ?? { windows: [] } }
-    expect(textOf(oneDay, 'current-streak', '2026-07-06')).toBeUndefined()
-  })
-
   it('names the heaviest weekday with its average', () => {
     expect(textOf(WEEK, 'busiest-weekday')).toContain('Tuesday')
     expect(textOf(WEEK, 'busiest-weekday')).toContain('10.50h')
@@ -55,16 +44,8 @@ describe('buildFunFacts', () => {
     expect(textOf(WEEK, 'night-owl')).toBe('Latest finish ever: 17:45 on Tue, 7 Jul 2026.')
   })
 
-  it('reports the typical day as an average start and end', () => {
-    expect(textOf(WEEK, 'rhythm')).toBe('Your typical day runs 08:05 → 16:15.')
-  })
-
   it('names the top category with its share', () => {
     expect(textOf(WEEK, 'top-category')).toBe("_OTHER takes the biggest slice — 57% of everything you've tracked.")
-  })
-
-  it('reports the target hit rate over tracked days', () => {
-    expect(textOf(WEEK, 'target-hit-rate')).toBe('You hit or beat the daily target on 67% of tracked days.')
   })
 
   it('mentions off-schedule days only when some exist', () => {
@@ -76,27 +57,9 @@ describe('buildFunFacts', () => {
     expect(textOf(withSaturday, 'off-schedule')).toContain('1 day tracked outside your normal schedule')
   })
 
-  it('mentions the office split only when office days exist', () => {
-    expect(textOf(WEEK, 'office-split')).toBeUndefined()
-    const withOffice: MonthData = {
-      ...WEEK,
-      '2026-07-06': { ...WEEK['2026-07-06'], windows: WEEK['2026-07-06']?.windows ?? [], location: 'Office' },
-    }
-    expect(textOf(withOffice, 'office-split')).toContain('33% of tracked days were in the office')
-  })
-
   it('reports recorded time off', () => {
     const withLeave: MonthData = { ...WEEK, '2026-07-09': { windows: [], dayTypeOverride: 'Vacation' } }
     expect(textOf(withLeave, 'time-off')).toBe('Time off on record: 1 vacation day and 0 sick days.')
-  })
-
-  it('reports coverage once the tracked days are sparser than the calendar span', () => {
-    expect(textOf(WEEK, 'coverage')).toBeUndefined()
-    const withLaterDay: MonthData = {
-      ...WEEK,
-      '2026-07-15': { windows: [{ id: 'e', start: '08:00', end: '16:00', category: '_OTHER', subtasks: [] }] },
-    }
-    expect(textOf(withLaterDay, 'coverage')).toBe("You've tracked 4 of the 10 calendar days since Mon, 6 Jul 2026.")
   })
 })
 
@@ -161,18 +124,11 @@ describe('buildFunFacts rhythm and breaks', () => {
 })
 
 describe('buildFunFacts weeks and extremes', () => {
-  it('reports the biggest and average week', () => {
+  it('reports the biggest week', () => {
     expect(textOf(RICH, 'best-week')).toBe('Biggest week: Week 28, 2026 with 25.92h over 3 days.')
-    expect(textOf(RICH, 'avg-week')).toBe('An average tracked week comes to 25.92h.')
   })
 
-  it('reports the perfect-week ratio only once a week has finished', () => {
-    expect(textOf(RICH, 'perfect-weeks', '2026-07-08')).toBeUndefined()
-    expect(textOf(RICH, 'perfect-weeks')).toBe('0 of 3 finished weeks had every single workday tracked.')
-  })
-
-  it('reports the median day and the day extremes', () => {
-    expect(textOf(RICH, 'median-day')).toBe('Half your tracked days run longer than 8.50h.')
+  it('reports the day extremes', () => {
     expect(textOf(RICH, 'best-day-balance')).toBe('Biggest surplus in one day: +2.50h on Tue, 7 Jul 2026.')
     expect(textOf(RICH, 'worst-day-balance')).toBe('Biggest shortfall in one day: −1.08h on Wed, 8 Jul 2026.')
   })
@@ -192,11 +148,7 @@ describe('buildFunFacts weeks and extremes', () => {
 })
 
 describe('buildFunFacts discipline', () => {
-  it('reports confirmations, categories, subtasks and notes', () => {
-    expect(textOf(RICH, 'confirmed')).toBe('33% of your tracked days are confirmed (1 of 3).')
-    expect(textOf(RICH, 'category-spread')).toBe(
-      "You've booked time to 3 different categories, and 2 days ran on a single one.",
-    )
+  it('reports subtasks and notes', () => {
     expect(textOf(RICH, 'subtasks')).toBe('1 subtask carved out of your work periods.')
     expect(textOf(RICH, 'notes')).toBe('1 day carry a note.')
   })
@@ -204,5 +156,27 @@ describe('buildFunFacts discipline', () => {
   it('reports how long tracking has been going and the next milestone', () => {
     expect(textOf(RICH, 'tracking-since', '2026-07-10')).toBe("You've been tracking for 5 days, since Mon, 6 Jul 2026.")
     expect(textOf(RICH, 'next-milestone')).toBe('74.1h to go until 100 hours tracked.')
+  })
+})
+
+describe('buildFunFacts omissions', () => {
+  const REMOVED = [
+    'longest-streak',
+    'current-streak',
+    'rhythm',
+    'target-hit-rate',
+    'periods',
+    'office-split',
+    'coverage',
+    'perfect-weeks',
+    'avg-week',
+    'median-day',
+    'confirmed',
+    'category-spread',
+  ]
+
+  it('leaves the stats that moved to the headline cards out of the fact list', () => {
+    const ids = factsFor(RICH).map((f) => f.id)
+    for (const id of REMOVED) expect(ids).not.toContain(id)
   })
 })

@@ -118,22 +118,6 @@ describe('buildAllTimeStats', () => {
     expect(result.categories[1]?.percent).toBeCloseTo((9 / 23) * 100)
   })
 
-  it('counts periods and finds the longest unbroken stretch', () => {
-    const data: MonthData = {
-      '2026-07-01': { windows: [period('08:00', '10:00'), period('11:00', '17:00', '_SUPPORT')] },
-    }
-    const result = stats(months({ ym: '2026-07', data }))
-    expect(result.periodCount).toBe(2)
-    expect(result.avgPeriodsPerTrackedDay).toBe(2)
-    expect(result.longestPeriod).toEqual({
-      date: '2026-07-01',
-      hours: 6,
-      category: '_SUPPORT',
-      start: '11:00',
-      end: '17:00',
-    })
-  })
-
   it('skips weekends when measuring the longest streak', () => {
     const data: MonthData = {}
     // Mon 6th – Fri 10th and Mon 13th July 2026
@@ -142,6 +126,19 @@ describe('buildAllTimeStats', () => {
     }
     const result = stats(months({ ym: '2026-07', data }))
     expect(result.longestStreak).toEqual({ length: 6, from: '2026-07-06', to: '2026-07-13' })
+  })
+
+  it('breaks the streak on a vacation or sick day', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('08:00', '16:00')] },
+      '2026-07-07': { windows: [period('08:00', '16:00')] },
+      '2026-07-08': { windows: [], dayTypeOverride: 'Vacation' },
+      '2026-07-09': { windows: [period('08:00', '16:00')] },
+      '2026-07-10': { windows: [period('08:00', '16:00')] },
+      '2026-07-13': { windows: [period('08:00', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.longestStreak).toEqual({ length: 3, from: '2026-07-09', to: '2026-07-13' })
   })
 
   it('breaks the streak on an untracked workday', () => {
@@ -164,31 +161,6 @@ describe('buildAllTimeStats', () => {
     expect(result.longestStreak?.length).toBe(1)
   })
 
-  it('counts the current streak back from today', () => {
-    const data: MonthData = {
-      '2026-07-01': { windows: [period('08:00', '16:00')] },
-      '2026-07-02': { windows: [period('08:00', '16:00')] },
-      '2026-07-03': { windows: [period('08:00', '16:00')] },
-    }
-    const result = stats(months({ ym: '2026-07', data }), '2026-07-03')
-    expect(result.currentStreak).toBe(3)
-  })
-
-  it('keeps the current streak alive while today is still untracked', () => {
-    const data: MonthData = {
-      '2026-07-01': { windows: [period('08:00', '16:00')] },
-      '2026-07-02': { windows: [period('08:00', '16:00')] },
-    }
-    const result = stats(months({ ym: '2026-07', data }), '2026-07-03')
-    expect(result.currentStreak).toBe(2)
-  })
-
-  it('reports a zero current streak once a workday was missed', () => {
-    const data: MonthData = { '2026-07-01': { windows: [period('08:00', '16:00')] } }
-    const result = stats(months({ ym: '2026-07', data }), '2026-07-06')
-    expect(result.currentStreak).toBe(0)
-  })
-
   it('splits tracked days by office location', () => {
     const result = stats(months({ ym: '2026-07', data: JULY }))
     expect(result.location).toEqual({ officeDays: 1, remoteDays: 2, officePercent: 33 })
@@ -205,16 +177,6 @@ describe('buildAllTimeStats', () => {
     expect(result.vacationDays).toBe(1)
     expect(result.sickDays).toBe(1)
     expect(result.daysWorkedOffSchedule).toBe(1)
-  })
-
-  it('counts days that met or beat their target', () => {
-    const result = stats(months({ ym: '2026-07', data: JULY }))
-    expect(result.daysAtOrOverTarget).toBe(2)
-  })
-
-  it('measures the calendar span between the first and last tracked day', () => {
-    const result = stats(months({ ym: '2026-07', data: JULY }))
-    expect(result.calendarSpanDays).toBe(3)
   })
 
   it('caps an unclosed period on a past day at end of day rather than dropping it', () => {
@@ -237,6 +199,22 @@ describe('formatClock', () => {
   it('renders minutes after midnight as HH:MM', () => {
     expect(formatClock(0)).toBe('00:00')
     expect(formatClock(497.6)).toBe('08:18')
+  })
+})
+
+describe('buildAllTimeStats periods', () => {
+  it('finds the longest unbroken stretch', () => {
+    const data: MonthData = {
+      '2026-07-01': { windows: [period('08:00', '10:00'), period('11:00', '17:00', '_SUPPORT')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.longestPeriod).toEqual({
+      date: '2026-07-01',
+      hours: 6,
+      category: '_SUPPORT',
+      start: '11:00',
+      end: '17:00',
+    })
   })
 })
 
@@ -294,7 +272,7 @@ describe('buildAllTimeStats breaks', () => {
 })
 
 describe('buildAllTimeStats weeks', () => {
-  it('finds the biggest ISO week and the average week', () => {
+  it('finds the biggest ISO week', () => {
     const data: MonthData = {
       '2026-07-06': { windows: [period('08:00', '16:00')] },
       '2026-07-07': { windows: [period('08:00', '16:00')] },
@@ -303,33 +281,6 @@ describe('buildAllTimeStats weeks', () => {
     const result = stats(months({ ym: '2026-07', data }))
     expect(result.weeks.bestWeek).toMatchObject({ isoWeek: 28, isoYear: 2026, hours: 16, trackedDays: 2 })
     expect(result.weeks.bestWeek?.label).toBe('Week 28, 2026')
-    expect(result.weeks.avgHours).toBeCloseTo(10)
-  })
-
-  it('counts a finished week as perfect only when every workday was tracked', () => {
-    const data: MonthData = {}
-    for (const day of ['06', '07', '08', '09', '10']) {
-      data[`2026-07-${day}`] = { windows: [period('08:00', '16:00')] }
-    }
-    // Week 29 is fully stored and past, but Wednesday the 15th is missing.
-    for (const day of ['13', '14', '16', '17']) {
-      data[`2026-07-${day}`] = { windows: [period('08:00', '16:00')] }
-    }
-    const result = stats(months({ ym: '2026-07', data }), '2026-07-31')
-    expect(result.weeks.perfectWeeks).toBe(1)
-    // Weeks 28, 29 and 30 lie wholly inside July; week 30 was never tracked at all.
-    expect(result.weeks.completeWeeks).toBe(3)
-  })
-
-  it('ignores weeks that run past today or past the stored months', () => {
-    const data: MonthData = {}
-    for (const day of ['06', '07', '08', '09', '10']) {
-      data[`2026-07-${day}`] = { windows: [period('08:00', '16:00')] }
-    }
-    // Only July is stored, so weeks 27 and 31 are cut off by the month edges.
-    const result = stats(months({ ym: '2026-07', data }), '2026-07-12')
-    expect(result.weeks.completeWeeks).toBe(1)
-    expect(result.weeks.perfectWeeks).toBe(1)
   })
 })
 
@@ -374,7 +325,7 @@ describe('buildAllTimeStats extremes', () => {
 })
 
 describe('buildAllTimeStats discipline', () => {
-  it('counts confirmations, notes, subtasks and category spread', () => {
+  it('counts notes and subtasks', () => {
     const data: MonthData = {
       '2026-07-06': {
         windows: [
@@ -392,14 +343,7 @@ describe('buildAllTimeStats discipline', () => {
       '2026-07-07': { windows: [period('08:00', '16:00')] },
     }
     const result = stats(months({ ym: '2026-07', data }))
-    expect(result.discipline).toEqual({
-      confirmedDays: 1,
-      confirmedPercent: 50,
-      daysWithNotes: 1,
-      subtaskCount: 1,
-      distinctCategories: 3,
-      singleCategoryDays: 1,
-    })
+    expect(result.discipline).toEqual({ daysWithNotes: 1, subtaskCount: 1 })
   })
 
   it('ignores a note that is only whitespace', () => {

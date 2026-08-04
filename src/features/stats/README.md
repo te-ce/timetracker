@@ -5,10 +5,9 @@ StatsView — all-time statistics and fun facts over every month of tracked data
 ## Key concepts
 
 - **AllTimeStats** — one flat record of every figure the view shows, built by `buildAllTimeStats` from whole `MonthData` objects. Days with no tracked hours are excluded from totals, averages and the balance — the same "tracked days only" rule the month overtime math uses.
-- **Streaks** — a run of consecutive tracked WorkDays. Non-WorkDays (weekends, holidays, leave) neither extend nor break a run, so a normal Mon–Fri week reads as 5. A gap in stored months breaks a run; today counts only if it already has hours, so an untracked morning does not look like a broken streak.
+- **Longest workday streak** — the longest run of consecutive tracked WorkDays. Weekends and public holidays are skipped, so a normal Mon–Fri week reads as 5; vacation and sick days break the run, since the streak is about uninterrupted working days. A gap in stored months breaks it too.
 - **Fun facts** — the narrative layer over `AllTimeStats`. Each fact is dropped when the data can't support it, so a thin history shows fewer facts rather than facts about nothing.
-- **Stat families** — beyond the flat totals, `AllTimeStats` groups related figures: `rhythm` (usual start slot, start spread, early starts, late finishes), `breaks` (gaps between periods), `weeks` (biggest/average ISO week, perfect weeks), `extremes` (best/worst day balance, median day, weekend hours, longest absence) and `discipline` (confirmations, notes, subtasks, category spread).
-- **Perfect weeks** — only ISO weeks with all 7 days present in the loaded months and entirely in the past count. A week straddling a month that isn't stored would otherwise look untracked; a week still running would be judged early.
+- **Stat families** — beyond the flat totals, `AllTimeStats` groups related figures: `rhythm` (usual start slot, start spread, early starts, late finishes), `breaks` (gaps between periods), `weeks` (biggest ISO week), `extremes` (best/worst day balance, median day, weekend hours, longest absence) and `discipline` (notes, subtasks).
 
 ## Files
 
@@ -27,4 +26,5 @@ No `index.ts` barrel: nothing outside this feature imports from stats, and knip 
 1. `useAllTimeStats` reads `monthRepo.getAllMonths()` and fetches each month, cached under `QUERY_KEYS.allMonthsData`. Every month mutation invalidates that key via the `invalidateMonth*` helpers.
 2. `buildAllTimeStats` flattens the months into per-day facts through `deriveMonthDayCores` (shared with MonthView and TableView, so day classification and WorkedHours agree across views), then derives totals, records, weekday/category/month splits and streaks.
 3. `now` comes from `useClock`, ticking only while today has a live or planned-stop period — today's in-progress hours count toward the totals.
-4. `StatsView` formats numbers through `formatHours`/`formatSignedHours`, so the hh:mm ↔ decimal setting applies here too.
+4. Headline cards carry the general stats (total, balance, average day, longest workday streak, office share); a second row carries records (biggest week, longest and shortest day, typical break with the usual start → end). Everything else lands in the fun-facts list.
+5. `StatsView` formats numbers through `formatHours`/`formatSignedHours`, so the hh:mm ↔ decimal setting applies here too.

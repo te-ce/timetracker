@@ -67,11 +67,22 @@ describe('StatsView', () => {
     expect(headline.textContent).toContain('+0.50h')
   })
 
-  it('shows the current streak of tracked workdays', async () => {
+  it('shows the longest workday streak and the office share as general stats', async () => {
     render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
 
     const headline = await screen.findByRole('region', { name: /all-time statistics/i })
-    expect(headline.textContent).toContain('Best: 3 workdays in a row')
+    expect(headline.textContent).toContain('Longest workday streak')
+    expect(headline.textContent).toContain('broken by a vacation or sick day')
+    expect(headline.textContent).toContain('Office share')
+    expect(headline.textContent).toContain('33%')
+    expect(headline.textContent).toContain('1 of 3 tracked days')
+  })
+
+  it('folds the median day into the average-day card', async () => {
+    render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
+
+    const headline = await screen.findByRole('region', { name: /all-time statistics/i })
+    expect(headline.textContent).toContain('Median 8.00h')
   })
 
   it('breaks the hours down by weekday, category and month', async () => {
@@ -89,13 +100,16 @@ describe('StatsView', () => {
     expect(monthsRegion.textContent).toContain('July 2026')
   })
 
-  it('shows the records row with week, median-day and break figures', async () => {
+  it('shows the records row with week, longest and shortest day and break figures', async () => {
     render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
 
     const records = await screen.findByRole('region', { name: 'Records' })
     expect(records.textContent).toContain('Week 28, 2026')
-    expect(records.textContent).toContain('8.00h')
-    expect(records.textContent).toContain('Usual start 07:15')
+    expect(records.textContent).toContain('Longest day')
+    expect(records.textContent).toContain('10.50h')
+    expect(records.textContent).toContain('Shortest day')
+    expect(records.textContent).toContain('6.00h')
+    expect(records.textContent).toContain('Usually 08:05 → 16:15')
   })
 
   it('lists fun facts derived from the tracked data', async () => {
@@ -106,7 +120,6 @@ describe('StatsView', () => {
     expect(facts.textContent).toContain('Latest finish ever: 17:45')
     expect(facts.textContent).toContain('Tuesday is your heaviest day')
     expect(facts.textContent).toContain('to go until 100 hours tracked')
-    expect(facts.textContent).toContain('Half your tracked days run longer than')
   })
 
   it('lists the newest month first so recent history reads at the top', async () => {

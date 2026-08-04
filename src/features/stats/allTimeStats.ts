@@ -105,11 +105,6 @@ export interface WeekStat {
 
 export interface WeekStats {
   bestWeek: WeekStat | null
-  avgHours: number
-  /** Fully-stored past weeks where every WorkDay got tracked. */
-  perfectWeeks: number
-  /** Fully-stored past weeks with at least one WorkDay — what `perfectWeeks` is out of. */
-  completeWeeks: number
 }
 
 export interface ExtremeStats {
@@ -122,13 +117,8 @@ export interface ExtremeStats {
 }
 
 export interface DisciplineStats {
-  confirmedDays: number
-  confirmedPercent: number
   daysWithNotes: number
   subtaskCount: number
-  distinctCategories: number
-  /** Tracked days that ran entirely on one category. */
-  singleCategoryDays: number
 }
 
 export interface AllTimeStats {
@@ -154,11 +144,7 @@ export interface AllTimeStats {
   months: MonthStat[]
   busiestMonth: MonthStat | null
   categories: CategoryStat[]
-  periodCount: number
-  avgPeriodsPerTrackedDay: number
   longestPeriod: PeriodRecord | null
-  /** Tracked WorkDays in a row ending at (or just before) today. */
-  currentStreak: number
   longestStreak: StreakStat | null
   location: LocationStats
   rhythm: RhythmStats
@@ -176,10 +162,9 @@ export interface AllTimeStats {
   sickDays: number
   /** Days tracked that were not WorkDays — weekends, holidays, leave. */
   daysWorkedOffSchedule: number
-  daysAtOrOverTarget: number
-  /** Calendar span from the first to the last tracked day, in days (inclusive). */
-  calendarSpanDays: number
 }
+
+const LEAVE_DAY_TYPES = new Set<DayType>(['Vacation', 'SickDay'])
 
 const WEEKDAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 const MONTH_LABELS = [
@@ -327,9 +312,10 @@ function longestPeriodOf(months: StatsMonth[]): PeriodRecord | null {
 }
 
 /**
- * Longest run of consecutive tracked WorkDays. Non-WorkDays (weekends,
- * holidays, leave) neither extend nor break a run — they are skipped — so a
- * normal Mon–Fri week reads as a 5-day streak, and two of them as 10.
+ * Longest run of consecutive tracked WorkDays. Weekends and public holidays are
+ * skipped — they neither extend nor break a run — so a normal Mon–Fri week
+ * reads as a 5-day streak and two of them as 10. Vacation and sick days do
+ * break it: the point of the streak is uninterrupted working days.
  */
 function computeLongestStreak(days: DayFacts[]): StreakStat | null {
   let best: StreakStat | null = null
@@ -339,6 +325,10 @@ function computeLongestStreak(days: DayFacts[]): StreakStat | null {
 
   for (const day of days) {
     if (day.afterGap) length = 0
+    if (LEAVE_DAY_TYPES.has(day.dayType)) {
+      length = 0
+      continue
+    }
     if (day.dayType !== 'WorkDay') continue
     if (day.hours > 0) {
       if (length === 0) from = day.date
@@ -351,28 +341,6 @@ function computeLongestStreak(days: DayFacts[]): StreakStat | null {
   }
 
   return best
-}
-
-/**
- * Tracked WorkDays in a row up to today. Today counts when it has hours and is
- * skipped when it does not — an untracked morning should not read as a broken
- * streak.
- */
-function computeCurrentStreak(days: DayFacts[], today: string): number {
-  let streak = 0
-  for (let i = days.length - 1; i >= 0; i--) {
-    const day = days[i]
-    if (day === undefined || day.date > today) continue
-    if (day.date === today && day.hours === 0) continue
-    if (day.dayType !== 'WorkDay') {
-      if (day.afterGap) break
-      continue
-    }
-    if (day.hours === 0) break
-    streak++
-    if (day.afterGap) break
-  }
-  return streak
 }
 
 function buildWeekdayStats(trackedDays: DayFacts[]): WeekdayStat[] {
@@ -475,7 +443,7 @@ function buildBreakStats(tracked: DayFacts[]): BreakStats {
   }
 }
 
-function buildWeekStats(days: DayFacts[], today: string): WeekStats {
+function buildWeekStats(days: DayFacts[]): WeekStats {
   const byWeek = new Map<string, DayFacts[]>()
   for (const day of days) {
     const key = `${isoWeekYearOf(day.date)}-${String(isoWeekOf(day.date)).padStart(2, '0')}`
@@ -485,8 +453,6 @@ function buildWeekStats(days: DayFacts[], today: string): WeekStats {
   }
 
   const weeks: WeekStat[] = []
-  let perfectWeeks = 0
-  let completeWeeks = 0
   for (const [key, weekDays] of byWeek) {
     const hours = weekDays.reduce((sum, d) => sum + d.hours, 0)
     const isoYear = parseInt(key.slice(0, 4))
@@ -500,21 +466,9 @@ function buildWeekStats(days: DayFacts[], today: string): WeekStats {
         trackedDays: weekDays.filter((d) => d.hours > 0).length,
       })
     }
-    // A week split across a month that isn't stored would look untracked, so
-    // only whole weeks that are entirely in the past count toward "perfect".
-    const workDays = weekDays.filter((d) => d.dayType === 'WorkDay')
-    if (weekDays.length !== 7 || workDays.length === 0) continue
-    if (weekDays.some((d) => d.date > today)) continue
-    completeWeeks++
-    if (workDays.every((d) => d.hours > 0)) perfectWeeks++
   }
 
-  return {
-    bestWeek: [...weeks].sort((a, b) => b.hours - a.hours)[0] ?? null,
-    avgHours: mean(weeks.map((w) => w.hours)) ?? 0,
-    perfectWeeks,
-    completeWeeks,
-  }
+  return { bestWeek: [...weeks].sort((a, b) => b.hours - a.hours)[0] ?? null }
 }
 
 /** Longest run of past WorkDays with nothing tracked — the longest stretch away. */
@@ -555,22 +509,10 @@ function buildExtremeStats(days: DayFacts[], tracked: DayFacts[], today: string)
   }
 }
 
-function buildDisciplineStats(days: DayFacts[], tracked: DayFacts[]): DisciplineStats {
-  const categoriesOf = (day: DayFacts) =>
-    Object.entries(day.categoryHours).filter(([cat, h]) => cat !== UNCATEGORIZED_CATEGORY && h > 0.001)
-  const distinct = new Set<string>()
-  for (const day of tracked) {
-    for (const [cat] of categoriesOf(day)) distinct.add(cat)
-  }
-  const confirmedDays = days.filter((d) => d.confirmed).length
-
+function buildDisciplineStats(days: DayFacts[]): DisciplineStats {
   return {
-    confirmedDays,
-    confirmedPercent: tracked.length > 0 ? Math.round((confirmedDays / tracked.length) * 100) : 0,
     daysWithNotes: days.filter((d) => d.hasNote).length,
     subtaskCount: days.reduce((sum, d) => sum + d.subtaskCount, 0),
-    distinctCategories: distinct.size,
-    singleCategoryDays: tracked.filter((d) => categoriesOf(d).length === 1).length,
   }
 }
 
@@ -646,11 +588,7 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
     months,
     busiestMonth,
     categories: buildCategoryStats(tracked),
-    periodCount: tracked.reduce((sum, d) => sum + d.periodCount, 0),
-    avgPeriodsPerTrackedDay:
-      tracked.length > 0 ? tracked.reduce((sum, d) => sum + d.periodCount, 0) / tracked.length : 0,
     longestPeriod: longestPeriodOf(input.months),
-    currentStreak: computeCurrentStreak(days, input.today),
     longestStreak: computeLongestStreak(days),
     location: {
       officeDays,
@@ -659,19 +597,14 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
     },
     rhythm: buildRhythmStats(tracked),
     breaks: buildBreakStats(tracked),
-    weeks: buildWeekStats(days, input.today),
+    weeks: buildWeekStats(days),
     extremes: buildExtremeStats(days, tracked, input.today),
-    discipline: buildDisciplineStats(days, tracked),
+    discipline: buildDisciplineStats(days),
     hoursToNextMilestone: nextMilestoneAbove(totalHours) - totalHours,
     nextMilestone: nextMilestoneAbove(totalHours),
     trackingSinceDays: firstTrackedDate !== null ? inclusiveDaysBetween(firstTrackedDate, input.today) : 0,
     vacationDays: days.filter((d) => d.dayType === 'Vacation').length,
     sickDays: days.filter((d) => d.dayType === 'SickDay').length,
     daysWorkedOffSchedule: tracked.filter((d) => d.dayType !== 'WorkDay').length,
-    daysAtOrOverTarget: tracked.filter((d) => d.targetHours > 0 && d.hours >= d.targetHours).length,
-    calendarSpanDays:
-      firstTrackedDate !== null && lastTrackedDate !== null
-        ? inclusiveDaysBetween(firstTrackedDate, lastTrackedDate)
-        : 0,
   }
 }
