@@ -816,7 +816,7 @@ function App() {
         if (matchesShortcut(hotkeyConfig, 'monthView', e.key, ctrl, shift)) {
           void navigate({ to: '/month', search: defaultMonthSearch })
         } else if (matchesShortcut(hotkeyConfig, 'tableView', e.key, ctrl, shift)) {
-          void navigate({ to: '/table', search: { ...defaultMonthSearch, expanded: false, logDate: undefined } })
+          void navigate({ to: '/table', search: { ...defaultMonthSearch, logDate: undefined } })
         } else if (matchesShortcut(hotkeyConfig, 'dayView', e.key, ctrl, shift)) {
           void navigate({ to: '/', search: { date: toLocalIso(new Date()) } })
         } else if (matchesShortcut(hotkeyConfig, 'sprintView', e.key, ctrl, shift)) {

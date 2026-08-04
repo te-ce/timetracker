@@ -13,14 +13,6 @@ import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
-// PROTOTYPE — table-UX variants; delete these imports with src/prototypes/table-ux/.
-import { TableUxSwitcher, isTableVariantKey } from '../../prototypes/table-ux/TableUxSwitcher'
-import { VariantA } from '../../prototypes/table-ux/VariantA'
-import { VariantB } from '../../prototypes/table-ux/VariantB'
-import { VariantC } from '../../prototypes/table-ux/VariantC'
-import { VariantD } from '../../prototypes/table-ux/VariantD'
-import { VariantE } from '../../prototypes/table-ux/VariantE'
-import { VariantF } from '../../prototypes/table-ux/VariantF'
 
 async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
   const cfg = await configRepo.get()
@@ -88,10 +80,7 @@ export function TableView() {
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [clearDayDate, setClearDayDate] = useState<string | null>(null)
-  const [expanded, setExpanded] = useState(search.expanded)
-  const [logSignal, setLogSignal] = useState(0)
-  // Consume the deep-link logDate once; clearing it stops the dialog from
-  // reopening when MonthGrid remounts on every fullscreen toggle.
+  // Consume the deep-link logDate once so the dialog only opens on arrival.
   const [pendingLogDate, setPendingLogDate] = useState(search.logDate)
   useEffect(() => {
     if (pendingLogDate) setPendingLogDate(undefined)
@@ -119,13 +108,9 @@ export function TableView() {
 
   const showOfficeStats = config.officeStats
 
-  // PROTOTYPE — table-UX variants (src/prototypes/table-ux/). Remove with the prototype.
-  const variant = isTableVariantKey(search.tableVariant) ? search.tableVariant : 'live'
-
-  const liveTable = (
+  const table = (
     <MonthGrid
       view={view}
-      expanded={expanded}
       repository={monthRepo}
       showOfficeStats={showOfficeStats}
       onCategoryReorder={(order) => categoryReorderMutation.mutate(order)}
@@ -135,43 +120,7 @@ export function TableView() {
       onSelectDate={(date) => void navigate({ to: '/', search: { date } })}
       onClearDay={(date) => setClearDayDate(date)}
       initialLogDate={pendingLogDate}
-      openLogSignal={logSignal}
     />
-  )
-
-  const table = (
-    <>
-      {variant === 'live' && liveTable}
-      {variant === 'D' && <VariantD view={view} />}
-      {variant === 'E' && <VariantE view={view} />}
-      {variant === 'F' && <VariantF view={view} />}
-      {variant === 'A' && <VariantA view={view} repository={monthRepo} />}
-      {variant === 'B' && <VariantB view={view} repository={monthRepo} />}
-      {variant === 'C' && <VariantC view={view} repository={monthRepo} />}
-      <TableUxSwitcher current={variant} />
-    </>
-  )
-
-  const logWorkBtn = (
-    <button
-      type="button"
-      onClick={() => setLogSignal((n) => n + 1)}
-      className="rounded border px-2 py-1 text-xs text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-    >
-      Log work
-    </button>
-  )
-
-  const expandBtn = (
-    <button
-      type="button"
-      onClick={() => setExpanded((e) => !e)}
-      aria-label={expanded ? 'Collapse table' : 'Expand table'}
-      aria-pressed={expanded}
-      className="rounded border px-2 py-1 text-xs text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-    >
-      {expanded ? '↙' : '↗'}
-    </button>
   )
 
   const footer = (
@@ -221,23 +170,6 @@ export function TableView() {
     </>
   )
 
-  if (expanded) {
-    return (
-      <div data-testid="table-overlay" className="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 shrink-0">
-          <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} compact />
-          <div className="flex items-center gap-2">
-            {logWorkBtn}
-            {expandBtn}
-          </div>
-        </div>
-        <div className="flex-1 min-h-0 px-4 py-2">{table}</div>
-        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 shrink-0">{footer}</div>
-        {dialogs}
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <MonthNav year={year} month={month - 1} onMonthChange={onMonthChange} />
@@ -247,10 +179,6 @@ export function TableView() {
         todayBalance={todayBalance}
         isTodayLoading={!isOvertimeReady}
       />
-      <div className="flex justify-end gap-2">
-        {logWorkBtn}
-        {expandBtn}
-      </div>
       {table}
       {footer}
       {dialogs}

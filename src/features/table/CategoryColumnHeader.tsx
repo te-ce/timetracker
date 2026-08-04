@@ -1,4 +1,5 @@
 import { Tooltip } from '../../shared/Tooltip'
+import { colorForCategory } from './catColors'
 
 export interface ColumnDragHandlers {
   onDragStart: (idx: number) => void
@@ -10,6 +11,7 @@ export interface ColumnDragHandlers {
 export interface CategoryColumnHeaderProps {
   cat: string
   catIdx: number
+  allCategories: string[]
   autoCategory: string
   editingCat: string | null
   editValue: string
@@ -22,6 +24,10 @@ export interface CategoryColumnHeaderProps {
   onEditValueChange: (v: string) => void
   onCommitRename: (cat: string) => void
   onSetEditingCat: (cat: string | null) => void
+}
+
+function displayCategoryName(cat: string): string {
+  return cat.replace(/^_/, '')
 }
 
 function CategoryBadge({
@@ -59,6 +65,7 @@ function CategoryBadge({
 export function CategoryColumnHeader({
   cat,
   catIdx,
+  allCategories,
   autoCategory,
   editingCat,
   editValue,
@@ -77,10 +84,11 @@ export function CategoryColumnHeader({
   const dragClass = onCategoryReorder ? 'cursor-grab active:cursor-grabbing' : ''
   const dragOverClass =
     colDragOverIdx === catIdx ? 'ring-2 ring-inset ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/40' : ''
-  const nameClass = `block truncate text-xs ${onCategoryRename ? 'cursor-text' : ''}`
+  const color = colorForCategory(cat, allCategories)
+  const nameClass = `block truncate text-[11px] ${color.text} ${onCategoryRename ? 'cursor-text' : ''}`
   const tooltipContent = (
     <div>
-      <p className="font-semibold">{cat}</p>
+      <p className="font-semibold">{displayCategoryName(cat)}</p>
       {isAuto && <p className="mt-1 text-gray-300">auto category — absorbs remaining hours</p>}
       {description && <p className="mt-1 text-gray-300">{description}</p>}
       {onCategoryRename && <p className="mt-1.5 text-gray-400 text-[10px]">Double-click to rename</p>}
@@ -116,7 +124,7 @@ export function CategoryColumnHeader({
       onDragOver={(e) => dragHandlers.onDragOver(e, catIdx)}
       onDrop={() => dragHandlers.onDrop(catIdx)}
       onDragEnd={dragHandlers.onDragEnd}
-      className={`px-1 py-1.5 text-center w-16 min-w-[4rem] max-w-[4rem] border-b dark:border-gray-700 select-none ${dragClass} ${dragOverClass}`}
+      className={`px-1 py-1 text-right w-14 min-w-[3.5rem] max-w-[3.5rem] border-b dark:border-gray-700 select-none ${catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''} ${dragClass} ${dragOverClass}`}
     >
       {editingCat === cat ? (
         <input
@@ -146,11 +154,11 @@ export function CategoryColumnHeader({
               }
             }}
           >
-            {cat}
+            {displayCategoryName(cat)}
           </span>
         </Tooltip>
       )}
-      <span aria-hidden="true" className="flex justify-center items-center h-[13px] mt-0.5">
+      <span aria-hidden="true" className="flex justify-end items-center h-[13px] mt-0.5">
         <CategoryBadge cat={cat} isAuto={isAuto} onAutoCategoryChange={onAutoCategoryChange} />
       </span>
     </th>

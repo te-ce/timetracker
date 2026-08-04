@@ -20,7 +20,7 @@ vi.mock('../../infra/auth/msalInstance', () => ({
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
-  useSearch: () => ({ expanded: false }),
+  useSearch: () => ({}),
 }))
 
 vi.mock('../../shared/useMonthView', async (importOriginal) => ({
@@ -29,22 +29,10 @@ vi.mock('../../shared/useMonthView', async (importOriginal) => ({
 }))
 
 vi.mock('./MonthTable', () => ({
-  MonthGrid: ({
-    onClearDay,
-    expanded,
-    openLogSignal,
-  }: {
-    onClearDay?: (date: string) => void
-    expanded?: boolean
-    openLogSignal?: number
-  }) =>
+  MonthGrid: ({ onClearDay }: { onClearDay?: (date: string) => void }) =>
     createElement(
       'div',
-      {
-        'data-testid': 'month-table',
-        'data-expanded': String(expanded ?? false),
-        'data-log-signal': String(openLogSignal ?? 0),
-      },
+      { 'data-testid': 'month-table' },
       onClearDay
         ? createElement('button', { onClick: () => onClearDay('2026-06-05'), 'aria-label': 'trigger-clear-day' }, '×')
         : null,
@@ -153,51 +141,6 @@ describe('TableView', () => {
     })
   })
 
-  describe('grid expand toggle', () => {
-    it('renders an expand button', () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.getByRole('button', { name: /expand table/i })).toBeInTheDocument()
-    })
-
-    it('grid starts collapsed (expanded=false)', () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.getByTestId('month-table').dataset.expanded).toBe('false')
-    })
-
-    it('clicking expand passes expanded=true to grid', async () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
-      expect(screen.getByTestId('month-table').dataset.expanded).toBe('true')
-    })
-
-    it('clicking expand again collapses grid', async () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
-      await userEvent.click(screen.getByRole('button', { name: /collapse table/i }))
-      expect(screen.getByTestId('month-table').dataset.expanded).toBe('false')
-    })
-
-    it('shows overlay container when expanded', async () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
-      expect(screen.getByTestId('table-overlay')).toBeInTheDocument()
-    })
-
-    it('hides OvertimeBar when expanded', async () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.getByRole('status')).toBeInTheDocument()
-      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    })
-
-    it('removes overlay when collapsed', async () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
-      await userEvent.click(screen.getByRole('button', { name: /collapse table/i }))
-      expect(screen.queryByTestId('table-overlay')).not.toBeInTheDocument()
-    })
-  })
-
   describe('clear day', () => {
     it('clicking X in grid shows confirm dialog', async () => {
       render(<TableView />, { wrapper: makeWrapper() })
@@ -231,20 +174,6 @@ describe('TableView', () => {
       await userEvent.click(screen.getByRole('button', { name: /cancel/i }))
       const data = await monthRepo.getMonth(2026, 6)
       expect(data['2026-06-05']?.windows).toHaveLength(1)
-    })
-  })
-
-  describe('Log work button', () => {
-    it('renders a Log work button', () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.getByRole('button', { name: /log work/i })).toBeInTheDocument()
-    })
-
-    it('increments openLogSignal passed to the grid when clicked', async () => {
-      render(<TableView />, { wrapper: makeWrapper() })
-      expect(screen.getByTestId('month-table').getAttribute('data-log-signal')).toBe('0')
-      await userEvent.click(screen.getByRole('button', { name: /log work/i }))
-      expect(screen.getByTestId('month-table').getAttribute('data-log-signal')).toBe('1')
     })
   })
 })

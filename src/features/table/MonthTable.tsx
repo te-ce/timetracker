@@ -14,7 +14,7 @@ import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
 import type { MonthTableRow } from './buildMonthTable'
 import type { MonthView } from '../../shared/useMonthView'
-import { STATUS_DOT, STATUS_ROW_BG, type DisplayStatus } from '../../shared/statusColors'
+import { STATUS_DOT } from '../../shared/statusColors'
 import { targetHoursForDate } from '../../shared/weekdayHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
@@ -24,19 +24,10 @@ import { DaySummaryBody } from '../../shared/DaySummaryBody'
 import { resolveAutoCategory } from '../../shared/autoCategory'
 import { useMonthGridMutations } from './useMonthGridMutations'
 import { useDragReorder } from '../../shared/reorder'
+import { dayDelta } from './dayDelta'
+import { balanceBarStyle, balanceScale } from './barStyles'
 
-const TODAY_ROW_BG: [string, string] = ['bg-amber-100 dark:bg-amber-900/40', 'bg-amber-100 dark:bg-amber-900/40']
-
-// Rows read as a ledger: neutral zebra carries the eye across 12+ category columns, and colour is
-// spent only where it means "look here". Complete days stay uncoloured — the dot already says so
-// — while the statuses that need action keep their tint.
-const NEUTRAL_ROW_BG: [string, string] = ['bg-white dark:bg-gray-900', 'bg-gray-50/70 dark:bg-gray-800/40']
-
-function rowBackgroundPair(status: DisplayStatus, isToday: boolean): [string, string] {
-  if (isToday) return TODAY_ROW_BG
-  if (status === 'needs-review' || status === 'leave') return STATUS_ROW_BG[status]
-  return NEUTRAL_ROW_BG
-}
+const STICKY_BG = 'bg-white dark:bg-gray-900'
 
 function isMonday(isoDate: string): boolean {
   return new Date(isoDate + 'T12:00').getDay() === 1
@@ -62,10 +53,8 @@ function classifyRow(row: MonthTableRow, today: string) {
 interface Props {
   view: MonthView
   repository: MonthRepository
-  expanded?: boolean | undefined
   showOfficeStats?: boolean | undefined
   initialLogDate?: string | undefined
-  openLogSignal?: number | undefined
   onCategoryReorder?: ((order: string[]) => void) | undefined
   onCategoryRename?: ((oldName: string, newName: string) => void) | undefined
   onAutoCategoryChange?: ((category: string) => void) | undefined
@@ -82,7 +71,7 @@ function ClearColumnHeader({ visible }: { visible: boolean }) {
   if (!visible) return null
   return (
     <th
-      className="px-1 py-1.5 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700"
+      className="px-1 py-1 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700"
       data-tooltip="Clear all data for this day"
     >
       <span className="sr-only">Clear day</span>
@@ -102,7 +91,7 @@ function ClearCell({ date, onClearDay }: { date: string; onClearDay?: ((date: st
       <button
         type="button"
         onClick={() => onClearDay(date)}
-        className="w-full py-1 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded"
+        className="w-full py-[3px] text-[10px] text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded"
         aria-label={`Clear ${date}`}
         data-tooltip="Clear all data for this day"
       >
@@ -112,23 +101,11 @@ function ClearCell({ date, onClearDay }: { date: string; onClearDay?: ((date: st
   )
 }
 
-function outerContainerClass(expanded: boolean | undefined): string {
-  if (expanded) return 'flex flex-col h-full'
-  return 'flex flex-col gap-2'
-}
-
-function scrollContainerClass(expanded: boolean | undefined): string {
-  if (expanded) return 'overflow-x-auto flex-1 min-h-0 overflow-y-auto relative'
-  return 'overflow-x-auto max-h-[75vh] overflow-y-auto relative'
-}
-
 export function MonthGrid({
   view,
   repository,
-  expanded,
   showOfficeStats = true,
   initialLogDate,
-  openLogSignal,
   onCategoryReorder,
   onCategoryRename,
   onAutoCategoryChange,
@@ -172,13 +149,6 @@ export function MonthGrid({
     setActiveDialogCategory(null)
   }
 
-  const [seenLogSignal, setSeenLogSignal] = useState(openLogSignal)
-  if (openLogSignal !== seenLogSignal) {
-    setSeenLogSignal(openLogSignal)
-    setActiveDialogDate(todayIso)
-    setActiveDialogCategory(null)
-  }
-
   useEffect(() => {
     if (!activeDialogDate) return
     function handleMouseDown(e: MouseEvent) {
@@ -198,11 +168,12 @@ export function MonthGrid({
   }, [activeDialogDate])
 
   const renderDayCell = useCallback(
-    (date: string, dayLabel: string, rowBg: string) => {
+    (date: string, dayLabel: string, isToday: boolean) => {
+      const boldClass = isToday ? 'font-bold' : ''
       if (onSelectDate) {
         return (
           <td
-            className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline ${rowBg}`}
+            className={`sticky left-0 z-10 ${STICKY_BG} px-1.5 py-[3px] font-mono text-[11px] ${boldClass} cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline`}
             onClick={() => onSelectDate(date)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
@@ -222,7 +193,7 @@ export function MonthGrid({
         )
       }
       return (
-        <td className={`sticky left-0 z-10 px-2 py-1 font-mono text-xs ${rowBg}`}>
+        <td className={`sticky left-0 z-10 ${STICKY_BG} px-1.5 py-[3px] font-mono text-[11px] ${boldClass}`}>
           <Tooltip content={date}>
             <span data-testid="day-link" className="inline-flex items-center">
               {date.slice(8)}
@@ -306,51 +277,47 @@ export function MonthGrid({
 
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, resolveSprintStart(sprintStartDate, year), sprintLengthDays)
+  const balScale = balanceScale(rows.map((row) => row.accumulatedOvertime))
 
-  // day + status + worked + overtime + location + separator + categories + note + (clear?)
+  // day + status + worked + day ± + balance + categories + location + note + (clear?)
   const colCount = allCategories.length + 7 + Number(!!onClearDay)
 
-  let globalRowIdx = 0
-
   return (
-    <div className={outerContainerClass(expanded)}>
-      <div data-testid="table-scroll-container" className={scrollContainerClass(expanded)}>
+    <div className="flex flex-col gap-2">
+      <div data-testid="table-scroll-container" className="overflow-x-auto relative">
         <table className="w-full text-sm border-collapse">
           <thead className="sticky top-0 z-20 bg-white dark:bg-gray-800 shadow-sm">
-            <tr>
-              <th className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-left w-12 border-b dark:border-gray-700 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <tr className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <th className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-1.5 py-1 text-left w-[3.6rem] border-b dark:border-gray-700">
                 Day
               </th>
               <th
-                className="sticky left-12 z-30 bg-white dark:bg-gray-800 px-1 py-1.5 w-5 border-b dark:border-gray-700"
+                className="sticky left-[3.6rem] z-30 bg-white dark:bg-gray-800 px-1 py-1 w-5 border-b dark:border-gray-700"
                 data-tooltip="Day status — click to change day type"
               >
                 <span className="sr-only">Status</span>
               </th>
-              <th className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1.5 text-right w-16 border-b dark:border-gray-700 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <th className="sticky left-[4.6rem] z-30 bg-white dark:bg-gray-800 px-1.5 py-1 text-right w-14 border-b dark:border-gray-700">
                 Worked
               </th>
               <th
-                className="px-1.5 py-1.5 text-right w-16 border-b border-l border-gray-200 dark:border-gray-700 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                className="px-1.5 py-1 text-right w-12 border-b border-gray-200 dark:border-gray-700"
+                data-tooltip="Worked minus target for this day"
+              >
+                Day ±
+              </th>
+              <th
+                className="px-1.5 py-1 text-right w-16 border-b border-r border-gray-200 dark:border-gray-700"
                 data-tooltip="Accumulated over/undertime up to this date"
               >
-                ±
+                Balance
               </th>
-              {showOfficeStats && (
-                <th
-                  className="px-1 py-1.5 text-center w-10 border-b dark:border-gray-700 text-xs border-l border-gray-200 dark:border-l-gray-700"
-                  data-tooltip="Work location — click to toggle Office / Remote"
-                >
-                  <span aria-hidden="true">📍</span>
-                  <span className="sr-only">Location</span>
-                </th>
-              )}
-              <th className="w-px border-l border-b border-gray-300 dark:border-gray-600"></th>
               {allCategories.map((cat, catIdx) => (
                 <CategoryColumnHeader
                   key={cat}
                   cat={cat}
                   catIdx={catIdx}
+                  allCategories={allCategories}
                   autoCategory={autoCategory ?? ''}
                   editingCat={editingCat}
                   editValue={editValue}
@@ -365,14 +332,20 @@ export function MonthGrid({
                   onSetEditingCat={setEditingCat}
                 />
               ))}
+              {showOfficeStats && (
+                <th
+                  className="px-1 py-1 text-center w-6 border-b border-l border-gray-200 dark:border-gray-700"
+                  data-tooltip="Work location — click to toggle Office / Remote"
+                >
+                  <span aria-hidden="true">📍</span>
+                  <span className="sr-only">Location</span>
+                </th>
+              )}
               <th
-                className="px-1 py-1.5 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700"
+                className="px-1.5 py-1 text-left min-w-[6rem] border-b border-gray-200 dark:border-gray-700"
                 data-tooltip="Day notes"
               >
-                <span aria-hidden="true" className="text-xs">
-                  📝
-                </span>
-                <span className="sr-only">Notes</span>
+                Note
               </th>
               <ClearColumnHeader visible={!!onClearDay} />
             </tr>
@@ -384,14 +357,15 @@ export function MonthGrid({
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const isToday = row.date === todayIso
                 const { displayStatus, reason, leaveType } = classifyRow(row, todayIso)
-                const bgPair = rowBackgroundPair(displayStatus, isToday)
-                const rowBg = bgPair[globalRowIdx % 2]!
-                const weekEdgeClass = isMonday(row.date) ? 'border-t border-gray-300 dark:border-gray-600' : ''
+                const dim = isNonWorkDay && row.workedHours === 0 && Object.keys(row.entries).length === 0
                 const loc = workLocations.get(row.date) ?? defaultWorkLocation
                 const locIcon = loc === 'Office' ? '🏢' : '🏠'
-                const rowOpacityClass =
-                  isNonWorkDay && row.workedHours === 0 && Object.keys(row.entries).length === 0 ? 'opacity-50' : ''
-                const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2)
+                const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' })
+                const rowDelta = dayDelta(
+                  row.workedHours,
+                  targetHoursForDate(row.date, config.weekdayHours),
+                  row.accumulatedOvertime,
+                )
                 const rowCategoryBreakdown: Record<string, number> = { ...row.entries }
                 if (row.resolvedAutoCategory && row.autoCategoryHours > 0.001) {
                   rowCategoryBreakdown[row.resolvedAutoCategory] =
@@ -405,12 +379,17 @@ export function MonthGrid({
                   categoryDescriptions,
                   ...(leaveType !== undefined ? { leaveType } : {}),
                 }
-                globalRowIdx++
+                const note = dayNotes.get(row.date)
+                const weekStartClass = isMonday(row.date) ? 'border-t-2 border-t-gray-300 dark:border-t-gray-600' : ''
                 return (
-                  <tr key={row.date} aria-label={row.date} className={`${rowBg} ${rowOpacityClass} ${weekEdgeClass}`}>
-                    {renderDayCell(row.date, dayLabel, rowBg)}
+                  <tr
+                    key={row.date}
+                    aria-label={row.date}
+                    className={`border-b border-gray-100 dark:border-gray-800 ${weekStartClass} ${isToday ? 'bg-amber-50 dark:bg-amber-900/20' : ''} ${dim ? 'opacity-50' : ''}`}
+                  >
+                    {renderDayCell(row.date, dayLabel, isToday)}
                     <td
-                      className={`sticky left-12 z-10 px-1 py-1 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 ${rowBg}`}
+                      className={`sticky left-[3.6rem] z-10 ${STICKY_BG} px-1 py-[3px] cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
                       onClick={(e) => handleDotClick(e, row)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
@@ -434,9 +413,20 @@ export function MonthGrid({
                       categoryDescriptions={categoryDescriptions}
                       daySummaryData={daySummaryData}
                       targetHours={targetHoursForDate(row.date, config.weekdayHours)}
-                      className={`sticky left-[4.25rem] z-10 ${rowBg}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
+                      className={`sticky left-[4.6rem] z-10 ${STICKY_BG}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
                     />
-                    <td className="px-1.5 py-0.5 w-16 text-right text-xs font-semibold border-l border-gray-200 dark:border-gray-700 tabular-nums">
+                    <td className="px-1.5 py-[3px] w-12 text-right text-[11px] tabular-nums">
+                      {rowDelta !== null && (
+                        <span className={overtimeTextClass(rowDelta)}>
+                          {rowDelta > 0 ? '+' : ''}
+                          {formatHoursCompact(rowDelta, timeFormat)}
+                        </span>
+                      )}
+                    </td>
+                    <td
+                      className="px-1.5 py-[3px] w-16 border-r border-gray-200 text-right text-[11px] font-semibold tabular-nums dark:border-gray-700"
+                      style={row.accumulatedOvertime !== null ? balanceBarStyle(row.accumulatedOvertime, balScale) : {}}
+                    >
                       <Tooltip content={<DaySummaryBody {...daySummaryData} timeFormat={timeFormat} dark />}>
                         <span className="block w-full text-right">
                           {/* Every past day carries the balance, not only the tracked ones — the
@@ -450,27 +440,15 @@ export function MonthGrid({
                         </span>
                       </Tooltip>
                     </td>
-                    {showOfficeStats && (
-                      <td className="px-0 py-0 w-10 text-center border-l border-gray-200 dark:border-gray-700">
-                        <button
-                          type="button"
-                          onClick={() => cycleLocation(row.date)}
-                          className="w-full h-full text-xs hover:bg-gray-100 dark:hover:bg-gray-700 py-1"
-                          aria-label={`Location ${row.date}`}
-                          data-tooltip={loc}
-                        >
-                          {locIcon}
-                        </button>
-                      </td>
-                    )}
-                    <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
-                    {allCategories.map((cat) => {
+                    {allCategories.map((cat, catIdx) => {
                       const isAutoTarget = cat === row.resolvedAutoCategory
                       const val = getCellValue(row, cat)
+                      const catBorderClass =
+                        catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''
                       return (
                         <td
                           key={cat}
-                          className={`px-0.5 py-0.5 w-16 min-w-[4rem] max-w-[4rem] border-l border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
+                          className={`px-1 py-[3px] w-14 min-w-[3.5rem] max-w-[3.5rem] cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${catBorderClass} ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
                           onClick={() => {
                             setActiveDialogDate(row.date)
                             setActiveDialogCategory(cat)
@@ -484,31 +462,50 @@ export function MonthGrid({
                           }}
                           tabIndex={0}
                         >
-                          <span className="inline-block w-full rounded px-1 py-0.5 text-right text-xs tabular-nums text-gray-700 dark:text-gray-200">
+                          <span className="inline-block w-full rounded text-right text-[11px] tabular-nums text-gray-700 dark:text-gray-200">
                             {val}
                           </span>
                         </td>
                       )
                     })}
-                    <td className="w-8 text-center border-l border-gray-200 dark:border-gray-700">
-                      {onNoteChange && (
+                    {showOfficeStats && (
+                      <td
+                        className="w-6 border-l border-gray-200 px-1 py-0 text-center text-[10px] dark:border-gray-700"
+                        title={loc}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => cycleLocation(row.date)}
+                          className="w-full py-[3px] hover:bg-gray-100 dark:hover:bg-gray-700"
+                          aria-label={`Location ${row.date}`}
+                        >
+                          {locIcon}
+                        </button>
+                      </td>
+                    )}
+                    <td className="min-w-[6rem] px-1.5 py-[3px] text-[10px] text-gray-500 dark:text-gray-400">
+                      {onNoteChange ? (
                         <button
                           type="button"
                           onClick={(e) => {
                             const rect = e.currentTarget.getBoundingClientRect()
                             setNotePopover({
                               date: row.date,
-                              value: dayNotes.get(row.date) ?? '',
+                              value: note ?? '',
                               top: rect.bottom + 6,
                               left: rect.left - 220,
                             })
                           }}
-                          className="w-full py-1 text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="block w-full truncate text-left hover:underline"
                           aria-label={`Note for ${row.date}`}
-                          data-tooltip={dayNotes.get(row.date) ?? 'Add note'}
+                          data-tooltip={note ?? 'Add note'}
                         >
-                          <span className={dayNotes.has(row.date) ? 'opacity-100' : 'opacity-20'}>📝</span>
+                          {note || ' '}
                         </button>
+                      ) : (
+                        <span className="block truncate" title={note ?? ''}>
+                          {note}
+                        </span>
                       )}
                     </td>
                     <ClearCell date={row.date} onClearDay={onClearDay} />
@@ -522,7 +519,7 @@ export function MonthGrid({
                     <tr className="bg-indigo-50/60 dark:bg-indigo-900/20">
                       <td
                         colSpan={colCount}
-                        className="px-2 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 border-b dark:border-gray-700"
+                        className="px-1.5 py-[3px] text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 border-b dark:border-gray-700"
                       >
                         {group.label}
                       </td>
@@ -533,34 +530,36 @@ export function MonthGrid({
                     <tr className="bg-indigo-50/40 dark:bg-indigo-900/20 border-t dark:border-gray-700">
                       <td
                         colSpan={2}
-                        className="sticky left-0 z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-xs font-medium whitespace-nowrap"
+                        className="sticky left-0 z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-1.5 py-[2px] text-[11px] font-medium whitespace-nowrap"
                       >
                         {group.label} Total
                       </td>
                       <td
-                        className="sticky left-[4.25rem] z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-2 py-0.5 text-right text-xs font-medium"
+                        className="sticky left-[4.6rem] z-10 bg-indigo-50/40 dark:bg-indigo-900/20 px-1.5 py-[2px] text-right text-[11px] font-medium"
                         data-testid={`sprint-worked-${group.label}`}
                       >
                         {formatHoursCompact(sprintWorked, timeFormat)}
                       </td>
                       <td></td>
                       <td></td>
-                      <td className="w-px border-l border-gray-200 dark:border-gray-700"></td>
-                      {allCategories.map((cat) => {
+                      {allCategories.map((cat, catIdx) => {
                         const catTotal = group.rows.reduce((sum, row) => {
                           const manual = row.entries[cat] ?? 0
                           const autoHours = cat === row.resolvedAutoCategory ? row.autoCategoryHours : 0
                           return sum + manual + autoHours
                         }, 0)
+                        const catBorderClass =
+                          catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''
                         return (
                           <td
                             key={cat}
-                            className="px-1 py-0.5 text-right text-xs w-16 min-w-[4rem] max-w-[4rem] font-medium"
+                            className={`px-1 py-[2px] text-right text-[11px] w-14 min-w-[3.5rem] max-w-[3.5rem] font-medium ${catBorderClass}`}
                           >
                             {catTotal > 0 ? formatHoursCompact(catTotal, timeFormat) : ''}
                           </td>
                         )
                       })}
+                      {showOfficeStats && <td></td>}
                       <td></td>
                       <ClearColumnPlaceholder visible={!!onClearDay} />
                     </tr>
@@ -570,31 +569,35 @@ export function MonthGrid({
             })}
           </tbody>
           <tfoot className="sticky bottom-0 z-20 bg-white dark:bg-gray-800 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
-            <tr className="border-t dark:border-gray-700 font-semibold">
-              <td className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-2 py-1">Total</td>
-              <td className="sticky left-12 z-30 bg-white dark:bg-gray-800"></td>
+            <tr className="border-t dark:border-gray-700 font-semibold text-[11px]">
+              <td className="sticky left-0 z-30 bg-white dark:bg-gray-800 px-1.5 py-1">Total</td>
+              <td className="sticky left-[3.6rem] z-30 bg-white dark:bg-gray-800"></td>
               <td
-                className="sticky left-[4.25rem] z-30 bg-white dark:bg-gray-800 px-2 py-1 text-right"
+                className="sticky left-[4.6rem] z-30 bg-white dark:bg-gray-800 px-1.5 py-1 text-right"
                 data-testid="total-worked"
               >
                 {formatHoursCompact(totalWorked, timeFormat)}
               </td>
-              <td className="w-16 border-l border-gray-200 dark:border-gray-700"></td>
-              <td></td>
-              <td className="w-px border-l border-gray-300 dark:border-gray-600"></td>
-              {allCategories.map((cat) => {
+              <td className="w-12"></td>
+              <td className="w-16 border-r border-gray-200 dark:border-gray-700"></td>
+              {allCategories.map((cat, catIdx) => {
                 const catTotal = rows.reduce((sum, row) => {
                   const manual = row.entries[cat] ?? 0
                   const autoHours = cat === row.resolvedAutoCategory ? row.autoCategoryHours : 0
                   return sum + manual + autoHours
                 }, 0)
+                const catBorderClass = catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''
                 return (
-                  <td key={cat} className="px-1 py-1 text-right text-xs w-16 min-w-[4rem] max-w-[4rem]">
+                  <td
+                    key={cat}
+                    className={`px-1 py-1 text-right text-[11px] w-14 min-w-[3.5rem] max-w-[3.5rem] ${catBorderClass}`}
+                  >
                     {catTotal > 0 ? formatHoursCompact(catTotal, timeFormat) : ''}
                   </td>
                 )
               })}
-              <td className="w-8 border-l border-gray-200 dark:border-gray-700"></td>
+              {showOfficeStats && <td className="w-6 border-l border-gray-200 dark:border-gray-700"></td>}
+              <td></td>
               <ClearColumnPlaceholder visible={!!onClearDay} />
             </tr>
           </tfoot>

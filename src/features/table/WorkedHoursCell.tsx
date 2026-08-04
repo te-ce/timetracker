@@ -80,7 +80,7 @@ export function WorkedHoursCell({
     ) : undefined
     return (
       <td
-        className={`px-2 py-1 text-right tabular-nums cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${className}`}
+        className={`px-1.5 py-[3px] text-right text-[11px] tabular-nums cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${className}`}
         style={fillStyle(workedHours, targetHours)}
         data-testid="worked-hours"
         onClick={() => setOpen(true)}

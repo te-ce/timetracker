@@ -8,7 +8,6 @@ import { StatsView } from '../features/stats/StatsView'
 import { SettingsView } from '../features/settings/SettingsView'
 import { toLocalIso } from '../shared/dateUtils'
 import { PrototypeRouteComponent, validatePrototypeSearch } from '../prototypes/design-language/PrototypeRoute'
-import { isTableVariantKey } from '../prototypes/table-ux/TableUxSwitcher'
 
 const rootRoute = createRootRoute({
   component: App,
@@ -46,12 +45,8 @@ const tableRoute = createRoute({
     return {
       year: Number(search.year) || now.getFullYear(),
       month: Number(search.month) || now.getMonth() + 1,
-      expanded: search.expanded === true || search.expanded === 'true',
       logDate:
         typeof search.logDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(search.logDate) ? search.logDate : undefined,
-      // PROTOTYPE — table-UX variant switch, see src/prototypes/table-ux/. Optional, so nothing
-      // else in the app has to pass it when navigating to /table.
-      ...(isTableVariantKey(search.tableVariant) ? { tableVariant: search.tableVariant } : {}),
     }
   },
 })

@@ -46,13 +46,3 @@ export const STATUS_BADGE: Record<DisplayStatus, { bg: string; text: string }> =
   'non-working': { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-500 dark:text-gray-400' },
   leave: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400' },
 }
-
-// [even-row bg, odd-row bg] for spreadsheet-style grid rows
-export const STATUS_ROW_BG: Record<DisplayStatus, [string, string]> = {
-  complete: ['bg-emerald-50 dark:bg-emerald-900/30', 'bg-emerald-100/70 dark:bg-emerald-900/50'],
-  'needs-review': ['bg-red-50 dark:bg-red-900/30', 'bg-red-100/70 dark:bg-red-900/50'],
-  untracked: ['bg-blue-50/60 dark:bg-blue-900/20', 'bg-blue-100/50 dark:bg-blue-900/30'],
-  future: ['bg-white dark:bg-gray-800', 'bg-gray-50/70 dark:bg-gray-900/50'],
-  'non-working': ['bg-white dark:bg-gray-800', 'bg-gray-50/70 dark:bg-gray-900/50'],
-  leave: ['bg-purple-50/60 dark:bg-purple-900/20', 'bg-purple-100/50 dark:bg-purple-900/30'],
-}

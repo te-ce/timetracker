@@ -17,7 +17,7 @@ vi.mock('../../infra/auth/msalInstance', () => ({
 
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
-  useSearch: () => ({ expanded: false, logDate: '2099-01-15' }),
+  useSearch: () => ({ logDate: '2099-01-15' }),
 }))
 
 function makeWrapper() {
@@ -38,16 +38,10 @@ describe('TableView logDate deep link', () => {
     expect(await screen.findByText(/work periods/i)).toBeInTheDocument()
   })
 
-  it('does not reopen the dialog when toggling fullscreen after it was closed', async () => {
+  it('does not reopen the dialog after it was closed', async () => {
     render(<TableView />, { wrapper: makeWrapper() })
     await screen.findByText(/work periods/i)
     await userEvent.click(screen.getByRole('button', { name: /^close$/i }))
-    expect(screen.queryByText(/work periods/i)).not.toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: /expand table/i }))
-    expect(screen.queryByText(/work periods/i)).not.toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: /collapse table/i }))
     expect(screen.queryByText(/work periods/i)).not.toBeInTheDocument()
   })
 })

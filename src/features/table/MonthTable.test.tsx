@@ -29,9 +29,7 @@ interface SetupOptions {
   sprintStartDate?: string | null
   sprintLengthDays?: number
   customCategories?: string[]
-  expanded?: boolean
   showOfficeStats?: boolean
-  openLogSignal?: number
 }
 
 /**
@@ -84,28 +82,22 @@ function setup(opts: SetupOptions = {}) {
     now: nowHHMM(),
   })
 
-  function ui(signal?: number) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        <MonthGrid
-          view={view}
-          repository={repo}
-          onCategoryReorder={opts.onCategoryReorder}
-          onCategoryRename={opts.onCategoryRename}
-          onAutoCategoryChange={opts.onAutoCategoryChange}
-          onSelectDate={opts.onSelectDate}
-          onClearDay={opts.onClearDay}
-          expanded={opts.expanded}
-          showOfficeStats={opts.showOfficeStats}
-          openLogSignal={signal}
-        />
-      </QueryClientProvider>
-    )
-  }
+  render(
+    <QueryClientProvider client={queryClient}>
+      <MonthGrid
+        view={view}
+        repository={repo}
+        onCategoryReorder={opts.onCategoryReorder}
+        onCategoryRename={opts.onCategoryRename}
+        onAutoCategoryChange={opts.onAutoCategoryChange}
+        onSelectDate={opts.onSelectDate}
+        onClearDay={opts.onClearDay}
+        showOfficeStats={opts.showOfficeStats}
+      />
+    </QueryClientProvider>,
+  )
 
-  const { rerender } = render(ui(opts.openLogSignal))
-
-  return { repo, rerender: (signal: number) => rerender(ui(signal)) }
+  return { repo }
 }
 
 describe('MonthGrid', () => {
@@ -113,7 +105,7 @@ describe('MonthGrid', () => {
     setup()
 
     for (const cat of DEFAULT_CATEGORIES) {
-      expect(await screen.findByRole('columnheader', { name: cat })).toBeInTheDocument()
+      expect(await screen.findByRole('columnheader', { name: cat.replace(/^_/, '') })).toBeInTheDocument()
     }
 
     expect(screen.getByRole('columnheader', { name: /worked/i })).toBeInTheDocument()
@@ -131,8 +123,32 @@ describe('MonthGrid', () => {
         },
       })
       const untrackedDay = screen.getByRole('row', { name: '2026-05-05' })
-      const balanceCell = within(untrackedDay).getAllByRole('cell')[3]
+      const balanceCell = within(untrackedDay).getAllByRole('cell')[4]
       expect(balanceCell?.textContent).toBe('+1.00')
+    })
+  })
+
+  describe('day ± column', () => {
+    it('shows worked minus target for a tracked day', () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [{ id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }] },
+        },
+      })
+      const trackedDay = screen.getByRole('row', { name: '2026-05-04' })
+      const deltaCell = within(trackedDay).getAllByRole('cell')[3]
+      expect(deltaCell?.textContent).toBe('+1.00')
+    })
+
+    it('is blank on a day with no tracked hours', () => {
+      setup({
+        monthData: {
+          '2026-05-04': { windows: [{ id: 'w1', start: '09:00', end: '18:00', category: '_COREMEDIA', subtasks: [] }] },
+        },
+      })
+      const untrackedDay = screen.getByRole('row', { name: '2026-05-05' })
+      const deltaCell = within(untrackedDay).getAllByRole('cell')[3]
+      expect(deltaCell?.textContent).toBe('')
     })
   })
 
@@ -148,12 +164,26 @@ describe('MonthGrid', () => {
     })
   })
 
+  describe('week start border', () => {
+    it('gives a Monday row a thicker top border', () => {
+      setup()
+      const monday = screen.getByRole('row', { name: '2026-05-04' })
+      expect(monday.className).toContain('border-t-2')
+    })
+
+    it('does not add the border to a non-Monday row', () => {
+      setup()
+      const tuesday = screen.getByRole('row', { name: '2026-05-05' })
+      expect(tuesday.className).not.toContain('border-t-2')
+    })
+  })
+
   describe('column header alignment', () => {
-    it('category column headers are centered', async () => {
+    it('category column headers are right-aligned over their numbers', async () => {
       setup()
       for (const cat of DEFAULT_CATEGORIES) {
-        const header = await screen.findByRole('columnheader', { name: cat })
-        expect(header.className).toContain('text-center')
+        const header = await screen.findByRole('columnheader', { name: cat.replace(/^_/, '') })
+        expect(header.className).toContain('text-right')
       }
     })
 
@@ -239,16 +269,16 @@ describe('MonthGrid', () => {
     it('double-clicking a column header shows an edit input', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
+      await userEvent.dblClick(within(header).getByText('SUPPORT'))
       expect(screen.getByDisplayValue('_SUPPORT')).toBeInTheDocument()
     })
 
     it('pressing Enter commits the rename', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
+      await userEvent.dblClick(within(header).getByText('SUPPORT'))
       const input = screen.getByDisplayValue('_SUPPORT')
       await userEvent.clear(input)
       await userEvent.type(input, 'Support{Enter}')
@@ -258,8 +288,8 @@ describe('MonthGrid', () => {
     it('pressing Escape cancels without calling onCategoryRename', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
+      await userEvent.dblClick(within(header).getByText('SUPPORT'))
       await userEvent.keyboard('{Escape}')
       expect(onRename).not.toHaveBeenCalled()
       expect(screen.queryByDisplayValue('_SUPPORT')).not.toBeInTheDocument()
@@ -268,8 +298,8 @@ describe('MonthGrid', () => {
     it('does not call onCategoryRename when name is unchanged', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('_SUPPORT'))
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
+      await userEvent.dblClick(within(header).getByText('SUPPORT'))
       const input = screen.getByDisplayValue('_SUPPORT')
       await userEvent.click(input)
       await userEvent.tab()
@@ -286,7 +316,7 @@ describe('MonthGrid', () => {
           <MonthGrid view={makeView(2026, 5)} repository={repo} onCategoryReorder={vi.fn()} />
         </QueryClientProvider>,
       )
-      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
       expect(header).toHaveAttribute('draggable', 'true')
     })
   })
@@ -497,7 +527,7 @@ describe('MonthGrid', () => {
     it('shows set-auto button for non-auto categories when onAutoCategoryChange is provided', async () => {
       setup({ onAutoCategoryChange: vi.fn() })
 
-      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
       const setAutoBtn = header.querySelector(`[data-tooltip='Set "_SUPPORT" as auto category']`)
       expect(setAutoBtn).toBeInTheDocument()
     })
@@ -506,7 +536,7 @@ describe('MonthGrid', () => {
       const onAutoCategoryChange = vi.fn<(cat: string) => void>()
       setup({ onAutoCategoryChange })
 
-      const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
       const setAutoBtn = header.querySelector(`[data-tooltip='Set "_SUPPORT" as auto category']`)
       await userEvent.click(setAutoBtn!)
 
@@ -515,7 +545,7 @@ describe('MonthGrid', () => {
 
     it('shows "auto" badge for the current auto category', async () => {
       setup()
-      const header = await screen.findByRole('columnheader', { name: '_COREMEDIA' })
+      const header = await screen.findByRole('columnheader', { name: 'COREMEDIA' })
       expect(within(header).getByText('auto')).toBeInTheDocument()
     })
   })
@@ -650,8 +680,8 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      // first category cell is after: day, status, worked, ±, location, separator (index 6)
-      await userEvent.click(cells[6]!)
+      // first category cell is after: day, status, worked, day ±, balance (index 5)
+      await userEvent.click(cells[5]!)
 
       expect(await screen.findByText('Work periods')).toBeInTheDocument()
     })
@@ -665,7 +695,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[6]!)
+      await userEvent.click(cells[5]!)
 
       await screen.findByText('Work periods')
       // date label is rendered in a <p> below the heading
@@ -683,7 +713,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[6]!)
+      await userEvent.click(cells[5]!)
       await screen.findByText('Work periods')
 
       await userEvent.keyboard('{Escape}')
@@ -702,7 +732,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[6]!)
+      await userEvent.click(cells[5]!)
       await screen.findByText('Work periods')
 
       await userEvent.click(screen.getByRole('button', { name: 'Close' }))
@@ -713,7 +743,7 @@ describe('MonthGrid', () => {
     })
 
     it('clicking a category cell pre-selects that category for the next work period', async () => {
-      // autoCategory defaults to '_COREMEDIA'; cell[6] = '_LEAVE' (first category column)
+      // autoCategory defaults to '_COREMEDIA'; cell[5] = '_LEAVE' (first category column)
       setup({
         monthData: {
           '2026-05-04': { windows: [w('w1', '09:00', '17:00')] },
@@ -722,7 +752,7 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      await userEvent.click(cells[6]!)
+      await userEvent.click(cells[5]!)
 
       await screen.findByText('Work periods')
 
@@ -738,35 +768,17 @@ describe('MonthGrid', () => {
 
       const row = await screen.findByRole('row', { name: /2026-05-04/ })
       const cells = within(row).getAllByRole('cell')
-      expect(cells[6]).not.toHaveAttribute('data-tooltip')
-      expect(cells[6]!.querySelector('[data-tooltip]')).toBeNull()
+      expect(cells[5]).not.toHaveAttribute('data-tooltip')
+      expect(cells[5]!.querySelector('[data-tooltip]')).toBeNull()
     })
   })
 
-  describe('expand prop', () => {
-    it('scroll container has max-h class when not expanded', () => {
+  describe('scroll container', () => {
+    it('has no vertical scroll constraint', () => {
       setup()
       const scrollContainer = screen.getByTestId('table-scroll-container')
-      expect(scrollContainer.className).toContain('max-h-[75vh]')
-    })
-
-    it('scroll container has no max-h class when expanded', () => {
-      setup({ expanded: true })
-      const scrollContainer = screen.getByTestId('table-scroll-container')
       expect(scrollContainer.className).not.toContain('max-h-[75vh]')
-    })
-
-    it('scroll container has flex-1 and min-h-0 when expanded', () => {
-      setup({ expanded: true })
-      const scrollContainer = screen.getByTestId('table-scroll-container')
-      expect(scrollContainer.className).toContain('flex-1')
-      expect(scrollContainer.className).toContain('min-h-0')
-    })
-
-    it('outer container has h-full when expanded', () => {
-      setup({ expanded: true })
-      const scrollContainer = screen.getByTestId('table-scroll-container')
-      expect(scrollContainer.parentElement?.className).toContain('h-full')
+      expect(scrollContainer.className).not.toContain('overflow-y-auto')
     })
   })
 
@@ -810,25 +822,6 @@ describe('MonthGrid', () => {
       setup({ showOfficeStats: false })
       await screen.findByRole('columnheader', { name: /worked/i })
       expect(screen.queryByRole('button', { name: /^Location /i })).not.toBeInTheDocument()
-    })
-  })
-
-  describe('openLogSignal', () => {
-    it('does not open the work period dialog on initial render', async () => {
-      setup({ openLogSignal: 0 })
-      await screen.findByRole('columnheader', { name: /worked/i })
-      expect(screen.queryByText(/work periods/i)).not.toBeInTheDocument()
-    })
-
-    it('opens the work period dialog for today when the signal changes', async () => {
-      const { rerender } = setup({ openLogSignal: 0 })
-      await screen.findByRole('columnheader', { name: /worked/i })
-
-      rerender(1)
-
-      expect(await screen.findByText(/work periods/i)).toBeInTheDocument()
-      const todayLabel = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
-      expect(screen.getByText(todayLabel)).toBeInTheDocument()
     })
   })
 })
