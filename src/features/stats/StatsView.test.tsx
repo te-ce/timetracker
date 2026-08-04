@@ -67,22 +67,19 @@ describe('StatsView', () => {
     expect(headline.textContent).toContain('+0.50h')
   })
 
-  it('shows the longest workday streak and the office share as general stats', async () => {
+  it('shows the longest workday streak as a general stat', async () => {
     render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
 
     const headline = await screen.findByRole('region', { name: /all-time statistics/i })
     expect(headline.textContent).toContain('Longest workday streak')
     expect(headline.textContent).toContain('broken by a vacation or sick day')
-    expect(headline.textContent).toContain('Office share')
-    expect(headline.textContent).toContain('33%')
-    expect(headline.textContent).toContain('1 of 3 tracked days')
   })
 
-  it('folds the median day into the average-day card', async () => {
+  it('puts the usual start and end on the average-day card', async () => {
     render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
 
     const headline = await screen.findByRole('region', { name: /all-time statistics/i })
-    expect(headline.textContent).toContain('Median 8.00h')
+    expect(headline.textContent).toContain('Usually 08:05 → 16:15')
   })
 
   it('breaks the hours down by weekday, category and month', async () => {
@@ -100,16 +97,39 @@ describe('StatsView', () => {
     expect(monthsRegion.textContent).toContain('July 2026')
   })
 
-  it('shows the records row with week, longest and shortest day and break figures', async () => {
+  it('shows the records row with office share, day extremes and break figures', async () => {
     render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
 
     const records = await screen.findByRole('region', { name: 'Records' })
-    expect(records.textContent).toContain('Week 28, 2026')
+    expect(records.textContent).toContain('Office share')
+    expect(records.textContent).toContain('33%')
+    expect(records.textContent).toContain('1 of 3 tracked days')
     expect(records.textContent).toContain('Longest day')
     expect(records.textContent).toContain('10.50h')
     expect(records.textContent).toContain('Shortest day')
     expect(records.textContent).toContain('6.00h')
-    expect(records.textContent).toContain('Usually 08:05 → 16:15')
+  })
+
+  it('shows when the typical break usually falls', async () => {
+    const withLunch: MonthData = {
+      '2026-07-06': {
+        windows: [
+          { id: 'a', start: '08:00', end: '12:00', category: '_OTHER', subtasks: [] },
+          { id: 'b', start: '12:40', end: '17:00', category: '_OTHER', subtasks: [] },
+        ],
+      },
+      '2026-07-07': {
+        windows: [
+          { id: 'c', start: '08:00', end: '12:20', category: '_OTHER', subtasks: [] },
+          { id: 'd', start: '13:00', end: '17:00', category: '_OTHER', subtasks: [] },
+        ],
+      },
+    }
+    render(<StatsView />, { wrapper: makeWrapper({ '2026-07': withLunch }) })
+
+    const records = await screen.findByRole('region', { name: 'Records' })
+    expect(records.textContent).toContain('Typical break')
+    expect(records.textContent).toContain('Usually 12:10 → 12:50')
   })
 
   it('lists fun facts derived from the tracked data', async () => {

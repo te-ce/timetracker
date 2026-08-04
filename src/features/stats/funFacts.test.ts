@@ -114,7 +114,7 @@ describe('buildFunFacts rhythm and breaks', () => {
   })
 
   it('reports the average and longest break', () => {
-    expect(textOf(RICH, 'avg-break')).toBe('You step away for 10 min on an average tracked day.')
+    expect(textOf(RICH, 'avg-break')).toBe('You step away for 10 min on an average tracked day, usually around 12:00.')
     expect(textOf(RICH, 'longest-break')).toBe('Longest single break: 30 min on Mon, 6 Jul 2026.')
   })
 

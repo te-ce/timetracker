@@ -93,6 +93,9 @@ export interface BreakStats {
   longestWithinDay: { date: string; minutes: number } | null
   /** Tracked days logged as a single unbroken period. */
   daysWithoutBreak: number
+  /** When the main break of a day usually starts, as minutes after midnight. */
+  usualStartMinutes: number | null
+  usualEndMinutes: number | null
 }
 
 export interface WeekStat {
@@ -222,12 +225,22 @@ interface DayFacts {
   /** Minutes between consecutive periods — time on the clock but not on a task. */
   breakMinutes: number
   longestBreakMinutes: number
+  /** Clock window of that longest break, so the usual break time can be averaged. */
+  longestBreakStart: number | null
+  longestBreakEnd: number | null
   /** A month boundary was skipped before this day, so streaks must not span it. */
   afterGap: boolean
 }
 
-/** Gaps between consecutive closed periods: total and largest, in minutes. */
-function breaksBetween(windows: WorkPeriod[]): { total: number; longest: number } {
+interface DayBreaks {
+  total: number
+  longest: number
+  longestStart: number | null
+  longestEnd: number | null
+}
+
+/** Gaps between consecutive closed periods: total, largest, and when the largest fell. */
+function breaksBetween(windows: WorkPeriod[]): DayBreaks {
   const closed = windows
     .filter((w) => w.end !== null)
     .map((w) => ({ start: parseMinutes(w.start), end: parseMinutes(w.end ?? '00:00') }))
@@ -235,6 +248,8 @@ function breaksBetween(windows: WorkPeriod[]): { total: number; longest: number 
 
   let total = 0
   let longest = 0
+  let longestStart: number | null = null
+  let longestEnd: number | null = null
   for (let i = 1; i < closed.length; i++) {
     const prev = closed[i - 1]
     const current = closed[i]
@@ -242,9 +257,13 @@ function breaksBetween(windows: WorkPeriod[]): { total: number; longest: number 
     const gap = current.start - prev.end
     if (gap <= 0) continue
     total += gap
-    longest = Math.max(longest, gap)
+    if (gap > longest) {
+      longest = gap
+      longestStart = prev.end
+      longestEnd = current.start
+    }
   }
-  return { total, longest }
+  return { total, longest, longestStart, longestEnd }
 }
 
 function flattenDays(input: AllTimeStatsInput): DayFacts[] {
@@ -287,6 +306,8 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
         subtaskCount: windows.reduce((sum, w) => sum + w.subtasks.length, 0),
         breakMinutes: breaks.total,
         longestBreakMinutes: breaks.longest,
+        longestBreakStart: breaks.longestStart,
+        longestBreakEnd: breaks.longestEnd,
         afterGap: afterGap && dayIdx === 0,
       })
     })
@@ -435,11 +456,16 @@ function buildRhythmStats(tracked: DayFacts[]): RhythmStats {
 
 function buildBreakStats(tracked: DayFacts[]): BreakStats {
   const longest = [...tracked].sort((a, b) => b.longestBreakMinutes - a.longestBreakMinutes)[0]
+  // Averaged over each day's main break, so the window says "when lunch usually
+  // is" rather than being dragged around by short gaps.
+  const withBreak = tracked.filter((d) => d.longestBreakMinutes > 0)
   return {
     avgMinutesPerDay: mean(tracked.map((d) => d.breakMinutes)) ?? 0,
     longestWithinDay:
       longest && longest.longestBreakMinutes > 0 ? { date: longest.date, minutes: longest.longestBreakMinutes } : null,
     daysWithoutBreak: tracked.filter((d) => d.periodCount === 1).length,
+    usualStartMinutes: mean(withBreak.map((d) => d.longestBreakStart).filter(isDefined)),
+    usualEndMinutes: mean(withBreak.map((d) => d.longestBreakEnd).filter(isDefined)),
   }
 }
 

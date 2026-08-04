@@ -28,9 +28,17 @@ function HeadlineCard({
 }
 
 /** "Usually 08:05 → 16:15" — the average tracked day's start and end. */
-function usualDayDetail(stats: AllTimeStats): string {
-  if (stats.avgStartMinutes === null || stats.avgEndMinutes === null) return 'Between periods on a tracked day'
+function usualDayDetail(stats: AllTimeStats, format: TimeFormat): string {
+  if (stats.avgStartMinutes === null || stats.avgEndMinutes === null)
+    return `Median ${formatHours(stats.extremes.medianDayHours, format)}`
   return `Usually ${formatClock(stats.avgStartMinutes)} → ${formatClock(stats.avgEndMinutes)}`
+}
+
+/** When the main break of a day usually falls, e.g. "Usually 12:10 → 12:45". */
+function usualBreakDetail(stats: AllTimeStats): string {
+  const { usualStartMinutes, usualEndMinutes } = stats.breaks
+  if (usualStartMinutes === null || usualEndMinutes === null) return 'Between periods on a tracked day'
+  return `Usually ${formatClock(usualStartMinutes)} → ${formatClock(usualEndMinutes)}`
 }
 
 function weekdayRows(stats: AllTimeStats, format: TimeFormat): StatBarRow[] {
@@ -94,7 +102,7 @@ export function StatsView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <section aria-label="All-time statistics" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <section aria-label="All-time statistics" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <HeadlineCard
           label="Total tracked"
           value={formatHours(stats.totalHours, timeFormat)}
@@ -109,25 +117,20 @@ export function StatsView() {
         <HeadlineCard
           label="Average day"
           value={formatHours(stats.avgHoursPerTrackedDay, timeFormat)}
-          detail={`Median ${formatHours(stats.extremes.medianDayHours, timeFormat)}`}
+          detail={usualDayDetail(stats, timeFormat)}
         />
         <HeadlineCard
           label="Longest workday streak"
           value={`${stats.longestStreak?.length ?? 0}`}
           detail="Workdays in a row — broken by a vacation or sick day"
         />
-        <HeadlineCard
-          label="Office share"
-          value={`${stats.location.officePercent}%`}
-          detail={`${stats.location.officeDays} of ${stats.trackedDays} tracked days`}
-        />
       </section>
 
       <section aria-label="Records" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <HeadlineCard
-          label="Biggest week"
-          value={stats.weeks.bestWeek ? formatHours(stats.weeks.bestWeek.hours, timeFormat) : '—'}
-          detail={stats.weeks.bestWeek?.label}
+          label="Office share"
+          value={`${stats.location.officePercent}%`}
+          detail={`${stats.location.officeDays} of ${stats.trackedDays} tracked days`}
         />
         <HeadlineCard
           label="Longest day"
@@ -142,7 +145,7 @@ export function StatsView() {
         <HeadlineCard
           label="Typical break"
           value={formatMinutes(stats.breaks.avgMinutesPerDay)}
-          detail={usualDayDetail(stats)}
+          detail={usualBreakDetail(stats)}
         />
       </section>
 

@@ -2,7 +2,7 @@ import { formatHours } from '../../shared/formatHours'
 import { formatSignedHours } from '../month/monthBalanceFormat'
 import { parseLocalDate } from '../../shared/dateUtils'
 import type { TimeFormat } from '../../shared/timeFormatStore'
-import type { AllTimeStats } from './allTimeStats'
+import { formatClock, type AllTimeStats } from './allTimeStats'
 
 export interface FunFact {
   id: string
@@ -82,10 +82,14 @@ function breakFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
   const { breaks } = stats
 
   if (breaks.avgMinutesPerDay > 0) {
+    const window =
+      breaks.usualStartMinutes !== null && breaks.usualEndMinutes !== null
+        ? `, usually around ${formatClock(breaks.usualStartMinutes)}`
+        : ''
     facts.push({
       id: 'avg-break',
       icon: '☕',
-      text: `You step away for ${formatMinutes(breaks.avgMinutesPerDay)} on an average tracked day.`,
+      text: `You step away for ${formatMinutes(breaks.avgMinutesPerDay)} on an average tracked day${window}.`,
     })
   }
 

@@ -262,6 +262,25 @@ describe('buildAllTimeStats breaks', () => {
     expect(result.breaks.daysWithoutBreak).toBe(1)
   })
 
+  it('averages when the main break of a day falls', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('08:00', '12:00'), period('12:40', '17:00')] },
+      '2026-07-07': { windows: [period('08:00', '12:20'), period('13:00', '17:00')] },
+      // No break at all — must not drag the window earlier.
+      '2026-07-08': { windows: [period('08:00', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.breaks.usualStartMinutes).toBe(12 * 60 + 10)
+    expect(result.breaks.usualEndMinutes).toBe(12 * 60 + 50)
+  })
+
+  it('leaves the usual break window unset when no day has a gap', () => {
+    const data: MonthData = { '2026-07-06': { windows: [period('08:00', '16:00')] } }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.breaks.usualStartMinutes).toBeNull()
+    expect(result.breaks.usualEndMinutes).toBeNull()
+  })
+
   it('reads periods in clock order even when stored out of order', () => {
     const data: MonthData = {
       '2026-07-06': { windows: [period('13:00', '17:00', '_OTHER', 'p2'), period('08:00', '12:00', '_OTHER', 'p1')] },
