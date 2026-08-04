@@ -27,8 +27,8 @@ export function CategoryPicker({
   }, [focusOnMount])
 
   const selectClass = compact
-    ? 'text-sm rounded border px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400 max-w-[10rem]'
-    : 'text-sm rounded-lg border px-2 py-1.5 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 min-w-[8rem] max-w-[14rem]'
+    ? 'text-sm rounded border bg-transparent pl-2 pr-6 py-1 dark:border-gray-600 dark:text-gray-100 max-w-[10rem]'
+    : 'text-sm rounded border bg-transparent pl-2 pr-6 py-1.5 dark:border-gray-600 dark:text-gray-100 min-w-[8rem] max-w-[14rem]'
 
   return (
     <select

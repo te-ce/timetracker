@@ -34,7 +34,7 @@ export function StartupViewSettings({ repository }: Props) {
         onChange={(e) => {
           if (isStartupView(e.target.value)) mutation.mutate(e.target.value)
         }}
-        className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 py-1 text-sm"
+        className="rounded border border-gray-300 bg-transparent pl-2 pr-6 py-1 text-sm dark:border-gray-600"
       >
         {OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>

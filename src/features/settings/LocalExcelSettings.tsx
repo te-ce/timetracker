@@ -37,7 +37,7 @@ function FileSelector({ xlsxFiles, currentFile, loading, onScanFiles, onFileChan
           aria-label="Excel workbook file"
           value={currentFile}
           onChange={(e) => onFileChange(e.target.value)}
-          className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          className="w-64 rounded border bg-transparent pl-3 pr-6 py-2 text-sm dark:border-gray-600 dark:text-gray-100"
         >
           <option value="">— select a file —</option>
           {xlsxFiles.map((f) => (
@@ -80,7 +80,7 @@ function SheetPickerSection({ sheets, currentSheet, loading, onLoadSheets, onSel
           aria-label="Target sheet"
           value={currentSheet}
           onChange={(e) => onSelectSheet(e.target.value)}
-          className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          className="w-64 rounded border bg-transparent pl-3 pr-6 py-2 text-sm dark:border-gray-600 dark:text-gray-100"
         >
           <option value="">— select a sheet —</option>
           {sheets.map((s) => (

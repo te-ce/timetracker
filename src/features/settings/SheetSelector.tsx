@@ -65,7 +65,7 @@ function SheetSelectorBody({
           aria-label="Target sheet"
           value={currentSheet}
           onChange={(e) => onSelectSheet(e.target.value)}
-          className="w-64 rounded border px-3 py-2 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+          className="w-64 rounded border bg-transparent pl-3 pr-6 py-2 text-sm dark:border-gray-600 dark:text-gray-100"
         >
           <option value="">— select a sheet —</option>
           {sheets.map((s) => (

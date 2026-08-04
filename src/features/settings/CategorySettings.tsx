@@ -285,7 +285,7 @@ function CategorySettingsRow({
               aria-label={`Excel mapping for ${cat}`}
               value={taskId}
               onChange={(e) => onMappingChange(cat, e.target.value)}
-              className="flex-1 rounded border px-2 py-0.5 text-xs dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 min-w-0"
+              className="flex-1 rounded border bg-transparent pl-2 pr-6 py-0.5 text-xs dark:border-gray-600 dark:text-gray-100 min-w-0"
             >
               <option value="">— not mapped —</option>
               {excelRows.map((row) => (

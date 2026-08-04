@@ -34,7 +34,7 @@ export function DayTypePicker({ date, dayType, repository }: Props) {
     <select
       value={currentValue}
       onChange={(e) => handleChange(e.target.value)}
-      className="rounded-lg border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
+      className="rounded-lg border bg-transparent pl-3 pr-6 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:border-gray-600 dark:text-gray-100 dark:focus:ring-indigo-500"
       aria-label="Day type"
     >
       {DAY_TYPE_OPTIONS.map((opt) => (
