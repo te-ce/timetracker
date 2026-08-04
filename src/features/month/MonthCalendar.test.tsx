@@ -302,7 +302,7 @@ describe('MonthCalendar', () => {
       }
     }
 
-    it('shows worked hours and the day balance inside the cell', () => {
+    it('shows worked hours and the overtime-to-date inside the cell', () => {
       const overview = overviewFor([workDay('2026-07-01', 9.5)], [8], '2026-07-31')
       render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
 
@@ -311,13 +311,14 @@ describe('MonthCalendar', () => {
       expect(cell.textContent).toContain('+1.50h')
     })
 
-    it('shows a week total column with the ISO week, its hours and its balance', () => {
+    it('shows a week total column with the ISO week, its hours and its overtime-to-date', () => {
       const overview = overviewFor([workDay('2026-07-01', 9), workDay('2026-07-02', 6)], [8, 8], '2026-07-31')
       render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
 
       expect(screen.getByText('KW 27')).toBeInTheDocument()
       expect(screen.getByText('15.00h')).toBeInTheDocument()
-      expect(screen.getByText('−1.00h')).toBeInTheDocument()
+      // Day 2 lands on -1 too (its own cumulative overtime as of that day), same as the week's.
+      expect(screen.getAllByText('−1.00h')).toHaveLength(2)
     })
 
     it('names the leave instead of leaving a vacation cell blank', () => {
@@ -350,9 +351,23 @@ describe('MonthCalendar', () => {
       expect(screen.queryByText('0.00h')).not.toBeInTheDocument()
     })
 
-    it('leaves a day with nothing tracked without a balance', () => {
+    it('still shows the running overtime-to-date on a day with nothing tracked', () => {
       const untracked: DaySummary = { ...workDay('2026-07-01', 0), dayStatus: 'untracked', displayStatus: 'untracked' }
-      const overview = overviewFor([untracked], [8], '2026-07-31')
+      const overview = buildMonthOverview({
+        days: [untracked],
+        targetHoursPerDay: [8],
+        today: '2026-07-31',
+        cumulativeBalance: -3,
+      })
+      render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
+
+      const cell = screen.getByRole('button', { name: /Wednesday, 1 July 2026/i })
+      expect(cell.textContent).toContain('−3.00h')
+    })
+
+    it('leaves a future day without an overtime-to-date', () => {
+      const future: DaySummary = { ...workDay('2026-07-01', 0), dayStatus: 'future', displayStatus: 'future' }
+      const overview = overviewFor([future], [8], '2026-06-30')
       render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
 
       const cell = screen.getByRole('button', { name: /Wednesday, 1 July 2026/i })

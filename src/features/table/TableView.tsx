@@ -63,10 +63,10 @@ export function TableView() {
     summaries,
     workLocations,
     targetHoursPerDay,
-    overtimeToDate,
     todayIso,
     todayBalance,
     isOvertimeReady,
+    priorMonthsOvertime,
   } = view
 
   const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
@@ -75,7 +75,7 @@ export function TableView() {
     days: summaries.days,
     targetHoursPerDay,
     today: todayIso,
-    cumulativeBalance: overtimeToDate.value,
+    cumulativeBalance: priorMonthsOvertime,
   })
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)

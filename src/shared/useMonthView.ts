@@ -115,6 +115,7 @@ export function buildMonthView(input: MonthViewInput) {
     targetHoursPerDay,
     todayIso,
     todayBalance,
+    priorMonthsOvertime,
   }
 }
 

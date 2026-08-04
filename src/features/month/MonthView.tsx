@@ -46,17 +46,17 @@ export function MonthView() {
     workLocations,
     dayNotes,
     targetHoursPerDay,
-    overtimeToDate,
     todayIso,
     todayBalance,
     isOvertimeReady,
+    priorMonthsOvertime,
   } = useMonthView(year, month)
 
   const overview = buildMonthOverview({
     days: summaries.days,
     targetHoursPerDay,
     today: todayIso,
-    cumulativeBalance: overtimeToDate.value,
+    cumulativeBalance: priorMonthsOvertime,
   })
 
   const dayStatusMap: Record<string, DayStatus> = {}

@@ -1,5 +1,6 @@
 import type { DaySummary } from './daySummary'
 import { isoWeekOf } from '../../shared/isoWeek'
+import { calculateCumulativeOvertime } from '../../shared/overtime'
 
 export interface MonthOverviewDay {
   date: string
@@ -10,6 +11,8 @@ export interface MonthOverviewDay {
   targetHours: number
   /** worked − target, or null while nothing is knowable yet (future date, or nothing tracked). */
   balance: number | null
+  /** Cumulative over/undertime (incl. prior months) as of this day, or null while unknowable. */
+  overtimeToDate: number | null
   /** Worked share of the day's target, 0–100. */
   fillPercent: number
   leaveType?: 'Vacation' | 'SickDay'
@@ -22,6 +25,8 @@ export interface MonthOverviewWeek {
   /** Target for tracked days only — the same rule the overtime math uses. */
   target: number
   balance: number
+  /** Cumulative over/undertime (incl. prior months) as of the week's last known day, or null. */
+  overtimeToDate: number | null
   /** Every day of the week is still to come, so its totals say nothing yet. */
   isFuture: boolean
 }
@@ -63,29 +68,56 @@ const WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 export function buildMonthOverview(input: MonthOverviewInput): MonthOverview {
   const weeks: MonthOverviewWeek[] = []
 
-  input.days.forEach((summary, i) => {
-    const date = new Date(`${summary.date}T00:00:00`)
-    const isoWeek = isoWeekOf(summary.date)
-    let week = weeks.at(-1)
-    if (!week || week.isoWeek !== isoWeek) {
-      week = { isoWeek, days: [], worked: 0, target: 0, balance: 0, isFuture: true }
-      weeks.push(week)
+  const cumulativeOvertime = calculateCumulativeOvertime(
+    input.days.map((d) => d.workedHours),
+    input.days.map((d) => d.date),
+    input.targetHoursPerDay,
+    input.today,
+    undefined,
+    input.cumulativeBalance,
+  )
+
+  function weekFor(isoWeek: number): MonthOverviewWeek {
+    const last = weeks.at(-1)
+    if (last?.isoWeek === isoWeek) return last
+    const week: MonthOverviewWeek = {
+      isoWeek,
+      days: [],
+      worked: 0,
+      target: 0,
+      balance: 0,
+      overtimeToDate: null,
+      isFuture: true,
     }
-    if (summary.date <= input.today) week.isFuture = false
-    const targetHours = input.targetHoursPerDay[i] ?? 0
+    weeks.push(week)
+    return week
+  }
+
+  function buildDay(summary: DaySummary, targetHours: number, overtimeToDate: number | null): MonthOverviewDay {
+    const date = new Date(`${summary.date}T00:00:00`)
     const hasBalance = summary.workedHours > 0 && summary.date <= input.today
-    week.days.push({
+    return {
       date: summary.date,
       dayOfMonth: date.getDate(),
       weekday: ((date.getDay() + 6) % 7) + 1,
       workedHours: summary.workedHours,
       targetHours,
       balance: hasBalance ? summary.workedHours - targetHours : null,
+      overtimeToDate,
       fillPercent: targetHours > 0 ? Math.min(100, (summary.workedHours / targetHours) * 100) : 0,
       ...(summary.leaveType !== undefined ? { leaveType: summary.leaveType } : {}),
-    })
+    }
+  }
+
+  input.days.forEach((summary, i) => {
+    const week = weekFor(isoWeekOf(summary.date))
+    if (summary.date <= input.today) week.isFuture = false
+    const targetHours = input.targetHoursPerDay[i] ?? 0
+    const overtimeToDate = cumulativeOvertime[i] ?? null
+    week.days.push(buildDay(summary, targetHours, overtimeToDate))
+    if (overtimeToDate !== null) week.overtimeToDate = overtimeToDate
     week.worked += summary.workedHours
-    if (summary.workedHours > 0) week.target += input.targetHoursPerDay[i] ?? 0
+    if (summary.workedHours > 0) week.target += targetHours
   })
 
   for (const week of weeks) week.balance = week.worked - week.target

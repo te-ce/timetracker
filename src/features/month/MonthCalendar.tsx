@@ -149,9 +149,11 @@ function WeekTotalCell({ week, timeFormat }: { week: MonthOverviewWeek; timeForm
       {!week.isFuture && (
         <>
           <p className="text-sm font-semibold tabular-nums">{formatHours(week.worked, timeFormat)}</p>
-          <p className={`text-xs tabular-nums ${balanceInk(week.balance)}`}>
-            {formatSignedHours(week.balance, timeFormat)}
-          </p>
+          {week.overtimeToDate !== null && (
+            <p className={`text-xs tabular-nums ${balanceInk(week.overtimeToDate)}`}>
+              {formatSignedHours(week.overtimeToDate, timeFormat)}
+            </p>
+          )}
         </>
       )}
     </div>
@@ -185,9 +187,9 @@ function DayLedger({
           />
         </span>
       )}
-      {ledger.balance !== null && (
-        <span className={`mt-0.5 block text-[10px] leading-none tabular-nums ${balanceInk(ledger.balance)}`}>
-          {formatSignedHours(ledger.balance, timeFormat)}
+      {ledger.overtimeToDate !== null && (
+        <span className={`mt-0.5 block text-[10px] leading-none tabular-nums ${balanceInk(ledger.overtimeToDate)}`}>
+          {formatSignedHours(ledger.overtimeToDate, timeFormat)}
         </span>
       )}
     </span>

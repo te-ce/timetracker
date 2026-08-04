@@ -97,6 +97,26 @@ describe('buildMonthOverview', () => {
     expect(third?.balance).toBeNull()
   })
 
+  it('carries a cumulative overtime-to-date across days and into the week, seeded by prior months', () => {
+    const days = [
+      daySummary('2026-07-01', { workedHours: 9 }),
+      daySummary('2026-07-02', { workedHours: 6 }),
+      daySummary('2026-07-03', { workedHours: 0, displayStatus: 'future', dayStatus: 'future' }),
+    ]
+    const overview = buildMonthOverview({
+      days,
+      targetHoursPerDay: [8, 8, 8],
+      today: '2026-07-02',
+      cumulativeBalance: 5,
+    })
+    const [first, second, third] = overview.weeks[0]?.days ?? []
+
+    expect(first?.overtimeToDate).toBe(6) // 5 + (9 - 8)
+    expect(second?.overtimeToDate).toBe(4) // 6 + (6 - 8)
+    expect(third?.overtimeToDate).toBeNull()
+    expect(overview.weeks[0]?.overtimeToDate).toBe(4)
+  })
+
   it('caps a day fill at its target so an overtime day does not overflow the bar', () => {
     const overview = buildMonthOverview({
       days: [daySummary('2026-07-01', { workedHours: 12 }), daySummary('2026-07-02', { workedHours: 4 })],
