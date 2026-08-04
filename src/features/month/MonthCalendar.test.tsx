@@ -61,8 +61,6 @@ describe('MonthCalendar', () => {
           dayType: 'WorkDay',
           workedHours: 9.5,
           entryTotal: 0,
-          isEntriesBalanced: true,
-          isConfirmed: false,
           dayStatus: 'complete',
           displayStatus: 'complete',
           statusReason: '',
@@ -234,7 +232,6 @@ describe('MonthCalendar', () => {
 
     it('each status maps to its correct dot color', () => {
       const cases: [DayStatus & DisplayStatus, string][] = [
-        ['confirmed', 'bg-emerald-500'],
         ['complete', 'bg-emerald-500'],
         ['needs-review', 'bg-red-400'],
         ['leave', 'bg-purple-400'],
@@ -260,9 +257,9 @@ describe('MonthCalendar', () => {
       }
     })
 
-    it('confirmed day gets light emerald cell, checkmark overlay, and emerald dot', () => {
-      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'confirmed' }
-      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'confirmed' }
+    it('complete day gets light emerald cell and emerald dot', () => {
+      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'complete' }
+      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'complete' }
       render(
         <MonthCalendar
           year={2024}
@@ -274,25 +271,9 @@ describe('MonthCalendar', () => {
       )
       const button = screen.getByText('15').closest('button')!
       expect(button.className).toContain('bg-emerald-100')
-      expect(button.textContent).toContain('✓')
       const dots = dotsIn(button)
       expect(dots).toHaveLength(1)
       expect(dots[0]!.className).toContain('bg-emerald-500')
-    })
-
-    it('today with confirmed displayStatus shows checkmark overlay', () => {
-      const dayStatusMap: Record<string, DayStatus> = { '2024-01-15': 'today' }
-      const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-15': 'confirmed' }
-      render(
-        <MonthCalendar
-          year={2024}
-          month={0}
-          onSelectDate={vi.fn()}
-          dayStatusMap={dayStatusMap}
-          dayDisplayStatusMap={dayDisplayStatusMap}
-        />,
-      )
-      expect(screen.getByText('15').closest('button')!.textContent).toContain('✓')
     })
 
     it('today without dayDisplayStatusMap shows no dot', () => {
@@ -300,25 +281,6 @@ describe('MonthCalendar', () => {
       render(<MonthCalendar year={2024} month={0} onSelectDate={vi.fn()} dayStatusMap={dayStatusMap} />)
       const dots = dotsIn(screen.getByText('15'))
       expect(dots).toHaveLength(0)
-    })
-
-    it('non-confirmed displayStatus does not show checkmark', () => {
-      const statuses: DisplayStatus[] = ['complete', 'needs-review', 'untracked', 'future']
-      for (const displayStatus of statuses) {
-        const dayStatusMap: Record<string, DayStatus> = { '2024-01-10': displayStatus }
-        const dayDisplayStatusMap: Record<string, DisplayStatus> = { '2024-01-10': displayStatus }
-        const { unmount } = render(
-          <MonthCalendar
-            year={2024}
-            month={0}
-            onSelectDate={vi.fn()}
-            dayStatusMap={dayStatusMap}
-            dayDisplayStatusMap={dayDisplayStatusMap}
-          />,
-        )
-        expect(screen.getByText('10').textContent).not.toContain('✓')
-        unmount()
-      }
     })
   })
 
@@ -333,8 +295,6 @@ describe('MonthCalendar', () => {
         dayType: 'WorkDay',
         workedHours,
         entryTotal: 0,
-        isEntriesBalanced: true,
-        isConfirmed: false,
         dayStatus: 'complete',
         displayStatus: 'complete',
         statusReason: '',

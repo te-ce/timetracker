@@ -1,21 +1,11 @@
 import type { DayType } from '../features/day/dayType'
 
-export type DayStatus =
-  | 'non-working'
-  | 'leave'
-  | 'future'
-  | 'today'
-  | 'confirmed'
-  | 'complete'
-  | 'needs-review'
-  | 'untracked'
+export type DayStatus = 'non-working' | 'leave' | 'future' | 'today' | 'complete' | 'needs-review' | 'untracked'
 
 export interface ClassifyDayInput {
   dayType: DayType
   workedHours: number
   manualTotal: number
-  isEntriesBalanced: boolean
-  isConfirmed: boolean
   isoDate: string
   today: string
 }
@@ -31,19 +21,18 @@ export interface DayClassification {
   leaveType?: 'Vacation' | 'SickDay'
 }
 
+const OVER_BOOKED_EPSILON = 0.01
+
+function isOverBooked(workedHours: number, manualTotal: number): boolean {
+  return manualTotal - workedHours > OVER_BOOKED_EPSILON
+}
+
 function balanceReason(workedHours: number, manualTotal: number): string {
-  if (workedHours === 0 && manualTotal > 0) {
-    return `${manualTotal.toFixed(1)} h categorized but no work time recorded`
-  }
-  if (Math.abs(workedHours - manualTotal) < 0.01) {
-    return `${workedHours.toFixed(1)} h worked`
-  }
-  if (manualTotal > workedHours) {
+  if (isOverBooked(workedHours, manualTotal)) {
     const over = manualTotal - workedHours
     return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h booked (${over.toFixed(1)} h over)`
   }
-  const unaccounted = workedHours - manualTotal
-  return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h categorized — ${unaccounted.toFixed(1)} h unaccounted`
+  return `${workedHours.toFixed(1)} h worked`
 }
 
 function classifyLeaveDay(dayType: DayType): DayClassification | null {
@@ -62,34 +51,22 @@ function classifyNonWorkingDay(dayType: DayType): DayClassification | null {
   return null
 }
 
-function classifyTrackedDay(
-  workedHours: number,
-  manualTotal: number,
-  isEntriesBalanced: boolean,
-  isConfirmed: boolean,
-  isToday: boolean,
-): DayClassification {
+function classifyTrackedDay(workedHours: number, manualTotal: number, isToday: boolean): DayClassification {
   const prefix = isToday ? 'Today — ' : ''
   const balance = balanceReason(workedHours, manualTotal)
 
-  if (isConfirmed) {
-    const status: DayStatus = isToday ? 'today' : 'confirmed'
-    return { status, displayStatus: 'confirmed', reason: `${prefix}Confirmed — ${balance}` }
+  if (isOverBooked(workedHours, manualTotal)) {
+    const status: DayStatus = isToday ? 'today' : 'needs-review'
+    return { status, displayStatus: 'needs-review', reason: `${prefix}${balance}` }
   }
-  if (isEntriesBalanced) {
-    const status: DayStatus = isToday ? 'today' : 'complete'
-    return { status, displayStatus: 'complete', reason: `${prefix}${balance}` }
-  }
-  const status: DayStatus = isToday ? 'today' : 'needs-review'
-  return { status, displayStatus: 'needs-review', reason: `${prefix}${balance}` }
+  const status: DayStatus = isToday ? 'today' : 'complete'
+  return { status, displayStatus: 'complete', reason: `${prefix}${balance}` }
 }
 
 export function classifyDay({
   dayType,
   workedHours,
   manualTotal,
-  isEntriesBalanced,
-  isConfirmed,
   isoDate,
   today,
 }: ClassifyDayInput): DayClassification {
@@ -118,5 +95,5 @@ export function classifyDay({
     return { status, displayStatus: 'untracked', reason: `${prefix}No hours recorded` }
   }
 
-  return classifyTrackedDay(workedHours, manualTotal, isEntriesBalanced, isConfirmed, isToday)
+  return classifyTrackedDay(workedHours, manualTotal, isToday)
 }

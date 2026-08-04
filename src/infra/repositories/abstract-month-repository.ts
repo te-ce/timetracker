@@ -27,7 +27,6 @@ export function isDayEmpty(day: Day): boolean {
   return (
     day.windows.length === 0 &&
     day.location === undefined &&
-    !day.confirmed &&
     !day.note &&
     !day.autoCategoryOverride &&
     !day.dayTypeOverride
@@ -71,14 +70,6 @@ export abstract class AbstractMonthRepository implements MonthRepository {
       }),
     )
     return perMonth.flat()
-  }
-
-  confirmDay(date: string): Promise<void> {
-    return this.updateDay(date, (day) => ({ ...day, confirmed: true }))
-  }
-
-  unconfirmDay(date: string): Promise<void> {
-    return this.updateDay(date, (day) => ({ ...day, confirmed: false }))
   }
 
   toggleLocation(date: string, currentEffectiveLocation: WorkLocation): Promise<void> {

@@ -112,16 +112,6 @@ export function VariantE({ view }: { view: MonthView }) {
               )
             })}
 
-            <tr className="border-b border-gray-100 dark:border-gray-800">
-              <td className={`${LABEL} py-[3px] text-gray-500 dark:text-gray-400`}>unaccounted</td>
-              {days.map((day, i) => (
-                <td key={day.date} className={`${CELL} py-[3px] text-gray-500 dark:text-gray-400 ${dimClass(i)}`}>
-                  {num(day.unaccounted)}
-                </td>
-              ))}
-              <td className="border-l border-gray-300 dark:border-gray-600" />
-            </tr>
-
             <tr className="border-t-2 border-gray-400 dark:border-gray-500">
               <td className={`${LABEL} py-[3px] font-semibold`}>worked</td>
               {days.map((day, i) => (
@@ -178,13 +168,10 @@ export function VariantE({ view }: { view: MonthView }) {
             </tr>
 
             <tr className="border-t border-gray-100 dark:border-gray-800">
-              <td className={`${LABEL} py-[3px] text-gray-500 dark:text-gray-400`}>loc · ✓ · note</td>
+              <td className={`${LABEL} py-[3px] text-gray-500 dark:text-gray-400`}>loc · note</td>
               {days.map((day, i) => (
                 <td key={day.date} className={`${CELL} py-[3px] ${dimClass(i)}`} title={day.note ?? ''}>
                   <span className="block leading-tight">{day.location === 'Office' ? '🏢' : '🏠'}</span>
-                  <span className="block leading-tight text-emerald-600 dark:text-emerald-400">
-                    {day.confirmed ? '✓' : ''}
-                  </span>
                   <span className="block leading-tight">{day.note ? '📝' : ''}</span>
                 </td>
               ))}

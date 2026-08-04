@@ -30,10 +30,8 @@ export interface ProtoDay {
   /** Running over/undertime up to and including this day. */
   cumulative: number | null
   categories: ProtoCategorySlice[]
-  unaccounted: number
   note: string | undefined
   location: WorkLocation
-  confirmed: boolean
   isToday: boolean
   isFuture: boolean
   isNonWork: boolean
@@ -51,22 +49,19 @@ function breakdownFor(row: MonthTableRow): ProtoCategorySlice[] {
 }
 
 export function deriveProtoDays(view: MonthView): ProtoDay[] {
-  const { rows, config, confirmedDays, dayNotes, workLocations, todayIso } = view
+  const { rows, config, dayNotes, workLocations, todayIso } = view
   return rows.map((row) => {
     const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
     const { displayStatus, reason } = classifyDay({
       dayType: row.dayType,
       workedHours: row.workedHours,
       manualTotal,
-      isEntriesBalanced: row.isEntriesBalanced,
-      isConfirmed: confirmedDays.has(row.date),
       isoDate: row.date,
       today: todayIso,
     })
     const target = targetHoursForDate(row.date, config.weekdayHours)
     const isFuture = row.date > todayIso
     const categories = breakdownFor(row)
-    const categorized = categories.reduce((s, c) => s + c.hours, 0)
     const isNonWork = row.dayType !== 'WorkDay'
     const counts = !isFuture && !isNonWork && row.workedHours > 0.001
     return {
@@ -81,10 +76,8 @@ export function deriveProtoDays(view: MonthView): ProtoDay[] {
       delta: counts ? row.workedHours - target : null,
       cumulative: row.accumulatedOvertime,
       categories,
-      unaccounted: Math.max(0, row.workedHours - categorized),
       note: dayNotes.get(row.date),
       location: workLocations.get(row.date) ?? config.defaultWorkLocation,
-      confirmed: confirmedDays.has(row.date),
       isToday: row.date === todayIso,
       isFuture,
       isNonWork,

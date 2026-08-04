@@ -25,43 +25,18 @@ function formatDate(iso: string): string {
 interface DayActionsProps {
   badgeStatus: Exclude<DayStatus, 'today'>
   statusReason: string
-  isConfirmed: boolean
-  onConfirm: () => void
-  onUnconfirm: () => void
 }
 
-function DayActions({ badgeStatus, statusReason, isConfirmed, onConfirm, onUnconfirm }: DayActionsProps) {
+function DayActions({ badgeStatus, statusReason }: DayActionsProps) {
+  if (badgeStatus === 'future') return null
   return (
-    <div className="flex items-center gap-2">
-      {badgeStatus !== 'future' && (
-        <Tooltip content={statusReason}>
-          <span
-            className={`inline-flex items-center cursor-help rounded-md border border-transparent px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
-          >
-            {STATUS_LABEL[badgeStatus]}
-          </span>
-        </Tooltip>
-      )}
-      {isConfirmed ? (
-        <button
-          type="button"
-          onClick={onUnconfirm}
-          className="rounded-md border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
-          aria-label="Unconfirm day"
-        >
-          ✓ Confirmed
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="rounded-md border px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700"
-          aria-label="Confirm day"
-        >
-          Confirm
-        </button>
-      )}
-    </div>
+    <Tooltip content={statusReason}>
+      <span
+        className={`inline-flex items-center cursor-help rounded-md border border-transparent px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
+      >
+        {STATUS_LABEL[badgeStatus]}
+      </span>
+    </Tooltip>
   )
 }
 
@@ -122,7 +97,6 @@ export function DayView() {
     config,
     windows,
     autoCategoryOverride,
-    isConfirmed,
     dayNote,
     autoCategory,
     dayClassification,
@@ -196,13 +170,7 @@ export function DayView() {
           <DayNoteEditor dayNote={dayNote} onSave={(note) => dayMutations.saveNote.mutate(note)} />
         </div>
         <div className="shrink-0">
-          <DayActions
-            badgeStatus={badgeStatus}
-            statusReason={statusReason}
-            isConfirmed={isConfirmed}
-            onConfirm={() => dayMutations.confirm.mutate()}
-            onUnconfirm={() => dayMutations.unconfirm.mutate()}
-          />
+          <DayActions badgeStatus={badgeStatus} statusReason={statusReason} />
         </div>
       </div>
 

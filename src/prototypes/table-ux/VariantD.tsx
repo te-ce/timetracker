@@ -87,14 +87,11 @@ export function VariantD({ view }: { view: MonthView }) {
             </td>
           )
         })}
-        <td className="w-12 border-l border-gray-200 px-1 py-[3px] text-right text-[11px] tabular-nums text-gray-500 dark:border-gray-700 dark:text-gray-400">
-          {num(day.unaccounted)}
-        </td>
-        <td className="w-6 px-1 py-[3px] text-center text-[10px]" title={day.location}>
+        <td
+          className="w-6 border-l border-gray-200 px-1 py-[3px] text-center text-[10px] dark:border-gray-700"
+          title={day.location}
+        >
           {day.location === 'Office' ? '🏢' : '🏠'}
-        </td>
-        <td className="w-5 px-1 py-[3px] text-center text-[10px]">
-          {day.confirmed ? <span className="text-emerald-600 dark:text-emerald-400">✓</span> : ''}
         </td>
         <td
           className="max-w-[14rem] truncate px-1.5 py-[3px] text-[10px] text-gray-500 dark:text-gray-400"
@@ -129,7 +126,7 @@ export function VariantD({ view }: { view: MonthView }) {
           </td>
         ))}
         <td className="border-l border-gray-200 dark:border-gray-700" />
-        <td colSpan={3} />
+        <td colSpan={1} />
       </tr>
     )
   }
@@ -183,11 +180,9 @@ export function VariantD({ view }: { view: MonthView }) {
                   </th>
                 )
               })}
-              <th className="border-l border-gray-200 px-1 py-1 text-right dark:border-gray-700">Unacc</th>
-              <th className="px-1 py-1">
+              <th className="border-l border-gray-200 px-1 py-1 dark:border-gray-700">
                 <span aria-hidden="true">📍</span>
               </th>
-              <th className="px-1 py-1">✓</th>
               <th className="px-1.5 py-1 text-left">Note</th>
             </tr>
           </thead>

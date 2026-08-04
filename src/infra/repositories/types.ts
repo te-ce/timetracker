@@ -57,7 +57,6 @@ export type DayTypeOverride = (typeof DAY_TYPE_OVERRIDES)[number]
 export interface Day {
   windows: WorkPeriod[]
   location?: WorkLocation | undefined
-  confirmed?: boolean | undefined
   note?: string | undefined
   autoCategoryOverride?: string | undefined
   dayTypeOverride?: DayTypeOverride | undefined
@@ -79,8 +78,6 @@ export interface MonthRepository {
   getAllMonths(): Promise<string[]>
 
   // Day-level verbs
-  confirmDay(date: string): Promise<void>
-  unconfirmDay(date: string): Promise<void>
   toggleLocation(date: string, currentEffectiveLocation: WorkLocation): Promise<void>
   saveNote(date: string, note: string): Promise<void>
   resetDay(date: string): Promise<void>

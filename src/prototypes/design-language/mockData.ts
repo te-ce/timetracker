@@ -33,7 +33,6 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-13T12:45', '2026-07-13T17:15', '_SUPPORT'),
     ],
     location: 'Office',
-    confirmed: true,
   },
   '2026-07-14': {
     windows: [
@@ -41,7 +40,6 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-14T13:30', '2026-07-14T16:45', '_COREMEDIA'),
     ],
     location: 'Remote',
-    confirmed: true,
   },
   '2026-07-15': {
     windows: [
@@ -49,7 +47,6 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-15T10:15', '2026-07-15T16:30', '_RELEASE'),
     ],
     location: 'Office',
-    confirmed: true,
   },
   '2026-07-16': {
     windows: [
@@ -57,12 +54,10 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-16T13:00', '2026-07-16T17:30', '_SUPPORT'),
     ],
     location: 'Remote',
-    confirmed: true,
   },
   '2026-07-17': {
     windows: [period('p1', '2026-07-17T09:00', '2026-07-17T15:30', '_MAINT')],
     location: 'Office',
-    confirmed: true,
   },
   '2026-07-18': { windows: [], dayTypeOverride: 'Weekend' },
   '2026-07-19': { windows: [], dayTypeOverride: 'Weekend' },
@@ -72,7 +67,6 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-20T12:30', '2026-07-20T17:00', '_RELEASE'),
     ],
     location: 'Office',
-    confirmed: true,
   },
   '2026-07-21': { windows: [], dayTypeOverride: 'Vacation' },
   '2026-07-22': {
@@ -81,7 +75,6 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-22T13:45', '2026-07-22T18:00', '_COREMEDIA'),
     ],
     location: 'Remote',
-    confirmed: true,
   },
   '2026-07-23': { windows: [], dayTypeOverride: 'SickDay' },
   '2026-07-24': {
@@ -90,7 +83,6 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-24T13:00', '2026-07-24T16:45', '_GUILDS'),
     ],
     location: 'Office',
-    confirmed: true,
   },
   '2026-07-25': { windows: [], dayTypeOverride: 'Weekend' },
   '2026-07-26': { windows: [], dayTypeOverride: 'Weekend' },
@@ -100,7 +92,6 @@ export const MOCK_MONTH: Record<string, Day> = {
       period('p2', '2026-07-27T12:45', null, '_RELEASE'),
     ],
     location: 'Office',
-    confirmed: false,
   },
 }
 

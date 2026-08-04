@@ -89,7 +89,6 @@ export const daySchema = z
   .object({
     windows: z.array(workPeriodSchema),
     location: z.enum(WORK_LOCATIONS).optional(),
-    confirmed: z.boolean().optional(),
     note: z.string().optional(),
     autoCategoryOverride: z.string().optional(),
     dayTypeOverride: z.enum(DAY_TYPE_OVERRIDES).optional(),

@@ -117,13 +117,6 @@ export function VariantA({ view, repository }: { view: MonthView; repository: Mo
                       title={`${slice.cat} — ${formatHours(slice.hours, timeFormat)}`}
                     />
                   ))}
-                  {day.unaccounted > 0.001 && (
-                    <span
-                      className="bg-gray-300 dark:bg-gray-600"
-                      style={{ width: `${(day.unaccounted / scale) * 100}%` }}
-                      title={`Unaccounted — ${formatHours(day.unaccounted, timeFormat)}`}
-                    />
-                  )}
                 </span>
               </span>
               <span className="text-right text-sm tabular-nums">

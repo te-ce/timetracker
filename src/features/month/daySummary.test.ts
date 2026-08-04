@@ -43,25 +43,33 @@ describe('buildMonthSummaries', () => {
     expect(result.days[0]!.entryTotal).toBe(3)
   })
 
-  it('marks balanced when all period hours are categorized (no uncategorized remainder)', () => {
+  it('marks complete when all period hours are categorized', () => {
     const monthData: MonthData = {
       '2026-05-01': {
         windows: [win('w1', '09:00', '17:00', '_COREMEDIA')],
       },
     }
     const result = buildMonthSummaries(2026, 5, { monthData, today })
-    expect(result.days[0]!.isEntriesBalanced).toBe(true)
     expect(result.days[0]!.dayStatus).toBe('complete')
   })
 
-  it('marks needs-review when period has uncategorized hours', () => {
+  it('still marks complete when a period has uncategorized hours — categorization no longer drives status', () => {
     const monthData: MonthData = {
       '2026-05-01': {
         windows: [win('w1', '09:00', '17:00', '_UNCATEGORIZED')],
       },
     }
     const result = buildMonthSummaries(2026, 5, { monthData, today })
-    expect(result.days[0]!.isEntriesBalanced).toBe(false)
+    expect(result.days[0]!.dayStatus).toBe('complete')
+  })
+
+  it('marks needs-review when categorized hours exceed worked hours', () => {
+    const monthData: MonthData = {
+      '2026-05-01': {
+        windows: [{ ...win('w1', '09:00', '10:00', '_COREMEDIA'), subtasks: [{ id: 's1', category: 'QA', hours: 3 }] }],
+      },
+    }
+    const result = buildMonthSummaries(2026, 5, { monthData, today })
     expect(result.days[0]!.dayStatus).toBe('needs-review')
   })
 
@@ -99,24 +107,6 @@ describe('buildMonthSummaries', () => {
     }
     const result = buildMonthSummaries(2026, 5, { monthData, today })
     expect(result.days[18]!.dayStatus).toBe('today')
-  })
-
-  it('surfaces isConfirmed from raw day data and sets confirmed status', () => {
-    const monthData: MonthData = {
-      '2026-05-01': { windows: [win('w1', '09:00', '12:00', '_UNCATEGORIZED')], confirmed: true },
-    }
-    const result = buildMonthSummaries(2026, 5, { monthData, today })
-    expect(result.days[0]!.isConfirmed).toBe(true)
-    expect(result.days[0]!.dayStatus).toBe('confirmed')
-    expect(result.days[0]!.displayStatus).toBe('confirmed')
-  })
-
-  it('sets isEntriesBalanced false when workedHours is zero', () => {
-    const monthData: MonthData = {
-      '2026-05-01': { windows: [] },
-    }
-    const result = buildMonthSummaries(2026, 5, { monthData, today })
-    expect(result.days[0]!.isEntriesBalanced).toBe(false)
   })
 
   it('excludes uncategorized hours from entryTotal', () => {

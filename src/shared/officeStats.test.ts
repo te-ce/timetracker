@@ -9,8 +9,7 @@ function summary(date: string, dayType: DaySummary['dayType'], workedHours: numb
     dayType,
     workedHours,
     entryTotal: workedHours,
-    isEntriesBalanced: true,
-    isConfirmed: false,
+
     dayStatus: 'complete',
     displayStatus: 'complete',
     statusReason: '',

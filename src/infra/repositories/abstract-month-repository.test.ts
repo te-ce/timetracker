@@ -25,25 +25,6 @@ async function seedDay(repo: AbstractMonthRepository, date: string, period: Work
 }
 
 describe.each(ADAPTERS)('%s (AbstractMonthRepository contract)', (_, makeRepo) => {
-  describe('confirmDay / unconfirmDay', () => {
-    it('confirmDay sets confirmed=true on the day', async () => {
-      const repo = makeRepo()
-      await seedDay(repo, '2026-06-07', makePeriod())
-      await repo.confirmDay('2026-06-07')
-      const data = await repo.getMonth(2026, 6)
-      expect(data['2026-06-07']?.confirmed).toBe(true)
-    })
-
-    it('unconfirmDay sets confirmed=false on the day', async () => {
-      const repo = makeRepo()
-      await seedDay(repo, '2026-06-07', makePeriod())
-      await repo.confirmDay('2026-06-07')
-      await repo.unconfirmDay('2026-06-07')
-      const data = await repo.getMonth(2026, 6)
-      expect(data['2026-06-07']?.confirmed).toBe(false)
-    })
-  })
-
   describe('toggleLocation', () => {
     it('sets location to Office when current effective is Remote', async () => {
       const repo = makeRepo()

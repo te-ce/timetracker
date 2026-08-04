@@ -11,8 +11,7 @@ function makeRow(date: string): MonthTableRow {
     entries: {},
     autoCategoryHours: 0,
     resolvedAutoCategory: null,
-    isEntriesBalanced: true,
-    hasUnaccountedHours: false,
+
     accumulatedOvertime: 0,
   }
 }

@@ -66,13 +66,6 @@ function DayTile({
               title={`${slice.cat} — ${formatHours(slice.hours, timeFormat)}`}
             />
           ))}
-          {day.unaccounted > 0.001 && (
-            <span
-              className="bg-gray-300 dark:bg-gray-600"
-              style={{ height: `${Math.min(100, (day.unaccounted / COLUMN_SCALE) * 96)}px` }}
-              title={`Unaccounted — ${formatHours(day.unaccounted, timeFormat)}`}
-            />
-          )}
         </span>
       </span>
 

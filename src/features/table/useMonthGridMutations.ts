@@ -3,7 +3,6 @@ import type { MonthData, MonthRepository, WorkLocation } from '../../infra/repos
 import { isDayTypeOverride } from '../day/dayType'
 import { invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useUndoStore } from '../../shared/undoStore'
-import type { MonthTableRow } from './buildMonthTable'
 
 export function calendarBaseDayType(date: string): 'WorkDay' | 'Weekend' {
   const [y = 0, m = 0, d = 0] = date.split('-').map(Number)
@@ -38,43 +37,6 @@ export function useMonthGridMutations({ repository, year, month, monthData }: Us
   function invalidate() {
     invalidateMonthByYearMonth(queryClient, year, month)
   }
-
-  const confirm = useMutation({
-    mutationFn: (row: MonthTableRow) => repository.confirmDay(row.date),
-    onSuccess: (_, row) => {
-      const { date } = row
-      useUndoStore.getState().push({
-        description: 'Confirm day',
-        undo: async () => {
-          await repository.unconfirmDay(date)
-          invalidate()
-        },
-        redo: async () => {
-          await repository.confirmDay(date)
-          invalidate()
-        },
-      })
-      invalidate()
-    },
-  })
-
-  const unconfirm = useMutation({
-    mutationFn: (date: string) => repository.unconfirmDay(date),
-    onSuccess: (_, date) => {
-      useUndoStore.getState().push({
-        description: 'Unconfirm day',
-        undo: async () => {
-          await repository.confirmDay(date)
-          invalidate()
-        },
-        redo: async () => {
-          await repository.unconfirmDay(date)
-          invalidate()
-        },
-      })
-      invalidate()
-    },
-  })
 
   const dayType = useMutation({
     mutationFn: ({ date, value }: { date: string; value: string }) => saveDayTypeInRepo(repository, date, value),
@@ -144,5 +106,5 @@ export function useMonthGridMutations({ repository, year, month, monthData }: Us
     },
   })
 
-  return { confirm, unconfirm, dayType, location }
+  return { dayType, location }
 }

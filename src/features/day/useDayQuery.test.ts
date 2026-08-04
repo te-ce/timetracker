@@ -187,16 +187,6 @@ describe('useDayQuery', () => {
 
       await waitFor(() => expect(result.current.autoCategoryOverride).toBe('_SUPPORT'))
     })
-
-    it('reflects confirmed flag from day data', async () => {
-      const monthRepo = new InMemoryMonthRepository({
-        '2026-05': { [DATE]: { windows: [], confirmed: true } },
-      })
-      const configRepo = new InMemoryConfigRepository()
-      const { result } = renderHook(() => useDayQuery(DATE), { wrapper: makeWrapper(monthRepo, configRepo) })
-
-      await waitFor(() => expect(result.current.isConfirmed).toBe(true))
-    })
   })
 
   describe('overtime carry-over across months', () => {

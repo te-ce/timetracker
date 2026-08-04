@@ -28,8 +28,8 @@ import { useDragReorder } from '../../shared/reorder'
 const TODAY_ROW_BG: [string, string] = ['bg-amber-100 dark:bg-amber-900/40', 'bg-amber-100 dark:bg-amber-900/40']
 
 // Rows read as a ledger: neutral zebra carries the eye across 12+ category columns, and colour is
-// spent only where it means "look here". Confirmed/complete days stay uncoloured — the ✓ and the
-// dot already say so — while the statuses that need action keep their tint.
+// spent only where it means "look here". Complete days stay uncoloured — the dot already says so
+// — while the statuses that need action keep their tint.
 const NEUTRAL_ROW_BG: [string, string] = ['bg-white dark:bg-gray-900', 'bg-gray-50/70 dark:bg-gray-800/40']
 
 function rowBackgroundPair(status: DisplayStatus, isToday: boolean): [string, string] {
@@ -48,14 +48,12 @@ function overtimeTextClass(value: number): string {
   return 'text-gray-400 dark:text-gray-500'
 }
 
-function classifyRow(row: MonthTableRow, confirmedDays: Set<string>, today: string) {
+function classifyRow(row: MonthTableRow, today: string) {
   const manualTotal = Object.values(row.entries).reduce((s, v) => s + v, 0)
   return classifyDay({
     dayType: row.dayType,
     workedHours: row.workedHours,
     manualTotal,
-    isEntriesBalanced: row.isEntriesBalanced,
-    isConfirmed: confirmedDays.has(row.date),
     isoDate: row.date,
     today,
   })
@@ -78,51 +76,6 @@ interface Props {
 
 function resolveSprintStart(sprintStartDate: string | null, year: number): string {
   return sprintStartDate ?? `${year}-01-01`
-}
-
-interface ConfirmCellProps {
-  date: string
-  isNonWorkDay: boolean
-  isConfirmed: boolean
-  onConfirm: () => void
-  onUnconfirm: () => void
-}
-
-function ConfirmCell({ date, isNonWorkDay, isConfirmed, onConfirm, onUnconfirm }: ConfirmCellProps) {
-  const confirmLabel = isConfirmed ? `Unconfirm ${date}` : `Confirm ${date}`
-  const confirmTitle = isConfirmed ? 'Confirmed — click to undo' : 'Confirm day'
-  function toggle() {
-    if (isNonWorkDay) return
-    if (isConfirmed) {
-      onUnconfirm()
-    } else {
-      onConfirm()
-    }
-  }
-
-  return (
-    <td
-      className={`w-10 text-center border-l border-gray-200 dark:border-gray-700 ${!isNonWorkDay ? 'cursor-pointer' : ''}`}
-      onClick={toggle}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          toggle()
-        }
-      }}
-      tabIndex={isNonWorkDay ? undefined : 0}
-      aria-label={confirmLabel}
-      data-tooltip={confirmTitle}
-    >
-      {!isNonWorkDay && (
-        <span
-          className={`text-xs font-bold ${isConfirmed ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-300 dark:text-gray-600'}`}
-        >
-          {isConfirmed ? '✓' : '○'}
-        </span>
-      )}
-    </td>
-  )
 }
 
 function ClearColumnHeader({ visible }: { visible: boolean }) {
@@ -194,7 +147,7 @@ export function MonthGrid({
     defaultWorkLocation,
   } = config
   const dayTypes = view.dayTypeOverrides
-  const { confirmedDays, workLocations, dayNotes } = view
+  const { workLocations, dayNotes } = view
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [dotPopover, setDotPopover] = useState<DotPopoverState | null>(null)
   const [notePopover, setNotePopover] = useState<NotePopoverState | null>(null)
@@ -287,12 +240,12 @@ export function MonthGrid({
   useCloseOnOutsideClickOrEscape(!!dotPopover, popoverRef, closeDotPopover, { escapeKey: true })
   useCloseOnOutsideClickOrEscape(!!notePopover, notePopoverRef, closeNotePopover)
 
-  const {
-    confirm: gridConfirmMutation,
-    unconfirm: gridUnconfirmMutation,
-    dayType: dayTypeMutation,
-    location: locationMutation,
-  } = useMonthGridMutations({ repository, year, month, monthData })
+  const { dayType: dayTypeMutation, location: locationMutation } = useMonthGridMutations({
+    repository,
+    year,
+    month,
+    monthData,
+  })
 
   function getCellValue(row: MonthTableRow, category: string): string {
     const manual = row.entries[category] ?? 0
@@ -310,7 +263,7 @@ export function MonthGrid({
   function handleDotClick(e: React.SyntheticEvent<HTMLElement>, row: MonthTableRow) {
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = dayTypes.get(row.date) ?? row.dayType
-    const { displayStatus, reason, leaveType } = classifyRow(row, confirmedDays, todayIso)
+    const { displayStatus, reason, leaveType } = classifyRow(row, todayIso)
     const categoryBreakdown: Record<string, number> = { ...row.entries }
     if (row.resolvedAutoCategory && row.autoCategoryHours > 0.001) {
       categoryBreakdown[row.resolvedAutoCategory] =
@@ -354,8 +307,8 @@ export function MonthGrid({
   const totalWorked = rows.reduce((sum, row) => sum + row.workedHours, 0)
   const sprintGroups = computeSprintGroups(rows, resolveSprintStart(sprintStartDate, year), sprintLengthDays)
 
-  // day + status + worked + overtime + location + separator + categories + confirm + note + (clear?)
-  const colCount = allCategories.length + 8 + Number(!!onClearDay)
+  // day + status + worked + overtime + location + separator + categories + note + (clear?)
+  const colCount = allCategories.length + 7 + Number(!!onClearDay)
 
   let globalRowIdx = 0
 
@@ -413,15 +366,6 @@ export function MonthGrid({
                 />
               ))}
               <th
-                className="px-1 py-1.5 text-center w-10 border-b border-l border-gray-200 dark:border-gray-700"
-                data-tooltip="Confirmed — click to confirm or unconfirm"
-              >
-                <span className="text-xs" aria-hidden="true">
-                  ✓
-                </span>
-                <span className="sr-only">Confirmed</span>
-              </th>
-              <th
                 className="px-1 py-1.5 text-center w-8 border-b border-l border-gray-200 dark:border-gray-700"
                 data-tooltip="Day notes"
               >
@@ -439,7 +383,7 @@ export function MonthGrid({
               const groupRows = group.rows.map((row) => {
                 const isNonWorkDay = row.dayType !== 'WorkDay'
                 const isToday = row.date === todayIso
-                const { displayStatus, reason, leaveType } = classifyRow(row, confirmedDays, todayIso)
+                const { displayStatus, reason, leaveType } = classifyRow(row, todayIso)
                 const bgPair = rowBackgroundPair(displayStatus, isToday)
                 const rowBg = bgPair[globalRowIdx % 2]!
                 const weekEdgeClass = isMonday(row.date) ? 'border-t border-gray-300 dark:border-gray-600' : ''
@@ -546,13 +490,6 @@ export function MonthGrid({
                         </td>
                       )
                     })}
-                    <ConfirmCell
-                      date={row.date}
-                      isNonWorkDay={isNonWorkDay}
-                      isConfirmed={confirmedDays.has(row.date)}
-                      onConfirm={() => gridConfirmMutation.mutate(row)}
-                      onUnconfirm={() => gridUnconfirmMutation.mutate(row.date)}
-                    />
                     <td className="w-8 text-center border-l border-gray-200 dark:border-gray-700">
                       {onNoteChange && (
                         <button
@@ -625,7 +562,6 @@ export function MonthGrid({
                         )
                       })}
                       <td></td>
-                      <td></td>
                       <ClearColumnPlaceholder visible={!!onClearDay} />
                     </tr>
                   )}
@@ -658,7 +594,6 @@ export function MonthGrid({
                   </td>
                 )
               })}
-              <td className="w-10 border-l border-gray-200 dark:border-gray-700"></td>
               <td className="w-8 border-l border-gray-200 dark:border-gray-700"></td>
               <ClearColumnPlaceholder visible={!!onClearDay} />
             </tr>

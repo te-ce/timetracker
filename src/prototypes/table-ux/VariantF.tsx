@@ -66,7 +66,7 @@ export function VariantF({ view }: { view: MonthView }) {
     return value > 0.001 ? formatHoursCompact(value, timeFormat) : ''
   }
 
-  const template = `3.4rem 0.75rem 3.2rem 2.8rem 3.4rem repeat(${categories.length}, minmax(2.6rem, 1fr)) 2.6rem 1.4rem 1.2rem`
+  const template = `3.4rem 0.75rem 3.2rem 2.8rem 3.4rem repeat(${categories.length}, minmax(2.6rem, 1fr)) 1.4rem`
   const cellBase = 'flex items-center justify-end px-1 text-[11px] tabular-nums'
 
   return (
@@ -123,9 +123,7 @@ export function VariantF({ view }: { view: MonthView }) {
                 </span>
               )
             })}
-            <span className="px-1 text-right">Unacc</span>
             <span className="text-center">📍</span>
-            <span className="text-center">✓</span>
           </div>
 
           {/* rows */}
@@ -170,12 +168,8 @@ export function VariantF({ view }: { view: MonthView }) {
                     {num(hoursFor(day, cat))}
                   </span>
                 ))}
-                <span className={`${cellBase} text-gray-500 dark:text-gray-400`}>{num(day.unaccounted)}</span>
                 <span className="text-center text-[10px]" title={day.location}>
                   {day.location === 'Office' ? '🏢' : '🏠'}
-                </span>
-                <span className="text-center text-[10px] text-emerald-600 dark:text-emerald-400">
-                  {day.confirmed ? '✓' : ''}
                 </span>
               </div>
             )
@@ -199,8 +193,6 @@ export function VariantF({ view }: { view: MonthView }) {
                 {num(monthTotals.categories.find((c) => c.cat === cat)?.hours ?? 0)}
               </span>
             ))}
-            <span className={cellBase}>{num(days.reduce((s, d) => s + d.unaccounted, 0))}</span>
-            <span />
             <span />
           </div>
         </div>

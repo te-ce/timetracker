@@ -13,7 +13,6 @@ export interface MonthDayCore {
   categoryHours: Record<string, number>
   entryTotal: number
   uncategorizedHours: number
-  isEntriesBalanced: boolean
 }
 
 export interface DeriveMonthDaysInput {
@@ -56,9 +55,8 @@ function deriveDayCore(
     .reduce((sum, [, h]) => sum + h, 0)
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
   const dayType: DayType = dayData?.dayTypeOverride ?? dayTypes?.get(iso) ?? classifyDayType(date)
-  const isEntriesBalanced = workedHours > 0 && uncategorizedHours < 0.01
 
-  return { date: iso, dayType, workedHours, categoryHours, entryTotal, uncategorizedHours, isEntriesBalanced }
+  return { date: iso, dayType, workedHours, categoryHours, entryTotal, uncategorizedHours }
 }
 
 /**

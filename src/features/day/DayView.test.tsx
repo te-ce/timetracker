@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
@@ -54,7 +54,6 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
     workLocation: null,
     autoCategoryOverride: null,
     dayTypeOverride: undefined,
-    isConfirmed: false,
     dayNote: null,
     sollstunden: 8,
     defaultWorkLocation: 'Remote',
@@ -64,7 +63,6 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
     manualTotal: 0,
     overtimeToDate: makeOvertimeToDate(),
     selectedDayType: 'WorkDay',
-    isEntriesBalanced: false,
     dayClassification: { displayStatus: 'untracked', reason: 'No work periods' },
     todayIso: '2026-06-03',
     officeDays: 0,
@@ -153,18 +151,6 @@ describe('DayView', () => {
       expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(/15.*may.*2026/i)
     })
 
-    it('shows Confirm button when day is not confirmed', () => {
-      stubQuery({ isConfirmed: false })
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.getByRole('button', { name: /confirm day/i })).toBeInTheDocument()
-    })
-
-    it('shows ✓ Confirmed button when day is confirmed', () => {
-      stubQuery({ isConfirmed: true })
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.getByRole('button', { name: /unconfirm day/i })).toBeInTheDocument()
-    })
-
     it('shows location button', () => {
       stubQuery({ effectiveLocation: 'Remote' })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
@@ -204,36 +190,6 @@ describe('DayView', () => {
     })
   })
 
-  describe('mutations', () => {
-    it('marks day as confirmed when Confirm is clicked', async () => {
-      stubQuery({ isConfirmed: false })
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      await userEvent.click(screen.getByRole('button', { name: /confirm day/i }))
-      await waitFor(async () => {
-        const data = await monthRepo.getMonth(2026, 5)
-        expect(data[testDate]?.confirmed).toBe(true)
-      })
-    })
-
-    it('unconfirms day when ✓ Confirmed is clicked', async () => {
-      stubQuery({ isConfirmed: true })
-      const repo = new InMemoryMonthRepository({
-        '2026-05': {
-          [testDate]: {
-            windows: [{ id: 'a', start: '09:00', end: '10:00', category: '_COREMEDIA', subtasks: [] }],
-            confirmed: true,
-          },
-        },
-      })
-      render(<DayView />, { wrapper: makeWrapper(repo) })
-      await userEvent.click(screen.getByRole('button', { name: /unconfirm day/i }))
-      await waitFor(async () => {
-        const data = await repo.getMonth(2026, 5)
-        expect(data[testDate]?.confirmed).toBe(false)
-      })
-    })
-  })
-
   describe('leave day', () => {
     it.each(['Vacation', 'SickDay'] as const)('hides work periods section and shows leave banner for %s', (dayType) => {
       stubQuery({ selectedDayType: dayType, sollstunden: 8 })
@@ -247,12 +203,6 @@ describe('DayView', () => {
       stubQuery({ selectedDayType: 'Vacation', sollstunden: 6 })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.getByText(/6h on leave/i)).toBeInTheDocument()
-    })
-
-    it('keeps Confirm button visible on leave day', () => {
-      stubQuery({ selectedDayType: 'Vacation', isConfirmed: false })
-      render(<DayView />, { wrapper: makeWrapper(monthRepo) })
-      expect(screen.getByRole('button', { name: /confirm day/i })).toBeInTheDocument()
     })
 
     it('shows work periods section for WorkDay', () => {

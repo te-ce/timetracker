@@ -157,7 +157,7 @@ describe('buildMonthTable', () => {
     expect(rows[0]!.entries['QA']).toBeCloseTo(0.5)
   })
 
-  it('sets hasUnaccountedHours true when uncategorized hours exceed threshold', () => {
+  it('reports uncategorized hours as autoCategoryHours', () => {
     const monthData: MonthData = {
       '2026-05-01': {
         windows: [win('w1', '09:00', '10:00', '_UNCATEGORIZED')],
@@ -165,11 +165,10 @@ describe('buildMonthTable', () => {
     }
     const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
 
-    expect(rows[0]!.hasUnaccountedHours).toBe(true)
     expect(rows[0]!.autoCategoryHours).toBe(1)
   })
 
-  it('sets hasUnaccountedHours false when all hours are categorized', () => {
+  it('reports zero autoCategoryHours when all hours are categorized', () => {
     const monthData: MonthData = {
       '2026-05-01': {
         windows: [win('w1', '09:00', '10:00', '_COREMEDIA')],
@@ -177,7 +176,7 @@ describe('buildMonthTable', () => {
     }
     const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
 
-    expect(rows[0]!.hasUnaccountedHours).toBe(false)
+    expect(rows[0]!.autoCategoryHours).toBe(0)
   })
 
   describe('accumulatedOvertime', () => {
@@ -319,22 +318,5 @@ describe('buildMonthTable', () => {
       expect(rows[0]!.accumulatedOvertime).toBe(0)
       expect(rows[30]!.accumulatedOvertime).toBe(0)
     })
-  })
-
-  it('sets hasUnaccountedHours false when uncategorized hours are at or below 0.001', () => {
-    // 1h window, 0.9995h sliced → ~0.0005h uncategorized (below threshold)
-    const monthData: MonthData = {
-      '2026-05-01': {
-        windows: [
-          {
-            ...win('w1', '09:00', '10:00', '_UNCATEGORIZED'),
-            subtasks: [{ id: 's1', category: 'QA', hours: 0.9995 }],
-          },
-        ],
-      },
-    }
-    const rows = buildMonthTable({ year: 2026, month: 5, monthData, dayTypes: new Map() })
-
-    expect(rows[0]!.hasUnaccountedHours).toBe(false)
   })
 })

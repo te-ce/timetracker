@@ -8,8 +8,7 @@ function daySummary(date: string, overrides: Partial<DaySummary> = {}): DaySumma
     dayType: 'WorkDay',
     workedHours: 8,
     entryTotal: 0,
-    isEntriesBalanced: true,
-    isConfirmed: false,
+
     dayStatus: 'complete',
     displayStatus: 'complete',
     statusReason: '',

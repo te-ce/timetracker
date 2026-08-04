@@ -11,8 +11,6 @@ export interface DaySummary {
   dayType: DayType
   workedHours: number
   entryTotal: number
-  isEntriesBalanced: boolean
-  isConfirmed: boolean
   dayStatus: DayStatus
   displayStatus: Exclude<DayStatus, 'today'>
   statusReason: string
@@ -37,7 +35,7 @@ export interface MonthSummaryResult {
   projectedWorkedHoursToday: number
 }
 
-function toDaySummary(core: MonthDayCore, isConfirmed: boolean, today: string): DaySummary {
+function toDaySummary(core: MonthDayCore, today: string): DaySummary {
   const {
     status: dayStatus,
     displayStatus,
@@ -47,8 +45,6 @@ function toDaySummary(core: MonthDayCore, isConfirmed: boolean, today: string): 
     dayType: core.dayType,
     workedHours: core.workedHours,
     manualTotal: core.entryTotal,
-    isEntriesBalanced: core.isEntriesBalanced,
-    isConfirmed,
     isoDate: core.date,
     today,
   })
@@ -62,8 +58,6 @@ function toDaySummary(core: MonthDayCore, isConfirmed: boolean, today: string): 
     dayType: core.dayType,
     workedHours: core.workedHours,
     entryTotal: core.entryTotal,
-    isEntriesBalanced: core.isEntriesBalanced,
-    isConfirmed,
     dayStatus,
     displayStatus,
     statusReason,
@@ -84,7 +78,7 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     ...(todayNow !== undefined ? { todayNow } : {}),
   })
 
-  const days = cores.map((core) => toDaySummary(core, monthData[core.date]?.confirmed ?? false, today))
+  const days = cores.map((core) => toDaySummary(core, today))
   const workDayCount = days.filter((d) => d.dayType === 'WorkDay').length
   const workedHoursPerDay = days.map((d) => d.workedHours)
   const hasAnyTrackedHours = workedHoursPerDay.some((h) => h > 0)

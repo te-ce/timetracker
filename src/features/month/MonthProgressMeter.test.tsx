@@ -11,8 +11,7 @@ function day(date: string, overrides: Partial<DaySummary> = {}): DaySummary {
     dayType: 'WorkDay',
     workedHours: 8,
     entryTotal: 0,
-    isEntriesBalanced: true,
-    isConfirmed: false,
+
     dayStatus: 'complete',
     displayStatus: 'complete',
     statusReason: '',

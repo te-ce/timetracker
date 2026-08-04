@@ -265,9 +265,6 @@ function DayCell({
             )}
             {note && <span>✎</span>}
             {location === 'Office' && <span>⌂</span>}
-            {displayStatus === 'confirmed' && (
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">✓</span>
-            )}
           </span>
         </span>
 

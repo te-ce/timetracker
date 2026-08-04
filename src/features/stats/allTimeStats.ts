@@ -219,7 +219,6 @@ interface DayFacts {
   firstStartMinutes: number | null
   lastEndMinutes: number | null
   location: WorkLocation | undefined
-  confirmed: boolean
   hasNote: boolean
   subtaskCount: number
   /** Minutes between consecutive periods — time on the clock but not on a task. */
@@ -301,7 +300,6 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
         firstStartMinutes: starts.length > 0 ? Math.min(...starts) : null,
         lastEndMinutes: ends.length > 0 ? Math.max(...ends) : null,
         location: day?.location,
-        confirmed: day?.confirmed === true,
         hasNote: (day?.note ?? '').trim().length > 0,
         subtaskCount: windows.reduce((sum, w) => sum + w.subtasks.length, 0),
         breakMinutes: breaks.total,

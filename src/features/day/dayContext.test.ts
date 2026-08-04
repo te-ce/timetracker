@@ -28,17 +28,6 @@ describe('composeDayContext', () => {
       expect(result.windows[0]?.id).toBe('w1')
     })
 
-    it('extracts isConfirmed', () => {
-      const monthData = makeMonthData({ [date]: { windows: [], confirmed: true } })
-      const result = composeDayContext(date, monthData, DEFAULTS, today)
-      expect(result.isConfirmed).toBe(true)
-    })
-
-    it('defaults isConfirmed to false when absent', () => {
-      const result = composeDayContext(date, makeMonthData(), DEFAULTS, today)
-      expect(result.isConfirmed).toBe(false)
-    })
-
     it('extracts dayNote', () => {
       const monthData = makeMonthData({ [date]: { windows: [], note: 'standup done' } })
       const result = composeDayContext(date, monthData, DEFAULTS, today)

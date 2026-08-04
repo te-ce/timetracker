@@ -69,14 +69,13 @@ describe('formatFactDate', () => {
   })
 })
 
-/** Mon 6th – Wed 8th July 2026 with a lunch break, a note, a confirmation and a subtask. */
+/** Mon 6th – Wed 8th July 2026 with a lunch break, a note and a subtask. */
 const RICH: MonthData = {
   '2026-07-06': {
     windows: [
       { id: 'a1', start: '08:00', end: '12:00', category: '_OTHER', subtasks: [] },
       { id: 'a2', start: '12:30', end: '17:00', category: '_OTHER', subtasks: [] },
     ],
-    confirmed: true,
     note: 'long day',
   },
   '2026-07-07': {

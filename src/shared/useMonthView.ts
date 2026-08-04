@@ -15,7 +15,6 @@ import type { ResolvedAppConfig } from './appConfigDefaults'
 interface MonthMaps {
   dayTypeOverrides: Map<string, DayTypeOverride>
   workLocations: Map<string, WorkLocation>
-  confirmedDays: Set<string>
   dayNotes: Map<string, string>
 }
 
@@ -30,15 +29,13 @@ function todayWindowsIn(monthData: MonthData, todayIso: string, year: number, mo
 function extractMonthMaps(monthData: MonthData): MonthMaps {
   const dayTypeOverrides = new Map<string, DayTypeOverride>()
   const workLocations = new Map<string, WorkLocation>()
-  const confirmedDays = new Set<string>()
   const dayNotes = new Map<string, string>()
   for (const [date, day] of Object.entries(monthData)) {
     if (day.dayTypeOverride) dayTypeOverrides.set(date, day.dayTypeOverride)
     if (day.location) workLocations.set(date, day.location)
-    if (day.confirmed) confirmedDays.add(date)
     if (day.note) dayNotes.set(date, day.note)
   }
-  return { dayTypeOverrides, workLocations, confirmedDays, dayNotes }
+  return { dayTypeOverrides, workLocations, dayNotes }
 }
 
 export type MonthView = ReturnType<typeof buildMonthView>
@@ -78,7 +75,7 @@ export function buildMonthView(input: MonthViewInput) {
     priorMonthsOvertime,
   )
 
-  const { dayTypeOverrides, workLocations, confirmedDays, dayNotes } = extractMonthMaps(monthData)
+  const { dayTypeOverrides, workLocations, dayNotes } = extractMonthMaps(monthData)
   const todayWindows = todayWindowsIn(monthData, todayIso, year, month)
   const todayBalance = deriveDayBalance({
     windows: todayWindows,
@@ -111,7 +108,6 @@ export function buildMonthView(input: MonthViewInput) {
     summaries,
     dayTypeOverrides,
     workLocations,
-    confirmedDays,
     dayNotes,
     overtimeToDate,
     sollstunden,

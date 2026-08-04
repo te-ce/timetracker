@@ -18,7 +18,6 @@ function w(id: string, start: string, end: string, category = '_COREMEDIA'): Wor
 interface SetupOptions {
   monthData?: MonthData
   autoCategory?: string
-  confirmedDays?: Set<string>
   dayTypes?: Map<string, DayTypeOverride>
   workLocations?: Map<string, WorkLocation>
   defaultWorkLocation?: WorkLocation | null
@@ -46,7 +45,6 @@ function foldIntoMonthData(opts: SetupOptions): MonthData {
     monthData[date] = existing
     return existing
   }
-  for (const date of opts.confirmedDays ?? []) dayAt(date).confirmed = true
   for (const [date, dayType] of opts.dayTypes ?? []) dayAt(date).dayTypeOverride = dayType
   for (const [date, location] of opts.workLocations ?? []) dayAt(date).location = location
   return monthData
@@ -139,12 +137,11 @@ describe('MonthGrid', () => {
   })
 
   describe('row colour', () => {
-    it('keeps confirmed days neutral so colour is left for days needing attention', () => {
+    it('keeps complete days neutral so colour is left for days needing attention', () => {
       setup({
         monthData: {
           '2026-05-04': { windows: [{ id: 'w1', start: '09:00', end: '17:00', category: '_COREMEDIA', subtasks: [] }] },
         },
-        confirmedDays: new Set(['2026-05-04']),
       })
       const row = screen.getByRole('row', { name: '2026-05-04' })
       expect(row.className).not.toMatch(/bg-emerald/)
@@ -291,65 +288,6 @@ describe('MonthGrid', () => {
       )
       const header = await screen.findByRole('columnheader', { name: '_SUPPORT' })
       expect(header).toHaveAttribute('draggable', 'true')
-    })
-  })
-
-  describe('confirm/unconfirm day', () => {
-    it('clicking the confirm cell saves to the repository', async () => {
-      const { repo } = setup({
-        monthData: {
-          '2026-05-04': {
-            windows: [w('w1', '09:00', '17:00')],
-          },
-        },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const confirmCell = within(row).getByRole('cell', { name: 'Confirm 2026-05-04' })
-      await userEvent.click(confirmCell)
-
-      await waitFor(async () => {
-        const data = await repo.getMonth(2026, 5)
-        expect(data['2026-05-04']?.confirmed).toBe(true)
-      })
-    })
-
-    it('clicking an already-confirmed day removes confirmation', async () => {
-      const { repo } = setup({
-        confirmedDays: new Set(['2026-05-04']),
-        monthData: {
-          '2026-05-04': { windows: [], confirmed: true },
-        },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      const unconfirmCell = within(row).getByRole('cell', { name: 'Unconfirm 2026-05-04' })
-      await userEvent.click(unconfirmCell)
-
-      await waitFor(async () => {
-        const data = await repo.getMonth(2026, 5)
-        expect(data['2026-05-04']?.confirmed).toBeFalsy()
-      })
-    })
-
-    it('confirmed day shows checkmark', async () => {
-      setup({ confirmedDays: new Set(['2026-05-04']) })
-
-      const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      expect(within(row).getByText('✓')).toBeInTheDocument()
-    })
-
-    it('unconfirmed work day shows circle', async () => {
-      setup()
-      const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      expect(within(row).getByText('○')).toBeInTheDocument()
-    })
-
-    it('non-work days do not show the confirm circle', async () => {
-      setup()
-      const row = await screen.findByRole('row', { name: /2026-05-02/ })
-      expect(within(row).queryByText('✓')).not.toBeInTheDocument()
-      expect(within(row).queryByText('○')).not.toBeInTheDocument()
     })
   })
 
@@ -835,43 +773,6 @@ describe('MonthGrid', () => {
   describe('undo/redo', () => {
     beforeEach(() => {
       useUndoStore.setState({ past: [], future: [], canUndo: false, canRedo: false })
-    })
-
-    it('confirming a day registers an undo command that unconfirms it', async () => {
-      const { repo } = setup({
-        monthData: { '2026-05-04': { windows: [w('w1', '09:00', '17:00')] } },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      await userEvent.click(within(row).getByRole('cell', { name: 'Confirm 2026-05-04' }))
-
-      await waitFor(() => expect(useUndoStore.getState().canUndo).toBe(true))
-
-      await act(async () => {
-        await useUndoStore.getState().undo()
-      })
-
-      const data = await repo.getMonth(2026, 5)
-      expect(data['2026-05-04']?.confirmed).toBeFalsy()
-    })
-
-    it('unconfirming a day registers an undo command that reconfirms it', async () => {
-      const { repo } = setup({
-        confirmedDays: new Set(['2026-05-04']),
-        monthData: { '2026-05-04': { windows: [], confirmed: true } },
-      })
-
-      const row = await screen.findByRole('row', { name: /2026-05-04/ })
-      await userEvent.click(within(row).getByRole('cell', { name: 'Unconfirm 2026-05-04' }))
-
-      await waitFor(() => expect(useUndoStore.getState().canUndo).toBe(true))
-
-      await act(async () => {
-        await useUndoStore.getState().undo()
-      })
-
-      const data = await repo.getMonth(2026, 5)
-      expect(data['2026-05-04']?.confirmed).toBe(true)
     })
 
     it('changing day type registers an undo command that restores the previous type', async () => {

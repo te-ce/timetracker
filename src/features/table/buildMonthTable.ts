@@ -14,8 +14,6 @@ export interface MonthTableRow {
   autoCategoryHours: number
   /** AutoCategory resolved for this day: per-day override (ADR 0004) falling back to the global default. */
   resolvedAutoCategory: string | null
-  isEntriesBalanced: boolean
-  hasUnaccountedHours: boolean
   /** Running over/undertime total up to this date. null for future dates. */
   accumulatedOvertime: number | null
 }
@@ -50,8 +48,6 @@ function buildDayRow(
     entries: Object.fromEntries(Object.entries(core.categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)),
     autoCategoryHours: core.uncategorizedHours,
     resolvedAutoCategory: resolveAutoCategory(autoCategoryOverride, globalAutoCategory),
-    isEntriesBalanced: core.isEntriesBalanced,
-    hasUnaccountedHours: core.uncategorizedHours > 0.001,
   }
 }
 

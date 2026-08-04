@@ -191,11 +191,6 @@ export function VariantC({ view, repository }: { view: MonthView; repository: Mo
                     </span>
                   )
                 })}
-                {selected.unaccounted > 0.001 && (
-                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                    unaccounted {formatHoursCompact(selected.unaccounted, timeFormat)}
-                  </span>
-                )}
               </div>
             )}
             {selected.note && (

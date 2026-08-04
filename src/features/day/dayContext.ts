@@ -15,7 +15,6 @@ export interface DayRawData {
   workLocation: WorkLocation | null
   autoCategoryOverride: string | null
   dayTypeOverride: DayTypeOverride | undefined
-  isConfirmed: boolean
   dayNote: string | null
 }
 
@@ -31,7 +30,6 @@ export interface DayComputedStats {
   manualTotal: number
   overtimeToDate: OvertimeToDate
   selectedDayType: DayType
-  isEntriesBalanced: boolean
   dayClassification: { displayStatus: Exclude<DayStatus, 'today'>; reason: string }
   officeDays: number
   totalWorkDays: number
@@ -49,8 +47,6 @@ const FUTURE_SUMMARY: DaySummary = {
   dayType: 'WorkDay',
   workedHours: 0,
   entryTotal: 0,
-  isEntriesBalanced: false,
-  isConfirmed: false,
   dayStatus: 'future',
   displayStatus: 'future',
   statusReason: '',
@@ -64,7 +60,6 @@ function extractDayFields(dayData: Day | undefined): DayRawData {
     workLocation: day.location ?? null,
     autoCategoryOverride: day.autoCategoryOverride ?? null,
     dayTypeOverride: day.dayTypeOverride,
-    isConfirmed: day.confirmed ?? false,
     dayNote: day.note ?? null,
   }
 }
@@ -76,7 +71,6 @@ function fromDaySummary(
     dayClassification: { displayStatus: s.displayStatus, reason: s.statusReason },
     workedHours: s.workedHours,
     selectedDayType: s.dayType,
-    isEntriesBalanced: s.isEntriesBalanced,
   }
 }
 

@@ -11,16 +11,6 @@ interface UseDayMutationsInput {
 export function useDayMutations({ date, effectiveLocation, repository }: UseDayMutationsInput) {
   const queryClient = useQueryClient()
 
-  const confirm = useMutation({
-    mutationFn: () => repository.confirmDay(date),
-    onSuccess: () => invalidateMonth(queryClient, date),
-  })
-
-  const unconfirm = useMutation({
-    mutationFn: () => repository.unconfirmDay(date),
-    onSuccess: () => invalidateMonth(queryClient, date),
-  })
-
   const toggleLocation = useMutation({
     mutationFn: () => repository.toggleLocation(date, effectiveLocation),
     onSuccess: () => invalidateMonth(queryClient, date),
@@ -36,5 +26,5 @@ export function useDayMutations({ date, effectiveLocation, repository }: UseDayM
     onSuccess: () => invalidateMonth(queryClient, date),
   })
 
-  return { confirm, unconfirm, toggleLocation, saveNote, resetDay }
+  return { toggleLocation, saveNote, resetDay }
 }

@@ -32,45 +32,11 @@ function period(id: string): WorkPeriod {
   return { id, start: '09:00', end: '10:00', category: '_COREMEDIA', subtasks: [] }
 }
 
-function makeRepo(initial: Record<string, { windows: WorkPeriod[]; confirmed?: boolean; note?: string }> = {}) {
+function makeRepo(initial: Record<string, { windows: WorkPeriod[]; note?: string }> = {}) {
   return new InMemoryMonthRepository({ '2026-05': initial })
 }
 
 describe('useDayMutations', () => {
-  describe('confirm', () => {
-    it('sets confirmed to true', async () => {
-      const repo = makeRepo({ [date]: { windows: [period('a')] } })
-      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
-        wrapper: makeWrapper(makeQC()),
-      })
-
-      await act(async () => {
-        result.current.confirm.mutate()
-        await flush()
-      })
-
-      const data = await repo.getMonth(2026, 5)
-      expect(data[date]?.confirmed).toBe(true)
-    })
-  })
-
-  describe('unconfirm', () => {
-    it('sets confirmed to false', async () => {
-      const repo = makeRepo({ [date]: { windows: [period('a')], confirmed: true } })
-      const { result } = renderHook(() => useDayMutations({ date, effectiveLocation: 'Remote', repository: repo }), {
-        wrapper: makeWrapper(makeQC()),
-      })
-
-      await act(async () => {
-        result.current.unconfirm.mutate()
-        await flush()
-      })
-
-      const data = await repo.getMonth(2026, 5)
-      expect(data[date]?.confirmed).toBe(false)
-    })
-  })
-
   describe('toggleLocation', () => {
     it('switches Remote to Office', async () => {
       const repo = makeRepo({ [date]: { windows: [period('a')] } })

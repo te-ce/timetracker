@@ -6,7 +6,6 @@ import type { ReactNode } from 'react'
 import { useMonthGridMutations, calendarBaseDayType } from './useMonthGridMutations'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import type { MonthData, WorkPeriod } from '../../infra/repositories/types'
-import type { MonthTableRow } from './buildMonthTable'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -31,25 +30,7 @@ const YEAR = 2026
 const MONTH = 5
 const date = '2026-05-15' // Friday
 
-function period(id: string): WorkPeriod {
-  return { id, start: '09:00', end: '10:00', category: '_COREMEDIA', subtasks: [] }
-}
-
-function row(rowDate: string): MonthTableRow {
-  return {
-    date: rowDate,
-    dayType: 'WorkDay',
-    workedHours: 0,
-    entries: {},
-    autoCategoryHours: 0,
-    resolvedAutoCategory: null,
-    isEntriesBalanced: false,
-    hasUnaccountedHours: false,
-    accumulatedOvertime: null,
-  }
-}
-
-function makeRepo(initial: Record<string, { windows: WorkPeriod[]; confirmed?: boolean }> = {}) {
+function makeRepo(initial: Record<string, { windows: WorkPeriod[] }> = {}) {
   return new InMemoryMonthRepository({ '2026-05': initial })
 }
 
@@ -71,32 +52,6 @@ describe('calendarBaseDayType', () => {
 })
 
 describe('useMonthGridMutations', () => {
-  it('confirm sets confirmed to true', async () => {
-    const repo = makeRepo({ [date]: { windows: [period('a')] } })
-    const { result } = renderMutations(repo)
-
-    await act(async () => {
-      result.current.confirm.mutate(row(date))
-      await flush()
-    })
-
-    const data = await repo.getMonth(YEAR, MONTH)
-    expect(data[date]?.confirmed).toBe(true)
-  })
-
-  it('unconfirm sets confirmed to false', async () => {
-    const repo = makeRepo({ [date]: { windows: [period('a')], confirmed: true } })
-    const { result } = renderMutations(repo)
-
-    await act(async () => {
-      result.current.unconfirm.mutate(date)
-      await flush()
-    })
-
-    const data = await repo.getMonth(YEAR, MONTH)
-    expect(data[date]?.confirmed).toBe(false)
-  })
-
   it('dayType sets a non-calendar override', async () => {
     const repo = makeRepo({ [date]: { windows: [] } })
     const { result } = renderMutations(repo, { [date]: { windows: [] } })

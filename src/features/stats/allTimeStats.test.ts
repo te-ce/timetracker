@@ -356,7 +356,6 @@ describe('buildAllTimeStats discipline', () => {
             subtasks: [{ id: 's1', category: '_SUPPORT', hours: 2 }],
           },
         ],
-        confirmed: true,
         note: 'shipped the thing',
       },
       '2026-07-07': { windows: [period('08:00', '16:00')] },

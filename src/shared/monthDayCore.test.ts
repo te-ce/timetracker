@@ -77,7 +77,7 @@ describe('deriveMonthDayCores', () => {
     expect(days[17]!.workedHours).toBeGreaterThan(14)
   })
 
-  it('computes isEntriesBalanced from workedHours and uncategorized remainder', () => {
+  it('computes uncategorizedHours from windows carrying the uncategorized sentinel', () => {
     const monthData: MonthData = { '2026-05-01': { windows: [win('w1', '09:00', '17:00', '_COREMEDIA')] } }
     const { days } = deriveMonthDayCores({
       year: 2026,
@@ -86,17 +86,17 @@ describe('deriveMonthDayCores', () => {
       weekdayHours: [0, 8, 8, 8, 8, 8, 0],
       today: '2026-05-01',
     })
-    expect(days[0]!.isEntriesBalanced).toBe(true)
+    expect(days[0]!.uncategorizedHours).toBe(0)
 
-    const unbalanced: MonthData = { '2026-05-01': { windows: [win('w1', '09:00', '17:00', '_UNCATEGORIZED')] } }
-    const { days: unbalancedDays } = deriveMonthDayCores({
+    const uncategorized: MonthData = { '2026-05-01': { windows: [win('w1', '09:00', '17:00', '_UNCATEGORIZED')] } }
+    const { days: uncategorizedDays } = deriveMonthDayCores({
       year: 2026,
       month: 5,
-      monthData: unbalanced,
+      monthData: uncategorized,
       weekdayHours: [0, 8, 8, 8, 8, 8, 0],
       today: '2026-05-01',
     })
-    expect(unbalancedDays[0]!.isEntriesBalanced).toBe(false)
+    expect(uncategorizedDays[0]!.uncategorizedHours).toBe(8)
   })
 
   it('projects a planned-stop period on today to its full duration', () => {
