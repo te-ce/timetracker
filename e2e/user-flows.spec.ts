@@ -132,7 +132,6 @@ test.describe('live subtask tracking', () => {
     const workSection = page.getByRole('region', { name: 'Work periods' })
 
     await workSection.getByRole('button', { name: /start subtask/i }).click()
-    await workSection.getByRole('button', { name: 'Start', exact: true }).click()
 
     // Only one thing is tracked: the subtask took over, so it cannot be started again
     await expect(workSection.getByRole('button', { name: /stop subtask/i })).toBeVisible()
