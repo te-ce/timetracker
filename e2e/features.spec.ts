@@ -32,7 +32,7 @@ test.describe('daily booking', () => {
     }, seedBase())
   })
 
-  test('start work period, confirm day', async ({ page }) => {
+  test('start work period, shows complete status', async ({ page }) => {
     await page.goto(`/?date=${TEST_DATE}`)
 
     const workSection = page.getByRole('region', { name: 'Work periods' })
@@ -43,14 +43,13 @@ test.describe('daily booking', () => {
       timeout: 10_000,
     })
 
-    await page.getByRole('button', { name: 'Confirm day' }).click()
-    await expect(page.getByRole('button', { name: 'Unconfirm day' })).toBeVisible()
+    await expect(page.getByText('Complete')).toBeVisible()
   })
 })
 
 // ─── Test 2: Month status propagates ─────────────────────────────────────────
 
-const CONFIRMED_DAY_SEED = {
+const DAY_SEED = {
   [TEST_DATE]: {
     windows: [
       {
@@ -61,53 +60,22 @@ const CONFIRMED_DAY_SEED = {
         subtasks: [{ id: 's1', category: CATEGORY, hours: 8 }],
       },
     ],
-    confirmed: true,
   },
 }
 
 test.describe('month status', () => {
-  test('confirmed day appears green with checkmark in month calendar', async ({ page }) => {
+  test('complete day appears green in month calendar', async ({ page }) => {
     await page.addInitScript(
       (seed: Record<string, string>) => {
         for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
       },
-      seedBase({ 'timetracker_months/2026-05.json': JSON.stringify(CONFIRMED_DAY_SEED) }),
+      seedBase({ 'timetracker_months/2026-05.json': JSON.stringify(DAY_SEED) }),
     )
 
     await page.goto('/month?year=2026&month=5')
 
     const dayCell = page.getByRole('button', { name: /25 May 2026/ })
     await expect(dayCell).toHaveClass(/bg-emerald-100/)
-    await expect(dayCell).toContainText('✓')
-  })
-
-  test('unconfirmed complete day does not show checkmark', async ({ page }) => {
-    await page.addInitScript(
-      (seed: Record<string, string>) => {
-        for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
-      },
-      seedBase({
-        'timetracker_months/2026-05.json': JSON.stringify({
-          [TEST_DATE]: {
-            windows: [
-              {
-                id: 'w1',
-                start: '09:00',
-                end: '17:00',
-                category: CATEGORY,
-                subtasks: [{ id: 's1', category: CATEGORY, hours: 8 }],
-              },
-            ],
-          },
-        }),
-      }),
-    )
-
-    await page.goto('/month?year=2026&month=5')
-
-    const dayCell = page.getByRole('button', { name: /25 May 2026/ })
-    await expect(dayCell).toHaveClass(/bg-emerald-100/)
-    await expect(dayCell).not.toContainText('✓')
   })
 
   test('every calendar day shows a status dot', async ({ page }) => {
@@ -115,29 +83,28 @@ test.describe('month status', () => {
       (seed: Record<string, string>) => {
         for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
       },
-      seedBase({ 'timetracker_months/2026-05.json': JSON.stringify(CONFIRMED_DAY_SEED) }),
+      seedBase({ 'timetracker_months/2026-05.json': JSON.stringify(DAY_SEED) }),
     )
 
     await page.goto('/month?year=2026&month=5')
 
-    // Confirmed day: dot inside the button
-    const confirmedCell = page.getByRole('button', { name: /25 May 2026/ })
-    await expect(confirmedCell.locator('span.rounded-full').first()).toBeVisible()
+    // Complete day: dot inside the button
+    const completeCell = page.getByRole('button', { name: /25 May 2026/ })
+    await expect(completeCell.locator('span.rounded-full').first()).toBeVisible()
 
     // Untracked workday (no data seeded for this date)
     const untrackedCell = page.getByRole('button', { name: /Monday, 4 May 2026/ })
     await expect(untrackedCell.locator('span.rounded-full').first()).toBeVisible()
   })
 
-  test('legend shows Confirmed but not Complete', async ({ page }) => {
+  test('legend shows Complete', async ({ page }) => {
     await page.addInitScript((seed: Record<string, string>) => {
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
     }, seedBase())
 
     await page.goto('/month?year=2026&month=5')
 
-    await expect(page.getByText('Confirmed')).toBeVisible()
-    await expect(page.getByText('Complete')).not.toBeVisible()
+    await expect(page.getByText('Complete')).toBeVisible()
   })
 })
 
@@ -294,7 +261,7 @@ test.describe('stats view', () => {
         for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
       },
       seedBase({
-        'timetracker_months/2026-05.json': JSON.stringify(CONFIRMED_DAY_SEED),
+        'timetracker_months/2026-05.json': JSON.stringify(DAY_SEED),
         'timetracker_months-index.json': JSON.stringify({ '2026-05': true }),
       }),
     )

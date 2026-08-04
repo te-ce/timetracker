@@ -245,19 +245,11 @@ test.describe('day type leave', () => {
     await expect(page.getByText(/6h on leave/i)).toBeVisible()
   })
 
-  test('Confirm button stays visible on a leave day', async ({ page }) => {
+  test('leave day shows the Leave status badge', async ({ page }) => {
     await page.goto(`/?date=${TEST_DATE}`)
     await page.getByLabel('Day type').selectOption('SickDay')
 
-    await expect(page.getByRole('button', { name: 'Confirm' })).toBeVisible()
-  })
-
-  test('leave day can be confirmed', async ({ page }) => {
-    await page.goto(`/?date=${TEST_DATE}`)
-    await page.getByLabel('Day type').selectOption('Vacation')
-    await page.getByRole('button', { name: 'Confirm' }).click()
-
-    await expect(page.getByRole('button', { name: /unconfirm day/i })).toBeVisible()
+    await expect(page.getByText('Leave', { exact: true })).toBeVisible()
   })
 })
 
@@ -343,8 +335,16 @@ test.describe('day note', () => {
 test.describe('review flow', () => {
   const NEEDS_REVIEW_SEED = {
     [TEST_DATE]: {
-      // _UNCATEGORIZED remainder → isEntriesBalanced=false → needs-review
-      windows: [{ id: 'w1', start: '09:00', end: '17:00', category: '_UNCATEGORIZED', subtasks: [] }],
+      // Categorized (subtask) hours exceed worked hours → over-booked → needs-review
+      windows: [
+        {
+          id: 'w1',
+          start: '09:00',
+          end: '10:00',
+          category: '_COREMEDIA',
+          subtasks: [{ id: 's1', category: '_SUPPORT', hours: 3 }],
+        },
+      ],
     },
   }
 
@@ -357,33 +357,6 @@ test.describe('review flow', () => {
 
     const dayCell = page.getByRole('button', { name: /26 May 2026/ })
     await expect(dayCell.locator('span.bg-red-400')).toBeVisible()
-  })
-
-  test('confirming a needs-review day turns it green in month view', async ({ page }) => {
-    await page.addInitScript((seed: Record<string, string>) => {
-      for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, v)
-    }, seedMonth(NEEDS_REVIEW_SEED))
-
-    // Start on MonthView — addInitScript runs only for this initial goto
-    await page.goto('/month?year=2026&month=5')
-    const dayCell = page.getByRole('button', { name: /26 May 2026/ })
-    await expect(dayCell.locator('span.bg-red-400')).toBeVisible()
-
-    // Click day cell → client-side navigation (no addInitScript re-run)
-    await dayCell.click()
-    await expect(page).toHaveURL(/\?date=2026-05-26/)
-
-    // Confirm the day
-    await page.getByRole('button', { name: /confirm day/i }).click()
-    await expect(page.getByRole('button', { name: /unconfirm day/i })).toBeVisible()
-
-    // Go back to MonthView — client-side back, localStorage unchanged
-    await page.goBack()
-    await expect(page).toHaveURL(/\/month/)
-
-    // Day should now be green (confirmed)
-    await expect(page.getByRole('button', { name: /26 May 2026/ })).toHaveClass(/bg-emerald-100/)
-    await expect(page.getByRole('button', { name: /26 May 2026/ })).toContainText('✓')
   })
 })
 
@@ -407,7 +380,6 @@ test.describe('sprint view', () => {
           subtasks: [{ id: 's1', category: CATEGORY, hours: 8 }],
         },
       ],
-      confirmed: true,
     },
   }
 
