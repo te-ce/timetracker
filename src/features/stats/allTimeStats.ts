@@ -1,10 +1,11 @@
-import type { MonthData, WorkLocation } from '../../infra/repositories/types'
+import type { MonthData, WorkLocation, WorkPeriod } from '../../infra/repositories/types'
 import type { DayType } from '../day/dayType'
 import { deriveMonthDayCores } from '../../shared/monthDayCore'
 import { targetHoursForDate, type WeekdayHours } from '../../shared/weekdayHours'
 import { UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { calculateWorkedHours, parseMinutes } from '../../shared/worktime'
 import { parseLocalDate } from '../../shared/dateUtils'
+import { isoWeekOf, isoWeekYearOf } from '../../shared/isoWeek'
 
 export interface StatsMonth {
   /** `YYYY-MM` */
@@ -75,6 +76,61 @@ export interface LocationStats {
   officePercent: number
 }
 
+export interface RhythmStats {
+  /** Quarter-hour slot you start in most often, e.g. "08:00". */
+  mostCommonStartSlot: string | null
+  mostCommonStartCount: number
+  /** Mean absolute deviation of the first start from the average start, in minutes. */
+  startSpreadMinutes: number | null
+  /** Tracked days whose first period began before 08:00. */
+  earlyStarts: number
+  /** Tracked days whose last period ended at 18:00 or later. */
+  lateFinishes: number
+}
+
+export interface BreakStats {
+  avgMinutesPerDay: number
+  longestWithinDay: { date: string; minutes: number } | null
+  /** Tracked days logged as a single unbroken period. */
+  daysWithoutBreak: number
+}
+
+export interface WeekStat {
+  isoWeek: number
+  isoYear: number
+  label: string
+  hours: number
+  trackedDays: number
+}
+
+export interface WeekStats {
+  bestWeek: WeekStat | null
+  avgHours: number
+  /** Fully-stored past weeks where every WorkDay got tracked. */
+  perfectWeeks: number
+  /** Fully-stored past weeks with at least one WorkDay — what `perfectWeeks` is out of. */
+  completeWeeks: number
+}
+
+export interface ExtremeStats {
+  bestDayBalance: { date: string; balance: number } | null
+  worstDayBalance: { date: string; balance: number } | null
+  medianDayHours: number
+  weekendHours: number
+  /** Longest run of untracked WorkDays in the past — the longest stretch away. */
+  longestAbsence: { workdays: number; from: string; to: string } | null
+}
+
+export interface DisciplineStats {
+  confirmedDays: number
+  confirmedPercent: number
+  daysWithNotes: number
+  subtaskCount: number
+  distinctCategories: number
+  /** Tracked days that ran entirely on one category. */
+  singleCategoryDays: number
+}
+
 export interface AllTimeStats {
   hasData: boolean
   totalHours: number
@@ -105,6 +161,17 @@ export interface AllTimeStats {
   currentStreak: number
   longestStreak: StreakStat | null
   location: LocationStats
+  rhythm: RhythmStats
+  breaks: BreakStats
+  weeks: WeekStats
+  extremes: ExtremeStats
+  discipline: DisciplineStats
+  /** Hours still to go until the next whole 100 tracked hours. */
+  hoursToNextMilestone: number
+  /** Next whole-100 hours mark, e.g. 500 while sitting on 412h. */
+  nextMilestone: number
+  /** Days since the first tracked day, inclusive — how long tracking has been going. */
+  trackingSinceDays: number
   vacationDays: number
   sickDays: number
   /** Days tracked that were not WorkDays — weekends, holidays, leave. */
@@ -164,8 +231,35 @@ interface DayFacts {
   firstStartMinutes: number | null
   lastEndMinutes: number | null
   location: WorkLocation | undefined
+  confirmed: boolean
+  hasNote: boolean
+  subtaskCount: number
+  /** Minutes between consecutive periods — time on the clock but not on a task. */
+  breakMinutes: number
+  longestBreakMinutes: number
   /** A month boundary was skipped before this day, so streaks must not span it. */
   afterGap: boolean
+}
+
+/** Gaps between consecutive closed periods: total and largest, in minutes. */
+function breaksBetween(windows: WorkPeriod[]): { total: number; longest: number } {
+  const closed = windows
+    .filter((w) => w.end !== null)
+    .map((w) => ({ start: parseMinutes(w.start), end: parseMinutes(w.end ?? '00:00') }))
+    .sort((a, b) => a.start - b.start)
+
+  let total = 0
+  let longest = 0
+  for (let i = 1; i < closed.length; i++) {
+    const prev = closed[i - 1]
+    const current = closed[i]
+    if (prev === undefined || current === undefined) continue
+    const gap = current.start - prev.end
+    if (gap <= 0) continue
+    total += gap
+    longest = Math.max(longest, gap)
+  }
+  return { total, longest }
 }
 
 function flattenDays(input: AllTimeStatsInput): DayFacts[] {
@@ -188,9 +282,11 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
     })
 
     days.forEach((core, dayIdx) => {
-      const windows = month.data[core.date]?.windows ?? []
+      const day = month.data[core.date]
+      const windows = day?.windows ?? []
       const starts = windows.map((w) => parseMinutes(w.start))
       const ends = windows.flatMap((w) => (w.end === null ? [] : [parseMinutes(w.end)]))
+      const breaks = breaksBetween(windows)
       facts.push({
         date: core.date,
         dayType: core.dayType,
@@ -200,7 +296,12 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
         periodCount: windows.length,
         firstStartMinutes: starts.length > 0 ? Math.min(...starts) : null,
         lastEndMinutes: ends.length > 0 ? Math.max(...ends) : null,
-        location: month.data[core.date]?.location,
+        location: day?.location,
+        confirmed: day?.confirmed === true,
+        hasNote: (day?.note ?? '').trim().length > 0,
+        subtaskCount: windows.reduce((sum, w) => sum + w.subtasks.length, 0),
+        breakMinutes: breaks.total,
+        longestBreakMinutes: breaks.longest,
         afterGap: afterGap && dayIdx === 0,
       })
     })
@@ -332,6 +433,159 @@ function mean(values: number[]): number | null {
   return values.reduce((a, b) => a + b, 0) / values.length
 }
 
+function median(values: number[]): number {
+  if (values.length === 0) return 0
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  if (sorted.length % 2 === 1) return sorted[mid] ?? 0
+  return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2
+}
+
+const QUARTER_HOUR = 15
+const EARLY_START_MINUTES = 8 * 60
+const LATE_FINISH_MINUTES = 18 * 60
+
+function buildRhythmStats(tracked: DayFacts[]): RhythmStats {
+  const starts = tracked.map((d) => d.firstStartMinutes).filter(isDefined)
+  const slots = new Map<number, number>()
+  for (const start of starts) {
+    const slot = Math.round(start / QUARTER_HOUR) * QUARTER_HOUR
+    slots.set(slot, (slots.get(slot) ?? 0) + 1)
+  }
+  // Ties go to the earlier slot, so the answer doesn't depend on Map order.
+  const topSlot = [...slots.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0]
+  const avgStart = mean(starts)
+
+  return {
+    mostCommonStartSlot: topSlot ? formatClock(topSlot[0]) : null,
+    mostCommonStartCount: topSlot?.[1] ?? 0,
+    startSpreadMinutes: avgStart === null ? null : (mean(starts.map((s) => Math.abs(s - avgStart))) ?? null),
+    earlyStarts: starts.filter((s) => s < EARLY_START_MINUTES).length,
+    lateFinishes: tracked.filter((d) => (d.lastEndMinutes ?? 0) >= LATE_FINISH_MINUTES).length,
+  }
+}
+
+function buildBreakStats(tracked: DayFacts[]): BreakStats {
+  const longest = [...tracked].sort((a, b) => b.longestBreakMinutes - a.longestBreakMinutes)[0]
+  return {
+    avgMinutesPerDay: mean(tracked.map((d) => d.breakMinutes)) ?? 0,
+    longestWithinDay:
+      longest && longest.longestBreakMinutes > 0 ? { date: longest.date, minutes: longest.longestBreakMinutes } : null,
+    daysWithoutBreak: tracked.filter((d) => d.periodCount === 1).length,
+  }
+}
+
+function buildWeekStats(days: DayFacts[], today: string): WeekStats {
+  const byWeek = new Map<string, DayFacts[]>()
+  for (const day of days) {
+    const key = `${isoWeekYearOf(day.date)}-${String(isoWeekOf(day.date)).padStart(2, '0')}`
+    const bucket = byWeek.get(key)
+    if (bucket) bucket.push(day)
+    else byWeek.set(key, [day])
+  }
+
+  const weeks: WeekStat[] = []
+  let perfectWeeks = 0
+  let completeWeeks = 0
+  for (const [key, weekDays] of byWeek) {
+    const hours = weekDays.reduce((sum, d) => sum + d.hours, 0)
+    const isoYear = parseInt(key.slice(0, 4))
+    const isoWeek = parseInt(key.slice(5))
+    if (hours > 0) {
+      weeks.push({
+        isoWeek,
+        isoYear,
+        label: `Week ${isoWeek}, ${isoYear}`,
+        hours,
+        trackedDays: weekDays.filter((d) => d.hours > 0).length,
+      })
+    }
+    // A week split across a month that isn't stored would look untracked, so
+    // only whole weeks that are entirely in the past count toward "perfect".
+    const workDays = weekDays.filter((d) => d.dayType === 'WorkDay')
+    if (weekDays.length !== 7 || workDays.length === 0) continue
+    if (weekDays.some((d) => d.date > today)) continue
+    completeWeeks++
+    if (workDays.every((d) => d.hours > 0)) perfectWeeks++
+  }
+
+  return {
+    bestWeek: [...weeks].sort((a, b) => b.hours - a.hours)[0] ?? null,
+    avgHours: mean(weeks.map((w) => w.hours)) ?? 0,
+    perfectWeeks,
+    completeWeeks,
+  }
+}
+
+/** Longest run of past WorkDays with nothing tracked — the longest stretch away. */
+function longestAbsenceOf(days: DayFacts[], today: string): ExtremeStats['longestAbsence'] {
+  let best: ExtremeStats['longestAbsence'] = null
+  let workdays = 0
+  let from = ''
+  let last = ''
+
+  for (const day of days) {
+    if (day.afterGap) workdays = 0
+    if (day.date > today || day.dayType !== 'WorkDay') continue
+    if (day.hours > 0) {
+      workdays = 0
+      continue
+    }
+    if (workdays === 0) from = day.date
+    workdays++
+    last = day.date
+    if (best === null || workdays > best.workdays) best = { workdays, from, to: last }
+  }
+
+  return best
+}
+
+function buildExtremeStats(days: DayFacts[], tracked: DayFacts[], today: string): ExtremeStats {
+  const byBalance = [...tracked].sort((a, b) => b.hours - b.targetHours - (a.hours - a.targetHours))
+  const best = byBalance[0]
+  const worst = byBalance.at(-1)
+  const isWeekend = (day: DayFacts) => isoWeekday(day.date) >= 6
+
+  return {
+    bestDayBalance: best ? { date: best.date, balance: best.hours - best.targetHours } : null,
+    worstDayBalance: worst ? { date: worst.date, balance: worst.hours - worst.targetHours } : null,
+    medianDayHours: median(tracked.map((d) => d.hours)),
+    weekendHours: tracked.filter(isWeekend).reduce((sum, d) => sum + d.hours, 0),
+    longestAbsence: longestAbsenceOf(days, today),
+  }
+}
+
+function buildDisciplineStats(days: DayFacts[], tracked: DayFacts[]): DisciplineStats {
+  const categoriesOf = (day: DayFacts) =>
+    Object.entries(day.categoryHours).filter(([cat, h]) => cat !== UNCATEGORIZED_CATEGORY && h > 0.001)
+  const distinct = new Set<string>()
+  for (const day of tracked) {
+    for (const [cat] of categoriesOf(day)) distinct.add(cat)
+  }
+  const confirmedDays = days.filter((d) => d.confirmed).length
+
+  return {
+    confirmedDays,
+    confirmedPercent: tracked.length > 0 ? Math.round((confirmedDays / tracked.length) * 100) : 0,
+    daysWithNotes: days.filter((d) => d.hasNote).length,
+    subtaskCount: days.reduce((sum, d) => sum + d.subtaskCount, 0),
+    distinctCategories: distinct.size,
+    singleCategoryDays: tracked.filter((d) => categoriesOf(d).length === 1).length,
+  }
+}
+
+const MILESTONE_STEP = 100
+
+/** The next whole-100 hours mark strictly above `hours`. */
+function nextMilestoneAbove(hours: number): number {
+  return (Math.floor(hours / MILESTONE_STEP) + 1) * MILESTONE_STEP
+}
+
+/** Calendar days from `from` to `to`, both counted. */
+function inclusiveDaysBetween(from: string, to: string): number {
+  return Math.round((parseLocalDate(to).getTime() - parseLocalDate(from).getTime()) / 86400000) + 1
+}
+
 function isDefined<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined
 }
@@ -403,15 +657,21 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
       remoteDays,
       officePercent: tracked.length > 0 ? Math.round((officeDays / tracked.length) * 100) : 0,
     },
+    rhythm: buildRhythmStats(tracked),
+    breaks: buildBreakStats(tracked),
+    weeks: buildWeekStats(days, input.today),
+    extremes: buildExtremeStats(days, tracked, input.today),
+    discipline: buildDisciplineStats(days, tracked),
+    hoursToNextMilestone: nextMilestoneAbove(totalHours) - totalHours,
+    nextMilestone: nextMilestoneAbove(totalHours),
+    trackingSinceDays: firstTrackedDate !== null ? inclusiveDaysBetween(firstTrackedDate, input.today) : 0,
     vacationDays: days.filter((d) => d.dayType === 'Vacation').length,
     sickDays: days.filter((d) => d.dayType === 'SickDay').length,
     daysWorkedOffSchedule: tracked.filter((d) => d.dayType !== 'WorkDay').length,
     daysAtOrOverTarget: tracked.filter((d) => d.targetHours > 0 && d.hours >= d.targetHours).length,
     calendarSpanDays:
       firstTrackedDate !== null && lastTrackedDate !== null
-        ? Math.round(
-            (parseLocalDate(lastTrackedDate).getTime() - parseLocalDate(firstTrackedDate).getTime()) / 86400000,
-          ) + 1
+        ? inclusiveDaysBetween(firstTrackedDate, lastTrackedDate)
         : 0,
   }
 }

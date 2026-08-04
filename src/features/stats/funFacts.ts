@@ -1,4 +1,5 @@
 import { formatHours } from '../../shared/formatHours'
+import { formatSignedHours } from '../month/monthBalanceFormat'
 import { parseLocalDate } from '../../shared/dateUtils'
 import type { TimeFormat } from '../../shared/timeFormatStore'
 import { formatClock, type AllTimeStats } from './allTimeStats'
@@ -22,14 +23,224 @@ function round1(value: number): string {
   return (Math.round(value * 10) / 10).toString()
 }
 
-/**
- * The narrative layer over `AllTimeStats`: one sentence per fact, each dropped
- * when the underlying data can't support it, so a thin history shows fewer
- * facts rather than facts about nothing.
- */
-export function buildFunFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
+export function formatMinutes(minutes: number): string {
+  const rounded = Math.round(minutes)
+  if (rounded < 60) return `${rounded} min`
+  const hours = Math.floor(rounded / 60)
+  const rest = rounded % 60
+  return rest === 0 ? `${hours}h` : `${hours}h ${rest} min`
+}
+
+function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
+  return count === 1 ? singular : pluralForm
+}
+
+function rhythmFacts(stats: AllTimeStats): FunFact[] {
   const facts: FunFact[] = []
-  if (!stats.hasData) return facts
+  const { rhythm } = stats
+
+  if (rhythm.mostCommonStartSlot !== null && rhythm.mostCommonStartCount > 1) {
+    facts.push({
+      id: 'favourite-start',
+      icon: '⏰',
+      text: `You start around ${rhythm.mostCommonStartSlot} more often than any other time — ${rhythm.mostCommonStartCount} days.`,
+    })
+  }
+
+  if (rhythm.startSpreadMinutes !== null && stats.trackedDays > 2) {
+    facts.push({
+      id: 'start-consistency',
+      icon: '🎚️',
+      text:
+        rhythm.startSpreadMinutes < 20
+          ? `Your start time barely moves — ±${Math.round(rhythm.startSpreadMinutes)} min around the average.`
+          : `Your start time swings by about ±${Math.round(rhythm.startSpreadMinutes)} min around the average.`,
+    })
+  }
+
+  if (rhythm.earlyStarts > 0) {
+    facts.push({
+      id: 'early-starts',
+      icon: '🌅',
+      text: `${rhythm.earlyStarts} ${plural(rhythm.earlyStarts, 'day')} you were already going before 08:00.`,
+    })
+  }
+
+  if (rhythm.lateFinishes > 0) {
+    facts.push({
+      id: 'late-finishes',
+      icon: '🌃',
+      text: `${rhythm.lateFinishes} ${plural(rhythm.lateFinishes, 'day')} ran past 18:00.`,
+    })
+  }
+
+  return facts
+}
+
+function breakFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
+  const facts: FunFact[] = []
+  const { breaks } = stats
+
+  if (breaks.avgMinutesPerDay > 0) {
+    facts.push({
+      id: 'avg-break',
+      icon: '☕',
+      text: `You step away for ${formatMinutes(breaks.avgMinutesPerDay)} on an average tracked day.`,
+    })
+  }
+
+  if (breaks.longestWithinDay) {
+    facts.push({
+      id: 'longest-break',
+      icon: '🛋️',
+      text: `Longest single break: ${formatMinutes(breaks.longestWithinDay.minutes)} on ${formatFactDate(breaks.longestWithinDay.date)}.`,
+    })
+  }
+
+  if (breaks.daysWithoutBreak > 0) {
+    facts.push({
+      id: 'no-break-days',
+      icon: '🥊',
+      text: `${breaks.daysWithoutBreak} ${plural(breaks.daysWithoutBreak, 'day')} went down as one unbroken period — ${formatHours(stats.avgHoursPerTrackedDay, format)} average day, no gaps logged.`,
+    })
+  }
+
+  return facts
+}
+
+function weekFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
+  const facts: FunFact[] = []
+  const { weeks } = stats
+
+  if (weeks.bestWeek) {
+    facts.push({
+      id: 'best-week',
+      icon: '🚀',
+      text: `Biggest week: ${weeks.bestWeek.label} with ${formatHours(weeks.bestWeek.hours, format)} over ${weeks.bestWeek.trackedDays} ${plural(weeks.bestWeek.trackedDays, 'day')}.`,
+    })
+  }
+
+  if (weeks.avgHours > 0) {
+    facts.push({
+      id: 'avg-week',
+      icon: '📈',
+      text: `An average tracked week comes to ${formatHours(weeks.avgHours, format)}.`,
+    })
+  }
+
+  if (weeks.completeWeeks > 0) {
+    facts.push({
+      id: 'perfect-weeks',
+      icon: '💯',
+      text: `${weeks.perfectWeeks} of ${weeks.completeWeeks} finished ${plural(weeks.completeWeeks, 'week')} had every single workday tracked.`,
+    })
+  }
+
+  return facts
+}
+
+function extremeFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
+  const facts: FunFact[] = []
+  const { extremes } = stats
+
+  if (extremes.medianDayHours > 0) {
+    facts.push({
+      id: 'median-day',
+      icon: '⚖️',
+      text: `Half your tracked days run longer than ${formatHours(extremes.medianDayHours, format)}.`,
+    })
+  }
+
+  if (extremes.bestDayBalance && extremes.bestDayBalance.balance > 0) {
+    facts.push({
+      id: 'best-day-balance',
+      icon: '🎖️',
+      text: `Biggest surplus in one day: ${formatSignedHours(extremes.bestDayBalance.balance, format)} on ${formatFactDate(extremes.bestDayBalance.date)}.`,
+    })
+  }
+
+  if (extremes.worstDayBalance && extremes.worstDayBalance.balance < 0) {
+    facts.push({
+      id: 'worst-day-balance',
+      icon: '🪫',
+      text: `Biggest shortfall in one day: ${formatSignedHours(extremes.worstDayBalance.balance, format)} on ${formatFactDate(extremes.worstDayBalance.date)}.`,
+    })
+  }
+
+  if (extremes.weekendHours > 0) {
+    facts.push({
+      id: 'weekend-hours',
+      icon: '🏖️',
+      text: `${formatHours(extremes.weekendHours, format)} of your tracked time landed on a weekend.`,
+    })
+  }
+
+  if (extremes.longestAbsence && extremes.longestAbsence.workdays > 1) {
+    facts.push({
+      id: 'longest-absence',
+      icon: '👻',
+      text: `Longest stretch with nothing tracked: ${extremes.longestAbsence.workdays} workdays, ${formatFactDate(extremes.longestAbsence.from)} → ${formatFactDate(extremes.longestAbsence.to)}.`,
+    })
+  }
+
+  return facts
+}
+
+function disciplineFacts(stats: AllTimeStats): FunFact[] {
+  const facts: FunFact[] = []
+  const { discipline } = stats
+
+  if (discipline.confirmedDays > 0) {
+    facts.push({
+      id: 'confirmed',
+      icon: '🔒',
+      text: `${discipline.confirmedPercent}% of your tracked days are confirmed (${discipline.confirmedDays} of ${stats.trackedDays}).`,
+    })
+  }
+
+  if (discipline.distinctCategories > 0) {
+    facts.push({
+      id: 'category-spread',
+      icon: '🗂️',
+      text: `You've booked time to ${discipline.distinctCategories} different ${plural(discipline.distinctCategories, 'category', 'categories')}, and ${discipline.singleCategoryDays} ${plural(discipline.singleCategoryDays, 'day')} ran on a single one.`,
+    })
+  }
+
+  if (discipline.subtaskCount > 0) {
+    facts.push({
+      id: 'subtasks',
+      icon: '✂️',
+      text: `${discipline.subtaskCount} ${plural(discipline.subtaskCount, 'subtask')} carved out of your work periods.`,
+    })
+  }
+
+  if (discipline.daysWithNotes > 0) {
+    facts.push({
+      id: 'notes',
+      icon: '📝',
+      text: `${discipline.daysWithNotes} ${plural(discipline.daysWithNotes, 'day')} carry a note.`,
+    })
+  }
+
+  if (stats.firstTrackedDate !== null && stats.trackingSinceDays > 1) {
+    facts.push({
+      id: 'tracking-since',
+      icon: '🌱',
+      text: `You've been tracking for ${stats.trackingSinceDays} days, since ${formatFactDate(stats.firstTrackedDate)}.`,
+    })
+  }
+
+  facts.push({
+    id: 'next-milestone',
+    icon: '🪜',
+    text: `${round1(stats.hoursToNextMilestone)}h to go until ${stats.nextMilestone} hours tracked.`,
+  })
+
+  return facts
+}
+
+function overviewFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
+  const facts: FunFact[] = []
 
   facts.push({
     id: 'full-days',
@@ -92,6 +303,12 @@ export function buildFunFacts(stats: AllTimeStats, format: TimeFormat): FunFact[
       text: `Latest finish ever: ${stats.latestEnd.time} on ${formatFactDate(stats.latestEnd.date)}.`,
     })
   }
+
+  return facts
+}
+
+function recordFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
+  const facts: FunFact[] = []
 
   if (stats.longestDay) {
     facts.push({
@@ -157,6 +374,27 @@ export function buildFunFacts(stats: AllTimeStats, format: TimeFormat): FunFact[
       text: `Time off on record: ${stats.vacationDays} vacation day${stats.vacationDays === 1 ? '' : 's'} and ${stats.sickDays} sick day${stats.sickDays === 1 ? '' : 's'}.`,
     })
   }
+
+  return facts
+}
+
+/**
+ * The narrative layer over `AllTimeStats`: one sentence per fact, each dropped
+ * when the underlying data can't support it, so a thin history shows fewer
+ * facts rather than facts about nothing.
+ */
+export function buildFunFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
+  if (!stats.hasData) return []
+
+  const facts = [
+    ...overviewFacts(stats, format),
+    ...recordFacts(stats, format),
+    ...rhythmFacts(stats),
+    ...breakFacts(stats, format),
+    ...weekFacts(stats, format),
+    ...extremeFacts(stats, format),
+    ...disciplineFacts(stats),
+  ]
 
   if (stats.firstTrackedDate !== null && stats.calendarSpanDays > stats.trackedDays) {
     facts.push({

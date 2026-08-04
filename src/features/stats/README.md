@@ -7,6 +7,8 @@ StatsView — all-time statistics and fun facts over every month of tracked data
 - **AllTimeStats** — one flat record of every figure the view shows, built by `buildAllTimeStats` from whole `MonthData` objects. Days with no tracked hours are excluded from totals, averages and the balance — the same "tracked days only" rule the month overtime math uses.
 - **Streaks** — a run of consecutive tracked WorkDays. Non-WorkDays (weekends, holidays, leave) neither extend nor break a run, so a normal Mon–Fri week reads as 5. A gap in stored months breaks a run; today counts only if it already has hours, so an untracked morning does not look like a broken streak.
 - **Fun facts** — the narrative layer over `AllTimeStats`. Each fact is dropped when the data can't support it, so a thin history shows fewer facts rather than facts about nothing.
+- **Stat families** — beyond the flat totals, `AllTimeStats` groups related figures: `rhythm` (usual start slot, start spread, early starts, late finishes), `breaks` (gaps between periods), `weeks` (biggest/average ISO week, perfect weeks), `extremes` (best/worst day balance, median day, weekend hours, longest absence) and `discipline` (confirmations, notes, subtasks, category spread).
+- **Perfect weeks** — only ISO weeks with all 7 days present in the loaded months and entirely in the past count. A week straddling a month that isn't stored would otherwise look untracked; a week still running would be judged early.
 
 ## Files
 

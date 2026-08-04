@@ -89,6 +89,15 @@ describe('StatsView', () => {
     expect(monthsRegion.textContent).toContain('July 2026')
   })
 
+  it('shows the records row with week, median-day and break figures', async () => {
+    render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
+
+    const records = await screen.findByRole('region', { name: 'Records' })
+    expect(records.textContent).toContain('Week 28, 2026')
+    expect(records.textContent).toContain('8.00h')
+    expect(records.textContent).toContain('Usual start 07:15')
+  })
+
   it('lists fun facts derived from the tracked data', async () => {
     render(<StatsView />, { wrapper: makeWrapper({ '2026-07': JULY }) })
 
@@ -96,6 +105,8 @@ describe('StatsView', () => {
     expect(facts.textContent).toContain('Earliest start ever: 07:15')
     expect(facts.textContent).toContain('Latest finish ever: 17:45')
     expect(facts.textContent).toContain('Tuesday is your heaviest day')
+    expect(facts.textContent).toContain('to go until 100 hours tracked')
+    expect(facts.textContent).toContain('Half your tracked days run longer than')
   })
 
   it('lists the newest month first so recent history reads at the top', async () => {

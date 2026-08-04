@@ -1,4 +1,5 @@
 import type { DaySummary } from './daySummary'
+import { isoWeekOf } from '../../shared/isoWeek'
 
 export interface MonthOverviewDay {
   date: string
@@ -58,16 +59,6 @@ export interface MonthOverviewInput {
 }
 
 const WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-/** ISO-8601 week number of a local `YYYY-MM-DD` date. */
-export function isoWeekOf(isoDate: string): number {
-  const date = new Date(`${isoDate}T00:00:00`)
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
-  const dayNum = d.getUTCDay() || 7
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
-  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
-}
 
 export function buildMonthOverview(input: MonthOverviewInput): MonthOverview {
   const weeks: MonthOverviewWeek[] = []

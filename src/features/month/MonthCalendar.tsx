@@ -10,7 +10,7 @@ import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import type { TimeFormat } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
 import { balanceInk, formatSignedHours } from './monthBalanceFormat'
-import { isoWeekOf } from './monthOverview'
+import { isoWeekOf } from '../../shared/isoWeek'
 import type { MonthOverview, MonthOverviewDay, MonthOverviewWeek } from './monthOverview'
 import type { WorkLocation } from '../../infra/repositories/types'
 

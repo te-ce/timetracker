@@ -239,3 +239,197 @@ describe('formatClock', () => {
     expect(formatClock(497.6)).toBe('08:18')
   })
 })
+
+describe('buildAllTimeStats rhythm', () => {
+  it('names the quarter-hour slot started in most often', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('08:02', '16:00')] },
+      '2026-07-07': { windows: [period('07:58', '16:00')] },
+      '2026-07-08': { windows: [period('09:30', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.rhythm.mostCommonStartSlot).toBe('08:00')
+    expect(result.rhythm.mostCommonStartCount).toBe(2)
+  })
+
+  it('measures how far the start time strays from the average', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('08:00', '16:00')] },
+      '2026-07-07': { windows: [period('09:00', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.rhythm.startSpreadMinutes).toBeCloseTo(30)
+  })
+
+  it('counts starts before 08:00 and finishes from 18:00 on', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('07:00', '18:00')] },
+      '2026-07-07': { windows: [period('08:00', '17:59')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.rhythm.earlyStarts).toBe(1)
+    expect(result.rhythm.lateFinishes).toBe(1)
+  })
+})
+
+describe('buildAllTimeStats breaks', () => {
+  it('averages the gaps between periods across tracked days', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('08:00', '12:00'), period('12:30', '16:00')] },
+      '2026-07-07': { windows: [period('08:00', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.breaks.avgMinutesPerDay).toBeCloseTo(15)
+    expect(result.breaks.longestWithinDay).toEqual({ date: '2026-07-06', minutes: 30 })
+    expect(result.breaks.daysWithoutBreak).toBe(1)
+  })
+
+  it('reads periods in clock order even when stored out of order', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('13:00', '17:00', '_OTHER', 'p2'), period('08:00', '12:00', '_OTHER', 'p1')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.breaks.longestWithinDay).toEqual({ date: '2026-07-06', minutes: 60 })
+  })
+})
+
+describe('buildAllTimeStats weeks', () => {
+  it('finds the biggest ISO week and the average week', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [period('08:00', '16:00')] },
+      '2026-07-07': { windows: [period('08:00', '16:00')] },
+      '2026-07-13': { windows: [period('08:00', '12:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.weeks.bestWeek).toMatchObject({ isoWeek: 28, isoYear: 2026, hours: 16, trackedDays: 2 })
+    expect(result.weeks.bestWeek?.label).toBe('Week 28, 2026')
+    expect(result.weeks.avgHours).toBeCloseTo(10)
+  })
+
+  it('counts a finished week as perfect only when every workday was tracked', () => {
+    const data: MonthData = {}
+    for (const day of ['06', '07', '08', '09', '10']) {
+      data[`2026-07-${day}`] = { windows: [period('08:00', '16:00')] }
+    }
+    // Week 29 is fully stored and past, but Wednesday the 15th is missing.
+    for (const day of ['13', '14', '16', '17']) {
+      data[`2026-07-${day}`] = { windows: [period('08:00', '16:00')] }
+    }
+    const result = stats(months({ ym: '2026-07', data }), '2026-07-31')
+    expect(result.weeks.perfectWeeks).toBe(1)
+    // Weeks 28, 29 and 30 lie wholly inside July; week 30 was never tracked at all.
+    expect(result.weeks.completeWeeks).toBe(3)
+  })
+
+  it('ignores weeks that run past today or past the stored months', () => {
+    const data: MonthData = {}
+    for (const day of ['06', '07', '08', '09', '10']) {
+      data[`2026-07-${day}`] = { windows: [period('08:00', '16:00')] }
+    }
+    // Only July is stored, so weeks 27 and 31 are cut off by the month edges.
+    const result = stats(months({ ym: '2026-07', data }), '2026-07-12')
+    expect(result.weeks.completeWeeks).toBe(1)
+    expect(result.weeks.perfectWeeks).toBe(1)
+  })
+})
+
+describe('buildAllTimeStats extremes', () => {
+  it('finds the biggest surplus and shortfall day', () => {
+    const result = stats(months({ ym: '2026-07', data: JULY }))
+    expect(result.extremes.bestDayBalance).toEqual({ date: '2026-07-02', balance: 1 })
+    expect(result.extremes.worstDayBalance).toEqual({ date: '2026-07-03', balance: -2 })
+  })
+
+  it('takes the median of tracked day lengths', () => {
+    const result = stats(months({ ym: '2026-07', data: JULY }))
+    expect(result.extremes.medianDayHours).toBe(8)
+  })
+
+  it('totals hours that landed on a weekend', () => {
+    const data: MonthData = {
+      // Sat 4th and Sun 5th July 2026
+      '2026-07-04': { windows: [period('10:00', '13:00')] },
+      '2026-07-05': { windows: [period('10:00', '11:00')] },
+      '2026-07-06': { windows: [period('08:00', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.extremes.weekendHours).toBe(4)
+  })
+
+  it('finds the longest run of untracked workdays', () => {
+    const data: MonthData = {
+      '2026-07-01': { windows: [period('08:00', '16:00')] },
+      '2026-07-08': { windows: [period('08:00', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }), '2026-07-08')
+    // Thu 2nd, Fri 3rd, Mon 6th, Tue 7th — weekends skipped, not counted
+    expect(result.extremes.longestAbsence).toEqual({ workdays: 4, from: '2026-07-02', to: '2026-07-07' })
+  })
+
+  it('leaves the absence unset when no past workday was missed', () => {
+    const data: MonthData = { '2026-07-01': { windows: [period('08:00', '16:00')] } }
+    const result = stats(months({ ym: '2026-07', data }), '2026-07-01')
+    expect(result.extremes.longestAbsence).toBeNull()
+  })
+})
+
+describe('buildAllTimeStats discipline', () => {
+  it('counts confirmations, notes, subtasks and category spread', () => {
+    const data: MonthData = {
+      '2026-07-06': {
+        windows: [
+          {
+            id: 'w1',
+            start: '08:00',
+            end: '16:00',
+            category: '_COREMEDIA',
+            subtasks: [{ id: 's1', category: '_SUPPORT', hours: 2 }],
+          },
+        ],
+        confirmed: true,
+        note: 'shipped the thing',
+      },
+      '2026-07-07': { windows: [period('08:00', '16:00')] },
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.discipline).toEqual({
+      confirmedDays: 1,
+      confirmedPercent: 50,
+      daysWithNotes: 1,
+      subtaskCount: 1,
+      distinctCategories: 3,
+      singleCategoryDays: 1,
+    })
+  })
+
+  it('ignores a note that is only whitespace', () => {
+    const data: MonthData = { '2026-07-06': { windows: [period('08:00', '16:00')], note: '   ' } }
+    expect(stats(months({ ym: '2026-07', data })).discipline.daysWithNotes).toBe(0)
+  })
+})
+
+describe('buildAllTimeStats milestones', () => {
+  it('counts down to the next whole hundred hours', () => {
+    const data: MonthData = { '2026-07-06': { windows: [period('08:00', '16:00')] } }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.nextMilestone).toBe(100)
+    expect(result.hoursToNextMilestone).toBe(92)
+  })
+
+  it('steps to the following hundred once the first is passed', () => {
+    const data: MonthData = {}
+    // 13 workdays × 8h = 104h
+    for (const day of ['01', '02', '03', '06', '07', '08', '09', '10', '13', '14', '15', '16', '17']) {
+      data[`2026-07-${day}`] = { windows: [period('08:00', '16:00')] }
+    }
+    const result = stats(months({ ym: '2026-07', data }))
+    expect(result.totalHours).toBe(104)
+    expect(result.nextMilestone).toBe(200)
+    expect(result.hoursToNextMilestone).toBe(96)
+  })
+
+  it('measures how long tracking has been going', () => {
+    const data: MonthData = { '2026-07-06': { windows: [period('08:00', '16:00')] } }
+    expect(stats(months({ ym: '2026-07', data }), '2026-07-10').trackingSinceDays).toBe(5)
+  })
+})

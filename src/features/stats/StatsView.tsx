@@ -2,7 +2,7 @@ import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHours } from '../../shared/formatHours'
 import { balanceInk, formatSignedHours } from '../month/monthBalanceFormat'
 import { useAllTimeStats } from './useAllTimeStats'
-import { buildFunFacts } from './funFacts'
+import { buildFunFacts, formatMinutes } from './funFacts'
 import { StatBarList, type StatBarRow } from './StatBarList'
 import { formatClock, type AllTimeStats } from './allTimeStats'
 import type { TimeFormat } from '../../shared/timeFormatStore'
@@ -114,6 +114,33 @@ export function StatsView() {
           value={`${stats.currentStreak}`}
           detail={
             stats.longestStreak ? `Best: ${stats.longestStreak.length} workdays in a row` : 'Consecutive workdays'
+          }
+        />
+      </section>
+
+      <section aria-label="Records" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <HeadlineCard
+          label="Biggest week"
+          value={stats.weeks.bestWeek ? formatHours(stats.weeks.bestWeek.hours, timeFormat) : '—'}
+          detail={stats.weeks.bestWeek?.label}
+        />
+        <HeadlineCard
+          label="Median day"
+          value={formatHours(stats.extremes.medianDayHours, timeFormat)}
+          detail={`Average week ${formatHours(stats.weeks.avgHours, timeFormat)}`}
+        />
+        <HeadlineCard
+          label="Perfect weeks"
+          value={`${stats.weeks.perfectWeeks}/${stats.weeks.completeWeeks}`}
+          detail="Finished weeks with every workday tracked"
+        />
+        <HeadlineCard
+          label="Typical break"
+          value={formatMinutes(stats.breaks.avgMinutesPerDay)}
+          detail={
+            stats.rhythm.mostCommonStartSlot !== null
+              ? `Usual start ${stats.rhythm.mostCommonStartSlot}`
+              : 'Between periods on a tracked day'
           }
         />
       </section>
