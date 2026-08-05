@@ -34,6 +34,27 @@ export interface MonthTableInput {
   overtimeReady?: boolean
 }
 
+/** A category cell's displayed hours: the manual entry, plus AutoCategory's remainder hours (ADR 0004) when this category is the row's resolved auto category. */
+export function categoryHoursIncludingAuto(
+  row: Pick<MonthTableRow, 'entries' | 'resolvedAutoCategory' | 'autoCategoryHours'>,
+  category: string,
+): number {
+  const manual = row.entries[category] ?? 0
+  const autoHours = category === row.resolvedAutoCategory ? row.autoCategoryHours : 0
+  return manual + autoHours
+}
+
+/** The row's manual entries plus AutoCategory's remainder hours (ADR 0004) folded into the resolved auto category, for display as one breakdown. */
+export function categoryBreakdownWithAuto(
+  row: Pick<MonthTableRow, 'entries' | 'resolvedAutoCategory' | 'autoCategoryHours'>,
+): Record<string, number> {
+  const breakdown: Record<string, number> = { ...row.entries }
+  if (row.resolvedAutoCategory && row.autoCategoryHours > 0.001) {
+    breakdown[row.resolvedAutoCategory] = (breakdown[row.resolvedAutoCategory] ?? 0) + row.autoCategoryHours
+  }
+  return breakdown
+}
+
 type BaseRow = Omit<MonthTableRow, 'accumulatedOvertime'>
 
 function buildDayRow(
@@ -49,6 +70,50 @@ function buildDayRow(
     autoCategoryHours: core.uncategorizedHours,
     resolvedAutoCategory: resolveAutoCategory(autoCategoryOverride, globalAutoCategory),
   }
+}
+
+export interface TableRowsFromCoresInput {
+  monthData: MonthData
+  weekdayHours?: WeekdayHours
+  today?: string
+  globalAutoCategory?: string | null
+  priorMonthsOvertime?: number
+  overtimeReady?: boolean
+  projectedWorkedHoursToday: number | undefined
+}
+
+/** Builds table rows from cores already derived by `deriveMonthDayCores` — callers holding more than one month-derived view (see `buildMonthView`) share one day-loop instead of each deriving cores themselves. */
+export function tableRowsFromCores(cores: MonthDayCore[], input: TableRowsFromCoresInput): MonthTableRow[] {
+  const {
+    monthData,
+    weekdayHours = DEFAULT_WEEKDAY_HOURS,
+    today = '9999-12-31',
+    globalAutoCategory = null,
+    priorMonthsOvertime = 0,
+    overtimeReady = true,
+    projectedWorkedHoursToday,
+  } = input
+
+  const baseRows = cores.map((core) =>
+    buildDayRow(core, monthData[core.date]?.autoCategoryOverride, globalAutoCategory),
+  )
+
+  const dates = baseRows.map((r) => r.date)
+  const targetHoursPerDay = dates.map((date) => targetHoursForDate(date, weekdayHours))
+  const workedHoursPerDay = baseRows.map((r) => r.workedHours)
+  const accumulatedOvertime = calculateCumulativeOvertime(
+    workedHoursPerDay,
+    dates,
+    targetHoursPerDay,
+    today,
+    projectedWorkedHoursToday,
+    priorMonthsOvertime,
+  )
+
+  return baseRows.map((base, i) => ({
+    ...base,
+    accumulatedOvertime: overtimeReady ? (accumulatedOvertime[i] ?? null) : null,
+  }))
 }
 
 export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
@@ -75,24 +140,13 @@ export function buildMonthTable(input: MonthTableInput): MonthTableRow[] {
     ...(todayNow !== undefined ? { todayNow } : {}),
   })
 
-  const baseRows = cores.map((core) =>
-    buildDayRow(core, monthData[core.date]?.autoCategoryOverride, globalAutoCategory),
-  )
-
-  const dates = baseRows.map((r) => r.date)
-  const targetHoursPerDay = dates.map((date) => targetHoursForDate(date, weekdayHours))
-  const workedHoursPerDay = baseRows.map((r) => r.workedHours)
-  const accumulatedOvertime = calculateCumulativeOvertime(
-    workedHoursPerDay,
-    dates,
-    targetHoursPerDay,
+  return tableRowsFromCores(cores, {
+    monthData,
+    weekdayHours,
     today,
-    projectedWorkedHoursToday,
+    globalAutoCategory,
     priorMonthsOvertime,
-  )
-
-  return baseRows.map((base, i) => ({
-    ...base,
-    accumulatedOvertime: overtimeReady ? (accumulatedOvertime[i] ?? null) : null,
-  }))
+    overtimeReady,
+    projectedWorkedHoursToday,
+  })
 }

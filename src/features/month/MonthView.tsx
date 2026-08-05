@@ -6,7 +6,6 @@ import { MonthCalendar } from './MonthCalendar'
 import { MonthProgressMeter } from './MonthProgressMeter'
 import { MonthAttentionStrip } from './MonthAttentionStrip'
 import { StatusLegend } from './StatusLegend'
-import { buildMonthOverview } from './monthOverview'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
@@ -40,24 +39,10 @@ export function MonthView() {
     onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
   })
 
-  const {
-    config,
-    summaries,
-    workLocations,
-    dayNotes,
-    targetHoursPerDay,
-    todayIso,
-    todayBalance,
-    isOvertimeReady,
-    priorMonthsOvertime,
-  } = useMonthView(year, month)
-
-  const overview = buildMonthOverview({
-    days: summaries.days,
-    targetHoursPerDay,
-    today: todayIso,
-    cumulativeBalance: priorMonthsOvertime,
-  })
+  const { config, summaries, overview, workLocations, dayNotes, todayBalance, isOvertimeReady } = useMonthView(
+    year,
+    month,
+  )
 
   const dayStatusMap: Record<string, DayStatus> = {}
   const dayDisplayStatusMap: Record<string, DisplayStatus> = {}

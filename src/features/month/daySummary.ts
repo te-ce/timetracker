@@ -66,18 +66,12 @@ function toDaySummary(core: MonthDayCore, today: string): DaySummary {
   }
 }
 
-export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
-  const { monthData, today, todayNow, weekdayHours = DEFAULT_WEEKDAY_HOURS } = input
-
-  const { days: cores, projectedWorkedHoursToday } = deriveMonthDayCores({
-    year,
-    month,
-    monthData,
-    weekdayHours,
-    today,
-    ...(todayNow !== undefined ? { todayNow } : {}),
-  })
-
+/** Assembles DaySummaries from cores already derived by `deriveMonthDayCores` — callers holding more than one month-derived view (see `buildMonthView`) share one day-loop instead of each deriving cores themselves. */
+export function summariesFromCores(
+  cores: MonthDayCore[],
+  today: string,
+  projectedWorkedHoursToday: number | undefined,
+): MonthSummaryResult {
   const days = cores.map((core) => toDaySummary(core, today))
   const workDayCount = days.filter((d) => d.dayType === 'WorkDay').length
   const workedHoursPerDay = days.map((d) => d.workedHours)
@@ -91,4 +85,19 @@ export function buildMonthSummaries(year: number, month: number, input: MonthSum
     hasAnyTrackedHours,
     projectedWorkedHoursToday: projectedWorkedHoursToday ?? workedHoursPerDay[todayIndex] ?? 0,
   }
+}
+
+export function buildMonthSummaries(year: number, month: number, input: MonthSummaryInput): MonthSummaryResult {
+  const { monthData, today, todayNow, weekdayHours = DEFAULT_WEEKDAY_HOURS } = input
+
+  const { days: cores, projectedWorkedHoursToday } = deriveMonthDayCores({
+    year,
+    month,
+    monthData,
+    weekdayHours,
+    today,
+    ...(todayNow !== undefined ? { todayNow } : {}),
+  })
+
+  return summariesFromCores(cores, today, projectedWorkedHoursToday)
 }

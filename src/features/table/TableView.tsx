@@ -7,7 +7,6 @@ import { renameCategoryAcrossAllMonths } from './categoryMutations'
 import { MonthGrid } from './MonthTable'
 import { MonthNav } from '../month/MonthNav'
 import { MonthProgressMeter } from '../month/MonthProgressMeter'
-import { buildMonthOverview } from '../month/monthOverview'
 import { StatusLegend } from '../month/StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
@@ -58,25 +57,9 @@ export function TableView() {
   })
 
   const view = useMonthView(year, month)
-  const {
-    config,
-    summaries,
-    workLocations,
-    targetHoursPerDay,
-    todayIso,
-    todayBalance,
-    isOvertimeReady,
-    priorMonthsOvertime,
-  } = view
+  const { config, summaries, overview, workLocations, todayBalance, isOvertimeReady } = view
 
   const { officeDays, totalWorkDays, officePercent } = officeStats(summaries.days, (date) => workLocations.get(date))
-
-  const overview = buildMonthOverview({
-    days: summaries.days,
-    targetHoursPerDay,
-    today: todayIso,
-    cumulativeBalance: priorMonthsOvertime,
-  })
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [clearDayDate, setClearDayDate] = useState<string | null>(null)

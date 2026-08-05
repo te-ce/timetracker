@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { useRepositories } from '../infra/repositories/RepositoryContext'
-import { composeMonthOvertime, loadOvertimeCarryOverBeforeMonth } from './monthOvertime'
-import { buildMonthTable } from '../features/table/buildMonthTable'
+import { loadOvertimeCarryOverBeforeMonth } from './monthOvertime'
+import { deriveMonthDayCores } from './monthDayCore'
+import { summariesFromCores } from '../features/month/daySummary'
+import { tableRowsFromCores } from '../features/table/buildMonthTable'
+import { buildMonthOverview } from '../features/month/monthOverview'
+import { calculateOvertimeToDate } from './overtime'
 import { useTodayIso } from './useTodayIso'
 import { useAppConfigState } from './useAppConfig'
 import { QUERY_KEYS } from './queryKeys'
@@ -55,23 +59,34 @@ export interface MonthViewInput {
 }
 
 /**
- * The month view-model: DaySummaries, grid rows, day-type/location/note maps,
- * overtime and today's balance, all derived from one MonthData against one
- * `now`. The calendar, the grid and the day view read fields off this instead
- * of re-deriving from monthData themselves.
+ * The month view-model: DaySummaries, grid rows, the month overview, day-type/
+ * location/note maps, overtime and today's balance — all derived from one
+ * MonthData against one `now`, via a single day-loop (`deriveMonthDayCores`).
+ * The calendar, the grid and the day view read fields off this instead of
+ * re-deriving from monthData themselves.
  */
 export function buildMonthView(input: MonthViewInput) {
   const { year, month, monthData, config, todayIso, now, priorMonthsOvertime = 0, overtimeReady = true } = input
   const weekdayHours = config.weekdayHours
   const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
-  const { summaries, targetHoursPerDay, overtimeToDate } = composeMonthOvertime(
+  const { days: cores, projectedWorkedHoursToday } = deriveMonthDayCores({
     year,
     month,
     monthData,
-    config,
+    weekdayHours,
+    today: todayIso,
+    todayNow: now,
+  })
+
+  const summaries = summariesFromCores(cores, todayIso, projectedWorkedHoursToday)
+  const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))
+  const overtimeToDate = calculateOvertimeToDate(
+    summaries.workedHoursPerDay,
+    summaries.days.map((d) => d.date),
     todayIso,
-    now,
+    targetHoursPerDay,
+    summaries.projectedWorkedHoursToday,
     priorMonthsOvertime,
   )
 
@@ -87,17 +102,21 @@ export function buildMonthView(input: MonthViewInput) {
     remainingTimeMode: config.remainingTimeMode,
   })
 
-  const rows = buildMonthTable({
-    year,
-    month,
+  const rows = tableRowsFromCores(cores, {
     monthData,
-    dayTypes: dayTypeOverrides,
     weekdayHours,
     today: todayIso,
-    todayNow: now,
     globalAutoCategory: config.autoCategory,
     priorMonthsOvertime,
     overtimeReady,
+    projectedWorkedHoursToday,
+  })
+
+  const overview = buildMonthOverview({
+    days: summaries.days,
+    targetHoursPerDay,
+    today: todayIso,
+    cumulativeBalance: priorMonthsOvertime,
   })
 
   return {
@@ -107,6 +126,7 @@ export function buildMonthView(input: MonthViewInput) {
     rows,
     config,
     summaries,
+    overview,
     dayTypeOverrides,
     workLocations,
     dayNotes,

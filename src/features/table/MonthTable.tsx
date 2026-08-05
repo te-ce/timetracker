@@ -12,7 +12,7 @@ import { getAllCategories } from '../../shared/categories'
 import { computeSprintGroups } from '../sprint/sprintGroups'
 import { WorkedHoursCell } from './WorkedHoursCell'
 import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnHeader'
-import type { MonthTableRow } from './buildMonthTable'
+import { categoryBreakdownWithAuto, categoryHoursIncludingAuto, type MonthTableRow } from './buildMonthTable'
 import type { MonthView } from '../../shared/useMonthView'
 import { STATUS_DOT } from '../../shared/statusColors'
 import { targetHoursForDate } from '../../shared/weekdayHours'
@@ -219,9 +219,7 @@ export function MonthGrid({
   })
 
   function getCellValue(row: MonthTableRow, category: string): string {
-    const manual = row.entries[category] ?? 0
-    const autoHours = category === row.resolvedAutoCategory ? row.autoCategoryHours : 0
-    const val = manual + autoHours
+    const val = categoryHoursIncludingAuto(row, category)
     return val ? formatHoursCompact(val, timeFormat) : ''
   }
 
@@ -235,11 +233,7 @@ export function MonthGrid({
     const rect = e.currentTarget.getBoundingClientRect()
     const currentDayType = dayTypes.get(row.date) ?? row.dayType
     const { displayStatus, reason, leaveType } = classifyRow(row, todayIso)
-    const categoryBreakdown: Record<string, number> = { ...row.entries }
-    if (row.resolvedAutoCategory && row.autoCategoryHours > 0.001) {
-      categoryBreakdown[row.resolvedAutoCategory] =
-        (categoryBreakdown[row.resolvedAutoCategory] ?? 0) + row.autoCategoryHours
-    }
+    const categoryBreakdown = categoryBreakdownWithAuto(row)
     setDotPopover({
       date: row.date,
       currentDayType,
@@ -366,11 +360,7 @@ export function MonthGrid({
                   targetHoursForDate(row.date, config.weekdayHours),
                   row.accumulatedOvertime,
                 )
-                const rowCategoryBreakdown: Record<string, number> = { ...row.entries }
-                if (row.resolvedAutoCategory && row.autoCategoryHours > 0.001) {
-                  rowCategoryBreakdown[row.resolvedAutoCategory] =
-                    (rowCategoryBreakdown[row.resolvedAutoCategory] ?? 0) + row.autoCategoryHours
-                }
+                const rowCategoryBreakdown = categoryBreakdownWithAuto(row)
                 const daySummaryData: DaySummaryData = {
                   displayStatus,
                   reason,
@@ -543,11 +533,7 @@ export function MonthGrid({
                       <td></td>
                       <td></td>
                       {allCategories.map((cat, catIdx) => {
-                        const catTotal = group.rows.reduce((sum, row) => {
-                          const manual = row.entries[cat] ?? 0
-                          const autoHours = cat === row.resolvedAutoCategory ? row.autoCategoryHours : 0
-                          return sum + manual + autoHours
-                        }, 0)
+                        const catTotal = group.rows.reduce((sum, row) => sum + categoryHoursIncludingAuto(row, cat), 0)
                         const catBorderClass =
                           catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''
                         return (
@@ -581,11 +567,7 @@ export function MonthGrid({
               <td className="w-12"></td>
               <td className="w-16 border-r border-gray-200 dark:border-gray-700"></td>
               {allCategories.map((cat, catIdx) => {
-                const catTotal = rows.reduce((sum, row) => {
-                  const manual = row.entries[cat] ?? 0
-                  const autoHours = cat === row.resolvedAutoCategory ? row.autoCategoryHours : 0
-                  return sum + manual + autoHours
-                }, 0)
+                const catTotal = rows.reduce((sum, row) => sum + categoryHoursIncludingAuto(row, cat), 0)
                 const catBorderClass = catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''
                 return (
                   <td
