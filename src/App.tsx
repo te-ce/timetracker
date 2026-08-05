@@ -234,7 +234,7 @@ function UndoButton() {
         disabled={!canUndo}
         aria-label="Undo"
         data-tooltip="Undo (Ctrl+Z)"
-        className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
+        className="tooltip-below rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -257,7 +257,7 @@ function UndoButton() {
         disabled={!canRedo}
         aria-label="Redo"
         data-tooltip="Redo (Ctrl+Shift+Z)"
-        className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
+        className="tooltip-below rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200 disabled:opacity-30 disabled:pointer-events-none"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -372,7 +372,7 @@ function TimeFormatToggle() {
       onClick={toggleFormat}
       aria-label={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
       data-tooltip={format === 'decimal' ? 'Switch to HH:MM format' : 'Switch to decimal format'}
-      className="rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs font-medium tabular-nums text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+      className="tooltip-below rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-xs font-medium tabular-nums text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
     >
       {format === 'decimal' ? 'Dec.' : 'HH:MM'}
     </button>
@@ -386,7 +386,7 @@ function KeyboardShortcutsButton({ onToggle }: { onToggle: () => void }) {
       onClick={onToggle}
       aria-label="Keyboard shortcuts"
       data-tooltip="Keyboard shortcuts (?)"
-      className="rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+      className="tooltip-below rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

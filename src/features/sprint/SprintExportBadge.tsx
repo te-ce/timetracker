@@ -15,7 +15,7 @@ export function SprintExportBadge({ sprints }: Props) {
   const tooltip = sprintExportTooltipText(sprints)
 
   return (
-    <Tooltip content={tooltip ?? label}>
+    <Tooltip content={tooltip ?? label} placement="bottom">
       <button
         type="button"
         onClick={() => void navigate({ to: '/sprint', search: { sprint: undefined } })}
