@@ -5,7 +5,7 @@ export function hasOpenPeriod(windows: WorkPeriod[]): boolean {
 }
 
 export function findOpenPeriod(windows: WorkPeriod[]): WorkPeriod | undefined {
-  return windows.find((w) => w.end === null)
+  return windows.findLast((w) => w.end === null)
 }
 
 export function parseMinutes(time: string): number {
@@ -80,6 +80,18 @@ export function findPlannedStopPeriod(windows: WorkPeriod[], nowHHMM: string): W
  */
 export function findActivePeriod(windows: WorkPeriod[], nowHHMM: string): WorkPeriod | undefined {
   return findOpenPeriod(windows) ?? findPlannedStopPeriod(windows, nowHHMM)
+}
+
+/**
+ * Returns every WorkPeriod that is currently live-tracked — fully open
+ * (end: null) or a Planned-Stop WorkPeriod whose declared end hasn't passed
+ * yet — in their original order. Unlike findActivePeriod, this doesn't pick
+ * a single "the" active period: normally at most one period is open, but a
+ * manual edit can leave more than one without an explicit stop time, and
+ * callers like Stop All need to close all of them, not just one.
+ */
+export function findActivePeriods(windows: WorkPeriod[], nowHHMM: string): WorkPeriod[] {
+  return windows.filter((w) => w.end === null || isPlannedStop(w, nowHHMM))
 }
 
 /**

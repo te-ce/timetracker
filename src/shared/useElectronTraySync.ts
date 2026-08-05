@@ -9,7 +9,7 @@ import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
-import { findActivePeriod, nowHHMM } from './worktime'
+import { findActivePeriod, findActivePeriods, nowHHMM } from './worktime'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
 function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string): string | null {
@@ -70,14 +70,12 @@ export async function handleStopSubtask(
 export async function handleStopAll(monthRepo: MonthRepository, today: string, windows: WorkPeriod[]): Promise<void> {
   const now = nowHHMM()
 
-  // Stop live subtask if any
-  const openPeriod = findActivePeriod(windows, now)
-  if (openPeriod) {
-    const liveSubtask = openPeriod.subtasks.find((s) => s.startedAt && !s.stoppedAt)
+  for (const period of findActivePeriods(windows, now)) {
+    const liveSubtask = period.subtasks.find((s) => s.startedAt && !s.stoppedAt)
     if (liveSubtask) {
-      await monthRepo.stopLiveSubtask(today, openPeriod.id, liveSubtask.id, now)
+      await monthRepo.stopLiveSubtask(today, period.id, liveSubtask.id, now)
     }
-    await monthRepo.stopWorkPeriod(today, openPeriod.id, now)
+    await monthRepo.stopWorkPeriod(today, period.id, now)
   }
 }
 

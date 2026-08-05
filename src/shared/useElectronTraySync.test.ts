@@ -113,6 +113,45 @@ describe('handleStopAll', () => {
     await handleStopAll(repo, '2026-06-09', windows)
     expect(stopWorkPeriod).not.toHaveBeenCalled()
   })
+
+  it('stops every period with no set stop time, not just one, when several are open', async () => {
+    // A period whose subtasks were all stopped, but which was never explicitly
+    // closed, still has end: null. If a second, genuinely-tracked period is
+    // then started, both are "open" — Stop All must close every one of them.
+    const stale = makeWindow({ id: 'wp1', start: '09:00', end: null })
+    const active = makeWindow({ id: 'wp2', start: '13:00', end: null })
+    const { repo, stopWorkPeriod } = makeMockMonthRepo()
+    await handleStopAll(repo, '2026-06-09', [stale, active])
+    expect(stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))
+    expect(stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp2', expect.any(String))
+    expect(stopWorkPeriod).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops the live subtask on every open period it closes', async () => {
+    const first = makeWindow({
+      id: 'wp1',
+      start: '09:00',
+      end: null,
+      subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '09:30' }],
+    })
+    const second = makeWindow({
+      id: 'wp2',
+      start: '13:00',
+      end: null,
+      subtasks: [{ id: 's2', category: '_INFRA', hours: 0, startedAt: '13:15' }],
+    })
+    const { repo, stopLiveSubtask } = makeMockMonthRepo()
+    await handleStopAll(repo, '2026-06-09', [first, second])
+    expect(stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp1', 's1', expect.any(String))
+    expect(stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp2', 's2', expect.any(String))
+  })
+
+  it('force-closes a planned-stop period early when it is the only active one', async () => {
+    const planned = makeWindow({ id: 'wp1', start: '09:00', end: '23:59' })
+    const { repo, stopWorkPeriod } = makeMockMonthRepo()
+    await handleStopAll(repo, '2026-06-09', [planned])
+    expect(stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))
+  })
 })
 
 describe('handleStartWorkPeriod', () => {

@@ -7,6 +7,7 @@ import {
   findOpenPeriod,
   isPlannedStop,
   findPlannedStopPeriod,
+  findActivePeriods,
   calculateProjectedWorkedHours,
   derivePlannedStopState,
   elapsedHours,
@@ -159,10 +160,13 @@ describe('findOpenPeriod', () => {
     expect(findOpenPeriod([makeWindow('09:00', '10:00'), open])).toBe(open)
   })
 
-  it('returns the first open period in the list', () => {
+  it('returns the most recently added open period when several are open', () => {
+    // A closed period can be re-opened by clearing its end time via manual edit,
+    // producing more than one open period; the newest one is the one actually
+    // being tracked (matches dayStreamModel's findActiveTracking semantics).
     const first = makeWindow('09:00', null)
     const second = { ...makeWindow('11:00', null), id: '2' }
-    expect(findOpenPeriod([first, second])).toBe(first)
+    expect(findOpenPeriod([first, second])).toBe(second)
   })
 })
 
@@ -201,6 +205,25 @@ describe('findPlannedStopPeriod', () => {
   it('returns the period whose end is in the future', () => {
     const planned = makeWindow('09:00', '17:00')
     expect(findPlannedStopPeriod([makeWindow('07:00', '08:00'), planned], '15:00')).toBe(planned)
+  })
+})
+
+describe('findActivePeriods', () => {
+  it('returns every period with no set stop time', () => {
+    const first = makeWindow('09:00', null)
+    const second = { ...makeWindow('13:00', null), id: '2' }
+    const closed = { ...makeWindow('08:00', '08:30'), id: '3' }
+    expect(findActivePeriods([closed, first, second], '15:00')).toEqual([first, second])
+  })
+
+  it('includes a planned-stop period whose end is still in the future', () => {
+    const open = makeWindow('09:00', null)
+    const planned = { ...makeWindow('13:00', '17:00'), id: '2' }
+    expect(findActivePeriods([open, planned], '15:00')).toEqual([open, planned])
+  })
+
+  it('returns an empty list when nothing is open or planned-stop', () => {
+    expect(findActivePeriods([makeWindow('09:00', '10:00')], '15:00')).toEqual([])
   })
 })
 
