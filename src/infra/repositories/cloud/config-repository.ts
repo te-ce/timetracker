@@ -2,41 +2,31 @@ import type { StorageAdapter } from '../../storage/adapter'
 import type { AppConfig, ConfigRepository } from '../types'
 import { DEFAULT_APP_CONFIG } from '../../../shared/appConfigDefaults'
 import { appConfigSchema } from '../configSchema'
+import { JsonValueStore } from './json-store'
 
 const KEY = 'config.json'
 
+function validateAppConfig(v: unknown): AppConfig | null {
+  const parsed = appConfigSchema.safeParse(v)
+  return parsed.success ? parsed.data : null
+}
+
 export class CloudConfigRepository implements ConfigRepository {
-  private adapter: StorageAdapter
-  private cache: AppConfig | null = null
+  private store: JsonValueStore<AppConfig>
 
   constructor(adapter: StorageAdapter) {
-    this.adapter = adapter
+    this.store = new JsonValueStore(adapter, KEY, validateAppConfig, DEFAULT_APP_CONFIG)
   }
 
   async get(): Promise<AppConfig> {
-    if (this.cache) return structuredClone(this.cache)
-    const raw = await this.adapter.get<unknown>(KEY)
-    if (raw !== null) {
-      const parsed = appConfigSchema.safeParse(raw)
-      if (parsed.success) {
-        const data: AppConfig = parsed.data
-        this.cache = data
-      } else {
-        console.warn('[CloudConfigRepository] Stored config failed validation, using defaults', parsed.error.issues)
-        this.cache = structuredClone(DEFAULT_APP_CONFIG)
-      }
-    } else {
-      this.cache = structuredClone(DEFAULT_APP_CONFIG)
-    }
-    return structuredClone(this.cache)
+    return this.store.get()
   }
 
   async save(config: AppConfig): Promise<void> {
-    this.cache = structuredClone(config)
-    await this.adapter.put(KEY, config)
+    await this.store.set(config)
   }
 
   clearCache(): void {
-    this.cache = null
+    this.store.clearCache()
   }
 }

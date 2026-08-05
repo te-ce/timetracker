@@ -77,7 +77,7 @@ describe('CloudConfigRepository', () => {
     const repo = new CloudConfigRepository(adapter)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const config = await repo.get()
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Stored config failed validation'), expect.anything())
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('stored value failed validation'), expect.anything())
     expect(config.weekdayHours).toEqual([0, 8, 8, 8, 8, 8, 0])
     warnSpy.mockRestore()
   })

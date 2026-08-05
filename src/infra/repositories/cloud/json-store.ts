@@ -69,6 +69,49 @@ export class JsonCollectionStore<T> {
   }
 }
 
+/** A single validated JSON object at one key — the same validate-and-cache shape as `JsonRecordStore`, but for a value rather than a keyed collection. Falls back to `defaultValue` (cloned per read) when the key is empty or fails validation. */
+export class JsonValueStore<T> {
+  private adapter: StorageAdapter
+  private key: string
+  private validate: Validator<T>
+  private defaultValue: T
+  private cache: T | null = null
+
+  constructor(adapter: StorageAdapter, key: string, validate: Validator<T>, defaultValue: T) {
+    this.adapter = adapter
+    this.key = key
+    this.validate = validate
+    this.defaultValue = defaultValue
+  }
+
+  async get(): Promise<T> {
+    if (this.cache === null) {
+      const raw = await this.adapter.get<unknown>(this.key)
+      if (raw === null) {
+        this.cache = structuredClone(this.defaultValue)
+      } else {
+        const result = this.validate(raw)
+        if (result === null) {
+          console.warn(`[JsonValueStore] ${this.key}: stored value failed validation, using default`, raw)
+          this.cache = structuredClone(this.defaultValue)
+        } else {
+          this.cache = result
+        }
+      }
+    }
+    return structuredClone(this.cache)
+  }
+
+  async set(value: T): Promise<void> {
+    this.cache = structuredClone(value)
+    await this.adapter.put(this.key, value)
+  }
+
+  clearCache(): void {
+    this.cache = null
+  }
+}
+
 export class JsonRecordStore<V> {
   private adapter: StorageAdapter
   private key: string
