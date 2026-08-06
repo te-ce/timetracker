@@ -55,6 +55,7 @@ describe('dispatchGoalNotification', () => {
         onTogglePresenting: () => {},
         offTogglePresenting: () => {},
         setGlobal: vi.fn().mockResolvedValue(undefined),
+        setPresenting: vi.fn().mockResolvedValue(undefined),
       },
       storage: {
         get: () => Promise.resolve(null),

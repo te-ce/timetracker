@@ -12,14 +12,17 @@ export type InAppShortcutAction =
 
 export interface HotkeyConfig {
   globalToggle: string | null
+  presentingMode: string | null
   inApp: Partial<Record<InAppShortcutAction, string | null>>
 }
 
 export const HOTKEY_DEFAULTS: {
   globalToggle: string
+  presentingMode: string
   inApp: Record<InAppShortcutAction, string>
 } = {
   globalToggle: 'CommandOrControl+Shift+Space',
+  presentingMode: 'CommandOrControl+Shift+P',
   inApp: {
     monthView: 'M',
     tableView: 'G',
@@ -35,7 +38,7 @@ export const HOTKEY_DEFAULTS: {
 }
 
 export function defaultHotkeyConfig(): HotkeyConfig {
-  return { globalToggle: HOTKEY_DEFAULTS.globalToggle, inApp: {} }
+  return { globalToggle: HOTKEY_DEFAULTS.globalToggle, presentingMode: HOTKEY_DEFAULTS.presentingMode, inApp: {} }
 }
 
 export function matchesShortcut(

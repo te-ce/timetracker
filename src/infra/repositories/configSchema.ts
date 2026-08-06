@@ -6,6 +6,7 @@ import type { WeekdayHours } from '../../shared/weekdayHours'
 
 const hotkeyConfigSchema: z.ZodType<HotkeyConfig> = z.object({
   globalToggle: z.string().nullable(),
+  presentingMode: z.string().nullable(),
   inApp: z.record(z.string(), z.string().nullable()),
 })
 

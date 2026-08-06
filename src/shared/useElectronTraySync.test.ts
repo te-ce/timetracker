@@ -192,6 +192,7 @@ function makeElectronAPI() {
       onTogglePresenting: vi.fn(),
       offTogglePresenting: vi.fn(),
       setGlobal: vi.fn().mockResolvedValue(undefined),
+      setPresenting: vi.fn().mockResolvedValue(undefined),
     },
     storage: {
       get: vi.fn().mockResolvedValue(null),

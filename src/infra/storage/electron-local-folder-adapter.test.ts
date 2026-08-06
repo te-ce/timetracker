@@ -61,6 +61,7 @@ beforeEach(() => {
       onTogglePresenting: () => {},
       offTogglePresenting: () => {},
       setGlobal: () => Promise.resolve(),
+      setPresenting: () => Promise.resolve(),
     },
     storage: storageStub,
     localFolder: makeLocalFolderStub(),

@@ -305,13 +305,13 @@ function createWindow() {
 }
 
 const DEFAULT_GLOBAL_HOTKEY = 'CommandOrControl+Shift+Space'
-const PRESENTING_MODE_HOTKEY = 'CommandOrControl+Shift+P'
+const DEFAULT_PRESENTING_MODE_HOTKEY = 'CommandOrControl+Shift+P'
 
-function registerGlobalHotkey(accelerator) {
+function registerGlobalHotkeys({ globalToggle, presentingMode }) {
   globalShortcut.unregisterAll()
 
-  if (accelerator) {
-    globalShortcut.register(accelerator, () => {
+  if (globalToggle) {
+    globalShortcut.register(globalToggle, () => {
       if (!mainWindow) return
       if (trayState.isTracking) {
         mainWindow.webContents.send('hotkey:toggle')
@@ -322,10 +322,12 @@ function registerGlobalHotkey(accelerator) {
     })
   }
 
-  globalShortcut.register(PRESENTING_MODE_HOTKEY, () => {
-    if (!mainWindow) return
-    mainWindow.webContents.send('hotkey:togglePresenting')
-  })
+  if (presentingMode) {
+    globalShortcut.register(presentingMode, () => {
+      if (!mainWindow) return
+      mainWindow.webContents.send('hotkey:togglePresenting')
+    })
+  }
 }
 
 function loadConfig() {
@@ -340,6 +342,11 @@ function loadConfig() {
 function loadGlobalHotkey() {
   const config = loadConfig()
   return config?.hotkeys?.globalToggle !== undefined ? config.hotkeys.globalToggle : DEFAULT_GLOBAL_HOTKEY
+}
+
+function loadPresentingModeHotkey() {
+  const config = loadConfig()
+  return config?.hotkeys?.presentingMode !== undefined ? config.hotkeys.presentingMode : DEFAULT_PRESENTING_MODE_HOTKEY
 }
 
 async function syncAutoLaunch() {
@@ -359,7 +366,7 @@ app.whenReady().then(async () => {
   createTray()
   createWindow()
 
-  registerGlobalHotkey(loadGlobalHotkey())
+  registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: loadPresentingModeHotkey() })
   await syncAutoLaunch()
 
   app.on('activate', () => {
@@ -383,7 +390,11 @@ app.on('before-quit', () => {
 })
 
 ipcMain.handle('hotkey:setGlobal', (_, accelerator) => {
-  registerGlobalHotkey(accelerator)
+  registerGlobalHotkeys({ globalToggle: accelerator, presentingMode: loadPresentingModeHotkey() })
+})
+
+ipcMain.handle('hotkey:setPresenting', (_, accelerator) => {
+  registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: accelerator })
 })
 
 ipcMain.handle('autolaunch:get', () => autoLauncher.isEnabled())

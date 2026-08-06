@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onTogglePresenting: (cb) => ipcRenderer.on('hotkey:togglePresenting', cb),
     offTogglePresenting: (cb) => ipcRenderer.removeListener('hotkey:togglePresenting', cb),
     setGlobal: (accelerator) => ipcRenderer.invoke('hotkey:setGlobal', accelerator),
+    setPresenting: (accelerator) => ipcRenderer.invoke('hotkey:setPresenting', accelerator),
   },
   storage: {
     get: (key) => ipcRenderer.invoke('storage:get', key),

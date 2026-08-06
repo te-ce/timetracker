@@ -32,6 +32,7 @@ interface Window {
       onTogglePresenting: (cb: () => void) => void
       offTogglePresenting: (cb: () => void) => void
       setGlobal: (accelerator: string | null) => Promise<void>
+      setPresenting: (accelerator: string | null) => Promise<void>
     }
     storage: {
       get: <T>(key: string) => Promise<T | null>

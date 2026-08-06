@@ -114,6 +114,11 @@ export function HotkeySettings({ repository }: Props) {
     void window.electronAPI?.hotkey.setGlobal(value)
   }
 
+  function savePresentingMode(value: string | null) {
+    mutation.mutate({ ...hotkeys, presentingMode: value })
+    void window.electronAPI?.hotkey.setPresenting(value)
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {isElectron && (
@@ -138,6 +143,34 @@ export function HotkeySettings({ repository }: Props) {
                   type="button"
                   aria-label="Re-enable global hotkey"
                   onClick={() => saveGlobal(HOTKEY_DEFAULTS.globalToggle)}
+                  className="text-xs text-indigo-500 hover:text-indigo-700"
+                >
+                  Re-enable
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm dark:text-gray-300">Toggle privacy mode</span>
+            <div className="flex items-center gap-2">
+              <kbd className="rounded border px-2 py-1 text-sm dark:border-gray-500">
+                {hotkeys.presentingMode ?? 'disabled'}
+              </kbd>
+              {hotkeys.presentingMode !== null && (
+                <button
+                  type="button"
+                  aria-label="Disable privacy mode shortcut"
+                  onClick={() => savePresentingMode(null)}
+                  className="text-xs text-red-500 hover:text-red-700"
+                >
+                  Disable
+                </button>
+              )}
+              {hotkeys.presentingMode === null && (
+                <button
+                  type="button"
+                  aria-label="Re-enable privacy mode shortcut"
+                  onClick={() => savePresentingMode(HOTKEY_DEFAULTS.presentingMode)}
                   className="text-xs text-indigo-500 hover:text-indigo-700"
                 >
                   Re-enable
