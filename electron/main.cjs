@@ -420,7 +420,7 @@ ipcMain.on('tray:sync', (_, data) => {
   updateTrayDisplay()
 
   if (app.dock) {
-    app.dock.setMenu(buildDockMenu())
+    app.dock.setMenu(buildDockMenu() ?? Menu.buildFromTemplate([]))
   }
 
   if (elapsedTimer) clearInterval(elapsedTimer)
