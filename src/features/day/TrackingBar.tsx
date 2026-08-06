@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatHours } from '../../shared/formatHours'
+import { Tooltip } from '../../shared/Tooltip'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { CategoryPicker } from './CategoryPicker'
 import { categoryLabel } from './categoryLabel'
@@ -63,6 +64,11 @@ export function TrackingBar({
     return (
       <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed px-3 py-2 text-sm dark:border-gray-700">
         <span className="text-gray-500 dark:text-gray-400">Log work</span>
+        <Tooltip content="This is a past day">
+          <button type="button" aria-label="This is a past day" className="text-amber-500 dark:text-amber-400">
+            ⚠
+          </button>
+        </Tooltip>
         <input
           type="time"
           aria-label="New work period start"

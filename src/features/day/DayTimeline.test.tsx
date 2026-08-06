@@ -505,6 +505,16 @@ describe('DayTimeline', () => {
     expect(screen.queryByRole('button', { name: /start tracking/i })).not.toBeInTheDocument()
   })
 
+  it('warns that a day is in the past when logging a work period on it', async () => {
+    // Given an empty past day
+    setup([], true, PAST_DATE)
+
+    // Then a warning icon sits next to the add control, explaining why on hover
+    const warning = await screen.findByLabelText(/this is a past day/i)
+    await userEvent.hover(warning)
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(/this is a past day/i)
+  })
+
   it('deletes a work period only after confirmation', async () => {
     // Given one work period
     const { repo } = setup([period('a', '08:00', '09:30', 'Work')])
