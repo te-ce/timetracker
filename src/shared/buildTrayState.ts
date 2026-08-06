@@ -20,7 +20,7 @@ export interface TrayStateInput {
   nowHHMM: string
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
   showTotalWorked?: boolean
-  showWorkedHoursInTaskMenu?: boolean
+  showWorkedHoursInTrayBreakdown?: boolean
   presentingMode?: boolean
   /** False while the prior-months overtime carry-over is still loading — see `useDayQuery`'s `isOvertimeReady`. */
   isOvertimeReady?: boolean
@@ -28,7 +28,6 @@ export interface TrayStateInput {
 
 export interface TrayState {
   receiptLines: ReceiptLine[]
-  dockMenuLines: ReceiptLine[]
   badgeLabel: string
   autoCategory: string | null
   activeSubtaskCategory: string | null
@@ -57,20 +56,6 @@ export function buildTrayState(input: TrayStateInput): TrayState {
   const activeSubtaskCategory = findLiveSubtaskCategory(input.windows, input.nowHHMM)
   const presentingMode = input.presentingMode === true
 
-  if (presentingMode) {
-    return {
-      receiptLines: [],
-      dockMenuLines: [],
-      badgeLabel: '',
-      autoCategory: input.autoCategory,
-      activeSubtaskCategory,
-      categories: input.categories,
-      isTracking: input.isTracking,
-      startedAt: input.startedAt,
-      presentingMode,
-    }
-  }
-
   // buildReceipt's carry-over line always reflects priorOvertime, in every mode, so it's unreliable
   // whenever the carry-over is still loading — even in modes/settings where the badge label itself
   // doesn't depend on it.
@@ -78,16 +63,19 @@ export function buildTrayState(input: TrayStateInput): TrayState {
   const showTotalWorked = input.showTotalWorked === true
   const resultUnknown = !isOvertimeReady && mode !== 'until-daily-target' && !showTotalWorked
 
-  const receiptLines = isOvertimeReady
+  const rawReceiptLines = isOvertimeReady
     ? buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, remaining, timeFormat, mode)
     : []
-  const showInTaskMenu = input.showWorkedHoursInTaskMenu !== false
-  const dockMenuLines = showInTaskMenu ? receiptLines : []
-  const badgeLabel = resultUnknown ? '…' : buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
+  const showBreakdown = input.showWorkedHoursInTrayBreakdown !== false
+  const receiptLines = showBreakdown ? rawReceiptLines : []
+  const badgeLabel = presentingMode
+    ? ''
+    : resultUnknown
+      ? '…'
+      : buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
 
   return {
     receiptLines,
-    dockMenuLines,
     badgeLabel,
     autoCategory: input.autoCategory,
     activeSubtaskCategory,

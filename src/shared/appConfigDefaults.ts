@@ -46,7 +46,7 @@ export interface ResolvedAppConfig {
   officeStats: boolean
   showWorkedHoursInNav: boolean
   showWorkedHoursInTray: boolean
-  showWorkedHoursInTaskMenu: boolean
+  showWorkedHoursInTrayBreakdown: boolean
   remainingTimeReference: 'planned-stop' | 'target-hours'
   remainingTimeMode: 'until-zero-overtime' | 'until-daily-target'
   showTotalWorked: boolean
@@ -79,7 +79,7 @@ export function resolveAppConfig(config: AppConfig | undefined): ResolvedAppConf
     officeStats: config?.officeStats ?? true,
     showWorkedHoursInNav: config?.showWorkedHoursInNav ?? true,
     showWorkedHoursInTray: config?.showWorkedHoursInTray ?? true,
-    showWorkedHoursInTaskMenu: config?.showWorkedHoursInTaskMenu ?? true,
+    showWorkedHoursInTrayBreakdown: config?.showWorkedHoursInTrayBreakdown ?? true,
     remainingTimeReference: config?.remainingTimeReference ?? 'planned-stop',
     remainingTimeMode: config?.remainingTimeMode ?? 'until-zero-overtime',
     showTotalWorked: config?.showTotalWorked ?? false,

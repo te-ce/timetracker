@@ -120,8 +120,8 @@ export function SettingsView() {
                 {isElectron && (
                   <BooleanConfigToggle
                     repository={configRepo}
-                    label="Show worked hours in tray menu"
-                    description="Display the detailed hours breakdown in the tray icon menu. The remaining/overtime badge next to the icon is always shown."
+                    label="Show remaining hours in tray icon"
+                    description="Display the remaining/overtime badge next to the tray icon. Toggle from the tray menu or the presenting-mode hotkey."
                     isChecked={(c) => c.showWorkedHoursInTray !== false}
                     applyChange={(c, checked) => ({ ...c, showWorkedHoursInTray: checked })}
                   />
@@ -129,10 +129,10 @@ export function SettingsView() {
                 {isElectron && (
                   <BooleanConfigToggle
                     repository={configRepo}
-                    label="Show worked hours in task menu"
-                    description="Display the detailed hours breakdown in the app icon's Dock context menu (macOS)."
-                    isChecked={(c) => c.showWorkedHoursInTaskMenu !== false}
-                    applyChange={(c, checked) => ({ ...c, showWorkedHoursInTaskMenu: checked })}
+                    label="Show detailed breakdown in tray menu"
+                    description="Display the hours breakdown in the tray icon's dropdown menu and tooltip."
+                    isChecked={(c) => c.showWorkedHoursInTrayBreakdown !== false}
+                    applyChange={(c, checked) => ({ ...c, showWorkedHoursInTrayBreakdown: checked })}
                   />
                 )}
                 <StartupViewSettings repository={configRepo} />

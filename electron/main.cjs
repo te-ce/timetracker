@@ -20,7 +20,6 @@ let tray = null
 let elapsedTimer = null
 let trayState = {
   receiptLines: [],
-  dockMenuLines: [],
   badgeLabel: '',
   autoCategory: null,
   activeSubtaskCategory: null,
@@ -177,12 +176,6 @@ function receiptLinesToMenuItems(lines) {
     }
   }
   return items
-}
-
-function buildDockMenu() {
-  const lines = trayState.dockMenuLines || []
-  if (lines.length === 0) return null
-  return Menu.buildFromTemplate(receiptLinesToMenuItems(lines))
 }
 
 function buildTrayMenu() {
@@ -418,10 +411,6 @@ ipcMain.on('tray:sync', (_, data) => {
 
   tray.setContextMenu(buildTrayMenu())
   updateTrayDisplay()
-
-  if (app.dock) {
-    app.dock.setMenu(buildDockMenu() ?? Menu.buildFromTemplate([]))
-  }
 
   if (elapsedTimer) clearInterval(elapsedTimer)
   if (data.isTracking && data.startedAt) {

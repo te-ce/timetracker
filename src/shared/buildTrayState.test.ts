@@ -209,9 +209,9 @@ describe('buildTrayState', () => {
       expect(result.badgeLabel).toBe('')
     })
 
-    it('blanks the receipt lines when presentingMode is true', () => {
+    it('still shows the receipt lines when presentingMode is true — it only hides the remaining-hours badge', () => {
       const result = buildTrayState({ ...baseInput, presentingMode: true })
-      expect(result.receiptLines).toEqual([])
+      expect(result.receiptLines.length).toBeGreaterThan(0)
     })
 
     it('still shows the badge label and receipt lines when presentingMode is false', () => {
@@ -227,25 +227,20 @@ describe('buildTrayState', () => {
     })
   })
 
-  describe('dockMenuLines', () => {
-    it('mirrors receiptLines by default', () => {
+  describe('showWorkedHoursInTrayBreakdown', () => {
+    it('shows receiptLines by default', () => {
       const result = buildTrayState(baseInput)
-      expect(result.dockMenuLines).toEqual(result.receiptLines)
-    })
-
-    it('is empty when showWorkedHoursInTaskMenu is false', () => {
-      const result = buildTrayState({ ...baseInput, showWorkedHoursInTaskMenu: false })
-      expect(result.dockMenuLines).toEqual([])
-    })
-
-    it('is still populated when showWorkedHoursInTaskMenu is false but the tray itself keeps its receiptLines', () => {
-      const result = buildTrayState({ ...baseInput, showWorkedHoursInTaskMenu: false })
       expect(result.receiptLines.length).toBeGreaterThan(0)
     })
 
-    it('is blanked when presentingMode is true, regardless of showWorkedHoursInTaskMenu', () => {
-      const result = buildTrayState({ ...baseInput, presentingMode: true, showWorkedHoursInTaskMenu: true })
-      expect(result.dockMenuLines).toEqual([])
+    it('is empty when showWorkedHoursInTrayBreakdown is false', () => {
+      const result = buildTrayState({ ...baseInput, showWorkedHoursInTrayBreakdown: false })
+      expect(result.receiptLines).toEqual([])
+    })
+
+    it('does not affect the badge label', () => {
+      const result = buildTrayState({ ...baseInput, showWorkedHoursInTrayBreakdown: false })
+      expect(result.badgeLabel).toBe('5.00h left')
     })
   })
 
