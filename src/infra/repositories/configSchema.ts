@@ -50,6 +50,8 @@ const appConfigFields = z.object({
   showTotalWorked: z.boolean().optional(),
   startupView: z.enum(STARTUP_VIEWS).optional(),
   archiveSprintSheet: z.boolean().optional(),
+  sprintRoundingStep: z.number().optional(),
+  sprintRoundingMode: z.enum(['nearest', 'up', 'down']).optional(),
 })
 
 export type AppConfig = z.infer<typeof appConfigFields>

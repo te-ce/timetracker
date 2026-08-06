@@ -1,6 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { getSprintBoundaries, getSprintForDate, aggregateSprintHours, sprintDayProgress } from './sprint'
+import {
+  getSprintBoundaries,
+  getSprintForDate,
+  aggregateSprintHours,
+  sprintDayProgress,
+  roundHours,
+  roundHoursPerCategory,
+} from './sprint'
 import type { DatedTimeEntry } from '../../infra/repositories/types'
 
 const config = { startDate: '2024-01-01', lengthDays: 14 }
@@ -83,5 +90,46 @@ describe('sprintDayProgress', () => {
 
   it('clamps day to the sprint length for a date after it ends', () => {
     expect(sprintDayProgress(sprint, '2024-02-01')).toEqual({ day: 14, total: 14, pct: 100 })
+  })
+})
+
+describe('roundHours', () => {
+  it('returns the value unchanged when step is 0', () => {
+    expect(roundHours(3.27, 0, 'nearest')).toBe(3.27)
+  })
+
+  it('rounds to the nearest step', () => {
+    expect(roundHours(3.27, 0.5, 'nearest')).toBe(3.5)
+    expect(roundHours(3.2, 0.5, 'nearest')).toBe(3)
+    expect(roundHours(3.27, 0.1, 'nearest')).toBeCloseTo(3.3)
+    expect(roundHours(3.24, 1, 'nearest')).toBe(3)
+  })
+
+  it('rounds up to the step', () => {
+    expect(roundHours(3.01, 0.5, 'up')).toBe(3.5)
+    expect(roundHours(3, 0.5, 'up')).toBe(3)
+    expect(roundHours(3.01, 1, 'up')).toBe(4)
+  })
+
+  it('rounds down to the step', () => {
+    expect(roundHours(3.49, 0.5, 'down')).toBe(3)
+    expect(roundHours(3.5, 0.5, 'down')).toBe(3.5)
+    expect(roundHours(3.99, 1, 'down')).toBe(3)
+  })
+
+  it('avoids float drift at exact step multiples', () => {
+    expect(roundHours(0.3, 0.1, 'down')).toBeCloseTo(0.3)
+    expect(roundHours(0.3, 0.1, 'up')).toBeCloseTo(0.3)
+  })
+})
+
+describe('roundHoursPerCategory', () => {
+  it('returns the input unchanged when step is 0', () => {
+    const input = { QA: 3.27, Dev: 1.13 }
+    expect(roundHoursPerCategory(input, 0, 'nearest')).toEqual(input)
+  })
+
+  it('rounds every category to the given step and mode', () => {
+    expect(roundHoursPerCategory({ QA: 3.27, Dev: 1.13 }, 0.5, 'nearest')).toEqual({ QA: 3.5, Dev: 1 })
   })
 })

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getSprintBoundaries, getSprintForDate, aggregateSprintHours } from './sprint'
+import { getSprintBoundaries, getSprintForDate, aggregateSprintHours, roundHoursPerCategory } from './sprint'
 import type { SprintConfig, Sprint } from './sprint'
 import { SprintConfigPanel } from './SprintConfigPanel'
 import { SprintReportPanel } from './SprintReportPanel'
@@ -12,7 +12,7 @@ import { QUERY_KEYS, invalidateConfig, invalidateSprintExport } from '../../shar
 import { createWorkbookService, isExportReady } from '../excel/workbookFactory'
 import { toLocalIso } from '../../shared/dateUtils'
 import { buildArchiveSheetName } from './sprintSheetName'
-import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
 interface SprintState {
@@ -57,7 +57,12 @@ export function SprintView() {
     enabled: !!config,
   })
 
-  const hoursPerCategory = aggregateSprintHours(entries, sprint)
+  const { sprintRoundingStep, sprintRoundingMode } = resolveAppConfig(config)
+  const hoursPerCategory = roundHoursPerCategory(
+    aggregateSprintHours(entries, sprint),
+    sprintRoundingStep,
+    sprintRoundingMode,
+  )
   const allCategories = config ? getAllCategories(config.customCategories, config.categoryOrder) : []
 
   const { data: sprintExport } = useQuery({

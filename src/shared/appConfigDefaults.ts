@@ -12,6 +12,8 @@ export const DEFAULT_APP_CONFIG: AppConfig = {
   sharepointUrl: null,
   targetSheet: null,
   categoryMapping: {},
+  sprintRoundingStep: 0,
+  sprintRoundingMode: 'nearest',
 }
 
 /**
@@ -49,6 +51,8 @@ export interface ResolvedAppConfig {
   showTotalWorked: boolean
   startupView: StartupView | null
   archiveSprintSheet: boolean
+  sprintRoundingStep: number
+  sprintRoundingMode: 'nearest' | 'up' | 'down'
 }
 
 export function resolveAppConfig(config: AppConfig | undefined): ResolvedAppConfig {
@@ -79,5 +83,7 @@ export function resolveAppConfig(config: AppConfig | undefined): ResolvedAppConf
     showTotalWorked: config?.showTotalWorked ?? false,
     startupView: config?.startupView ?? null,
     archiveSprintSheet: config?.archiveSprintSheet ?? false,
+    sprintRoundingStep: config?.sprintRoundingStep ?? 0,
+    sprintRoundingMode: config?.sprintRoundingMode ?? 'nearest',
   }
 }

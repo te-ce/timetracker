@@ -3,7 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import { useSprintExportAction } from './useSprintExportAction'
-import type { ExportStatus } from './sprint'
+import type { ExportStatus, SprintRoundingMode } from './sprint'
+
+function isSprintRoundingMode(value: string): value is SprintRoundingMode {
+  return value === 'nearest' || value === 'up' || value === 'down'
+}
+
+const ROUNDING_STEPS = [0, 0.1, 0.25, 0.5, 1]
 
 interface Props {
   repository: ConfigRepository
@@ -17,6 +23,8 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
   const queryClient = useQueryClient()
   const [startDate, setStartDate] = useState('')
   const [lengthDays, setLengthDays] = useState('')
+  const [roundingStep, setRoundingStep] = useState(0)
+  const [roundingMode, setRoundingMode] = useState<SprintRoundingMode>('nearest')
   const initialized = useRef(false)
 
   const { data: config } = useQuery({
@@ -28,6 +36,8 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
     if (config && !initialized.current) {
       setStartDate(config.sprintStartDate ?? '')
       setLengthDays(String(config.sprintLengthDays))
+      setRoundingStep(config.sprintRoundingStep ?? 0)
+      setRoundingMode(config.sprintRoundingMode ?? 'nearest')
       initialized.current = true
     }
   }, [config])
@@ -39,6 +49,8 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
         ...config,
         sprintStartDate: startDate || null,
         sprintLengthDays: parseInt(lengthDays) || config.sprintLengthDays,
+        sprintRoundingStep: roundingStep,
+        sprintRoundingMode: roundingMode,
       })
     },
     onSuccess: () => {
@@ -81,6 +93,36 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
           className="w-10 border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
         />
         <span className="text-gray-400 dark:text-gray-500">days</span>
+      </label>
+
+      <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+        Round to
+        <select
+          aria-label="Rounding step"
+          value={roundingStep}
+          onChange={(e) => setRoundingStep(Number(e.target.value))}
+          className="border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
+        >
+          {ROUNDING_STEPS.map((step) => (
+            <option key={step} value={step}>
+              {step === 0 ? 'Off' : step}
+            </option>
+          ))}
+        </select>
+        {roundingStep > 0 && (
+          <select
+            aria-label="Rounding mode"
+            value={roundingMode}
+            onChange={(e) => {
+              if (isSprintRoundingMode(e.target.value)) setRoundingMode(e.target.value)
+            }}
+            className="border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
+          >
+            <option value="nearest">Nearest</option>
+            <option value="up">Up</option>
+            <option value="down">Down</option>
+          </select>
+        )}
       </label>
 
       <button

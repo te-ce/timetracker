@@ -10,6 +10,8 @@ function setup(
   overrides: {
     sprintStartDate?: string
     sprintLengthDays?: number
+    sprintRoundingStep?: number
+    sprintRoundingMode?: 'nearest' | 'up' | 'down'
     exportStatus?: 'pending' | 'exported'
     exportReady?: boolean
     onExport?: (overwrite: boolean) => Promise<void>
@@ -19,6 +21,8 @@ function setup(
     ...DEFAULT_APP_CONFIG,
     sprintLengthDays: overrides.sprintLengthDays ?? 14,
     sprintStartDate: overrides.sprintStartDate ?? '2024-01-01',
+    sprintRoundingStep: overrides.sprintRoundingStep ?? 0,
+    sprintRoundingMode: overrides.sprintRoundingMode ?? 'nearest',
   })
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const onConfigChanged = vi.fn()
@@ -124,6 +128,37 @@ describe('SprintConfigPanel', () => {
     await waitFor(async () => {
       const config = await repo.get()
       expect(config.sprintStartDate).toBe('2024-01-01')
+    })
+  })
+
+  describe('rounding', () => {
+    it('defaults the rounding step to Off and hides the mode selector', async () => {
+      setup()
+      await screen.findByDisplayValue('2024-01-01')
+      expect(screen.getByLabelText(/rounding step/i)).toHaveValue('0')
+      expect(screen.queryByLabelText(/rounding mode/i)).not.toBeInTheDocument()
+    })
+
+    it('shows the mode selector once a step is set and saves both fields', async () => {
+      const { repo } = setup()
+      await screen.findByDisplayValue('2024-01-01')
+
+      await userEvent.selectOptions(screen.getByLabelText(/rounding step/i), '0.5')
+      await userEvent.selectOptions(screen.getByLabelText(/rounding mode/i), 'up')
+      await userEvent.click(screen.getByRole('button', { name: /save/i }))
+
+      await waitFor(async () => {
+        const config = await repo.get()
+        expect(config.sprintRoundingStep).toBe(0.5)
+        expect(config.sprintRoundingMode).toBe('up')
+      })
+    })
+
+    it('loads a previously saved rounding step and mode', async () => {
+      setup({ sprintRoundingStep: 0.25, sprintRoundingMode: 'down' })
+      await screen.findByDisplayValue('2024-01-01')
+      expect(screen.getByLabelText(/rounding step/i)).toHaveValue('0.25')
+      expect(screen.getByLabelText(/rounding mode/i)).toHaveValue('down')
     })
   })
 

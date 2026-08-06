@@ -55,3 +55,31 @@ export function aggregateSprintHours(entries: DatedTimeEntry[], sprint: Sprint):
   }
   return result
 }
+
+export type SprintRoundingMode = 'nearest' | 'up' | 'down'
+
+// Snapping to 8 decimal places before floor/ceil avoids float noise (e.g.
+// 0.3 / 0.1 === 2.9999999999999996) from rounding the wrong way.
+function snap(n: number): number {
+  return Math.round(n * 1e8) / 1e8
+}
+
+export function roundHours(hours: number, step: number, mode: SprintRoundingMode): number {
+  if (step <= 0) return hours
+  const units = snap(hours / step)
+  const rounded = mode === 'up' ? Math.ceil(units) : mode === 'down' ? Math.floor(units) : Math.round(units)
+  return snap(rounded * step)
+}
+
+export function roundHoursPerCategory(
+  hoursPerCategory: Record<string, number>,
+  step: number,
+  mode: SprintRoundingMode,
+): Record<string, number> {
+  if (step <= 0) return hoursPerCategory
+  const result: Record<string, number> = {}
+  for (const [category, hours] of Object.entries(hoursPerCategory)) {
+    result[category] = roundHours(hours, step, mode)
+  }
+  return result
+}
