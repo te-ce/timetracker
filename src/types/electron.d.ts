@@ -7,6 +7,7 @@ interface Window {
     tray: {
       sync: (data: {
         receiptLines: Array<{ label: string; value: string; isTotal?: boolean; isSubItem?: boolean }>
+        dockMenuLines: Array<{ label: string; value: string; isTotal?: boolean; isSubItem?: boolean }>
         badgeLabel: string
         autoCategory: string | null
         activeSubtaskCategory: string | null

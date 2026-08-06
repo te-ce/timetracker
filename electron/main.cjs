@@ -20,6 +20,7 @@ let tray = null
 let elapsedTimer = null
 let trayState = {
   receiptLines: [],
+  dockMenuLines: [],
   badgeLabel: '',
   autoCategory: null,
   activeSubtaskCategory: null,
@@ -162,6 +163,28 @@ function updateTrayDisplay() {
   tray.setToolTip(lines.join('\n'))
 }
 
+// Renders receipt lines as disabled menu items: value first, sub-items indented, total after separator
+function receiptLinesToMenuItems(lines) {
+  const items = []
+  for (const line of lines) {
+    if (line.isTotal) {
+      items.push({ type: 'separator' })
+      items.push({ label: line.value ? `${line.value}  ${line.label}` : line.label, enabled: false })
+    } else if (line.isSubItem) {
+      items.push({ label: `  ${line.value}  ${line.label}`, enabled: false })
+    } else {
+      items.push({ label: `${line.value}  ${line.label}`, enabled: false })
+    }
+  }
+  return items
+}
+
+function buildDockMenu() {
+  const lines = trayState.dockMenuLines || []
+  if (lines.length === 0) return null
+  return Menu.buildFromTemplate(receiptLinesToMenuItems(lines))
+}
+
 function buildTrayMenu() {
   const { receiptLines, autoCategory, activeSubtaskCategory, categories, isTracking, startedAt, presentingMode } =
     trayState
@@ -175,18 +198,7 @@ function buildTrayMenu() {
     },
   }
 
-  // Build receipt section: value first, sub-items indented, total after separator
-  const infoItems = []
-  for (const line of receiptLines) {
-    if (line.isTotal) {
-      infoItems.push({ type: 'separator' })
-      infoItems.push({ label: line.value ? `${line.value}  ${line.label}` : line.label, enabled: false })
-    } else if (line.isSubItem) {
-      infoItems.push({ label: `  ${line.value}  ${line.label}`, enabled: false })
-    } else {
-      infoItems.push({ label: `${line.value}  ${line.label}`, enabled: false })
-    }
-  }
+  const infoItems = receiptLinesToMenuItems(receiptLines)
 
   // While tracking: all categories listed; selected = active subtask, else main category
   const categoryItems = isTracking
@@ -406,6 +418,10 @@ ipcMain.on('tray:sync', (_, data) => {
 
   tray.setContextMenu(buildTrayMenu())
   updateTrayDisplay()
+
+  if (app.dock) {
+    app.dock.setMenu(buildDockMenu())
+  }
 
   if (elapsedTimer) clearInterval(elapsedTimer)
   if (data.isTracking && data.startedAt) {

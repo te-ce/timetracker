@@ -127,6 +127,7 @@ export function useElectronTraySync() {
       nowHHMM: nowHHMM(),
       remainingTimeMode: resolved.remainingTimeMode,
       showTotalWorked: resolved.showTotalWorked,
+      showWorkedHoursInTaskMenu: resolved.showWorkedHoursInTaskMenu,
       presentingMode: hideHours,
       isOvertimeReady,
     })

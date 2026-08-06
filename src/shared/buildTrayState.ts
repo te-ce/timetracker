@@ -20,6 +20,7 @@ export interface TrayStateInput {
   nowHHMM: string
   remainingTimeMode?: 'until-zero-overtime' | 'until-daily-target'
   showTotalWorked?: boolean
+  showWorkedHoursInTaskMenu?: boolean
   presentingMode?: boolean
   /** False while the prior-months overtime carry-over is still loading — see `useDayQuery`'s `isOvertimeReady`. */
   isOvertimeReady?: boolean
@@ -27,6 +28,7 @@ export interface TrayStateInput {
 
 export interface TrayState {
   receiptLines: ReceiptLine[]
+  dockMenuLines: ReceiptLine[]
   badgeLabel: string
   autoCategory: string | null
   activeSubtaskCategory: string | null
@@ -58,6 +60,7 @@ export function buildTrayState(input: TrayStateInput): TrayState {
   if (presentingMode) {
     return {
       receiptLines: [],
+      dockMenuLines: [],
       badgeLabel: '',
       autoCategory: input.autoCategory,
       activeSubtaskCategory,
@@ -78,10 +81,13 @@ export function buildTrayState(input: TrayStateInput): TrayState {
   const receiptLines = isOvertimeReady
     ? buildReceipt(sollstunden, priorOvertime, workedHours, liveElapsed, remaining, timeFormat, mode)
     : []
+  const showInTaskMenu = input.showWorkedHoursInTaskMenu !== false
+  const dockMenuLines = showInTaskMenu ? receiptLines : []
   const badgeLabel = resultUnknown ? '…' : buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
 
   return {
     receiptLines,
+    dockMenuLines,
     badgeLabel,
     autoCategory: input.autoCategory,
     activeSubtaskCategory,

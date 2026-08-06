@@ -46,6 +46,7 @@ const appConfigFields = z.object({
   officeStats: z.boolean().optional(),
   showWorkedHoursInNav: z.boolean().optional(),
   showWorkedHoursInTray: z.boolean().optional(),
+  showWorkedHoursInTaskMenu: z.boolean().optional(),
   remainingTimeReference: z.enum(['planned-stop', 'target-hours']).optional(),
   remainingTimeMode: z.enum(['until-zero-overtime', 'until-daily-target']).optional(),
   showTotalWorked: z.boolean().optional(),

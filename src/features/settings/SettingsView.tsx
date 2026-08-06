@@ -126,6 +126,15 @@ export function SettingsView() {
                     applyChange={(c, checked) => ({ ...c, showWorkedHoursInTray: checked })}
                   />
                 )}
+                {isElectron && (
+                  <BooleanConfigToggle
+                    repository={configRepo}
+                    label="Show worked hours in task menu"
+                    description="Display the detailed hours breakdown in the app icon's Dock context menu (macOS)."
+                    isChecked={(c) => c.showWorkedHoursInTaskMenu !== false}
+                    applyChange={(c, checked) => ({ ...c, showWorkedHoursInTaskMenu: checked })}
+                  />
+                )}
                 <StartupViewSettings repository={configRepo} />
                 <BooleanConfigToggle
                   repository={configRepo}
