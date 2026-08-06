@@ -73,7 +73,7 @@ const sprint = (index: number) => ({ index, start: '2026-01-01', end: '2026-01-1
 
 describe('sprintExportBadgeLabel', () => {
   it('single sprint shows index', () => {
-    expect(sprintExportBadgeLabel([sprint(4)])).toBe('Export Sprint 4')
+    expect(sprintExportBadgeLabel([sprint(4)])).toBe('Export Sprint 5')
   })
 
   it('multiple sprints shows plural without index', () => {
@@ -87,7 +87,7 @@ describe('sprintExportTooltipText', () => {
   })
 
   it('multiple sprints returns comma-separated indices', () => {
-    expect(sprintExportTooltipText([sprint(4), sprint(5), sprint(6)])).toBe('Sprint 4, 5, 6')
+    expect(sprintExportTooltipText([sprint(4), sprint(5), sprint(6)])).toBe('Sprint 5, 6, 7')
   })
 })
 

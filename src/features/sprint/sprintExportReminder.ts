@@ -24,20 +24,21 @@ export function getSprintsNeedingExport(today: string, config: SprintConfig, dat
 }
 
 export function sprintExportBadgeLabel(sprints: Sprint[]): string {
-  if (sprints.length === 1 && sprints[0]) return `Export Sprint ${sprints[0].index}`
+  if (sprints.length === 1 && sprints[0]) return `Export Sprint ${sprints[0].index + 1}`
   return 'Export Sprints'
 }
 
 export function sprintExportTooltipText(sprints: Sprint[]): string | null {
   if (sprints.length <= 1) return null
-  return `Sprint ${sprints.map((s) => s.index).join(', ')}`
+  return `Sprint ${sprints.map((s) => s.index + 1).join(', ')}`
 }
 
 export function dispatchSprintExportNotification(indices: number[]): void {
+  const first = indices[0]
   const body =
-    indices.length === 1
-      ? `Sprint ${indices[0]} ended, export your hours`
-      : `Sprint ${indices.join(', ')} ended, export your hours`
+    indices.length === 1 && first !== undefined
+      ? `Sprint ${first + 1} ended, export your hours`
+      : `Sprint ${indices.map((i) => i + 1).join(', ')} ended, export your hours`
   if (window.electronAPI) {
     window.electronAPI.notify.sprintExportDue(body)
   } else if ('Notification' in window) {
