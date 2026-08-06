@@ -69,6 +69,10 @@ function setup(initialWindows: WorkPeriod[] = [], showTotals = true, date = DATE
   const repo = new InMemoryMonthRepository(
     initialWindows.length > 0 ? { [monthKey]: { [date]: { windows: initialWindows } } } : {},
   )
+  return setupWithRepo(repo, showTotals, date)
+}
+
+function setupWithRepo<R extends MonthRepository>(repo: R, showTotals = true, date = DATE) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={queryClient}>
@@ -124,6 +128,25 @@ describe('DayTimeline', () => {
     // Then one open WorkPeriod exists on that category
     await vi.waitFor(async () => {
       expect(await getWindows(repo)).toMatchObject([{ end: null, category: 'Meeting' }])
+    })
+  })
+
+  it('defaults the start category to whichever has the most all-time hours booked when no auto category is set', async () => {
+    // Given a day with nothing tracked, but a prior month heavy on Review
+    const repo = new InMemoryMonthRepository({
+      '2026-04': {
+        '2026-04-01': { windows: [period('a', '09:00', '10:00', 'Meeting')] },
+        '2026-04-02': { windows: [period('b', '09:00', '14:00', 'Review')] },
+      },
+    })
+    setupWithRepo(repo)
+
+    // When the user starts tracking without touching the category picker
+    await userEvent.click(await screen.findByRole('button', { name: /start tracking/i }))
+
+    // Then the new period is booked on the category with the most all-time hours
+    await vi.waitFor(async () => {
+      expect(await getWindows(repo)).toMatchObject([{ end: null, category: 'Review' }])
     })
   })
 

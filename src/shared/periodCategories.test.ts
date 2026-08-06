@@ -5,10 +5,11 @@ import {
   calculateDayCategoryHours,
   calculateTotalCategorizedHours,
   remainderHours,
+  sumCategoryHoursAcrossMonths,
   UNCATEGORIZED_CATEGORY,
 } from './periodCategories'
 import { DEFAULT_WEEKDAY_HOURS } from './weekdayHours'
-import type { WorkPeriod } from '../infra/repositories/types'
+import type { MonthData, WorkPeriod } from '../infra/repositories/types'
 
 function period(
   id: string,
@@ -159,6 +160,43 @@ describe('calculateTotalCategorizedHours', () => {
   it('sums all non-UNCATEGORIZED hours', () => {
     const windows = [period('a', '09:00', '10:00', '_COREMEDIA'), period('b', '10:00', '11:30', '_SUPPORT')]
     expect(calculateTotalCategorizedHours(windows)).toBeCloseTo(2.5)
+  })
+})
+
+describe('sumCategoryHoursAcrossMonths', () => {
+  function monthData(entries: Record<string, WorkPeriod[]>): MonthData {
+    const data: MonthData = {}
+    for (const [date, windows] of Object.entries(entries)) {
+      data[date] = { windows }
+    }
+    return data
+  }
+
+  it('returns an empty object for no months', () => {
+    expect(sumCategoryHoursAcrossMonths([])).toEqual({})
+  })
+
+  it('sums a category across days within one month', () => {
+    const months = [
+      monthData({
+        '2026-05-01': [period('a', '09:00', '10:00', '_COREMEDIA')],
+        '2026-05-02': [period('b', '09:00', '11:00', '_COREMEDIA')],
+      }),
+    ]
+    expect(sumCategoryHoursAcrossMonths(months)).toEqual({ _COREMEDIA: 3 })
+  })
+
+  it('sums a category across multiple months', () => {
+    const months = [
+      monthData({ '2026-05-01': [period('a', '09:00', '10:00', '_COREMEDIA')] }),
+      monthData({ '2026-06-01': [period('b', '09:00', '10:00', '_COREMEDIA')] }),
+    ]
+    expect(sumCategoryHoursAcrossMonths(months)).toEqual({ _COREMEDIA: 2 })
+  })
+
+  it('excludes UNCATEGORIZED hours', () => {
+    const months = [monthData({ '2026-05-01': [period('a', '09:00', '10:00', UNCATEGORIZED_CATEGORY)] })]
+    expect(sumCategoryHoursAcrossMonths(months)).toEqual({})
   })
 })
 

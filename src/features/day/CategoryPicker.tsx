@@ -1,5 +1,4 @@
 import { useRef, useEffect } from 'react'
-import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 
 interface CategoryPickerProps {
   value: string
@@ -38,7 +37,6 @@ export function CategoryPicker({
       onChange={(e) => onChange(e.target.value)}
       className={selectClass}
     >
-      <option value={UNCATEGORIZED_CATEGORY}>Uncategorized</option>
       {categories.map((c) => (
         <option key={c} value={c}>
           {categoryDescriptions?.[c] ? `${c} (${categoryDescriptions[c]})` : c}

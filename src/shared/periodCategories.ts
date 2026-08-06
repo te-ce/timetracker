@@ -1,4 +1,4 @@
-import type { Day, DayTypeOverride, WorkPeriod } from '../infra/repositories/types'
+import type { Day, DayTypeOverride, MonthData, WorkPeriod } from '../infra/repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../infra/repositories/types'
 import { calculateWorkedHours } from './worktime'
 import { targetHoursForDate, type WeekdayHours } from './weekdayHours'
@@ -52,6 +52,20 @@ export function calculateCategoryHours(windows: WorkPeriod[], now?: string): Rec
     }
   }
   return result
+}
+
+/** Booked hours per category across every day of every given month, excluding UNCATEGORIZED. */
+export function sumCategoryHoursAcrossMonths(months: MonthData[]): Record<string, number> {
+  const totals: Record<string, number> = {}
+  for (const monthData of months) {
+    for (const day of Object.values(monthData)) {
+      for (const [category, hours] of Object.entries(calculateCategoryHours(day.windows))) {
+        if (category === UNCATEGORIZED_CATEGORY) continue
+        totals[category] = (totals[category] ?? 0) + hours
+      }
+    }
+  }
+  return totals
 }
 
 export function calculateTotalCategorizedHours(windows: WorkPeriod[]): number {

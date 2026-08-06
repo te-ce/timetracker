@@ -6,19 +6,8 @@ import { QUERY_KEYS } from '../../shared/queryKeys'
 import { useClock } from '../../shared/useClock'
 import { hasLiveActivity } from '../../shared/dayBalance'
 import { nowHHMM } from '../../shared/worktime'
-import { buildAllTimeStats, type AllTimeStats, type StatsMonth } from './allTimeStats'
-import type { MonthRepository } from '../../infra/repositories/types'
-
-/** Every stored month, loaded in one go — the Stats view is all-time by nature. */
-export async function loadAllMonths(monthRepo: MonthRepository): Promise<StatsMonth[]> {
-  const yms = await monthRepo.getAllMonths()
-  return Promise.all(
-    yms.map(async (ym) => ({
-      ym,
-      data: await monthRepo.getMonth(parseInt(ym.slice(0, 4)), parseInt(ym.slice(5, 7))),
-    })),
-  )
-}
+import { loadAllMonths } from '../../shared/loadAllMonths'
+import { buildAllTimeStats, type AllTimeStats } from './allTimeStats'
 
 export interface UseAllTimeStatsResult {
   stats: AllTimeStats

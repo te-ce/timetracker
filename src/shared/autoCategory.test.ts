@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { calculateAutoCategory, resolveAutoCategory } from './autoCategory'
+import { calculateAutoCategory, pickCategoryWithMostHours, resolveAutoCategory } from './autoCategory'
 
 describe('calculateAutoCategory', () => {
   it('returns all WorkedHours when manualTotal is 0', () => {
@@ -59,5 +59,31 @@ describe('resolveAutoCategory', () => {
 
   it('treats null override same as undefined (falls back to global)', () => {
     expect(resolveAutoCategory(null, 'Coremedia')).toBe('Coremedia')
+  })
+})
+
+describe('pickCategoryWithMostHours', () => {
+  it('returns the category with the most booked hours', () => {
+    const result = pickCategoryWithMostHours({ QA: 3, Coremedia: 8, Infra: 1 }, ['QA', 'Coremedia', 'Infra'])
+    expect(result).toBe('Coremedia')
+  })
+
+  it('breaks a tie by picking the first category in the given order', () => {
+    const result = pickCategoryWithMostHours({ QA: 5, Coremedia: 5 }, ['QA', 'Coremedia'])
+    expect(result).toBe('QA')
+  })
+
+  it('treats a category missing from the hours map as 0 hours', () => {
+    const result = pickCategoryWithMostHours({ Coremedia: 4 }, ['QA', 'Coremedia'])
+    expect(result).toBe('Coremedia')
+  })
+
+  it('picks the first category when all hours are 0 or missing', () => {
+    const result = pickCategoryWithMostHours({}, ['QA', 'Coremedia'])
+    expect(result).toBe('QA')
+  })
+
+  it('returns null for an empty category list', () => {
+    expect(pickCategoryWithMostHours({ QA: 3 }, [])).toBeNull()
   })
 })

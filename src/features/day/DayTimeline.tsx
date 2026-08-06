@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import type { MonthRepository, WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
-import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import { getAllCategories } from '../../shared/categories'
+import { pickCategoryWithMostHours } from '../../shared/autoCategory'
+import { sumCategoryHoursAcrossMonths } from '../../shared/periodCategories'
+import { loadAllMonths } from '../../shared/loadAllMonths'
+import { QUERY_KEYS } from '../../shared/queryKeys'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { buildDayStream, deriveDayStats, findActiveTracking } from './dayStreamModel'
@@ -69,7 +73,10 @@ export function DayTimeline({
   const [loggingFor, setLoggingFor] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<PendingDelete | null>(null)
   const [editingTimesFor, setEditingTimesFor] = useState<string | null>(null)
-  const defaultCategory = initialCategory ?? autoCategory ?? UNCATEGORIZED_CATEGORY
+  const allMonthsQuery = useQuery({ queryKey: QUERY_KEYS.allMonthsData, queryFn: () => loadAllMonths(repository) })
+  const allTimeCategoryHours = sumCategoryHoursAcrossMonths((allMonthsQuery.data ?? []).map((m) => m.data))
+  const mostBookedCategory = pickCategoryWithMostHours(allTimeCategoryHours, categories) ?? categories[0] ?? ''
+  const defaultCategory = initialCategory ?? autoCategory ?? mostBookedCategory
 
   function addPeriod(start: string, end: string | null, category: string) {
     const incoming: WorkPeriod = { id: crypto.randomUUID(), start, end, category, subtasks: [] }

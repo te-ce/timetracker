@@ -3,12 +3,16 @@ import userEvent from '@testing-library/user-event'
 import { CategoryPicker } from './CategoryPicker'
 
 describe('CategoryPicker', () => {
-  it('lists the given categories plus Uncategorized', () => {
+  it('lists the given categories', () => {
     render(<CategoryPicker value="Work" categories={['Work', 'Meeting']} onChange={() => {}} />)
     const select = screen.getByRole('combobox', { name: 'Category' })
     expect(select).toHaveValue('Work')
     expect(screen.getByRole('option', { name: 'Meeting' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Uncategorized' })).toBeInTheDocument()
+  })
+
+  it('does not offer Uncategorized as a selectable option', () => {
+    render(<CategoryPicker value="Work" categories={['Work', 'Meeting']} onChange={() => {}} />)
+    expect(screen.queryByRole('option', { name: 'Uncategorized' })).not.toBeInTheDocument()
   })
 
   it('shows the description next to a category when provided', () => {
