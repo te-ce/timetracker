@@ -56,7 +56,7 @@ export function MonthNav({ year, month, onMonthChange, compact }: Props) {
           className={`rounded-md border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isCurrentMonth ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-orange-500 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30'}`}
           aria-disabled={isCurrentMonth}
         >
-          Today
+          Current
         </button>
       </div>
       <button type="button" aria-label="Next month" onClick={handleNext} className={navBtnClass}>

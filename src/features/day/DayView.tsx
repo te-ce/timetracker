@@ -69,7 +69,7 @@ function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps
           disabled={isToday}
           aria-label="Go to today"
         >
-          Today
+          Current
         </button>
       </div>
       <button
