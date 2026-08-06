@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
+import type { AppConfig } from '../../infra/repositories/configSchema'
 import { useSprintExportAction } from './useSprintExportAction'
 import type { ExportStatus, SprintRoundingMode } from './sprint'
 
@@ -10,6 +11,23 @@ function isSprintRoundingMode(value: string): value is SprintRoundingMode {
 }
 
 const ROUNDING_STEPS = [0, 0.1, 0.25, 0.5, 1]
+
+interface DraftState {
+  startDate: string
+  lengthDays: string
+  roundingStep: number
+  roundingMode: SprintRoundingMode
+}
+
+function isDraftDirty(draft: DraftState, config: AppConfig | undefined): boolean {
+  if (!config) return false
+  return (
+    draft.startDate !== (config.sprintStartDate ?? '') ||
+    draft.lengthDays !== String(config.sprintLengthDays) ||
+    draft.roundingStep !== (config.sprintRoundingStep ?? 0) ||
+    draft.roundingMode !== (config.sprintRoundingMode ?? 'nearest')
+  )
+}
 
 interface Props {
   repository: ConfigRepository
@@ -61,6 +79,8 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
 
   const { exporting, exportError, needsOverwriteConfirm, handleExport } = useSprintExportAction(onExport)
 
+  const isDirty = isDraftDirty({ startDate, lengthDays, roundingStep, roundingMode }, config)
+
   return (
     <div className="flex flex-wrap items-center gap-6 border-b border-gray-200 pb-3 dark:border-gray-700">
       <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -101,7 +121,7 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
           aria-label="Rounding step"
           value={roundingStep}
           onChange={(e) => setRoundingStep(Number(e.target.value))}
-          className="border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
+          className="border-0 border-b border-gray-300 bg-transparent py-1 pl-0 pr-4 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
         >
           {ROUNDING_STEPS.map((step) => (
             <option key={step} value={step}>
@@ -116,7 +136,7 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
             onChange={(e) => {
               if (isSprintRoundingMode(e.target.value)) setRoundingMode(e.target.value)
             }}
-            className="border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
+            className="border-0 border-b border-gray-300 bg-transparent py-1 pl-0 pr-4 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
           >
             <option value="nearest">Nearest</option>
             <option value="up">Up</option>
@@ -125,13 +145,16 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
         )}
       </label>
 
-      <button
-        type="button"
-        onClick={() => saveMutation.mutate()}
-        className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-      >
-        Save
-      </button>
+      {isDirty && (
+        <button
+          type="button"
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="text-sm font-medium text-indigo-600 hover:underline disabled:opacity-50 dark:text-indigo-400"
+        >
+          Save
+        </button>
+      )}
 
       {onExport && (
         <div className="ml-auto flex items-center gap-3">

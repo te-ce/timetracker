@@ -47,6 +47,22 @@ describe('SprintConfigPanel', () => {
     expect(screen.getByDisplayValue('14')).toBeInTheDocument()
   })
 
+  it('hides the Save button when there are no unsaved changes', async () => {
+    setup({ sprintStartDate: '2024-01-01' })
+    await screen.findByDisplayValue('2024-01-01')
+    expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument()
+  })
+
+  it('shows the Save button once a field changes, then hides it again after saving', async () => {
+    setup({ sprintStartDate: '2024-01-01' })
+    await screen.findByDisplayValue('2024-01-01')
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: '2024-02-01' } })
+    await screen.findByRole('button', { name: /save/i })
+
+    await userEvent.click(screen.getByRole('button', { name: /save/i }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: /save/i })).not.toBeInTheDocument())
+  })
+
   it('saves updated sprint start date', async () => {
     const { repo, onConfigChanged } = setup({ sprintStartDate: '2024-01-01' })
     await screen.findByDisplayValue('2024-01-01')
@@ -124,10 +140,11 @@ describe('SprintConfigPanel', () => {
       </QueryClientProvider>,
     )
     await screen.findByDisplayValue('2024-01-01')
+    fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: '2024-02-01' } })
     await userEvent.click(screen.getByRole('button', { name: /save/i }))
     await waitFor(async () => {
       const config = await repo.get()
-      expect(config.sprintStartDate).toBe('2024-01-01')
+      expect(config.sprintStartDate).toBe('2024-02-01')
     })
   })
 
@@ -172,6 +189,7 @@ describe('SprintConfigPanel', () => {
     it('shows the export button after the Save button when onExport is provided', async () => {
       setup({ onExport: vi.fn().mockResolvedValue(undefined) })
       await screen.findByDisplayValue('2024-01-01')
+      fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: '2024-02-01' } })
       const buttons = screen.getAllByRole('button')
       const saveIndex = buttons.findIndex((b) => /save/i.test(b.textContent))
       const exportIndex = buttons.findIndex((b) => /^export$/i.test(b.textContent))
