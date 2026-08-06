@@ -1,7 +1,7 @@
 import type { MonthData, WorkLocation, WorkPeriod } from '../../infra/repositories/types'
 import type { DayType } from '../day/dayType'
 import { deriveMonthDayCores } from '../../shared/monthDayCore'
-import { targetHoursForDate, type WeekdayHours } from '../../shared/weekdayHours'
+import type { WeekdayHours } from '../../shared/weekdayHours'
 import { UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { calculateWorkedHours, parseMinutes } from '../../shared/worktime'
 import { parseLocalDate } from '../../shared/dateUtils'
@@ -294,7 +294,7 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
         date: core.date,
         dayType: core.dayType,
         hours: core.workedHours,
-        targetHours: targetHoursForDate(core.date, input.weekdayHours),
+        targetHours: core.targetHours,
         categoryHours: core.categoryHours,
         periodCount: windows.length,
         firstStartMinutes: starts.length > 0 ? Math.min(...starts) : null,

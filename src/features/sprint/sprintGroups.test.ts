@@ -8,6 +8,7 @@ function makeRow(date: string): MonthTableRow {
     date,
     dayType: 'WorkDay',
     workedHours: 0,
+    targetHours: 8,
     entries: {},
     autoCategoryHours: 0,
     resolvedAutoCategory: null,

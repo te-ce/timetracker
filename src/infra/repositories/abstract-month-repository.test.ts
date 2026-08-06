@@ -62,6 +62,24 @@ describe.each(ADAPTERS)('%s (AbstractMonthRepository contract)', (_, makeRepo) =
     })
   })
 
+  describe('halfDayLeave', () => {
+    it('is not treated as an empty day and survives updateDay on its own', async () => {
+      const repo = makeRepo()
+      await repo.updateDay('2026-06-07', (day) => ({ ...day, halfDayLeave: 'Vacation' }))
+      const data = await repo.getMonth(2026, 6)
+      expect(data['2026-06-07']?.halfDayLeave).toBe('Vacation')
+    })
+
+    it('is preserved when a work period is added afterward', async () => {
+      const repo = makeRepo()
+      await repo.updateDay('2026-06-07', (day) => ({ ...day, halfDayLeave: 'SickDay' }))
+      await seedDay(repo, '2026-06-07', makePeriod())
+      const data = await repo.getMonth(2026, 6)
+      expect(data['2026-06-07']?.halfDayLeave).toBe('SickDay')
+      expect(data['2026-06-07']?.windows).toHaveLength(1)
+    })
+  })
+
   describe('resetDay', () => {
     it('clears windows for the day', async () => {
       const repo = makeRepo()

@@ -54,12 +54,17 @@ export type WorkLocation = (typeof WORK_LOCATIONS)[number]
 export const DAY_TYPE_OVERRIDES = ['WorkDay', 'Weekend', 'PublicHoliday', 'Vacation', 'SickDay'] as const
 export type DayTypeOverride = (typeof DAY_TYPE_OVERRIDES)[number]
 
+export const LEAVE_TYPES = ['Vacation', 'SickDay'] as const
+export type LeaveType = (typeof LEAVE_TYPES)[number]
+
 export interface Day {
   windows: WorkPeriod[]
   location?: WorkLocation | undefined
   note?: string | undefined
   autoCategoryOverride?: string | undefined
   dayTypeOverride?: DayTypeOverride | undefined
+  /** Half of this WorkDay's target is accounted as leave; the other half can still be logged. */
+  halfDayLeave?: LeaveType | undefined
 }
 
 export type MonthData = Record<string, Day>

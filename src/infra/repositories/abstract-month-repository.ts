@@ -29,7 +29,8 @@ export function isDayEmpty(day: Day): boolean {
     day.location === undefined &&
     !day.note &&
     !day.autoCategoryOverride &&
-    !day.dayTypeOverride
+    !day.dayTypeOverride &&
+    !day.halfDayLeave
   )
 }
 

@@ -1,7 +1,7 @@
 import type { DayType } from '../day'
 import type { MonthData } from '../../infra/repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
-import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS, targetHoursForDate } from '../../shared/weekdayHours'
+import { type WeekdayHours, DEFAULT_WEEKDAY_HOURS } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
 import { calculateCumulativeOvertime } from '../../shared/overtime'
 import { deriveMonthDayCores, type MonthDayCore } from '../../shared/monthDayCore'
@@ -10,6 +10,8 @@ export interface MonthTableRow {
   date: string
   dayType: DayType
   workedHours: number
+  /** The day's target hours, halved when flagged as a half-day leave. */
+  targetHours: number
   entries: Record<string, number>
   autoCategoryHours: number
   /** AutoCategory resolved for this day: per-day override (ADR 0004) falling back to the global default. */
@@ -66,6 +68,7 @@ function buildDayRow(
     date: core.date,
     dayType: core.dayType,
     workedHours: core.workedHours,
+    targetHours: core.targetHours,
     entries: Object.fromEntries(Object.entries(core.categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)),
     autoCategoryHours: core.uncategorizedHours,
     resolvedAutoCategory: resolveAutoCategory(autoCategoryOverride, globalAutoCategory),
@@ -86,7 +89,6 @@ export interface TableRowsFromCoresInput {
 export function tableRowsFromCores(cores: MonthDayCore[], input: TableRowsFromCoresInput): MonthTableRow[] {
   const {
     monthData,
-    weekdayHours = DEFAULT_WEEKDAY_HOURS,
     today = '9999-12-31',
     globalAutoCategory = null,
     priorMonthsOvertime = 0,
@@ -99,7 +101,7 @@ export function tableRowsFromCores(cores: MonthDayCore[], input: TableRowsFromCo
   )
 
   const dates = baseRows.map((r) => r.date)
-  const targetHoursPerDay = dates.map((date) => targetHoursForDate(date, weekdayHours))
+  const targetHoursPerDay = baseRows.map((r) => r.targetHours)
   const workedHoursPerDay = baseRows.map((r) => r.workedHours)
   const accumulatedOvertime = calculateCumulativeOvertime(
     workedHoursPerDay,

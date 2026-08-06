@@ -7,6 +7,7 @@ function daySummary(date: string, overrides: Partial<DaySummary> = {}): DaySumma
     date,
     dayType: 'WorkDay',
     workedHours: 8,
+    targetHours: 8,
     entryTotal: 0,
 
     dayStatus: 'complete',

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { targetHoursForDate, type WeekdayHours } from './weekdayHours'
+import { effectiveTargetHours, targetHoursForDate, type WeekdayHours } from './weekdayHours'
 
 // 2024-01-15 = Monday, 2024-01-16 = Tuesday, ..., 2024-01-20 = Saturday, 2024-01-21 = Sunday
 const MON = new Date('2024-01-15')
@@ -34,5 +34,23 @@ describe('targetHoursForDate', () => {
 
   it('accepts ISO date string', () => {
     expect(targetHoursForDate('2024-01-15', STANDARD)).toBe(8)
+  })
+})
+
+describe('effectiveTargetHours', () => {
+  it('returns the full target when no half-day leave is set', () => {
+    expect(effectiveTargetHours(MON, STANDARD, undefined)).toBe(8)
+  })
+
+  it('halves the target for a half-day Vacation', () => {
+    expect(effectiveTargetHours(MON, STANDARD, 'Vacation')).toBe(4)
+  })
+
+  it('halves the target for a half-day SickDay', () => {
+    expect(effectiveTargetHours(MON, STANDARD, 'SickDay')).toBe(4)
+  })
+
+  it('stays 0 for a non-working day even with half-day leave set', () => {
+    expect(effectiveTargetHours(SAT, STANDARD, 'Vacation')).toBe(0)
   })
 })

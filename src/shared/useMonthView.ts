@@ -68,7 +68,6 @@ export interface MonthViewInput {
 export function buildMonthView(input: MonthViewInput) {
   const { year, month, monthData, config, todayIso, now, priorMonthsOvertime = 0, overtimeReady = true } = input
   const weekdayHours = config.weekdayHours
-  const sollstunden = targetHoursForDate(new Date(), weekdayHours)
 
   const { days: cores, projectedWorkedHoursToday } = deriveMonthDayCores({
     year,
@@ -79,8 +78,12 @@ export function buildMonthView(input: MonthViewInput) {
     todayNow: now,
   })
 
+  // Cores cover the viewed month, which may not be the current one — fall back to
+  // the plain weekday target (no halfDayLeave awareness) when today isn't in view.
+  const sollstunden = cores.find((c) => c.date === todayIso)?.targetHours ?? targetHoursForDate(todayIso, weekdayHours)
+
   const summaries = summariesFromCores(cores, todayIso, projectedWorkedHoursToday)
-  const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))
+  const targetHoursPerDay = summaries.days.map((d) => d.targetHours)
   const overtimeToDate = calculateOvertimeToDate(
     summaries.workedHoursPerDay,
     summaries.days.map((d) => d.date),

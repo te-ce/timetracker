@@ -115,6 +115,35 @@ describe('deriveMonthDayCores', () => {
     expect(projectedWorkedHoursToday).toBeCloseTo(9)
   })
 
+  it('halves targetHours and carries halfDayLeave through for a flagged WorkDay', () => {
+    const monthData: MonthData = {
+      '2026-05-01': { windows: [win('w1', '13:00', '17:00')], halfDayLeave: 'Vacation' },
+    }
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+    })
+    expect(days[0]!.dayType).toBe('WorkDay')
+    expect(days[0]!.halfDayLeave).toBe('Vacation')
+    expect(days[0]!.targetHours).toBe(4) // May 1 = Friday, 8h halved
+    expect(days[0]!.workedHours).toBe(4) // the actually logged window still counts in full
+  })
+
+  it('uses the full weekday target when halfDayLeave is not set', () => {
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: {},
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-01',
+    })
+    expect(days[0]!.targetHours).toBe(8)
+    expect(days[0]!.halfDayLeave).toBeUndefined()
+  })
+
   it('leaves projectedWorkedHoursToday undefined when todayNow is not given', () => {
     const { projectedWorkedHoursToday } = deriveMonthDayCores({
       year: 2026,

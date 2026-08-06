@@ -15,7 +15,6 @@ import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnH
 import { categoryBreakdownWithAuto, categoryHoursIncludingAuto, type MonthTableRow } from './buildMonthTable'
 import type { MonthView } from '../../shared/useMonthView'
 import { STATUS_DOT } from '../../shared/statusColors'
-import { targetHoursForDate } from '../../shared/weekdayHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { Tooltip } from '../../shared/Tooltip'
@@ -355,11 +354,7 @@ export function MonthGrid({
                 const loc = workLocations.get(row.date) ?? defaultWorkLocation
                 const locIcon = loc === 'Office' ? '🏢' : '🏠'
                 const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' })
-                const rowDelta = dayDelta(
-                  row.workedHours,
-                  targetHoursForDate(row.date, config.weekdayHours),
-                  row.accumulatedOvertime,
-                )
+                const rowDelta = dayDelta(row.workedHours, row.targetHours, row.accumulatedOvertime)
                 const rowCategoryBreakdown = categoryBreakdownWithAuto(row)
                 const daySummaryData: DaySummaryData = {
                   displayStatus,
@@ -402,7 +397,7 @@ export function MonthGrid({
                       categoryOrder={categoryOrder}
                       categoryDescriptions={categoryDescriptions}
                       daySummaryData={daySummaryData}
-                      targetHours={targetHoursForDate(row.date, config.weekdayHours)}
+                      targetHours={row.targetHours}
                       className={`sticky left-[4.6rem] z-10 ${STICKY_BG}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
                     />
                     <td className="px-1.5 py-[3px] w-12 text-right text-[11px] tabular-nums">

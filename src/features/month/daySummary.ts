@@ -1,6 +1,6 @@
 import type { DayType } from '../day/dayType'
 import type { DayStatus } from '../../shared/dayStatus'
-import type { MonthData } from '../../infra/repositories/types'
+import type { LeaveType, MonthData } from '../../infra/repositories/types'
 import { classifyDay } from '../../shared/dayStatus'
 import { UNCATEGORIZED_CATEGORY } from '../../shared/periodCategories'
 import { DEFAULT_WEEKDAY_HOURS, type WeekdayHours } from '../../shared/weekdayHours'
@@ -10,12 +10,15 @@ export interface DaySummary {
   date: string
   dayType: DayType
   workedHours: number
+  /** The day's target hours, halved when `halfDayLeave` is set. */
+  targetHours: number
   entryTotal: number
   dayStatus: DayStatus
   displayStatus: Exclude<DayStatus, 'today'>
   statusReason: string
   categoryBreakdown: Record<string, number>
   leaveType?: 'Vacation' | 'SickDay'
+  halfDayLeave?: LeaveType
 }
 
 export interface MonthSummaryInput {
@@ -57,12 +60,14 @@ function toDaySummary(core: MonthDayCore, today: string): DaySummary {
     date: core.date,
     dayType: core.dayType,
     workedHours: core.workedHours,
+    targetHours: core.targetHours,
     entryTotal: core.entryTotal,
     dayStatus,
     displayStatus,
     statusReason,
     categoryBreakdown,
     ...(leaveType !== undefined ? { leaveType } : {}),
+    ...(core.halfDayLeave !== undefined ? { halfDayLeave: core.halfDayLeave } : {}),
   }
 }
 

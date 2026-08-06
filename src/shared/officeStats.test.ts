@@ -8,6 +8,7 @@ function summary(date: string, dayType: DaySummary['dayType'], workedHours: numb
     date,
     dayType,
     workedHours,
+    targetHours: 8,
     entryTotal: workedHours,
 
     dayStatus: 'complete',

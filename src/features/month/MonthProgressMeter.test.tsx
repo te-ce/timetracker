@@ -10,6 +10,7 @@ function day(date: string, overrides: Partial<DaySummary> = {}): DaySummary {
     date,
     dayType: 'WorkDay',
     workedHours: 8,
+    targetHours: 8,
     entryTotal: 0,
 
     dayStatus: 'complete',

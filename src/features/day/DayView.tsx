@@ -12,6 +12,7 @@ import { useClock } from '../../shared/useClock'
 import { Tooltip } from '../../shared/Tooltip'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
+import { LEAVE_TYPE_LABEL } from '../../shared/DaySummaryBody'
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', {
@@ -102,6 +103,7 @@ export function DayView() {
     dayClassification,
     effectiveLocation,
     selectedDayType,
+    halfDayLeave,
     sollstunden,
     overtimeToDate,
     todayIso,
@@ -156,7 +158,12 @@ export function DayView() {
 
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-4 shrink-0">
-          <DayTypePicker date={selectedDate} dayType={selectedDayType} repository={monthRepo} />
+          <DayTypePicker
+            date={selectedDate}
+            dayType={selectedDayType}
+            halfDayLeave={halfDayLeave}
+            repository={monthRepo}
+          />
           {showOfficeStats && (
             <button
               type="button"
@@ -186,6 +193,16 @@ export function DayView() {
         </div>
       ) : (
         <section aria-label="Work periods">
+          {halfDayLeave && (
+            <div
+              role="status"
+              aria-label="Half-day leave info"
+              className="mb-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"
+            >
+              Half this day counts as {LEAVE_TYPE_LABEL[halfDayLeave]} — {sollstunden}h still expected from work
+              periods.
+            </div>
+          )}
           <h3 className="mb-3 text-sm font-semibold text-gray-600 dark:text-gray-400">Work periods</h3>
           <DayTimeline
             date={selectedDate}

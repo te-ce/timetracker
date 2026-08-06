@@ -4,15 +4,19 @@ import { classifyDayType } from '../features/day/dayType'
 import { calculateWorkedHours, calculateProjectedWorkedHours } from './worktime'
 import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from './periodCategories'
 import { toLocalIso } from './dateUtils'
-import type { WeekdayHours } from './weekdayHours'
+import { effectiveTargetHours, type WeekdayHours } from './weekdayHours'
+import type { LeaveType } from '../infra/repositories/types'
 
 export interface MonthDayCore {
   date: string
   dayType: DayType
   workedHours: number
+  /** The day's target hours, halved when `halfDayLeave` is set. */
+  targetHours: number
   categoryHours: Record<string, number>
   entryTotal: number
   uncategorizedHours: number
+  halfDayLeave?: LeaveType
 }
 
 export interface DeriveMonthDaysInput {
@@ -49,14 +53,25 @@ function deriveDayCore(
 ): MonthDayCore {
   const windows = dayData?.windows ?? []
   const workedHours = calculateWorkedHours(windows, now)
+  const halfDayLeave = dayData?.halfDayLeave
   const categoryHours = calculateDayCategoryHours(dayData ?? { windows: [] }, iso, weekdayHours, now)
   const entryTotal = Object.entries(categoryHours)
     .filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)
     .reduce((sum, [, h]) => sum + h, 0)
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
   const dayType: DayType = dayData?.dayTypeOverride ?? dayTypes?.get(iso) ?? classifyDayType(date)
+  const targetHours = effectiveTargetHours(date, weekdayHours, halfDayLeave)
 
-  return { date: iso, dayType, workedHours, categoryHours, entryTotal, uncategorizedHours }
+  return {
+    date: iso,
+    dayType,
+    workedHours,
+    targetHours,
+    categoryHours,
+    entryTotal,
+    uncategorizedHours,
+    ...(halfDayLeave !== undefined ? { halfDayLeave } : {}),
+  }
 }
 
 /**

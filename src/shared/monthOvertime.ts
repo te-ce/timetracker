@@ -3,7 +3,7 @@ import { buildMonthSummaries, type MonthSummaryResult } from '../features/month/
 import { calculateOvertimeToDate, calculateMonthStats, type OvertimeToDate } from './overtime'
 import { calculateOvertimeCarryOver } from './overtimeCarryOver'
 import type { ResolvedAppConfig } from './appConfigDefaults'
-import { targetHoursForDate, type WeekdayHours } from './weekdayHours'
+import type { WeekdayHours } from './weekdayHours'
 
 export interface MonthOvertimeResult {
   summaries: MonthSummaryResult
@@ -46,7 +46,7 @@ export function composeMonthOvertime(
     weekdayHours,
     ...(todayNow !== undefined ? { todayNow } : {}),
   })
-  const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))
+  const targetHoursPerDay = summaries.days.map((d) => d.targetHours)
   const overtimeToDate = calculateOvertimeToDate(
     summaries.workedHoursPerDay,
     summaries.days.map((d) => d.date),
@@ -75,7 +75,7 @@ async function overtimeForCompletedMonth(
   const nextMonthYear = month === 12 ? year + 1 : year
   const afterMonthEnd = `${nextMonthYear}-${String(nextMonth).padStart(2, '0')}-01`
   const summaries = buildMonthSummaries(year, month, { monthData, today: afterMonthEnd, weekdayHours })
-  const targetHoursPerDay = summaries.days.map((d) => targetHoursForDate(d.date, weekdayHours))
+  const targetHoursPerDay = summaries.days.map((d) => d.targetHours)
   return calculateMonthStats(summaries.workedHoursPerDay, targetHoursPerDay).overtime
 }
 

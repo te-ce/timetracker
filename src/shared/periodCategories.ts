@@ -14,7 +14,7 @@ const LEAVE_OVERRIDES = new Set<DayTypeOverride>(['Vacation', 'SickDay'])
  * by the month table and the sprint/export aggregation.
  */
 export function calculateDayCategoryHours(
-  day: Pick<Day, 'windows' | 'dayTypeOverride'>,
+  day: Pick<Day, 'windows' | 'dayTypeOverride' | 'halfDayLeave'>,
   date: string,
   weekdayHours: WeekdayHours,
   now?: string,
@@ -24,6 +24,11 @@ export function calculateDayCategoryHours(
   if (!hasWork && day.dayTypeOverride && LEAVE_OVERRIDES.has(day.dayTypeOverride)) {
     const leave = targetHoursForDate(date, weekdayHours)
     if (leave > 0) result[LEAVE_CATEGORY] = leave
+  } else if (day.halfDayLeave) {
+    // A half-day leave still expects work on the other half, so it's booked
+    // alongside whatever hours are logged rather than only when none are.
+    const halfLeave = targetHoursForDate(date, weekdayHours) / 2
+    if (halfLeave > 0) result[LEAVE_CATEGORY] = (result[LEAVE_CATEGORY] ?? 0) + halfLeave
   }
   return result
 }

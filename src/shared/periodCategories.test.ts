@@ -56,6 +56,21 @@ describe('calculateDayCategoryHours', () => {
       calculateDayCategoryHours({ windows: [], dayTypeOverride: 'Vacation' }, '2026-05-16', DEFAULT_WEEKDAY_HOURS),
     ).toEqual({})
   })
+
+  it('auto-books _LEAVE for half the target when halfDayLeave is set and no work is logged', () => {
+    const result = calculateDayCategoryHours({ windows: [], halfDayLeave: 'Vacation' }, FRIDAY, DEFAULT_WEEKDAY_HOURS)
+    expect(result).toEqual({ _LEAVE: 4 })
+  })
+
+  it('books both the logged work and the half-day _LEAVE credit together', () => {
+    const result = calculateDayCategoryHours(
+      { windows: [period('a', '09:00', '13:00', '_COREMEDIA')], halfDayLeave: 'SickDay' },
+      FRIDAY,
+      DEFAULT_WEEKDAY_HOURS,
+    )
+    expect(result['_COREMEDIA']).toBeCloseTo(4)
+    expect(result['_LEAVE']).toBeCloseTo(4)
+  })
 })
 
 describe('calculateCategoryHours', () => {

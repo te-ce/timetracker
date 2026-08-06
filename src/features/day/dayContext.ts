@@ -1,4 +1,11 @@
-import type { Day, MonthData, WorkLocation, WorkPeriod, DayTypeOverride } from '../../infra/repositories/types'
+import type {
+  Day,
+  MonthData,
+  WorkLocation,
+  WorkPeriod,
+  DayTypeOverride,
+  LeaveType,
+} from '../../infra/repositories/types'
 import type { DayType } from './dayType'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { ResolvedAppConfig } from '../../shared/appConfigDefaults'
@@ -7,7 +14,6 @@ import { type OvertimeToDate } from '../../shared/overtime'
 import { composeMonthOvertime } from '../../shared/monthOvertime'
 import { calculateTotalCategorizedHours } from '../../shared/periodCategories'
 import { officeStats } from '../../shared/officeStats'
-import { targetHoursForDate } from '../../shared/weekdayHours'
 import { resolveAutoCategory } from '../../shared/autoCategory'
 
 export interface DayRawData {
@@ -15,6 +21,7 @@ export interface DayRawData {
   workLocation: WorkLocation | null
   autoCategoryOverride: string | null
   dayTypeOverride: DayTypeOverride | undefined
+  halfDayLeave: LeaveType | undefined
   dayNote: string | null
 }
 
@@ -46,6 +53,7 @@ const FUTURE_SUMMARY: DaySummary = {
   date: '',
   dayType: 'WorkDay',
   workedHours: 0,
+  targetHours: 0,
   entryTotal: 0,
   dayStatus: 'future',
   displayStatus: 'future',
@@ -60,6 +68,7 @@ function extractDayFields(dayData: Day | undefined): DayRawData {
     workLocation: day.location ?? null,
     autoCategoryOverride: day.autoCategoryOverride ?? null,
     dayTypeOverride: day.dayTypeOverride,
+    halfDayLeave: day.halfDayLeave,
     dayNote: day.note ?? null,
   }
 }
@@ -93,7 +102,7 @@ export function composeDayContext(
   const dayData = monthData[date]
   const daySummary = monthDays.find((d) => d.date === date) ?? FUTURE_SUMMARY
 
-  const sollstunden = targetHoursForDate(date, config.weekdayHours)
+  const sollstunden = daySummary.targetHours
   const effectiveLocation: WorkLocation = dayData?.location ?? config.defaultWorkLocation
   const autoCategory = resolveAutoCategory(dayData?.autoCategoryOverride, config.autoCategory)
   const manualTotal = calculateTotalCategorizedHours(dayData?.windows ?? [])

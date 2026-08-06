@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Day, SprintExport } from './types'
-import { DAY_TYPE_OVERRIDES, STARTUP_VIEWS, WORK_LOCATIONS } from './types'
+import { DAY_TYPE_OVERRIDES, LEAVE_TYPES, STARTUP_VIEWS, WORK_LOCATIONS } from './types'
 import type { HotkeyConfig } from '../../shared/hotkeyConfig'
 import type { WeekdayHours } from '../../shared/weekdayHours'
 
@@ -96,6 +96,7 @@ export const daySchema = z
     note: z.string().optional(),
     autoCategoryOverride: z.string().optional(),
     dayTypeOverride: z.enum(DAY_TYPE_OVERRIDES).optional(),
+    halfDayLeave: z.enum(LEAVE_TYPES).optional(),
   })
   .passthrough()
 

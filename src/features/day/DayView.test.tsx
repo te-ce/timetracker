@@ -54,6 +54,7 @@ function stubQuery(overrides: Partial<DayQueryResult> = {}): void {
     workLocation: null,
     autoCategoryOverride: null,
     dayTypeOverride: undefined,
+    halfDayLeave: undefined,
     dayNote: null,
     sollstunden: 8,
     defaultWorkLocation: 'Remote',

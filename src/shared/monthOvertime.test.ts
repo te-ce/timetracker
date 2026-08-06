@@ -65,6 +65,21 @@ describe('composeMonthOvertime', () => {
     expect(result.overtimeToDate.value).toBeCloseTo(2)
   })
 
+  it('halves the target for a half-day leave, so logging only the working half is exactly on target', () => {
+    const monthData: MonthData = {
+      '2026-05-01': { windows: [win('1', '08:00', '12:00')], halfDayLeave: 'Vacation' }, // 4h logged, 4h target
+    }
+    const result = composeMonthOvertime(
+      2026,
+      5,
+      monthData,
+      resolveAppConfig({ ...DEFAULT_APP_CONFIG, weekdayHours: STD }),
+      '2026-05-01',
+    )
+    expect(result.targetHoursPerDay[0]).toBe(4)
+    expect(result.overtimeToDate.value).toBeCloseTo(0)
+  })
+
   it('composeMonthOvertime seeds the running total from priorMonthsOvertime', () => {
     const result = composeMonthOvertime(2026, 5, {}, resolveAppConfig(undefined), '2026-05-01', undefined, 3)
     expect(result.overtimeToDate.value).toBeCloseTo(3)
@@ -109,6 +124,26 @@ describe('loadOvertimeCarryOverBeforeMonth', () => {
     })
     const result = await loadOvertimeCarryOverBeforeMonth(monthRepo, 2026, 5, STD)
     expect(result).toBeCloseTo(0)
+  })
+
+  it('accumulates a run of consistently under-target months exactly, without amplifying the shortfall', async () => {
+    // Mirrors a real-world regression: several months in a row where most tracked
+    // days fall a bit short of the daily target. The carry-over into the month
+    // after must equal the exact sum of each month's own shortfall — not more.
+    const monthRepo = new InMemoryMonthRepository({
+      // March: two WorkDays tracked at 6h each vs. 8h target → -4h
+      '2026-03': {
+        '2026-03-02': { windows: [win('1', '08:00', '14:00')] }, // Mon
+        '2026-03-03': { windows: [win('1', '08:00', '14:00')] }, // Tue
+      },
+      // April: two WorkDays tracked at 6h each vs. 8h target → -4h
+      '2026-04': {
+        '2026-04-01': { windows: [win('1', '08:00', '14:00')] }, // Wed
+        '2026-04-02': { windows: [win('1', '08:00', '14:00')] }, // Thu
+      },
+    })
+    const result = await loadOvertimeCarryOverBeforeMonth(monthRepo, 2026, 5, STD)
+    expect(result).toBeCloseTo(-8)
   })
 
   it('ignores months at or after the target month', async () => {
