@@ -111,6 +111,19 @@ describe('buildAllTimeStats', () => {
     expect(result.busiestMonth?.ym).toBe('2026-07')
   })
 
+  it('reports office share and top category per month', () => {
+    const result = stats(months({ ym: '2026-07', data: JULY }))
+    // 1 office day (07-02) of 3 tracked days; _OTHER (8h + 6h) beats _COREMEDIA (9h)
+    expect(result.months[0]).toMatchObject({ officePercent: 33, topCategory: '_OTHER' })
+  })
+
+  it('reports no top category when a month has no categorised hours', () => {
+    const result = stats(
+      months({ ym: '2026-07', data: { '2026-07-01': { windows: [period('08:00', '12:00', '_UNCATEGORIZED')] } } }),
+    )
+    expect(result.months[0]?.topCategory).toBeNull()
+  })
+
   it('ranks categories by hours with a share of the total', () => {
     const result = stats(months({ ym: '2026-07', data: JULY }))
     expect(result.categories[0]).toMatchObject({ category: '_OTHER', hours: 14 })

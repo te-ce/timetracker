@@ -95,6 +95,8 @@ describe('StatsView', () => {
 
     const monthsRegion = screen.getByRole('region', { name: /hours by month/i })
     expect(monthsRegion.textContent).toContain('July 2026')
+    expect(monthsRegion.textContent).toContain('% office')
+    expect(monthsRegion.textContent).toContain('_OTHER')
   })
 
   it('shows the records row with office share, day extremes and break figures', async () => {

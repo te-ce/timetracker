@@ -55,6 +55,10 @@ export interface MonthStat {
   hours: number
   trackedDays: number
   balance: number
+  /** Share of tracked days worked from the office, 0–100. */
+  officePercent: number
+  /** Category with the most hours booked this month, excluding uncategorised time. */
+  topCategory: string | null
 }
 
 export interface CategoryStat {
@@ -377,6 +381,17 @@ function buildWeekdayStats(trackedDays: DayFacts[]): WeekdayStat[] {
   })
 }
 
+function topCategoryOf(trackedDays: DayFacts[]): string | null {
+  const totals = new Map<string, number>()
+  for (const day of trackedDays) {
+    for (const [category, hours] of Object.entries(day.categoryHours)) {
+      if (category === UNCATEGORIZED_CATEGORY) continue
+      totals.set(category, (totals.get(category) ?? 0) + hours)
+    }
+  }
+  return [...totals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+}
+
 function buildMonthStats(days: DayFacts[]): MonthStat[] {
   const byMonth = new Map<string, DayFacts[]>()
   for (const day of days) {
@@ -389,12 +404,15 @@ function buildMonthStats(days: DayFacts[]): MonthStat[] {
     .map(([ym, monthDays]) => {
       const tracked = monthDays.filter((d) => d.hours > 0)
       const hours = tracked.reduce((sum, d) => sum + d.hours, 0)
+      const officeDays = tracked.filter((d) => d.location === 'Office').length
       return {
         ym,
         label: monthLabel(ym),
         hours,
         trackedDays: tracked.length,
         balance: hours - tracked.reduce((sum, d) => sum + d.targetHours, 0),
+        officePercent: tracked.length > 0 ? Math.round((officeDays / tracked.length) * 100) : 0,
+        topCategory: topCategoryOf(tracked),
       }
     })
     .filter((m) => m.trackedDays > 0)

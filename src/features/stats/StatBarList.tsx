@@ -5,6 +5,8 @@ export interface StatBarRow {
   /** Bar width as a share of the row with the highest value, 0–100. */
   fillPercent: number
   muted?: boolean
+  /** Extra line shown under the row, e.g. office share and top category for a month. */
+  subLabel?: string
 }
 
 interface Props {
@@ -26,18 +28,21 @@ export function StatBarList({ title, rows, emptyMessage }: Props) {
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {rows.map((row) => (
-            <li key={row.key} className="grid grid-cols-[6.5rem_1fr_4.5rem] items-center gap-2">
-              <span className={`truncate text-xs ${row.muted ? 'text-gray-400 dark:text-gray-500' : ''}`}>
-                {row.label}
-              </span>
-              <span className="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700">
-                <span
-                  className="block h-2 rounded-full bg-indigo-500"
-                  style={{ width: `${Math.max(0, Math.min(100, row.fillPercent))}%` }}
-                  aria-hidden="true"
-                />
-              </span>
-              <span className="text-right text-xs tabular-nums text-gray-600 dark:text-gray-300">{row.value}</span>
+            <li key={row.key} className="flex flex-col gap-0.5">
+              <div className="grid grid-cols-[6.5rem_1fr_4.5rem] items-center gap-2">
+                <span className={`truncate text-xs ${row.muted ? 'text-gray-400 dark:text-gray-500' : ''}`}>
+                  {row.label}
+                </span>
+                <span className="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700">
+                  <span
+                    className="block h-2 rounded-full bg-indigo-500"
+                    style={{ width: `${Math.max(0, Math.min(100, row.fillPercent))}%` }}
+                    aria-hidden="true"
+                  />
+                </span>
+                <span className="text-right text-xs tabular-nums text-gray-600 dark:text-gray-300">{row.value}</span>
+              </div>
+              {row.subLabel && <p className="pl-[7rem] text-[10px] text-gray-400 dark:text-gray-500">{row.subLabel}</p>}
             </li>
           ))}
         </ul>

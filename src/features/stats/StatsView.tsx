@@ -70,6 +70,7 @@ function monthRows(stats: AllTimeStats, format: TimeFormat): StatBarRow[] {
     label: m.label,
     value: formatHours(m.hours, format),
     fillPercent: max > 0 ? (m.hours / max) * 100 : 0,
+    subLabel: `${m.officePercent}% office · ${m.topCategory ?? 'No category'}`,
   }))
 }
 
