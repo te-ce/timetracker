@@ -13,6 +13,10 @@ export function SettingsNav({ sections, active }: SettingsNavProps) {
         <a
           key={section.id}
           href={`#${section.id}`}
+          onClick={(event) => {
+            event.preventDefault()
+            document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }}
           aria-current={active === section.id ? 'true' : undefined}
           className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
             active === section.id
