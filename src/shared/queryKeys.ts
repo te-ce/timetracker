@@ -28,6 +28,11 @@ export function invalidateSprintExport(client: QueryClient, index: number): void
   void client.invalidateQueries({ queryKey: QUERY_KEYS.sprintExportByIndex(index) })
 }
 
+export function invalidateTrash(client: QueryClient): void {
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.trash })
+  void client.invalidateQueries({ queryKey: QUERY_KEYS.trashBackups })
+}
+
 export const QUERY_KEYS = {
   config: ['config'] as const,
 
@@ -45,4 +50,7 @@ export const QUERY_KEYS = {
 
   sprintEntries: (index: number, startDate: string, lengthDays: number) =>
     ['sprintEntries', index, startDate, lengthDays] as const,
+
+  trash: ['trash'] as const,
+  trashBackups: ['trashBackups'] as const,
 }

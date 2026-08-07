@@ -61,6 +61,16 @@ export class CloudMonthRepository extends AbstractMonthRepository {
     this.stores.delete(key)
   }
 
+  async restoreMonth(year: number, month: number, data: MonthData): Promise<void> {
+    const store = this.getStore(year, month)
+    for (const [date, day] of Object.entries(data)) {
+      await store.set(date, day)
+    }
+    if (Object.keys(data).length > 0) {
+      await this.indexStore.set(`${year}-${String(month).padStart(2, '0')}`, true)
+    }
+  }
+
   async getAllMonths(): Promise<string[]> {
     const index = await this.indexStore.getAll()
     return Object.keys(index).sort()

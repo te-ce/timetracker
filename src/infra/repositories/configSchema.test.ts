@@ -50,6 +50,36 @@ describe('appConfigSchema migration', () => {
     expect(result.data.weekdayHours).toEqual([0, 6, 7, 7, 8, 5, 2])
   })
 
+  it('accepts trashRetentionDays as a number', () => {
+    const cfg = {
+      autoCategory: null,
+      federalState: null,
+      sprintLengthDays: 14,
+      sprintStartDate: null,
+      customCategories: [],
+      trashRetentionDays: 30,
+    }
+    const result = appConfigSchema.safeParse(cfg)
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.trashRetentionDays).toBe(30)
+  })
+
+  it('accepts trashRetentionDays as null (keep forever)', () => {
+    const cfg = {
+      autoCategory: null,
+      federalState: null,
+      sprintLengthDays: 14,
+      sprintStartDate: null,
+      customCategories: [],
+      trashRetentionDays: null,
+    }
+    const result = appConfigSchema.safeParse(cfg)
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.trashRetentionDays).toBeNull()
+  })
+
   it('fails when weekdayHours has wrong length', () => {
     const cfg = {
       weekdayHours: [0, 8, 8, 8, 8, 8],

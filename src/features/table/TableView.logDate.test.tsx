@@ -9,6 +9,7 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
+import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -22,10 +23,12 @@ vi.mock('@tanstack/react-router', () => ({
 
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const monthRepo = new InMemoryMonthRepository({})
   const repos = {
-    monthRepo: new InMemoryMonthRepository({}),
+    monthRepo,
     configRepo: new InMemoryConfigRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo: new InMemoryTrashRepository(monthRepo),
   }
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))

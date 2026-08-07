@@ -38,6 +38,11 @@ export class InMemoryMonthRepository extends AbstractMonthRepository {
     return Promise.resolve()
   }
 
+  restoreMonth(year: number, month: number, data: MonthData): Promise<void> {
+    this.months.set(monthKey(year, month), structuredClone(data))
+    return Promise.resolve()
+  }
+
   getAllMonths(): Promise<string[]> {
     return Promise.resolve([...this.months.keys()].sort())
   }

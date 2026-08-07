@@ -75,6 +75,7 @@ export interface MonthRepository {
   getMonth(year: number, month: number): Promise<MonthData>
   updateDay(date: string, updater: (current: Day) => Day): Promise<void>
   deleteMonth(year: number, month: number): Promise<void>
+  restoreMonth(year: number, month: number, data: MonthData): Promise<void>
   findEntriesByDateRange(
     from: string,
     to: string,
@@ -134,4 +135,22 @@ export interface SprintExport {
 export interface SprintExportRepository {
   save(sprintExport: SprintExport): Promise<void>
   findBySprintIndex(sprintIndex: number): Promise<SprintExport | null>
+}
+
+export interface TrashEntry {
+  id: string
+  type: 'month' | 'day'
+  year: number
+  month: number
+  date?: string
+  deletedAt: string
+}
+
+export interface TrashRepository {
+  moveMonthToTrash(year: number, month: number, data: MonthData): Promise<string>
+  moveDayToTrash(date: string, day: Day): Promise<string>
+  list(): Promise<TrashEntry[]>
+  restore(id: string): Promise<void>
+  purge(id: string): Promise<void>
+  purgeExpired(maxAgeDays: number): Promise<void>
 }

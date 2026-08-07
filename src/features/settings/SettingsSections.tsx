@@ -15,6 +15,7 @@ import { LocalExcelSettings } from './LocalExcelSettings'
 import { SharePointSettings } from './SharePointSettings'
 import { SheetSelector } from './SheetSelector'
 import { ClearDataSettings } from './ClearDataSettings'
+import { TrashSettings } from './TrashSettings'
 import { SettingSection } from './SettingSection'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
 import { QUERY_KEYS } from '../../shared/queryKeys'
@@ -26,7 +27,7 @@ const localFolder = isLocalFolderMode()
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI
 
 export type SectionId =
-  'general' | 'schedule-categories' | 'work-location' | 'sync-storage' | 'desktop-app' | 'danger-zone'
+  'general' | 'schedule-categories' | 'work-location' | 'sync-storage' | 'desktop-app' | 'trash' | 'danger-zone'
 
 export interface SectionDef {
   id: SectionId
@@ -40,6 +41,7 @@ const ALL_SECTION_DEFS: SectionDef[] = [
   { id: 'work-location', label: 'Work Location & Tracking' },
   { id: 'sync-storage', label: 'Sync & Storage' },
   { id: 'desktop-app', label: 'Desktop App' },
+  { id: 'trash', label: 'Trash' },
   { id: 'danger-zone', label: 'Danger Zone', danger: true },
 ]
 
@@ -225,9 +227,21 @@ function DesktopAppSection({ repository }: { repository: ConfigRepository }) {
   )
 }
 
+function TrashSection({ repository }: { repository: ConfigRepository }) {
+  return (
+    <SettingSection
+      id="trash"
+      title="Trash"
+      description="Deleted months, days, and local-data backups, kept for a configurable period before permanent removal."
+    >
+      <TrashSettings repository={repository} />
+    </SettingSection>
+  )
+}
+
 function DangerZoneSection() {
   return (
-    <SettingSection id="danger-zone" title="Danger Zone" description="Irreversible actions." danger>
+    <SettingSection id="danger-zone" title="Danger Zone" description="Actions that reset your local app data." danger>
       <ClearDataSettings />
     </SettingSection>
   )
@@ -245,6 +259,8 @@ export function renderSection(id: SectionId, repository: ConfigRepository) {
       return <SyncStorageSection repository={repository} />
     case 'desktop-app':
       return <DesktopAppSection repository={repository} />
+    case 'trash':
+      return <TrashSection repository={repository} />
     case 'danger-zone':
       return <DangerZoneSection />
   }

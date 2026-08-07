@@ -12,6 +12,8 @@ import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
+import { useUndoStore } from '../../shared/undoStore'
+import { useUndoableDayMutation } from '../day/useWorkPeriodMutations'
 
 async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
   const cfg = await configRepo.get()
@@ -24,7 +26,7 @@ async function saveAutoCategory(configRepo: ConfigRepository, category: string):
 }
 
 export function TableView() {
-  const { monthRepo, configRepo } = useRepositories()
+  const { monthRepo, configRepo, trashRepo } = useRepositories()
   const navigate = useNavigate()
   const search = useSearch({ from: '/table' })
   const today = new Date()
@@ -69,25 +71,49 @@ export function TableView() {
     if (pendingLogDate) setPendingLogDate(undefined)
   }, [pendingLogDate])
 
-  const resetMonthMutation = useMutation({
-    mutationFn: () => monthRepo.deleteMonth(year, month),
-    onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
+  const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', {
+    month: 'long',
+    year: 'numeric',
   })
 
-  const clearDayMutation = useMutation({
-    mutationFn: (date: string) => monthRepo.resetDay(date),
-    onSuccess: () => invalidateMonthByYearMonth(queryClient, year, month),
+  const resetMonthMutation = useMutation({
+    mutationFn: async () => {
+      const snapshot = await monthRepo.getMonth(year, month)
+      const trashId = await trashRepo.moveMonthToTrash(year, month, snapshot)
+      await monthRepo.deleteMonth(year, month)
+      return { snapshot, trashId }
+    },
+    onSuccess: ({ snapshot, trashId }) => {
+      invalidateMonthByYearMonth(queryClient, year, month)
+      let currentTrashId = trashId
+      useUndoStore.getState().push({
+        description: `Delete ${monthLabel}`,
+        undo: async () => {
+          await monthRepo.restoreMonth(year, month, snapshot)
+          await trashRepo.purge(currentTrashId)
+          invalidateMonthByYearMonth(queryClient, year, month)
+        },
+        redo: async () => {
+          currentTrashId = await trashRepo.moveMonthToTrash(year, month, snapshot)
+          await monthRepo.deleteMonth(year, month)
+          invalidateMonthByYearMonth(queryClient, year, month)
+        },
+      })
+    },
+  })
+
+  const clearDayMutation = useUndoableDayMutation(monthRepo, 'Clear day', async ({ date }: { date: string }) => {
+    const dayYear = parseInt(date.slice(0, 4), 10)
+    const dayMonth = parseInt(date.slice(5, 7), 10)
+    const day = (await monthRepo.getMonth(dayYear, dayMonth))[date] ?? { windows: [] }
+    await trashRepo.moveDayToTrash(date, day)
+    await monthRepo.resetDay(date)
   })
 
   function onMonthChange(y: number, m: number) {
     setYear(y)
     setMonth(m + 1)
   }
-
-  const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', {
-    month: 'long',
-    year: 'numeric',
-  })
 
   const showOfficeStats = config.officeStats
 
@@ -125,7 +151,7 @@ export function TableView() {
       {showResetConfirm && (
         <ConfirmDialog
           title="Reset all data for this month?"
-          message={`This will permanently delete all time entries, work periods, locations, day types, and confirmations for ${monthLabel}. This cannot be undone.`}
+          message={`This will delete all time entries, work periods, locations, day types, and confirmations for ${monthLabel}. Press Ctrl+Z to undo, or restore it later from Settings → Trash.`}
           confirmLabel="Reset month"
           danger
           onConfirm={() => {
@@ -139,13 +165,13 @@ export function TableView() {
       {clearDayDate && (
         <ConfirmDialog
           title={`Clear data for ${clearDayDate}?`}
-          message={`This will permanently delete all work periods, location, day type, and confirmation for ${clearDayDate}. This cannot be undone.`}
+          message={`This will delete all work periods, location, day type, and confirmation for ${clearDayDate}. Press Ctrl+Z to undo, or restore it later from Settings → Trash.`}
           confirmLabel="Clear day"
           danger
           onConfirm={() => {
             const date = clearDayDate
             setClearDayDate(null)
-            clearDayMutation.mutate(date)
+            clearDayMutation.mutate({ date })
           }}
           onCancel={() => setClearDayDate(null)}
         />

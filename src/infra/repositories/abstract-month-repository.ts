@@ -46,6 +46,7 @@ export abstract class AbstractMonthRepository implements MonthRepository {
   abstract getMonth(year: number, month: number): Promise<MonthData>
   abstract updateDay(date: string, updater: (current: Day) => Day): Promise<void>
   abstract deleteMonth(year: number, month: number): Promise<void>
+  abstract restoreMonth(year: number, month: number, data: MonthData): Promise<void>
   abstract getAllMonths(): Promise<string[]>
 
   async findEntriesByDateRange(from: string, to: string, weekdayHours: WeekdayHours): Promise<DatedTimeEntry[]> {

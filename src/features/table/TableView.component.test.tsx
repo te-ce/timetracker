@@ -10,7 +10,9 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
+import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 import { resolveAppConfig } from '../../shared/appConfigDefaults'
+import { useUndoStore } from '../../shared/undoStore'
 import type { WorkPeriod } from '../../infra/repositories/types'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
@@ -89,19 +91,36 @@ function w(id: string, start: string, end: string): WorkPeriod {
 
 function makeWrapper(monthRepo?: InMemoryMonthRepository, configRepo?: InMemoryConfigRepository) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const resolvedMonthRepo = monthRepo ?? new InMemoryMonthRepository({})
   const repos = {
-    monthRepo: monthRepo ?? new InMemoryMonthRepository({}),
+    monthRepo: resolvedMonthRepo,
     configRepo: configRepo ?? new InMemoryConfigRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo: new InMemoryTrashRepository(resolvedMonthRepo),
   }
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))
   }
 }
 
+function makeWrapperWithTrash(monthRepo: InMemoryMonthRepository) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const trashRepo = new InMemoryTrashRepository(monthRepo)
+  const repos = {
+    monthRepo,
+    configRepo: new InMemoryConfigRepository(),
+    sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo,
+  }
+  const Wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))
+  return { Wrapper, trashRepo }
+}
+
 describe('TableView', () => {
   beforeEach(() => {
     stubSummaries()
+    useUndoStore.setState({ past: [], future: [], canUndo: false, canRedo: false })
   })
 
   describe('OvertimeBar live window', () => {
@@ -161,6 +180,31 @@ describe('TableView', () => {
       await waitFor(async () => {
         const data = await monthRepo.getMonth(2026, 6)
         expect(data['2026-06-05']?.windows ?? []).toHaveLength(0)
+      })
+    })
+
+    it('moves the cleared day to trash and restores it via Ctrl+Z', async () => {
+      const monthRepo = new InMemoryMonthRepository({
+        '2026-06': {
+          '2026-06-05': { windows: [w('a', '09:00', '10:00')] },
+        },
+      })
+      const { Wrapper, trashRepo } = makeWrapperWithTrash(monthRepo)
+      render(<TableView />, { wrapper: Wrapper })
+      await userEvent.click(screen.getByRole('button', { name: /trigger-clear-day/i }))
+      await userEvent.click(screen.getByRole('button', { name: /clear day/i }))
+
+      await waitFor(async () => {
+        const data = await monthRepo.getMonth(2026, 6)
+        expect(data['2026-06-05']?.windows ?? []).toHaveLength(0)
+      })
+      expect(await trashRepo.list()).toHaveLength(1)
+
+      await useUndoStore.getState().undo()
+
+      await waitFor(async () => {
+        const data = await monthRepo.getMonth(2026, 6)
+        expect(data['2026-06-05']?.windows).toHaveLength(1)
       })
     })
 

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { IDBFactory } from 'fake-indexeddb'
 import { ClearDataSettings } from './ClearDataSettings'
+import { listBackups } from '../../infra/storage/localBackup'
 
 function makeDeleteDbRequest(outcome: 'success' | 'error' | 'blocked' = 'success') {
   type Handler = ((e: Event) => void) | null
@@ -31,13 +33,19 @@ function makeDeleteDbRequest(outcome: 'success' | 'error' | 'blocked' = 'success
       if (outcome === 'blocked' && fn) queueMicrotask(() => fn.call(req, new IDBVersionChangeEvent('blocked')))
     },
   }
-  return req
+  return req as unknown as IDBOpenDBRequest
+}
+
+function stubIndexedDb(outcome: 'success' | 'error' | 'blocked' = 'success') {
+  globalThis.indexedDB = new IDBFactory()
+  vi.spyOn(globalThis.indexedDB, 'deleteDatabase').mockReturnValue(makeDeleteDbRequest(outcome))
 }
 
 beforeEach(() => {
   vi.clearAllMocks()
   vi.unstubAllGlobals()
   localStorage.clear()
+  globalThis.indexedDB = new IDBFactory()
 })
 
 describe('ClearDataSettings', () => {
@@ -67,9 +75,7 @@ describe('ClearDataSettings', () => {
     const user = userEvent.setup()
     const reloadMock = vi.fn()
     vi.stubGlobal('location', { reload: reloadMock })
-    vi.stubGlobal('indexedDB', {
-      deleteDatabase: vi.fn().mockReturnValue(makeDeleteDbRequest('success')),
-    })
+    stubIndexedDb('success')
 
     render(<ClearDataSettings />)
     await user.click(screen.getByRole('button', { name: /clear data/i }))
@@ -85,9 +91,7 @@ describe('ClearDataSettings', () => {
 
     const user = userEvent.setup()
     vi.stubGlobal('location', { reload: vi.fn() })
-    vi.stubGlobal('indexedDB', {
-      deleteDatabase: vi.fn().mockReturnValue(makeDeleteDbRequest('success')),
-    })
+    stubIndexedDb('success')
 
     render(<ClearDataSettings />)
     await user.click(screen.getByRole('button', { name: /clear data/i }))
@@ -104,9 +108,7 @@ describe('ClearDataSettings', () => {
     const user = userEvent.setup()
     const reloadMock = vi.fn()
     vi.stubGlobal('location', { reload: reloadMock })
-    vi.stubGlobal('indexedDB', {
-      deleteDatabase: vi.fn().mockReturnValue(makeDeleteDbRequest('error')),
-    })
+    stubIndexedDb('error')
 
     render(<ClearDataSettings />)
     await user.click(screen.getByRole('button', { name: /clear data/i }))
@@ -115,13 +117,28 @@ describe('ClearDataSettings', () => {
     await waitFor(() => expect(reloadMock).toHaveBeenCalledOnce())
   })
 
+  it('saves a backup of the local data before clearing it', async () => {
+    localStorage.setItem('timetracker-foo', 'val')
+
+    const user = userEvent.setup()
+    vi.stubGlobal('location', { reload: vi.fn() })
+    stubIndexedDb('success')
+
+    render(<ClearDataSettings />)
+    await user.click(screen.getByRole('button', { name: /clear data/i }))
+    await user.click(screen.getByRole('button', { name: /confirm clear/i }))
+
+    await waitFor(async () => {
+      const backups = await listBackups()
+      expect(backups).toHaveLength(1)
+    })
+  })
+
   it('resolves even when indexedDB deleteDatabase triggers blocked', async () => {
     const user = userEvent.setup()
     const reloadMock = vi.fn()
     vi.stubGlobal('location', { reload: reloadMock })
-    vi.stubGlobal('indexedDB', {
-      deleteDatabase: vi.fn().mockReturnValue(makeDeleteDbRequest('blocked')),
-    })
+    stubIndexedDb('blocked')
 
     render(<ClearDataSettings />)
     await user.click(screen.getByRole('button', { name: /clear data/i }))

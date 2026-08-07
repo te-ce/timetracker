@@ -7,6 +7,7 @@ import { RepositoryProvider } from '../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../infra/repositories/in-memory/sprint-export-repository'
+import { InMemoryTrashRepository } from '../infra/repositories/in-memory/trash-repository'
 import type { WorkPeriod } from '../infra/repositories/types'
 import { useMonthView } from './useMonthView'
 
@@ -25,6 +26,7 @@ function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo: InMemoryCon
     monthRepo,
     configRepo,
     sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo: new InMemoryTrashRepository(monthRepo),
   }
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(

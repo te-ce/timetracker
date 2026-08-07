@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
-
-const LOCALSTORAGE_PREFIXES = ['timetracker', 'msal-bootstrap']
+import { LOCALSTORAGE_PREFIXES, saveBackup, snapshotLocalStorage } from '../../infra/storage/localBackup'
 
 function clearLocalStorage() {
   const keysToRemove: string[] = []
@@ -27,6 +26,7 @@ export function ClearDataSettings() {
   const [confirming, setConfirming] = useState(false)
 
   async function handleClear() {
+    await saveBackup(snapshotLocalStorage())
     clearLocalStorage()
     await deleteIndexedDb()
     window.location.reload()
@@ -36,7 +36,8 @@ export function ClearDataSettings() {
     <div className="flex flex-col gap-2">
       <span className="text-sm font-medium">Clear Local Data</span>
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        Removes all locally stored settings and cached data, then reloads the app.
+        Removes all locally stored settings and cached data, then reloads the app. A backup is kept in Settings → Trash
+        in case you need it back.
       </p>
       <button
         type="button"
@@ -48,7 +49,7 @@ export function ClearDataSettings() {
       {confirming && (
         <ConfirmDialog
           title="Clear local data?"
-          message="This removes all locally stored settings and cached data, then reloads the app. This cannot be undone."
+          message="This removes all locally stored settings and cached data, then reloads the app. A backup is kept in Settings → Trash and can be restored from there. Restoring won't relink a local folder — you'll need to re-select it."
           confirmLabel="Confirm clear"
           danger
           onConfirm={() => void handleClear()}

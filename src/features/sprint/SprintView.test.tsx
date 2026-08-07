@@ -9,6 +9,7 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
+import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig, MonthData } from '../../infra/repositories/types'
 
@@ -33,10 +34,12 @@ vi.mock('../../shared/dateUtils', () => ({
 
 function makeWrapper(config: AppConfig = DEFAULT_APP_CONFIG, monthData: Record<string, MonthData> = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const monthRepo = new InMemoryMonthRepository(monthData)
   const repos = {
-    monthRepo: new InMemoryMonthRepository(monthData),
+    monthRepo,
     configRepo: new InMemoryConfigRepository(config),
     sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo: new InMemoryTrashRepository(monthRepo),
   }
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))

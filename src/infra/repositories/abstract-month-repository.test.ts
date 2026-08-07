@@ -230,6 +230,26 @@ describe.each(ADAPTERS)('%s (AbstractMonthRepository contract)', (_, makeRepo) =
     })
   })
 
+  describe('restoreMonth', () => {
+    it('writes back every day from the given snapshot', async () => {
+      const repo = makeRepo()
+      await repo.restoreMonth(2026, 6, {
+        '2026-06-07': { windows: [makePeriod()] },
+        '2026-06-08': { windows: [], location: 'Office' },
+      })
+      const data = await repo.getMonth(2026, 6)
+      expect(data['2026-06-07']?.windows).toHaveLength(1)
+      expect(data['2026-06-08']?.location).toBe('Office')
+    })
+
+    it('makes the month show up in getAllMonths', async () => {
+      const repo = makeRepo()
+      await repo.restoreMonth(2026, 6, { '2026-06-07': { windows: [makePeriod()] } })
+      const months = await repo.getAllMonths()
+      expect(months).toContain('2026-06')
+    })
+  })
+
   describe('closeOpenWorkPeriod', () => {
     it('closes the open period by setting end time', async () => {
       const repo = makeRepo()

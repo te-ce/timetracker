@@ -9,6 +9,7 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
+import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 import type { DayQueryResult } from './useDayQuery'
 import type { OvertimeToDate } from '../month'
 import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
@@ -80,6 +81,7 @@ function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo?: InMemoryCo
     monthRepo,
     configRepo: configRepo ?? new InMemoryConfigRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo: new InMemoryTrashRepository(monthRepo),
   }
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, within, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useUndoStore } from '../../shared/undoStore'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -8,6 +10,7 @@ import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
+import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 import { resolveAppConfig } from '../../shared/appConfigDefaults'
 
 vi.mock('../../infra/auth/msalInstance', () => ({
@@ -71,19 +74,37 @@ function stubSummaries(): void {
 
 function makeWrapper(configRepo?: InMemoryConfigRepository) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const monthRepo = new InMemoryMonthRepository({})
   const repos = {
-    monthRepo: new InMemoryMonthRepository({}),
+    monthRepo,
     configRepo: configRepo ?? new InMemoryConfigRepository(),
     sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo: new InMemoryTrashRepository(monthRepo),
   }
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))
   }
 }
 
+function makeWrapperWithRepos(monthData: Record<string, MonthData>) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const monthRepo = new InMemoryMonthRepository(monthData)
+  const trashRepo = new InMemoryTrashRepository(monthRepo)
+  const repos = {
+    monthRepo,
+    configRepo: new InMemoryConfigRepository(),
+    sprintExportRepo: new InMemorySprintExportRepository(),
+    trashRepo,
+  }
+  const Wrapper = ({ children }: { children: ReactNode }) =>
+    createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))
+  return { Wrapper, monthRepo, trashRepo }
+}
+
 describe('MonthView', () => {
   beforeEach(() => {
     stubSummaries()
+    useUndoStore.setState({ past: [], future: [], canUndo: false, canRedo: false })
   })
 
   describe('layout order', () => {
@@ -118,6 +139,51 @@ describe('MonthView', () => {
       render(<MonthView />, { wrapper: makeWrapper() })
 
       expect(screen.getByRole('button', { name: /Thu 2.*Nothing tracked/i })).toBeInTheDocument()
+    })
+  })
+
+  describe('Reset all mutation', () => {
+    it('moves the month to trash and clears it from the month repository', async () => {
+      stubTrackedMonth()
+      const { Wrapper, monthRepo, trashRepo } = makeWrapperWithRepos({
+        '2026-07': {
+          '2026-07-01': { windows: [{ id: 'a', start: '08:00', end: '17:00', category: '_OTHER', subtasks: [] }] },
+        },
+      })
+      const user = userEvent.setup()
+      render(<MonthView />, { wrapper: Wrapper })
+
+      await user.click(screen.getByRole('button', { name: /reset all/i }))
+      await user.click(screen.getByRole('button', { name: /reset month/i }))
+
+      await waitFor(async () => {
+        expect(await monthRepo.getMonth(2026, 7)).toEqual({})
+      })
+      expect(await trashRepo.list()).toHaveLength(1)
+    })
+
+    it('restores the month via Ctrl+Z', async () => {
+      stubTrackedMonth()
+      const { Wrapper, monthRepo } = makeWrapperWithRepos({
+        '2026-07': {
+          '2026-07-01': { windows: [{ id: 'a', start: '08:00', end: '17:00', category: '_OTHER', subtasks: [] }] },
+        },
+      })
+      const user = userEvent.setup()
+      render(<MonthView />, { wrapper: Wrapper })
+
+      await user.click(screen.getByRole('button', { name: /reset all/i }))
+      await user.click(screen.getByRole('button', { name: /reset month/i }))
+      await waitFor(async () => {
+        expect(await monthRepo.getMonth(2026, 7)).toEqual({})
+      })
+
+      await useUndoStore.getState().undo()
+
+      await waitFor(async () => {
+        const restored = await monthRepo.getMonth(2026, 7)
+        expect(restored['2026-07-01']?.windows).toHaveLength(1)
+      })
     })
   })
 

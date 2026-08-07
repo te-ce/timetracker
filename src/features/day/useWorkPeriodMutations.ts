@@ -10,82 +10,82 @@ async function snapshotDay(repository: MonthRepository, date: string): Promise<D
   return data[date] ?? { windows: [] }
 }
 
-export function useWorkPeriodMutations(repository: MonthRepository) {
+// Factory for mutations that (a) touch a single day and (b) should be
+// undoable by restoring the pre-mutation day snapshot. `redo` is always "run
+// mutationFn again with the same variables", so it doesn't need to be passed
+// separately — this is what collapses near-identical useMutation blocks down
+// to one shape plus a description/mutationFn pair. Exported so features
+// outside `day/` (e.g. the table view's "Clear day") can reuse the same
+// undo-stack wiring.
+export function useUndoableDayMutation<Vars extends { date: string }>(
+  repository: MonthRepository,
+  description: string,
+  mutationFn: (vars: Vars) => Promise<void>,
+) {
   const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onMutate: async ({ date }: Vars) => ({ prev: await snapshotDay(repository, date) }),
+    onSuccess: (_, vars, { prev }) => {
+      useUndoStore.getState().push({
+        description,
+        undo: async () => {
+          await repository.updateDay(vars.date, () => prev)
+          invalidateMonth(queryClient, vars.date)
+        },
+        redo: async () => {
+          await mutationFn(vars)
+          invalidateMonth(queryClient, vars.date)
+        },
+      })
+      invalidateMonth(queryClient, vars.date)
+    },
+  })
+}
 
-  function invalidate(date: string) {
-    invalidateMonth(queryClient, date)
-  }
-
-  // Pushes an undo/redo pair onto the shared undo stack. `redo` replays the
-  // mutation that already ran; `undo` restores the day snapshot captured in
-  // onMutate. Every work-period mutation below shares this exact shape — the
-  // only thing that varies per mutation is the description and the mutation
-  // itself (which redo simply re-invokes with the same variables).
-  function pushUndoableMutation(date: string, description: string, prev: Day, redo: () => Promise<void>) {
-    useUndoStore.getState().push({
-      description,
-      undo: async () => {
-        await repository.updateDay(date, () => prev)
-        invalidate(date)
-      },
-      redo: async () => {
-        await redo()
-        invalidate(date)
-      },
-    })
-    invalidate(date)
-  }
-
-  // Factory for the six mutations that (a) touch a single day and (b) should
-  // be undoable by restoring the pre-mutation day snapshot. `redo` is always
-  // "run mutationFn again with the same variables", so it doesn't need to be
-  // passed separately — this is what collapsed six near-identical
-  // useMutation blocks down to one shape plus a description/mutationFn pair.
-  function useUndoableDayMutation<Vars extends { date: string }>(
-    description: string,
-    mutationFn: (vars: Vars) => Promise<void>,
-  ) {
-    return useMutation({
-      mutationFn,
-      onMutate: async ({ date }: Vars) => ({ prev: await snapshotDay(repository, date) }),
-      onSuccess: (_, vars, { prev }) => pushUndoableMutation(vars.date, description, prev, () => mutationFn(vars)),
-    })
-  }
-
-  const save = useUndoableDayMutation('Edit work period', ({ date, window }: { date: string; window: WorkPeriod }) =>
-    repository.saveWorkPeriod(date, window),
+export function useWorkPeriodMutations(repository: MonthRepository) {
+  const save = useUndoableDayMutation(
+    repository,
+    'Edit work period',
+    ({ date, window }: { date: string; window: WorkPeriod }) => repository.saveWorkPeriod(date, window),
   )
 
-  const remove = useUndoableDayMutation('Delete work period', ({ date, id }: { date: string; id: string }) =>
-    repository.removeWorkPeriod(date, id),
+  const remove = useUndoableDayMutation(
+    repository,
+    'Delete work period',
+    ({ date, id }: { date: string; id: string }) => repository.removeWorkPeriod(date, id),
   )
 
   const saveWithAbsorbed = useUndoableDayMutation(
+    repository,
     'Merge work periods',
     ({ date, window, absorbed }: { date: string; window: WorkPeriod; absorbed: string[] }) =>
       repository.saveWorkPeriodWithAbsorbed(date, window, absorbed),
   )
 
   const setPeriodCategory = useUndoableDayMutation(
+    repository,
     'Change category',
     ({ date, periodId, category }: { date: string; periodId: string; category: string }) =>
       repository.setPeriodCategory(date, periodId, category),
   )
 
   const addSubtask = useUndoableDayMutation(
+    repository,
     'Add subtask',
     ({ date, periodId, subtask }: { date: string; periodId: string; subtask: WorkPeriodSubtask }) =>
       repository.addSubtask(date, periodId, subtask),
   )
 
   const deleteSubtask = useUndoableDayMutation(
+    repository,
     'Delete subtask',
     ({ date, periodId, subtaskId }: { date: string; periodId: string; subtaskId: string }) =>
       repository.removeSubtask(date, periodId, subtaskId),
   )
 
   const startLiveSubtask = useUndoableDayMutation(
+    repository,
     'Start subtask',
     ({
       date,
@@ -99,6 +99,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
   )
 
   const stopLiveSubtask = useUndoableDayMutation(
+    repository,
     'Stop subtask',
     ({
       date,
@@ -114,12 +115,14 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
   )
 
   const resumeSubtask = useUndoableDayMutation(
+    repository,
     'Resume subtask',
     ({ date, periodId, subtaskId, now }: { date: string; periodId: string; subtaskId: string; now: string }) =>
       repository.resumeSubtask(date, periodId, subtaskId, now),
   )
 
   const stopPeriod = useUndoableDayMutation(
+    repository,
     'Stop tracking',
     ({
       date,

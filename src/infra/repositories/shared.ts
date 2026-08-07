@@ -10,6 +10,7 @@ import type { StorageAdapter } from '../storage/adapter'
 import { CloudConfigRepository } from './cloud/config-repository'
 import { CloudSprintExportRepository } from './cloud/sprint-export-repository'
 import { CloudMonthRepository } from './cloud/month-repository'
+import { TrashRepository } from './trash-repository'
 
 function makeStorage(): StorageAdapter {
   if (isLocalFolderMode()) {
@@ -24,9 +25,11 @@ const storage: StorageAdapter = makeStorage()
 export const configRepo = new CloudConfigRepository(storage)
 export const monthRepo = new CloudMonthRepository(storage)
 export const sprintExportRepo = new CloudSprintExportRepository(storage)
+export const trashRepo = new TrashRepository(storage, monthRepo)
 
 export function resetAllRepositories(): void {
   configRepo.clearCache()
   monthRepo.clearCache()
   sprintExportRepo.clearCache()
+  trashRepo.clearCache()
 }
