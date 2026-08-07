@@ -3,8 +3,6 @@ import { DaySummaryBody } from '../../shared/DaySummaryBody'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 
-export { LEAVE_TYPE_LABEL } from '../../shared/DaySummaryBody'
-
 const DAY_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'WorkDay', label: 'Work Day' },
   { value: 'Weekend', label: 'Weekend' },

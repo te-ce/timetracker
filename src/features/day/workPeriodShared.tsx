@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
 import type { WorkPeriodSubtask } from '../../infra/repositories/types'
-export { useClock as useNow } from '../../shared/useClock'
 
 export type LiveSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt?: undefined }
 export type TimedSubtask = WorkPeriodSubtask & { startedAt: string; stoppedAt: string }

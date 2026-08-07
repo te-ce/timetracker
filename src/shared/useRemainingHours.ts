@@ -7,7 +7,6 @@ import { deriveDayBalance, hasLiveActivity } from './dayBalance'
 import { useClock } from './useClock'
 import { useTimeFormatStore } from './timeFormatStore'
 export { buildReceipt } from './remainingCalc'
-export type { ReceiptLine } from './remainingCalc'
 
 function buildSummary(sollstunden: number, priorOvertime: number, workedHours: number): string {
   const hasOvertime = priorOvertime >= 0
