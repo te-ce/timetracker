@@ -18,6 +18,16 @@ const DAY_LABELS: Record<number, string> = {
   6: 'Saturday',
 }
 
+const DAY_LABELS_SHORT: Record<number, string> = {
+  0: 'Sun',
+  1: 'Mon',
+  2: 'Tue',
+  3: 'Wed',
+  4: 'Thu',
+  5: 'Fri',
+  6: 'Sat',
+}
+
 interface DayInputProps {
   dayIndex: number
   hours: number
@@ -27,6 +37,7 @@ interface DayInputProps {
 function DayHoursInput({ dayIndex, hours, onSave }: DayInputProps) {
   const [localValue, setLocalValue] = useState(String(hours))
   const label = DAY_LABELS[dayIndex] ?? String(dayIndex)
+  const shortLabel = DAY_LABELS_SHORT[dayIndex] ?? String(dayIndex)
   const inputId = `weekday-hours-${dayIndex}`
 
   const handleBlur = () => {
@@ -39,9 +50,9 @@ function DayHoursInput({ dayIndex, hours, onSave }: DayInputProps) {
   }
 
   return (
-    <div className="flex items-center justify-between">
-      <label htmlFor={inputId} className="text-sm w-24">
-        {label}
+    <div className="flex flex-col items-center gap-1">
+      <label htmlFor={inputId} className="text-xs font-medium text-gray-500 dark:text-gray-400">
+        {shortLabel}
       </label>
       <input
         id={inputId}
@@ -53,7 +64,7 @@ function DayHoursInput({ dayIndex, hours, onSave }: DayInputProps) {
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={handleBlur}
-        className="w-20 rounded border px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+        className="w-full rounded border px-1 py-1.5 text-center text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
       />
     </div>
   )
@@ -85,7 +96,7 @@ export function WeeklyScheduleSettings({ repository }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <h3 className="text-sm font-medium">Target hours per day</h3>
-      <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-7 gap-2 max-w-md">
         {WEEKDAY_ORDER_MON_SUN.map((dayIndex) => (
           <DayHoursInput
             key={dayIndex}

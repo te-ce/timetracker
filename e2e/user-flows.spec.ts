@@ -293,7 +293,6 @@ test.describe('per-day auto category', () => {
 
     // Navigate to settings and verify global auto-category unchanged
     await page.goto('/settings')
-    await page.getByRole('tab', { name: 'Work' }).click()
     const globalPicker = page.getByLabel('Auto category')
     await expect(globalPicker).toHaveValue(CATEGORY)
   })
@@ -444,7 +443,6 @@ test.describe('settings global auto-category', () => {
     }, seedBase())
     await page.reload()
 
-    await page.getByRole('tab', { name: 'Work' }).click()
     await page.getByLabel('Auto category').selectOption(CATEGORY)
 
     await page.waitForFunction((cat: string) => {
@@ -460,7 +458,6 @@ test.describe('settings global auto-category', () => {
     }, CATEGORY)
 
     await page.reload()
-    await page.getByRole('tab', { name: 'Work' }).click()
     await expect(page.getByLabel('Auto category')).toHaveValue(CATEGORY)
   })
 })

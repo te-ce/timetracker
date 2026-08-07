@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ConfirmDialog } from '../../shared/ConfirmDialog'
 
 const LOCALSTORAGE_PREFIXES = ['timetracker', 'msal-bootstrap']
 
@@ -37,31 +38,22 @@ export function ClearDataSettings() {
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Removes all locally stored settings and cached data, then reloads the app.
       </p>
-      {confirming ? (
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => void handleClear()}
-            className="rounded bg-red-600 px-3 py-1.5 text-sm text-white hover:bg-red-700"
-          >
-            Confirm clear
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirming(false)}
-            className="rounded border px-3 py-1.5 text-sm dark:border-gray-600 dark:text-gray-300"
-          >
-            Cancel
-          </button>
-        </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => setConfirming(true)}
-          className="w-fit rounded border border-red-400 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
-        >
-          Clear data…
-        </button>
+      <button
+        type="button"
+        onClick={() => setConfirming(true)}
+        className="w-fit rounded border border-red-400 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
+      >
+        Clear data…
+      </button>
+      {confirming && (
+        <ConfirmDialog
+          title="Clear local data?"
+          message="This removes all locally stored settings and cached data, then reloads the app. This cannot be undone."
+          confirmLabel="Confirm clear"
+          danger
+          onConfirm={() => void handleClear()}
+          onCancel={() => setConfirming(false)}
+        />
       )}
     </div>
   )
