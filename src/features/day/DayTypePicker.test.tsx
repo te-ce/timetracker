@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory'
@@ -74,40 +74,44 @@ describe('DayTypePicker', () => {
     expect(data[DATE]?.dayTypeOverride).toBeUndefined()
   })
 
-  it('shows half-day leave buttons only for a WorkDay', () => {
+  it('shows half-day options in the day status select', () => {
     setup('WorkDay')
-    expect(screen.getByRole('button', { name: '½ Vacation' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '½ Sick day' })).toBeInTheDocument()
+    const select = screen.getByDisplayValue('WorkDay')
+    expect(select.querySelector('option[value="HalfVacation"]')).toHaveTextContent('½ Vacation')
+    expect(select.querySelector('option[value="HalfSickDay"]')).toHaveTextContent('½ Sick day')
   })
 
-  it('hides half-day leave buttons for a non-WorkDay', () => {
-    setup('Vacation', 'Vacation')
-    expect(screen.queryByRole('button', { name: '½ Vacation' })).not.toBeInTheDocument()
-  })
-
-  it('saves halfDayLeave when a half-day button is clicked', async () => {
-    const { repo } = setup('WorkDay')
-    await userEvent.click(screen.getByRole('button', { name: '½ Vacation' }))
-
-    await waitFor(async () => {
-      const data = await repo.getMonth(2024, 1)
-      expect(data[DATE]?.halfDayLeave).toBe('Vacation')
-    })
-  })
-
-  it('marks the active half-day button as pressed', () => {
+  it('shows the half-day selection as the current value', () => {
     setup('WorkDay', undefined, 'SickDay')
-    expect(screen.getByRole('button', { name: '½ Sick day' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: '½ Vacation' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByDisplayValue('½ Sick day')).toBeInTheDocument()
   })
 
-  it('clears halfDayLeave when clicking the already-active half-day button', async () => {
-    const { repo } = setup('WorkDay', undefined, 'Vacation')
-    await userEvent.click(screen.getByRole('button', { name: '½ Vacation' }))
+  it('saves halfDayLeave when a half-day option is selected', async () => {
+    const { repo } = setup('WorkDay')
+    const select = screen.getByDisplayValue('WorkDay')
+    await userEvent.selectOptions(select, 'HalfVacation')
 
-    await waitFor(async () => {
-      const data = await repo.getMonth(2024, 1)
-      expect(data[DATE]?.halfDayLeave).toBeUndefined()
-    })
+    const data = await repo.getMonth(2024, 1)
+    expect(data[DATE]?.halfDayLeave).toBe('Vacation')
+    expect(data[DATE]?.dayTypeOverride).toBeUndefined()
+  })
+
+  it('clears halfDayLeave and any full-day override when WorkDay is selected', async () => {
+    const { repo } = setup('WorkDay', undefined, 'Vacation')
+    const select = screen.getByDisplayValue('½ Vacation')
+    await userEvent.selectOptions(select, 'WorkDay')
+
+    const data = await repo.getMonth(2024, 1)
+    expect(data[DATE]?.halfDayLeave).toBeUndefined()
+  })
+
+  it('clears halfDayLeave when a full-day override is selected', async () => {
+    const { repo } = setup('WorkDay', undefined, 'Vacation')
+    const select = screen.getByDisplayValue('½ Vacation')
+    await userEvent.selectOptions(select, 'SickDay')
+
+    const data = await repo.getMonth(2024, 1)
+    expect(data[DATE]?.halfDayLeave).toBeUndefined()
+    expect(data[DATE]?.dayTypeOverride).toBe('SickDay')
   })
 })
