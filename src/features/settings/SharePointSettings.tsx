@@ -45,6 +45,9 @@ export function SharePointSettings({ repository }: Props) {
           placeholder="https://company.sharepoint.com/sites/…/timetracking.xlsx"
           value={value}
           onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && isDirty) handleSave()
+          }}
           onBlur={() => {
             if (isDirty) handleSave()
           }}

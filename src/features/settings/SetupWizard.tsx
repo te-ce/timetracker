@@ -71,38 +71,45 @@ export function SetupWizard({ onSkip }: Props) {
     onSkip()
   }
 
+  async function pickElectronLocalFolder(electronAPI: NonNullable<typeof window.electronAPI>): Promise<void> {
+    const path = await electronAPI.localFolder.pickFolder()
+    if (path === null) return
+    await electronAPI.storage.put(LOCAL_FOLDER_PATH_KEY, path)
+    setLocalFolderMode()
+    window.location.reload()
+  }
+
+  async function pickBrowserLocalFolder(ua: string): Promise<void> {
+    if (!window.showDirectoryPicker) {
+      setError(getApiUnsupportedError(ua))
+      return
+    }
+    const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
+    await saveHandle(handle)
+    setLocalFolderMode()
+    window.location.reload()
+  }
+
+  function getFolderPickerErrorHint(browser: { isBrave: boolean; isSafari: boolean }): string {
+    if (browser.isBrave) return ' — try disabling Brave Shields entirely for this site (lion icon → Shields down).'
+    if (browser.isSafari) return ' — Safari has limited folder access support; try Chrome or Edge if this persists.'
+    return ''
+  }
+
   async function handleLocalFolder() {
     const ua = navigator.userAgent
     const browser = detectBrowserSupport(ua)
     setPickingFolder(true)
     setError(null)
     try {
-      if (window.electronAPI) {
-        const path = await window.electronAPI.localFolder.pickFolder()
-        if (path === null) return
-        await window.electronAPI.storage.put(LOCAL_FOLDER_PATH_KEY, path)
-        setLocalFolderMode()
-        window.location.reload()
-        return
-      }
-      if (!window.showDirectoryPicker) {
-        setError(getApiUnsupportedError(ua))
-        return
-      }
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite' })
-      await saveHandle(handle)
-      setLocalFolderMode()
-      window.location.reload()
+      if (window.electronAPI) await pickElectronLocalFolder(window.electronAPI)
+      else await pickBrowserLocalFolder(ua)
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return
       const name = e instanceof DOMException ? e.name : ''
       const msg = e instanceof Error ? e.message : 'Failed to open folder picker'
       const detail = name ? `[${name}] ${msg}` : msg
-      let hint = ''
-      if (browser.isBrave) hint = ' — try disabling Brave Shields entirely for this site (lion icon → Shields down).'
-      else if (browser.isSafari)
-        hint = ' — Safari has limited folder access support; try Chrome or Edge if this persists.'
-      setError(`${detail}${hint}`)
+      setError(`${detail}${getFolderPickerErrorHint(browser)}`)
     } finally {
       setPickingFolder(false)
     }
@@ -129,6 +136,7 @@ export function SetupWizard({ onSkip }: Props) {
               type="text"
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-indigo-500"
             />
@@ -143,6 +151,7 @@ export function SetupWizard({ onSkip }: Props) {
               type="text"
               value={tenantId}
               onChange={(e) => setTenantId(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-indigo-500"
             />

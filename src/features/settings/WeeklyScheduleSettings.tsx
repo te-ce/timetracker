@@ -63,6 +63,9 @@ function DayHoursInput({ dayIndex, hours, onSave }: DayInputProps) {
         step={0.5}
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+        }}
         onBlur={handleBlur}
         className="w-full rounded border px-1 py-1.5 text-center text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
       />
