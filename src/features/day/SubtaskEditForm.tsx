@@ -17,6 +17,10 @@ export function resolveSubtaskEdit(
   submode: 'timed' | 'decimal',
 ): { subtask: WorkPeriodSubtask; valid: boolean } {
   if (submode === 'timed') {
+    if (!end) {
+      if (!start) return { subtask: sl, valid: false }
+      return { subtask: { ...sl, category, startedAt: start, stoppedAt: undefined, note }, valid: true }
+    }
     const h = calcSubtaskHours(start, end)
     if (!h || h <= 0) return { subtask: sl, valid: false }
     return { subtask: { ...sl, category, hours: h, startedAt: start, stoppedAt: end, note }, valid: true }
@@ -48,12 +52,13 @@ export function SubtaskEditForm({
   onDone,
 }: SubtaskEditFormProps) {
   const timed = isTimedSubtask(sl)
+  const hasClockTime = !!sl.startedAt
   const [editCategory, setEditCategory] = useState(sl.category)
   const [editHours, setEditHours] = useState(String(sl.hours))
   const [editNote, setEditNote] = useState(sl.note ?? '')
   const [editStart, setEditStart] = useState(sl.startedAt ?? '')
   const [editEnd, setEditEnd] = useState(sl.stoppedAt ?? '')
-  const [submode, setSubmode] = useState<'timed' | 'decimal'>(timed ? 'timed' : 'decimal')
+  const [submode, setSubmode] = useState<'timed' | 'decimal'>(hasClockTime ? 'timed' : 'decimal')
   const hoursInputRef = useRef<HTMLInputElement>(null)
   const endInputRef = useRef<HTMLInputElement>(null)
   const timeFormat = useTimeFormatStore((s) => s.format)
@@ -92,7 +97,8 @@ export function SubtaskEditForm({
   }
 
   function switchToDecimal() {
-    setEditHours(String(Math.round(calcSubtaskHours(editStart, editEnd) * 100) / 100))
+    const hours = editEnd ? calcSubtaskHours(editStart, editEnd) : sl.hours
+    setEditHours(String(Math.round(hours * 100) / 100))
     setSubmode('decimal')
   }
 
@@ -113,7 +119,7 @@ export function SubtaskEditForm({
       {pendingCancel && <BlurCancelHint />}
       {submode === 'timed' ? (
         <span className="w-12 text-right font-mono text-sm tabular-nums text-gray-500 dark:text-gray-400 shrink-0 whitespace-nowrap">
-          {formatHours(calcSubtaskHours(editStart, editEnd), timeFormat)}
+          {editEnd ? formatHours(calcSubtaskHours(editStart, editEnd), timeFormat) : formatHours(sl.hours, timeFormat)}
         </span>
       ) : (
         <input
@@ -149,10 +155,16 @@ export function SubtaskEditForm({
             value={editEnd}
             onChange={(e) => setEditEnd(e.target.value)}
             onKeyDown={kd}
+            placeholder="now"
             aria-label="Subtask end time"
             ref={endInputRef}
-            className={`${inputClass} w-20`}
+            className={`${inputClass} w-20 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
           />
+          {!editEnd && (
+            <span className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 shrink-0">
+              running
+            </span>
+          )}
           {timed && (
             <button
               type="button"

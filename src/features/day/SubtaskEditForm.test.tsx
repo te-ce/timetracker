@@ -41,6 +41,16 @@ describe('resolveSubtaskEdit', () => {
     expect(resolveSubtaskEdit(sl, 'Meeting', undefined, '', '', '0', 'decimal').valid).toBe(false)
     expect(resolveSubtaskEdit(sl, 'Meeting', undefined, '', '', 'nope', 'decimal').valid).toBe(false)
   })
+
+  it('keeps a live subtask running when the end is left blank in timed submode', () => {
+    const { subtask, valid } = resolveSubtaskEdit(sl, 'Meeting', undefined, '09:15', '', '', 'timed')
+    expect(valid).toBe(true)
+    expect(subtask).toMatchObject({ category: 'Meeting', startedAt: '09:15', stoppedAt: undefined, hours: sl.hours })
+  })
+
+  it('is invalid in timed submode when both start and end are blank', () => {
+    expect(resolveSubtaskEdit(sl, 'Meeting', undefined, '', '', '', 'timed').valid).toBe(false)
+  })
 })
 
 const DATE = '2026-06-04'
@@ -91,6 +101,32 @@ describe('SubtaskEditForm', () => {
     expect(onDone).toHaveBeenCalled()
     const data = await repo.getMonth(YEAR, MONTH)
     expect(data[DATE]?.windows[0]?.subtasks[0]).toMatchObject({ hours: 2 })
+  })
+
+  it('shows start/end time fields (not just duration) for an active live subtask', async () => {
+    const sl: WorkPeriodSubtask = { id: 'sl-1', category: 'Work', hours: 0, startedAt: '09:15', stoppedAt: undefined }
+    const repo = makeRepo(sl)
+    render(<Harness repo={repo} sl={sl} onDone={vi.fn()} />, { wrapper })
+
+    expect(screen.getByLabelText('Subtask start time')).toHaveValue('09:15')
+    expect(screen.getByLabelText('Subtask end time')).toHaveValue('')
+    expect(screen.queryByLabelText('Subtask hours')).not.toBeInTheDocument()
+  })
+
+  it('saving a live subtask with the end left blank keeps it running', async () => {
+    const sl: WorkPeriodSubtask = { id: 'sl-1', category: 'Work', hours: 0, startedAt: '09:15', stoppedAt: undefined }
+    const repo = makeRepo(sl)
+    const onDone = vi.fn()
+    render(<Harness repo={repo} sl={sl} onDone={onDone} />, { wrapper })
+
+    const startInput = screen.getByLabelText('Subtask start time')
+    await userEvent.clear(startInput)
+    await userEvent.type(startInput, '09:30')
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(onDone).toHaveBeenCalled()
+    const data = await repo.getMonth(YEAR, MONTH)
+    expect(data[DATE]?.windows[0]?.subtasks[0]).toMatchObject({ startedAt: '09:30', stoppedAt: undefined })
   })
 
   it('calls onDone without saving when Cancel is clicked', async () => {
