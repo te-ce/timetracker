@@ -75,7 +75,7 @@ function buildDaySummaryData(
     reason,
     workedHours: row.workedHours,
     categoryBreakdown: categoryBreakdownWithAuto(row),
-    categoryDescriptions,
+    ...(categoryDescriptions !== undefined ? { categoryDescriptions } : {}),
     ...(leaveType !== undefined ? { leaveType } : {}),
   }
 }
