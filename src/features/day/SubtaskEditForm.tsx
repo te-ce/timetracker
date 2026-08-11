@@ -30,6 +30,23 @@ export function resolveSubtaskEdit(
   return { subtask: { ...sl, category, hours: h, startedAt: undefined, stoppedAt: undefined, note }, valid: true }
 }
 
+function isSubtaskEditDirty(
+  sl: WorkPeriodSubtask,
+  editCategory: string,
+  editNote: string,
+  editHours: string,
+  editStart: string,
+  editEnd: string,
+): boolean {
+  return (
+    editCategory !== sl.category ||
+    editNote !== (sl.note ?? '') ||
+    editHours !== String(sl.hours) ||
+    editStart !== (sl.startedAt ?? '') ||
+    editEnd !== (sl.stoppedAt ?? '')
+  )
+}
+
 interface SubtaskEditFormProps {
   sl: WorkPeriodSubtask
   periodId: string
@@ -39,6 +56,122 @@ interface SubtaskEditFormProps {
   stripeBg: string
   mutations: ReturnType<typeof useWorkPeriodMutations>
   onDone: () => void
+}
+
+const inputClass =
+  'text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
+
+interface TimedHoursDisplayProps {
+  editEnd: string
+  editStart: string
+  sl: WorkPeriodSubtask
+}
+
+function TimedHoursDisplay({ editEnd, editStart, sl }: TimedHoursDisplayProps) {
+  const timeFormat = useTimeFormatStore((s) => s.format)
+  return (
+    <span className="w-12 text-right font-mono text-sm tabular-nums text-gray-500 dark:text-gray-400 shrink-0 whitespace-nowrap">
+      {editEnd ? formatHours(calcSubtaskHours(editStart, editEnd), timeFormat) : formatHours(sl.hours, timeFormat)}
+    </span>
+  )
+}
+
+interface TimedRangeFieldsProps {
+  editStart: string
+  setEditStart: (v: string) => void
+  editEnd: string
+  setEditEnd: (v: string) => void
+  endInputRef: React.RefObject<HTMLInputElement | null>
+  kd: (e: React.KeyboardEvent) => void
+  timed: boolean
+  switchToDecimal: () => void
+  submode: 'timed' | 'decimal'
+}
+
+function TimedRangeFields({
+  editStart,
+  setEditStart,
+  editEnd,
+  setEditEnd,
+  endInputRef,
+  kd,
+  timed,
+  switchToDecimal,
+  submode,
+}: TimedRangeFieldsProps) {
+  if (submode !== 'timed') return null
+  return (
+    <>
+      <input
+        type="text"
+        value={editStart}
+        onChange={(e) => setEditStart(e.target.value)}
+        onKeyDown={kd}
+        aria-label="Subtask start time"
+        className={`${inputClass} w-20`}
+      />
+      <span className="text-sm text-gray-400">–</span>
+      <input
+        type="text"
+        value={editEnd}
+        onChange={(e) => setEditEnd(e.target.value)}
+        onKeyDown={kd}
+        placeholder="now"
+        aria-label="Subtask end time"
+        ref={endInputRef}
+        className={`${inputClass} w-20 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
+      />
+      {!editEnd && (
+        <span className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 shrink-0">
+          running
+        </span>
+      )}
+      {timed && (
+        <button
+          type="button"
+          onClick={switchToDecimal}
+          className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 shrink-0"
+        >
+          use decimal
+        </button>
+      )}
+    </>
+  )
+}
+
+interface SubtaskHoursFieldProps {
+  submode: 'timed' | 'decimal'
+  editEnd: string
+  editStart: string
+  sl: WorkPeriodSubtask
+  editHours: string
+  setEditHours: (v: string) => void
+  kd: (e: React.KeyboardEvent) => void
+  hoursInputRef: React.RefObject<HTMLInputElement | null>
+}
+
+function SubtaskHoursField({
+  submode,
+  editEnd,
+  editStart,
+  sl,
+  editHours,
+  setEditHours,
+  kd,
+  hoursInputRef,
+}: SubtaskHoursFieldProps) {
+  if (submode === 'timed') return <TimedHoursDisplay editEnd={editEnd} editStart={editStart} sl={sl} />
+  return (
+    <input
+      type="text"
+      value={editHours}
+      onChange={(e) => setEditHours(e.target.value)}
+      onKeyDown={kd}
+      aria-label="Subtask hours"
+      ref={hoursInputRef}
+      className={`${inputClass} w-12 text-right`}
+    />
+  )
 }
 
 export function SubtaskEditForm({
@@ -61,13 +194,7 @@ export function SubtaskEditForm({
   const [submode, setSubmode] = useState<'timed' | 'decimal'>(hasClockTime ? 'timed' : 'decimal')
   const hoursInputRef = useRef<HTMLInputElement>(null)
   const endInputRef = useRef<HTMLInputElement>(null)
-  const timeFormat = useTimeFormatStore((s) => s.format)
-  const isDirty =
-    editCategory !== sl.category ||
-    editNote !== (sl.note ?? '') ||
-    editHours !== String(sl.hours) ||
-    editStart !== (sl.startedAt ?? '') ||
-    editEnd !== (sl.stoppedAt ?? '')
+  const isDirty = isSubtaskEditDirty(sl, editCategory, editNote, editHours, editStart, editEnd)
   const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
   useEffect(() => {
     if (cancelToken > 0) onDone()
@@ -102,8 +229,6 @@ export function SubtaskEditForm({
     setSubmode('decimal')
   }
 
-  const inputClass =
-    'text-sm rounded border px-2 py-1 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-400'
   const kd = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') commit()
     if (e.key === 'Escape') onDone()
@@ -117,21 +242,16 @@ export function SubtaskEditForm({
       onFocus={handleFocus}
     >
       {pendingCancel && <BlurCancelHint />}
-      {submode === 'timed' ? (
-        <span className="w-12 text-right font-mono text-sm tabular-nums text-gray-500 dark:text-gray-400 shrink-0 whitespace-nowrap">
-          {editEnd ? formatHours(calcSubtaskHours(editStart, editEnd), timeFormat) : formatHours(sl.hours, timeFormat)}
-        </span>
-      ) : (
-        <input
-          type="text"
-          value={editHours}
-          onChange={(e) => setEditHours(e.target.value)}
-          onKeyDown={kd}
-          aria-label="Subtask hours"
-          ref={hoursInputRef}
-          className={`${inputClass} w-12 text-right`}
-        />
-      )}
+      <SubtaskHoursField
+        submode={submode}
+        editEnd={editEnd}
+        editStart={editStart}
+        sl={sl}
+        editHours={editHours}
+        setEditHours={setEditHours}
+        kd={kd}
+        hoursInputRef={hoursInputRef}
+      />
       <CategoryPicker
         value={editCategory}
         categories={categories}
@@ -139,43 +259,17 @@ export function SubtaskEditForm({
         compact
         categoryDescriptions={categoryDescriptions}
       />
-      {submode === 'timed' && (
-        <>
-          <input
-            type="text"
-            value={editStart}
-            onChange={(e) => setEditStart(e.target.value)}
-            onKeyDown={kd}
-            aria-label="Subtask start time"
-            className={`${inputClass} w-20`}
-          />
-          <span className="text-sm text-gray-400">–</span>
-          <input
-            type="text"
-            value={editEnd}
-            onChange={(e) => setEditEnd(e.target.value)}
-            onKeyDown={kd}
-            placeholder="now"
-            aria-label="Subtask end time"
-            ref={endInputRef}
-            className={`${inputClass} w-20 placeholder:text-gray-300 dark:placeholder:text-gray-600`}
-          />
-          {!editEnd && (
-            <span className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 shrink-0">
-              running
-            </span>
-          )}
-          {timed && (
-            <button
-              type="button"
-              onClick={switchToDecimal}
-              className="text-sm text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 shrink-0"
-            >
-              use decimal
-            </button>
-          )}
-        </>
-      )}
+      <TimedRangeFields
+        submode={submode}
+        editStart={editStart}
+        setEditStart={setEditStart}
+        editEnd={editEnd}
+        setEditEnd={setEditEnd}
+        endInputRef={endInputRef}
+        kd={kd}
+        timed={timed}
+        switchToDecimal={switchToDecimal}
+      />
       <input
         type="text"
         value={editNote}

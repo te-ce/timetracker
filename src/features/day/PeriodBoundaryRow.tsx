@@ -20,6 +20,98 @@ interface PeriodBoundaryRowProps {
   onDelete: () => void
 }
 
+function isPeriodTimesDirty(start: string, end: string, period: WorkPeriod): boolean {
+  return start !== period.start || (end || null) !== period.end
+}
+
+function periodLabelSuffix(ordinal: number, running: boolean): string {
+  const first = ordinal === 1 ? ' · first start of the day' : ''
+  const live = running ? ' · running' : ''
+  return `${first}${live}`
+}
+
+interface PeriodEditFieldsProps {
+  ordinal: number
+  start: string
+  setStart: (v: string) => void
+  end: string
+  setEnd: (v: string) => void
+  startInputRef: React.RefObject<HTMLInputElement | null>
+  pendingCancel: boolean
+  handleBlur: (e: React.FocusEvent) => void
+  handleFocus: () => void
+  onSave: () => void
+  onCancel: () => void
+  onKeyDown: (e: React.KeyboardEvent) => void
+}
+
+function PeriodEditFields({
+  ordinal,
+  start,
+  setStart,
+  end,
+  setEnd,
+  startInputRef,
+  pendingCancel,
+  handleBlur,
+  handleFocus,
+  onSave,
+  onCancel,
+  onKeyDown,
+}: PeriodEditFieldsProps) {
+  return (
+    <span className="relative flex items-center gap-1" onBlur={handleBlur} onFocus={handleFocus}>
+      {pendingCancel && <BlurCancelHint />}
+      <input
+        ref={startInputRef}
+        type="time"
+        aria-label={`Work period ${ordinal} start`}
+        value={start}
+        onChange={(e) => setStart(e.target.value)}
+        onKeyDown={onKeyDown}
+        className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+      />
+      <span className="text-gray-400">–</span>
+      <input
+        type="time"
+        aria-label={`Work period ${ordinal} end`}
+        value={end}
+        onChange={(e) => setEnd(e.target.value)}
+        onKeyDown={onKeyDown}
+        className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+      />
+      <button type="button" onClick={onSave} className="ml-1 font-medium text-indigo-600 dark:text-indigo-400">
+        Save
+      </button>
+      <button type="button" onClick={onCancel} className="ml-1 text-gray-500 dark:text-gray-400">
+        Cancel
+      </button>
+    </span>
+  )
+}
+
+interface PeriodTimeButtonProps {
+  period: WorkPeriod
+  running: boolean
+  label: string
+  onStartEditing: () => void
+}
+
+function PeriodTimeButton({ period, running, label, onStartEditing }: PeriodTimeButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onStartEditing}
+      aria-label={`Edit times of ${label}`}
+      className={`font-mono font-semibold tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
+        running ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
+      }`}
+    >
+      {period.start} → {period.end ?? 'now'}
+    </button>
+  )
+}
+
 /** Announces a WorkPeriod in the timeline: when it ran, how long, and what it was. */
 export function PeriodBoundaryRow({
   period,
@@ -41,7 +133,7 @@ export function PeriodBoundaryRow({
   const [seenEditing, setSeenEditing] = useState(editing)
   const startInputRef = useRef<HTMLInputElement>(null)
   const label = `work period ${ordinal}, ${period.start} to ${period.end ?? 'now'}`
-  const isDirty = start !== period.start || (end || null) !== period.end
+  const isDirty = isPeriodTimesDirty(start, end, period)
   const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
 
   // Focus leaving an untouched editor drops it straight away; a changed one asks
@@ -83,44 +175,22 @@ export function PeriodBoundaryRow({
       className="flex flex-wrap items-center gap-3 pb-0.5 pt-3 text-xs"
     >
       {editing ? (
-        <span className="relative flex items-center gap-1" onBlur={handleBlur} onFocus={handleFocus}>
-          {pendingCancel && <BlurCancelHint />}
-          <input
-            ref={startInputRef}
-            type="time"
-            aria-label={`Work period ${ordinal} start`}
-            value={start}
-            onChange={(e) => setStart(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          />
-          <span className="text-gray-400">–</span>
-          <input
-            type="time"
-            aria-label={`Work period ${ordinal} end`}
-            value={end}
-            onChange={(e) => setEnd(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          />
-          <button type="button" onClick={save} className="ml-1 font-medium text-indigo-600 dark:text-indigo-400">
-            Save
-          </button>
-          <button type="button" onClick={onStopEditing} className="ml-1 text-gray-500 dark:text-gray-400">
-            Cancel
-          </button>
-        </span>
+        <PeriodEditFields
+          ordinal={ordinal}
+          start={start}
+          setStart={setStart}
+          end={end}
+          setEnd={setEnd}
+          startInputRef={startInputRef}
+          pendingCancel={pendingCancel}
+          handleBlur={handleBlur}
+          handleFocus={handleFocus}
+          onSave={save}
+          onCancel={onStopEditing}
+          onKeyDown={handleKeyDown}
+        />
       ) : (
-        <button
-          type="button"
-          onClick={onStartEditing}
-          aria-label={`Edit times of ${label}`}
-          className={`font-mono font-semibold tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
-            running ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
-          }`}
-        >
-          {period.start} → {period.end ?? 'now'}
-        </button>
+        <PeriodTimeButton period={period} running={running} label={label} onStartEditing={onStartEditing} />
       )}
       <span className="font-mono tabular-nums text-gray-500 dark:text-gray-400">
         {formatHours(duration, timeFormat)}
@@ -135,8 +205,7 @@ export function PeriodBoundaryRow({
       />
       <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
         work period {ordinal}
-        {ordinal === 1 ? ' · first start of the day' : ''}
-        {running ? ' · running' : ''}
+        {periodLabelSuffix(ordinal, running)}
       </span>
       <span className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
       <button

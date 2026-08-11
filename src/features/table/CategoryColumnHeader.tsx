@@ -30,6 +30,61 @@ function displayCategoryName(cat: string): string {
   return cat.replace(/^_/, '')
 }
 
+function handleRenameKeyDown(
+  e: React.KeyboardEvent<HTMLInputElement>,
+  cat: string,
+  onCommitRename: (cat: string) => void,
+  onSetEditingCat: (cat: string | null) => void,
+): void {
+  if (e.key === 'Enter') onCommitRename(cat)
+  if (e.key === 'Escape') onSetEditingCat(null)
+}
+
+function startColumnDrag(e: React.DragEvent<HTMLElement>, cat: string): void {
+  // Create a standalone ghost div to avoid the browser rendering the full table as the drag image
+  const el = e.currentTarget
+  const ghost = document.createElement('div')
+  ghost.textContent = cat
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    top: '-9999px',
+    width: `${el.offsetWidth}px`,
+    padding: '4px',
+    background: '#f9fafb',
+    border: '1px solid #6366f1',
+    borderRadius: '4px',
+    fontSize: '0.75rem',
+    textAlign: 'center',
+  })
+  document.body.appendChild(ghost)
+  const dt: unknown = e.dataTransfer
+  if (dt instanceof DataTransfer) {
+    dt.setDragImage(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2)
+  }
+  setTimeout(() => document.body.removeChild(ghost), 0)
+}
+
+function CategoryTooltipContent({
+  cat,
+  isAuto,
+  description,
+  renamable,
+}: {
+  cat: string
+  isAuto: boolean
+  description: string | undefined
+  renamable: boolean
+}) {
+  return (
+    <div>
+      <p className="font-semibold">{displayCategoryName(cat)}</p>
+      {isAuto && <p className="mt-1 text-gray-300">auto category — absorbs remaining hours</p>}
+      {description && <p className="mt-1 text-gray-300">{description}</p>}
+      {renamable && <p className="mt-1.5 text-gray-400 text-[10px]">Double-click to rename</p>}
+    </div>
+  )
+}
+
 function CategoryBadge({
   cat,
   isAuto,
@@ -87,38 +142,13 @@ export function CategoryColumnHeader({
   const color = colorForCategory(cat, allCategories)
   const nameClass = `block truncate text-[11px] ${color.text} ${onCategoryRename ? 'cursor-text' : ''}`
   const tooltipContent = (
-    <div>
-      <p className="font-semibold">{displayCategoryName(cat)}</p>
-      {isAuto && <p className="mt-1 text-gray-300">auto category — absorbs remaining hours</p>}
-      {description && <p className="mt-1 text-gray-300">{description}</p>}
-      {onCategoryRename && <p className="mt-1.5 text-gray-400 text-[10px]">Double-click to rename</p>}
-    </div>
+    <CategoryTooltipContent cat={cat} isAuto={isAuto} description={description} renamable={!!onCategoryRename} />
   )
   return (
     <th
       draggable={editingCat !== cat && !!onCategoryReorder}
       onDragStart={(e) => {
-        // Create a standalone ghost div to avoid the browser rendering the full table as the drag image
-        const el = e.currentTarget
-        const ghost = document.createElement('div')
-        ghost.textContent = cat
-        Object.assign(ghost.style, {
-          position: 'fixed',
-          top: '-9999px',
-          width: `${el.offsetWidth}px`,
-          padding: '4px',
-          background: '#f9fafb',
-          border: '1px solid #6366f1',
-          borderRadius: '4px',
-          fontSize: '0.75rem',
-          textAlign: 'center',
-        })
-        document.body.appendChild(ghost)
-        const dt: unknown = e.dataTransfer
-        if (dt instanceof DataTransfer) {
-          dt.setDragImage(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2)
-        }
-        setTimeout(() => document.body.removeChild(ghost), 0)
+        startColumnDrag(e, cat)
         dragHandlers.onDragStart(catIdx)
       }}
       onDragOver={(e) => dragHandlers.onDragOver(e, catIdx)}
@@ -136,10 +166,7 @@ export function CategoryColumnHeader({
           value={editValue}
           onChange={(e) => onEditValueChange(e.target.value)}
           onBlur={() => onCommitRename(cat)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onCommitRename(cat)
-            if (e.key === 'Escape') onSetEditingCat(null)
-          }}
+          onKeyDown={(e) => handleRenameKeyDown(e, cat, onCommitRename, onSetEditingCat)}
           className="w-full bg-transparent text-xs border-b border-indigo-400 dark:border-indigo-500 focus:outline-none text-left"
           onClick={(e) => e.stopPropagation()}
         />

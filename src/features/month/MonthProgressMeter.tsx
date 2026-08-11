@@ -1,5 +1,6 @@
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
+import type { TimeFormat } from '../../shared/timeFormatStore'
 import type { OfficeStats } from '../../shared/officeStats'
 import type { DayBalance } from '../../shared/dayBalance'
 import { balanceInk, formatSignedHours } from './monthBalanceFormat'
@@ -12,6 +13,94 @@ interface Props {
   /** Today's balance, shown alongside the month total — the day-level half of the merged bar. */
   todayBalance: DayBalance
   isTodayLoading?: boolean | undefined
+}
+
+function pluralDays(count: number) {
+  return count === 1 ? 'day' : 'days'
+}
+
+function OvertimeBadge({
+  overtimeUnknown,
+  priorOvertime,
+  timeFormat,
+}: {
+  overtimeUnknown: boolean
+  priorOvertime: number
+  timeFormat: TimeFormat
+}) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs dark:border-gray-600">
+      <span className="text-gray-500 dark:text-gray-400">Overtime</span>
+      {overtimeUnknown ? (
+        <Skeleton className="w-10" />
+      ) : (
+        <span className={`font-semibold tabular-nums ${balanceInk(priorOvertime)}`}>
+          {formatSignedHours(priorOvertime, timeFormat)}
+        </span>
+      )}
+    </span>
+  )
+}
+
+function ResultBadge({
+  overtimeUnknown,
+  resultUnknown,
+  isTodayOver,
+  resultLabel,
+}: {
+  overtimeUnknown: boolean
+  resultUnknown: boolean
+  isTodayOver: boolean
+  resultLabel: string
+}) {
+  const toneClass = overtimeUnknown
+    ? ''
+    : isTodayOver
+      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+      : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
+
+  return (
+    <span className={`rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums ${toneClass}`}>
+      {resultUnknown ? <Skeleton className="w-16" /> : resultLabel}
+    </span>
+  )
+}
+
+function UntrackedBadge({ overview, timeFormat }: { overview: MonthOverview; timeFormat: TimeFormat }) {
+  if (overview.untrackedCount <= 0) return null
+
+  return (
+    <span className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+      <span className="font-semibold">
+        {overview.untrackedCount} {pluralDays(overview.untrackedCount)} untracked
+      </span>
+      <span className="ml-1.5 tabular-nums">{formatHours(overview.missingHours, timeFormat)} missing</span>
+    </span>
+  )
+}
+
+function NeedsReviewBadge({ needsReviewCount }: { needsReviewCount: number }) {
+  if (needsReviewCount <= 0) return null
+
+  return (
+    <span className="rounded-lg border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
+      {needsReviewCount} {pluralDays(needsReviewCount)} to review
+    </span>
+  )
+}
+
+function OfficeBadge({ officeStats }: { officeStats: OfficeStats | null }) {
+  if (!officeStats) return null
+
+  return (
+    <span className="rounded-lg border px-2.5 py-1 text-xs dark:border-gray-700">
+      <span className="text-gray-500 dark:text-gray-400">Office </span>
+      <span className="font-semibold tabular-nums">{officeStats.officePercent}%</span>
+      <span className="ml-1 text-gray-500 dark:text-gray-400">
+        ({officeStats.officeDays}/{officeStats.totalWorkDays})
+      </span>
+    </span>
+  )
 }
 
 export function MonthProgressMeter({ overview, officeStats, todayBalance, isTodayLoading = false }: Props) {
@@ -57,28 +146,14 @@ export function MonthProgressMeter({ overview, officeStats, todayBalance, isToda
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs dark:border-gray-600">
-            <span className="text-gray-500 dark:text-gray-400">Overtime</span>
-            {overtimeUnknown ? (
-              <Skeleton className="w-10" />
-            ) : (
-              <span className={`font-semibold tabular-nums ${balanceInk(priorOvertime)}`}>
-                {formatSignedHours(priorOvertime, timeFormat)}
-              </span>
-            )}
-          </span>
+          <OvertimeBadge overtimeUnknown={overtimeUnknown} priorOvertime={priorOvertime} timeFormat={timeFormat} />
 
-          <span
-            className={`rounded-lg px-2.5 py-1 text-xs font-semibold tabular-nums ${
-              overtimeUnknown
-                ? ''
-                : isTodayOver
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                  : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
-            }`}
-          >
-            {resultUnknown ? <Skeleton className="w-16" /> : resultLabel}
-          </span>
+          <ResultBadge
+            overtimeUnknown={overtimeUnknown}
+            resultUnknown={resultUnknown}
+            isTodayOver={isTodayOver}
+            resultLabel={resultLabel}
+          />
 
           {plannedStopTime && (
             <span className="rounded-lg bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
@@ -86,30 +161,9 @@ export function MonthProgressMeter({ overview, officeStats, todayBalance, isToda
             </span>
           )}
 
-          {overview.untrackedCount > 0 && (
-            <span className="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-              <span className="font-semibold">
-                {overview.untrackedCount} day{overview.untrackedCount === 1 ? '' : 's'} untracked
-              </span>
-              <span className="ml-1.5 tabular-nums">{formatHours(overview.missingHours, timeFormat)} missing</span>
-            </span>
-          )}
-
-          {overview.needsReviewCount > 0 && (
-            <span className="rounded-lg border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:border-red-800 dark:bg-red-900/30 dark:text-red-300">
-              {overview.needsReviewCount} day{overview.needsReviewCount === 1 ? '' : 's'} to review
-            </span>
-          )}
-
-          {officeStats && (
-            <span className="rounded-lg border px-2.5 py-1 text-xs dark:border-gray-700">
-              <span className="text-gray-500 dark:text-gray-400">Office </span>
-              <span className="font-semibold tabular-nums">{officeStats.officePercent}%</span>
-              <span className="ml-1 text-gray-500 dark:text-gray-400">
-                ({officeStats.officeDays}/{officeStats.totalWorkDays})
-              </span>
-            </span>
-          )}
+          <UntrackedBadge overview={overview} timeFormat={timeFormat} />
+          <NeedsReviewBadge needsReviewCount={overview.needsReviewCount} />
+          <OfficeBadge officeStats={officeStats} />
         </div>
       </div>
 

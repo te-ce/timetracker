@@ -43,6 +43,26 @@ function resolveNow(iso: string, today: string, todayNow: string | undefined): s
   return iso < today ? '23:59' : undefined
 }
 
+function resolveDayType(
+  dayData: Day | undefined,
+  date: Date,
+  dayTypes: Map<string, DayType> | undefined,
+  iso: string,
+): DayType {
+  return dayData?.dayTypeOverride ?? dayTypes?.get(iso) ?? classifyDayType(date)
+}
+
+function splitCategoryTotals(categoryHours: Record<string, number>): {
+  entryTotal: number
+  uncategorizedHours: number
+} {
+  const entryTotal = Object.entries(categoryHours)
+    .filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)
+    .reduce((sum, [, h]) => sum + h, 0)
+  const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
+  return { entryTotal, uncategorizedHours }
+}
+
 function deriveDayCore(
   iso: string,
   date: Date,
@@ -55,11 +75,8 @@ function deriveDayCore(
   const workedHours = calculateWorkedHours(windows, now)
   const halfDayLeave = dayData?.halfDayLeave
   const categoryHours = calculateDayCategoryHours(dayData ?? { windows: [] }, iso, weekdayHours, now)
-  const entryTotal = Object.entries(categoryHours)
-    .filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)
-    .reduce((sum, [, h]) => sum + h, 0)
-  const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
-  const dayType: DayType = dayData?.dayTypeOverride ?? dayTypes?.get(iso) ?? classifyDayType(date)
+  const { entryTotal, uncategorizedHours } = splitCategoryTotals(categoryHours)
+  const dayType = resolveDayType(dayData, date, dayTypes, iso)
   const targetHours = effectiveTargetHours(date, weekdayHours, halfDayLeave)
 
   return {

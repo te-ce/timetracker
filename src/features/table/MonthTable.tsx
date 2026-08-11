@@ -1,7 +1,7 @@
 import { useState, useRef, Fragment, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useCloseOnOutsideClickOrEscape } from '../../shared/useCloseOnOutsideClickOrEscape'
-import type { MonthRepository, WorkLocation } from '../../infra/repositories/types'
+import type { MonthData, MonthRepository, WorkLocation } from '../../infra/repositories/types'
 import type { DotPopoverState } from '../day/DotPopoverPanel'
 import type { NotePopoverState } from '../day/NotePopoverPanel'
 import { DotPopoverPanel } from '../day/DotPopoverPanel'
@@ -15,7 +15,7 @@ import { CategoryColumnHeader, type ColumnDragHandlers } from './CategoryColumnH
 import { categoryBreakdownWithAuto, categoryHoursIncludingAuto, type MonthTableRow } from './buildMonthTable'
 import type { MonthView } from '../../shared/useMonthView'
 import { STATUS_DOT } from '../../shared/statusColors'
-import { useTimeFormatStore } from '../../shared/timeFormatStore'
+import { useTimeFormatStore, type TimeFormat } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { Tooltip } from '../../shared/Tooltip'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
@@ -47,6 +47,152 @@ function classifyRow(row: MonthTableRow, today: string) {
     isoDate: row.date,
     today,
   })
+}
+
+function isDimRow(row: MonthTableRow): boolean {
+  return row.dayType !== 'WorkDay' && row.workedHours === 0 && Object.keys(row.entries).length === 0
+}
+
+function rowClassName(row: MonthTableRow, isToday: boolean, dim: boolean): string {
+  const weekStartClass = isMonday(row.date) ? 'border-t-2 border-t-gray-300 dark:border-t-gray-600' : ''
+  const todayClass = isToday ? 'bg-amber-50 dark:bg-amber-900/20' : ''
+  const dimClass = dim ? 'opacity-50' : ''
+  return `border-b border-gray-100 dark:border-gray-800 ${weekStartClass} ${todayClass} ${dimClass}`
+}
+
+function workedHoursCellClassName(isToday: boolean): string {
+  return `sticky left-[4.6rem] z-10 ${STICKY_BG}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`
+}
+
+function buildDaySummaryData(
+  row: MonthTableRow,
+  classified: ReturnType<typeof classifyRow>,
+  categoryDescriptions?: Record<string, string>,
+): DaySummaryData {
+  const { displayStatus, reason, leaveType } = classified
+  return {
+    displayStatus,
+    reason,
+    workedHours: row.workedHours,
+    categoryBreakdown: categoryBreakdownWithAuto(row),
+    categoryDescriptions,
+    ...(leaveType !== undefined ? { leaveType } : {}),
+  }
+}
+
+function DeltaCell({ rowDelta, timeFormat }: { rowDelta: number | null; timeFormat: TimeFormat }) {
+  return (
+    <td className="px-1.5 py-[3px] w-12 text-right text-[11px] tabular-nums">
+      {rowDelta !== null && (
+        <span className={overtimeTextClass(rowDelta)}>
+          {rowDelta > 0 ? '+' : ''}
+          {formatHoursCompact(rowDelta, timeFormat)}
+        </span>
+      )}
+    </td>
+  )
+}
+
+function BalanceCell({
+  accumulatedOvertime,
+  balScale,
+  timeFormat,
+  daySummaryData,
+}: {
+  accumulatedOvertime: number | null
+  balScale: ReturnType<typeof balanceScale>
+  timeFormat: TimeFormat
+  daySummaryData: DaySummaryData
+}) {
+  return (
+    <td
+      className="px-1.5 py-[3px] w-16 border-r border-gray-200 text-right text-[11px] font-semibold tabular-nums dark:border-gray-700"
+      style={accumulatedOvertime !== null ? balanceBarStyle(accumulatedOvertime, balScale) : {}}
+    >
+      <Tooltip content={<DaySummaryBody {...daySummaryData} timeFormat={timeFormat} dark />}>
+        <span className="block w-full text-right">
+          {/* Every past day carries the balance, not only the tracked ones — the
+              question this column answers is "where do I stand as of this date". */}
+          {accumulatedOvertime !== null && (
+            <span className={overtimeTextClass(accumulatedOvertime)}>
+              {accumulatedOvertime > 0 ? '+' : ''}
+              {formatHoursCompact(accumulatedOvertime, timeFormat)}
+            </span>
+          )}
+        </span>
+      </Tooltip>
+    </td>
+  )
+}
+
+function LocationCell({
+  visible,
+  date,
+  workLocations,
+  defaultWorkLocation,
+  onCycleLocation,
+}: {
+  visible: boolean
+  date: string
+  workLocations: Map<string, WorkLocation>
+  defaultWorkLocation: WorkLocation
+  onCycleLocation: (date: string) => void
+}) {
+  if (!visible) return null
+  const loc = workLocations.get(date) ?? defaultWorkLocation
+  const locIcon = loc === 'Office' ? '🏢' : '🏠'
+  return (
+    <td className="w-6 border-l border-gray-200 px-1 py-0 text-center text-[10px] dark:border-gray-700" title={loc}>
+      <button
+        type="button"
+        onClick={() => onCycleLocation(date)}
+        className="w-full py-[3px] hover:bg-gray-100 dark:hover:bg-gray-700"
+        aria-label={`Location ${date}`}
+      >
+        {locIcon}
+      </button>
+    </td>
+  )
+}
+
+function NoteCell({
+  date,
+  note,
+  onNoteChange,
+  onOpenNotePopover,
+}: {
+  date: string
+  note: string | undefined
+  onNoteChange?: ((date: string, note: string) => void) | undefined
+  onOpenNotePopover: (state: NotePopoverState) => void
+}) {
+  return (
+    <td className="min-w-[6rem] px-1.5 py-[3px] text-[10px] text-gray-500 dark:text-gray-400">
+      {onNoteChange ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            onOpenNotePopover({
+              date,
+              value: note ?? '',
+              top: rect.bottom + 6,
+              left: rect.left - 220,
+            })
+          }}
+          className="block w-full truncate text-left hover:underline"
+          aria-label={`Note for ${date}`}
+          data-tooltip={note ?? 'Add note'}
+        >
+          {note || ' '}
+        </button>
+      ) : (
+        <span className="block truncate" title={note ?? ''}>
+          {note}
+        </span>
+      )}
+    </td>
+  )
 }
 
 interface Props {
@@ -97,6 +243,136 @@ function ClearCell({ date, onClearDay }: { date: string; onClearDay?: ((date: st
         ×
       </button>
     </td>
+  )
+}
+
+interface MonthTableDataRowProps {
+  row: MonthTableRow
+  todayIso: string
+  monthData: MonthData
+  repository: MonthRepository
+  customCategories?: string[] | undefined
+  categoryOrder?: string[] | undefined
+  categoryDescriptions?: Record<string, string> | undefined
+  allCategories: string[]
+  workLocations: Map<string, WorkLocation>
+  defaultWorkLocation: WorkLocation
+  dayNotes: Map<string, string>
+  timeFormat: TimeFormat
+  balScale: ReturnType<typeof balanceScale>
+  showOfficeStats: boolean
+  onNoteChange?: ((date: string, note: string) => void) | undefined
+  onClearDay?: ((date: string) => void) | undefined
+  renderDayCell: (date: string, dayLabel: string, isToday: boolean) => React.ReactNode
+  getCellValue: (row: MonthTableRow, category: string) => string
+  onDotClick: (e: React.SyntheticEvent<HTMLElement>, row: MonthTableRow) => void
+  onCycleLocation: (date: string) => void
+  onOpenCategoryDialog: (date: string, category: string) => void
+  onOpenNotePopover: (state: NotePopoverState) => void
+}
+
+function MonthTableDataRow({
+  row,
+  todayIso,
+  monthData,
+  repository,
+  customCategories,
+  categoryOrder,
+  categoryDescriptions,
+  allCategories,
+  workLocations,
+  defaultWorkLocation,
+  dayNotes,
+  timeFormat,
+  balScale,
+  showOfficeStats,
+  onNoteChange,
+  onClearDay,
+  renderDayCell,
+  getCellValue,
+  onDotClick,
+  onCycleLocation,
+  onOpenCategoryDialog,
+  onOpenNotePopover,
+}: MonthTableDataRowProps) {
+  const isToday = row.date === todayIso
+  const classified = classifyRow(row, todayIso)
+  const { displayStatus } = classified
+  const dim = isDimRow(row)
+  const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' })
+  const rowDelta = dayDelta(row.workedHours, row.targetHours, row.accumulatedOvertime)
+  const daySummaryData = buildDaySummaryData(row, classified, categoryDescriptions)
+  const note = dayNotes.get(row.date)
+  return (
+    <tr key={row.date} aria-label={row.date} className={rowClassName(row, isToday, dim)}>
+      {renderDayCell(row.date, dayLabel, isToday)}
+      <td
+        className={`sticky left-[3.6rem] z-10 ${STICKY_BG} px-1 py-[3px] cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
+        onClick={(e) => onDotClick(e, row)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onDotClick(e, row)
+          }
+        }}
+        tabIndex={0}
+        aria-label={`Day status: ${displayStatus}. Click to change day type.`}
+      >
+        <span className={`inline-block h-2 w-2 rounded-full ${STATUS_DOT[displayStatus]}`} />
+      </td>
+      <WorkedHoursCell
+        date={row.date}
+        workedHours={parseFloat(row.workedHours.toFixed(2))}
+        windows={monthData[row.date]?.windows ?? []}
+        repository={repository}
+        autoCategory={row.resolvedAutoCategory}
+        customCategories={customCategories}
+        categoryOrder={categoryOrder}
+        categoryDescriptions={categoryDescriptions}
+        daySummaryData={daySummaryData}
+        targetHours={row.targetHours}
+        className={workedHoursCellClassName(isToday)}
+      />
+      <DeltaCell rowDelta={rowDelta} timeFormat={timeFormat} />
+      <BalanceCell
+        accumulatedOvertime={row.accumulatedOvertime}
+        balScale={balScale}
+        timeFormat={timeFormat}
+        daySummaryData={daySummaryData}
+      />
+      {allCategories.map((cat, catIdx) => {
+        const isAutoTarget = cat === row.resolvedAutoCategory
+        const val = getCellValue(row, cat)
+        const catBorderClass = catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''
+        return (
+          <td
+            key={cat}
+            className={`px-1 py-[3px] w-14 min-w-[3.5rem] max-w-[3.5rem] cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${catBorderClass} ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
+            onClick={() => onOpenCategoryDialog(row.date, cat)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onOpenCategoryDialog(row.date, cat)
+              }
+            }}
+            tabIndex={0}
+          >
+            <span className="inline-block w-full rounded text-right text-[11px] tabular-nums text-gray-700 dark:text-gray-200">
+              {val}
+            </span>
+          </td>
+        )
+      })}
+      <LocationCell
+        visible={showOfficeStats}
+        date={row.date}
+        workLocations={workLocations}
+        defaultWorkLocation={defaultWorkLocation}
+        onCycleLocation={onCycleLocation}
+      />
+      <NoteCell date={row.date} note={note} onNoteChange={onNoteChange} onOpenNotePopover={onOpenNotePopover} />
+      <ClearCell date={row.date} onClearDay={onClearDay} />
+    </tr>
   )
 }
 
@@ -346,157 +622,36 @@ export function MonthGrid({
           <tbody>
             {sprintGroups.map((group) => {
               const sprintWorked = group.rows.reduce((s, r) => s + r.workedHours, 0)
-              const groupRows = group.rows.map((row) => {
-                const isNonWorkDay = row.dayType !== 'WorkDay'
-                const isToday = row.date === todayIso
-                const { displayStatus, reason, leaveType } = classifyRow(row, todayIso)
-                const dim = isNonWorkDay && row.workedHours === 0 && Object.keys(row.entries).length === 0
-                const loc = workLocations.get(row.date) ?? defaultWorkLocation
-                const locIcon = loc === 'Office' ? '🏢' : '🏠'
-                const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' })
-                const rowDelta = dayDelta(row.workedHours, row.targetHours, row.accumulatedOvertime)
-                const rowCategoryBreakdown = categoryBreakdownWithAuto(row)
-                const daySummaryData: DaySummaryData = {
-                  displayStatus,
-                  reason,
-                  workedHours: row.workedHours,
-                  categoryBreakdown: rowCategoryBreakdown,
-                  categoryDescriptions,
-                  ...(leaveType !== undefined ? { leaveType } : {}),
-                }
-                const note = dayNotes.get(row.date)
-                const weekStartClass = isMonday(row.date) ? 'border-t-2 border-t-gray-300 dark:border-t-gray-600' : ''
-                return (
-                  <tr
-                    key={row.date}
-                    aria-label={row.date}
-                    className={`border-b border-gray-100 dark:border-gray-800 ${weekStartClass} ${isToday ? 'bg-amber-50 dark:bg-amber-900/20' : ''} ${dim ? 'opacity-50' : ''}`}
-                  >
-                    {renderDayCell(row.date, dayLabel, isToday)}
-                    <td
-                      className={`sticky left-[3.6rem] z-10 ${STICKY_BG} px-1 py-[3px] cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700`}
-                      onClick={(e) => handleDotClick(e, row)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handleDotClick(e, row)
-                        }
-                      }}
-                      tabIndex={0}
-                      aria-label={`Day status: ${displayStatus}. Click to change day type.`}
-                    >
-                      <span className={`inline-block h-2 w-2 rounded-full ${STATUS_DOT[displayStatus]}`} />
-                    </td>
-                    <WorkedHoursCell
-                      date={row.date}
-                      workedHours={parseFloat(row.workedHours.toFixed(2))}
-                      windows={monthData[row.date]?.windows ?? []}
-                      repository={repository}
-                      autoCategory={row.resolvedAutoCategory}
-                      customCategories={customCategories}
-                      categoryOrder={categoryOrder}
-                      categoryDescriptions={categoryDescriptions}
-                      daySummaryData={daySummaryData}
-                      targetHours={row.targetHours}
-                      className={`sticky left-[4.6rem] z-10 ${STICKY_BG}${isToday ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400 font-semibold' : ''}`}
-                    />
-                    <td className="px-1.5 py-[3px] w-12 text-right text-[11px] tabular-nums">
-                      {rowDelta !== null && (
-                        <span className={overtimeTextClass(rowDelta)}>
-                          {rowDelta > 0 ? '+' : ''}
-                          {formatHoursCompact(rowDelta, timeFormat)}
-                        </span>
-                      )}
-                    </td>
-                    <td
-                      className="px-1.5 py-[3px] w-16 border-r border-gray-200 text-right text-[11px] font-semibold tabular-nums dark:border-gray-700"
-                      style={row.accumulatedOvertime !== null ? balanceBarStyle(row.accumulatedOvertime, balScale) : {}}
-                    >
-                      <Tooltip content={<DaySummaryBody {...daySummaryData} timeFormat={timeFormat} dark />}>
-                        <span className="block w-full text-right">
-                          {/* Every past day carries the balance, not only the tracked ones — the
-                              question this column answers is "where do I stand as of this date". */}
-                          {row.accumulatedOvertime !== null && (
-                            <span className={overtimeTextClass(row.accumulatedOvertime)}>
-                              {row.accumulatedOvertime > 0 ? '+' : ''}
-                              {formatHoursCompact(row.accumulatedOvertime, timeFormat)}
-                            </span>
-                          )}
-                        </span>
-                      </Tooltip>
-                    </td>
-                    {allCategories.map((cat, catIdx) => {
-                      const isAutoTarget = cat === row.resolvedAutoCategory
-                      const val = getCellValue(row, cat)
-                      const catBorderClass =
-                        catIdx > 0 ? 'border-l border-dashed border-gray-300 dark:border-gray-600' : ''
-                      return (
-                        <td
-                          key={cat}
-                          className={`px-1 py-[3px] w-14 min-w-[3.5rem] max-w-[3.5rem] cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/40 ${catBorderClass} ${isAutoTarget && row.autoCategoryHours > 0 ? 'bg-indigo-50 dark:bg-indigo-900/40' : ''}`}
-                          onClick={() => {
-                            setActiveDialogDate(row.date)
-                            setActiveDialogCategory(cat)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault()
-                              setActiveDialogDate(row.date)
-                              setActiveDialogCategory(cat)
-                            }
-                          }}
-                          tabIndex={0}
-                        >
-                          <span className="inline-block w-full rounded text-right text-[11px] tabular-nums text-gray-700 dark:text-gray-200">
-                            {val}
-                          </span>
-                        </td>
-                      )
-                    })}
-                    {showOfficeStats && (
-                      <td
-                        className="w-6 border-l border-gray-200 px-1 py-0 text-center text-[10px] dark:border-gray-700"
-                        title={loc}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => cycleLocation(row.date)}
-                          className="w-full py-[3px] hover:bg-gray-100 dark:hover:bg-gray-700"
-                          aria-label={`Location ${row.date}`}
-                        >
-                          {locIcon}
-                        </button>
-                      </td>
-                    )}
-                    <td className="min-w-[6rem] px-1.5 py-[3px] text-[10px] text-gray-500 dark:text-gray-400">
-                      {onNoteChange ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            const rect = e.currentTarget.getBoundingClientRect()
-                            setNotePopover({
-                              date: row.date,
-                              value: note ?? '',
-                              top: rect.bottom + 6,
-                              left: rect.left - 220,
-                            })
-                          }}
-                          className="block w-full truncate text-left hover:underline"
-                          aria-label={`Note for ${row.date}`}
-                          data-tooltip={note ?? 'Add note'}
-                        >
-                          {note || ' '}
-                        </button>
-                      ) : (
-                        <span className="block truncate" title={note ?? ''}>
-                          {note}
-                        </span>
-                      )}
-                    </td>
-                    <ClearCell date={row.date} onClearDay={onClearDay} />
-                  </tr>
-                )
-              })
+              const groupRows = group.rows.map((row) => (
+                <MonthTableDataRow
+                  key={row.date}
+                  row={row}
+                  todayIso={todayIso}
+                  monthData={monthData}
+                  repository={repository}
+                  customCategories={customCategories}
+                  categoryOrder={categoryOrder}
+                  categoryDescriptions={categoryDescriptions}
+                  allCategories={allCategories}
+                  workLocations={workLocations}
+                  defaultWorkLocation={defaultWorkLocation}
+                  dayNotes={dayNotes}
+                  timeFormat={timeFormat}
+                  balScale={balScale}
+                  showOfficeStats={showOfficeStats}
+                  onNoteChange={onNoteChange}
+                  onClearDay={onClearDay}
+                  renderDayCell={renderDayCell}
+                  getCellValue={getCellValue}
+                  onDotClick={handleDotClick}
+                  onCycleLocation={cycleLocation}
+                  onOpenCategoryDialog={(date, category) => {
+                    setActiveDialogDate(date)
+                    setActiveDialogCategory(category)
+                  }}
+                  onOpenNotePopover={setNotePopover}
+                />
+              ))
 
               return (
                 <Fragment key={group.label}>

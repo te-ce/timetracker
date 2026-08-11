@@ -210,6 +210,72 @@ interface DayCellProps {
   onSelectDate: (isoDate: string) => void
 }
 
+interface DayCellVisualState {
+  cellStatus: DisplayStatus | DayStatus
+  isTodayCell: boolean
+  todayRing: string
+  showBar: boolean
+}
+
+// Today wears its real state rather than the neutral 'today' surface — otherwise a day with
+// 6h logged looks exactly like one with nothing. The amber ring carries "this is today".
+function computeDayCellVisualState(
+  status: DayStatus,
+  displayStatus: DisplayStatus | undefined,
+  isToday: boolean,
+): DayCellVisualState {
+  const isTodayCell = isToday || status === 'today'
+  return {
+    cellStatus: isTodayCell ? (displayStatus ?? 'today') : status,
+    isTodayCell,
+    todayRing: isTodayCell ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400' : '',
+    showBar: status !== 'non-working' && status !== 'leave',
+  }
+}
+
+function DayCellTooltipContent({
+  status,
+  summaryData,
+  note,
+  timeFormat,
+}: {
+  status: DayStatus
+  summaryData: DaySummaryData | undefined
+  note: string | undefined
+  timeFormat: TimeFormat
+}) {
+  return (
+    <div>
+      {summaryData ? (
+        <DaySummaryBody {...summaryData} timeFormat={timeFormat} dark />
+      ) : (
+        <p className="font-semibold">{STATUS_NAME[status]}</p>
+      )}
+      {note && <p className="mt-1.5 border-t border-gray-600 pt-1.5 whitespace-pre-wrap text-gray-200">{note}</p>}
+    </div>
+  )
+}
+
+function DayCellBadges({
+  isTodayCell,
+  note,
+  location,
+}: {
+  isTodayCell: boolean
+  note: string | undefined
+  location: WorkLocation | undefined
+}) {
+  return (
+    <span className="flex items-center gap-1 pt-0.5 text-[10px] leading-none" aria-hidden="true">
+      {isTodayCell && (
+        <span className="text-[9px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">Today</span>
+      )}
+      {note && <span>✎</span>}
+      {location === 'Office' && <span>⌂</span>}
+    </span>
+  )
+}
+
 function DayCell({
   iso,
   date,
@@ -225,23 +291,11 @@ function DayCell({
 }: DayCellProps) {
   const label = date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const dots = buildDots(status, displayStatus)
-  const showBar = status !== 'non-working' && status !== 'leave'
-  const isTodayCell = isToday || status === 'today'
-  // Today wears its real state rather than the neutral 'today' surface — otherwise a day with
-  // 6h logged looks exactly like one with nothing. The amber ring carries "this is today".
-  const cellStatus = isTodayCell ? (displayStatus ?? 'today') : status
-  const todayRing = isTodayCell ? ' ring-2 ring-inset ring-amber-500 dark:ring-amber-400' : ''
+  const { cellStatus, isTodayCell, todayRing, showBar } = computeDayCellVisualState(status, displayStatus, isToday)
 
   const hasTooltipContent = summaryData != null || note != null
   const tooltipContent = hasTooltipContent ? (
-    <div>
-      {summaryData ? (
-        <DaySummaryBody {...summaryData} timeFormat={timeFormat} dark />
-      ) : (
-        <p className="font-semibold">{STATUS_NAME[status]}</p>
-      )}
-      {note && <p className="mt-1.5 border-t border-gray-600 pt-1.5 whitespace-pre-wrap text-gray-200">{note}</p>}
-    </div>
+    <DayCellTooltipContent status={status} summaryData={summaryData} note={note} timeFormat={timeFormat} />
   ) : undefined
 
   return (
@@ -259,15 +313,7 @@ function DayCell({
           >
             {date.getDate()}
           </span>
-          <span className="flex items-center gap-1 pt-0.5 text-[10px] leading-none" aria-hidden="true">
-            {isTodayCell && (
-              <span className="text-[9px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                Today
-              </span>
-            )}
-            {note && <span>✎</span>}
-            {location === 'Office' && <span>⌂</span>}
-          </span>
+          <DayCellBadges isTodayCell={isTodayCell} note={note} location={location} />
         </span>
 
         {ledger && <DayLedger ledger={ledger} showBar={showBar} timeFormat={timeFormat} />}

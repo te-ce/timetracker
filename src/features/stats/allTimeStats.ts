@@ -574,21 +574,42 @@ function isDefined<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined
 }
 
-/**
- * Every all-time figure the Stats view shows, derived from whole months of
- * stored data. Days with no tracked hours are excluded from averages and from
- * the balance — the same "tracked days only" rule the month overtime math uses.
- */
-export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
-  const days = flattenDays(input)
-  const tracked = days.filter((d) => d.hours > 0)
+/** Worked hours vs. target across tracked days, and the resulting balance/average. */
+function computeTotals(tracked: DayFacts[]): {
+  totalHours: number
+  balance: number
+  avgHoursPerTrackedDay: number
+} {
   const totalHours = tracked.reduce((sum, d) => sum + d.hours, 0)
   const targetOfTracked = tracked.reduce((sum, d) => sum + d.targetHours, 0)
+  return {
+    totalHours,
+    balance: totalHours - targetOfTracked,
+    avgHoursPerTrackedDay: tracked.length > 0 ? totalHours / tracked.length : 0,
+  }
+}
 
+/** The single longest and shortest tracked days, by hours worked. */
+function computeDayHoursExtremes(tracked: DayFacts[]): {
+  longestDay: DayRecord | null
+  shortestTrackedDay: DayRecord | null
+} {
   const sortedByHours = [...tracked].sort((a, b) => b.hours - a.hours)
   const longest = sortedByHours[0]
   const shortest = sortedByHours.at(-1)
+  return {
+    longestDay: longest ? { date: longest.date, hours: longest.hours } : null,
+    shortestTrackedDay: shortest ? { date: shortest.date, hours: shortest.hours } : null,
+  }
+}
 
+/** Earliest first-start and latest last-end across tracked days, plus their means. */
+function computeStartEndExtremes(tracked: DayFacts[]): {
+  earliestStart: ClockRecord | null
+  latestEnd: ClockRecord | null
+  avgStartMinutes: number | null
+  avgEndMinutes: number | null
+} {
   const starts = tracked.map((d) => d.firstStartMinutes).filter(isDefined)
   const ends = tracked.map((d) => d.lastEndMinutes).filter(isDefined)
   const earliestStartDay = tracked
@@ -598,33 +619,76 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
     .filter((d) => d.lastEndMinutes !== null)
     .sort((a, b) => (b.lastEndMinutes ?? 0) - (a.lastEndMinutes ?? 0))[0]
 
-  const weekdays = buildWeekdayStats(tracked)
-  const busiestWeekday = [...weekdays].filter((w) => w.trackedDays > 0).sort((a, b) => b.hours - a.hours)[0] ?? null
-  const months = buildMonthStats(days)
-  const busiestMonth = [...months].sort((a, b) => b.hours - a.hours)[0] ?? null
-
-  const officeDays = tracked.filter((d) => d.location === 'Office').length
-  const remoteDays = tracked.filter((d) => d.location !== 'Office').length
-  const firstTrackedDate = tracked[0]?.date ?? null
-  const lastTrackedDate = tracked.at(-1)?.date ?? null
-
   return {
-    hasData: tracked.length > 0,
-    totalHours,
-    trackedDays: tracked.length,
-    monthsTracked: months.length,
-    firstTrackedDate,
-    lastTrackedDate,
-    balance: totalHours - targetOfTracked,
-    avgHoursPerTrackedDay: tracked.length > 0 ? totalHours / tracked.length : 0,
-    longestDay: longest ? { date: longest.date, hours: longest.hours } : null,
-    shortestTrackedDay: shortest ? { date: shortest.date, hours: shortest.hours } : null,
     earliestStart: earliestStartDay
       ? { date: earliestStartDay.date, time: formatClock(earliestStartDay.firstStartMinutes ?? 0) }
       : null,
     latestEnd: latestEndDay ? { date: latestEndDay.date, time: formatClock(latestEndDay.lastEndMinutes ?? 0) } : null,
     avgStartMinutes: mean(starts),
     avgEndMinutes: mean(ends),
+  }
+}
+
+/** The most-worked entry of a `{ hours }` collection, or `null` when it's empty. */
+function busiestOf<T extends { hours: number }>(items: T[]): T | null {
+  return [...items].sort((a, b) => b.hours - a.hours)[0] ?? null
+}
+
+/** Office vs. remote split across tracked days, and the office share as a percent. */
+function computeLocationStats(tracked: DayFacts[]): { officeDays: number; remoteDays: number; officePercent: number } {
+  const officeDays = tracked.filter((d) => d.location === 'Office').length
+  const remoteDays = tracked.filter((d) => d.location !== 'Office').length
+  return {
+    officeDays,
+    remoteDays,
+    officePercent: tracked.length > 0 ? Math.round((officeDays / tracked.length) * 100) : 0,
+  }
+}
+
+/** ISO dates of the first and last tracked day, or `null` when nothing is tracked. */
+function computeTrackedDateRange(tracked: DayFacts[]): {
+  firstTrackedDate: string | null
+  lastTrackedDate: string | null
+} {
+  return {
+    firstTrackedDate: tracked[0]?.date ?? null,
+    lastTrackedDate: tracked.at(-1)?.date ?? null,
+  }
+}
+
+/** Calendar days since the first tracked day, or `0` when nothing is tracked yet. */
+function computeTrackingSinceDays(firstTrackedDate: string | null, today: string): number {
+  return firstTrackedDate !== null ? inclusiveDaysBetween(firstTrackedDate, today) : 0
+}
+
+/**
+ * Every all-time figure the Stats view shows, derived from whole months of
+ * stored data. Days with no tracked hours are excluded from averages and from
+ * the balance — the same "tracked days only" rule the month overtime math uses.
+ */
+export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
+  const days = flattenDays(input)
+  const tracked = days.filter((d) => d.hours > 0)
+
+  const weekdays = buildWeekdayStats(tracked)
+  const busiestWeekday = busiestOf(weekdays.filter((w) => w.trackedDays > 0))
+  const months = buildMonthStats(days)
+  const busiestMonth = busiestOf(months)
+
+  const totals = computeTotals(tracked)
+  const { firstTrackedDate, lastTrackedDate } = computeTrackedDateRange(tracked)
+
+  return {
+    hasData: tracked.length > 0,
+    totalHours: totals.totalHours,
+    trackedDays: tracked.length,
+    monthsTracked: months.length,
+    firstTrackedDate,
+    lastTrackedDate,
+    balance: totals.balance,
+    avgHoursPerTrackedDay: totals.avgHoursPerTrackedDay,
+    ...computeDayHoursExtremes(tracked),
+    ...computeStartEndExtremes(tracked),
     weekdays,
     busiestWeekday,
     months,
@@ -632,19 +696,15 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
     categories: buildCategoryStats(tracked),
     longestPeriod: longestPeriodOf(input.months),
     longestStreak: computeLongestStreak(days),
-    location: {
-      officeDays,
-      remoteDays,
-      officePercent: tracked.length > 0 ? Math.round((officeDays / tracked.length) * 100) : 0,
-    },
+    location: computeLocationStats(tracked),
     rhythm: buildRhythmStats(tracked),
     breaks: buildBreakStats(tracked),
     weeks: buildWeekStats(days),
     extremes: buildExtremeStats(days, tracked, input.today),
     discipline: buildDisciplineStats(days),
-    hoursToNextMilestone: nextMilestoneAbove(totalHours) - totalHours,
-    nextMilestone: nextMilestoneAbove(totalHours),
-    trackingSinceDays: firstTrackedDate !== null ? inclusiveDaysBetween(firstTrackedDate, input.today) : 0,
+    hoursToNextMilestone: nextMilestoneAbove(totals.totalHours) - totals.totalHours,
+    nextMilestone: nextMilestoneAbove(totals.totalHours),
+    trackingSinceDays: computeTrackingSinceDays(firstTrackedDate, input.today),
     vacationDays: days.filter((d) => d.dayType === 'Vacation').length,
     sickDays: days.filter((d) => d.dayType === 'SickDay').length,
     daysWorkedOffSchedule: tracked.filter((d) => d.dayType !== 'WorkDay').length,

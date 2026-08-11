@@ -74,6 +74,33 @@ function monthRows(stats: AllTimeStats, format: TimeFormat): StatBarRow[] {
   }))
 }
 
+function RecordsSection({ stats, format }: { stats: AllTimeStats; format: TimeFormat }) {
+  return (
+    <section aria-label="Records" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <HeadlineCard
+        label="Office share"
+        value={`${stats.location.officePercent}%`}
+        detail={`${stats.location.officeDays} of ${stats.trackedDays} tracked days`}
+      />
+      <HeadlineCard
+        label="Longest day"
+        value={stats.longestDay ? formatHours(stats.longestDay.hours, format) : '—'}
+        detail={stats.longestDay ? formatFactDate(stats.longestDay.date) : undefined}
+      />
+      <HeadlineCard
+        label="Shortest day"
+        value={stats.shortestTrackedDay ? formatHours(stats.shortestTrackedDay.hours, format) : '—'}
+        detail={stats.shortestTrackedDay ? formatFactDate(stats.shortestTrackedDay.date) : undefined}
+      />
+      <HeadlineCard
+        label="Typical break"
+        value={formatMinutes(stats.breaks.avgMinutesPerDay)}
+        detail={usualBreakDetail(stats)}
+      />
+    </section>
+  )
+}
+
 export function StatsView() {
   const { stats, isPending } = useAllTimeStats()
   const timeFormat = useTimeFormatStore((s) => s.format)
@@ -127,28 +154,7 @@ export function StatsView() {
         />
       </section>
 
-      <section aria-label="Records" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <HeadlineCard
-          label="Office share"
-          value={`${stats.location.officePercent}%`}
-          detail={`${stats.location.officeDays} of ${stats.trackedDays} tracked days`}
-        />
-        <HeadlineCard
-          label="Longest day"
-          value={stats.longestDay ? formatHours(stats.longestDay.hours, timeFormat) : '—'}
-          detail={stats.longestDay ? formatFactDate(stats.longestDay.date) : undefined}
-        />
-        <HeadlineCard
-          label="Shortest day"
-          value={stats.shortestTrackedDay ? formatHours(stats.shortestTrackedDay.hours, timeFormat) : '—'}
-          detail={stats.shortestTrackedDay ? formatFactDate(stats.shortestTrackedDay.date) : undefined}
-        />
-        <HeadlineCard
-          label="Typical break"
-          value={formatMinutes(stats.breaks.avgMinutesPerDay)}
-          detail={usualBreakDetail(stats)}
-        />
-      </section>
+      <RecordsSection stats={stats} format={timeFormat} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <StatBarList

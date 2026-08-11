@@ -50,18 +50,28 @@ export function dispatchSprintExportNotification(indices: number[]): void {
 
 export const SPRINT_EXPORT_NOTIFY_KEY = 'sprint-export-notified'
 
-export function shouldNotifyToday(today: string, indices: number[], stored: string | null): boolean {
-  if (!stored) return true
+interface StoredExportNotification {
+  date: string
+  indices: unknown[]
+}
+
+function parseStoredExportNotification(stored: string): StoredExportNotification | null {
   try {
     const raw: unknown = JSON.parse(stored)
-    if (typeof raw !== 'object' || raw === null) return true
-    if (!('date' in raw) || !('indices' in raw)) return true
-    if (typeof raw.date !== 'string' || !Array.isArray(raw.indices)) return true
-    if (raw.date !== today) return true
-    const storedIndices: unknown[] = raw.indices
-    const same = storedIndices.length === indices.length && indices.every((v, i) => storedIndices[i] === v)
-    return !same
+    if (typeof raw !== 'object' || raw === null) return null
+    if (!('date' in raw) || !('indices' in raw)) return null
+    if (typeof raw.date !== 'string' || !Array.isArray(raw.indices)) return null
+    return { date: raw.date, indices: raw.indices }
   } catch {
-    return true
+    return null
   }
+}
+
+export function shouldNotifyToday(today: string, indices: number[], stored: string | null): boolean {
+  if (!stored) return true
+  const parsed = parseStoredExportNotification(stored)
+  if (!parsed) return true
+  if (parsed.date !== today) return true
+  const same = parsed.indices.length === indices.length && indices.every((v, i) => parsed.indices[i] === v)
+  return !same
 }

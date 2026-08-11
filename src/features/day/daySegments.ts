@@ -43,40 +43,57 @@ export interface SegmentOptions {
   isToday?: boolean
 }
 
-export function deriveSegments(period: WorkPeriod, now: string, { isToday = true }: SegmentOptions = {}): DaySegment[] {
+function isPeriodRunning(period: WorkPeriod, now: string, isToday: boolean): boolean {
   // A Planned-Stop WorkPeriod (end still in the future) is running just like an
   // open one: it only accrues up to now, but keeps showing its declared end.
-  const running = period.end === null || (isToday && isPlannedStop(period, now))
-  const accrueUntil = running ? now : period.end
-  const periodEnd = accrueUntil ?? now
-  const segments: DaySegment[] = []
-  let mainIndex = 0
-  let cursor = period.start
+  return period.end === null || (isToday && isPlannedStop(period, now))
+}
 
-  function pushMain(start: string, end: string, live: boolean) {
-    const hours = elapsedHours(start, end, { raceToleranceMinutes: 5 })
-    if (hours <= 0) return
-    segments.push({
-      id: `${period.id}:main:${mainIndex++}`,
-      periodId: period.id,
-      category: period.category,
-      start,
-      end: live ? period.end : end,
-      hours,
-      kind: 'main',
-      live,
-      placed: true,
-    })
-  }
-
-  const live = period.subtasks.find(isLiveSubtask)
-  const started = period.subtasks
+function sortedStartedSubtasks(period: WorkPeriod): (WorkPeriodSubtask & { startedAt: string })[] {
+  return period.subtasks
     .filter((s): s is WorkPeriodSubtask & { startedAt: string } => !!s.startedAt)
     .toSorted((a, b) => parseMinutes(a.startedAt) - parseMinutes(b.startedAt))
+}
 
+function pushMainSegment(
+  segments: DaySegment[],
+  period: WorkPeriod,
+  mainIndex: number,
+  start: string,
+  end: string,
+  live: boolean,
+): boolean {
+  const hours = elapsedHours(start, end, { raceToleranceMinutes: 5 })
+  if (hours <= 0) return false
+  segments.push({
+    id: `${period.id}:main:${mainIndex}`,
+    periodId: period.id,
+    category: period.category,
+    start,
+    end: live ? period.end : end,
+    hours,
+    kind: 'main',
+    live,
+    placed: true,
+  })
+  return true
+}
+
+/** Places each started subtask on the timeline, filling the gaps before it with main stretches. */
+function placeStartedSubtasks(
+  segments: DaySegment[],
+  period: WorkPeriod,
+  started: (WorkPeriodSubtask & { startedAt: string })[],
+  live: WorkPeriodSubtask | undefined,
+  now: string,
+): { cursor: string; mainIndex: number } {
+  let cursor = period.start
+  let mainIndex = 0
   for (const subtask of started) {
     const stoppedAt = subtask.stoppedAt ?? now
-    if (parseMinutes(subtask.startedAt) > parseMinutes(cursor)) pushMain(cursor, subtask.startedAt, false)
+    if (parseMinutes(subtask.startedAt) > parseMinutes(cursor)) {
+      if (pushMainSegment(segments, period, mainIndex, cursor, subtask.startedAt, false)) mainIndex++
+    }
     segments.push({
       id: subtask.id,
       periodId: period.id,
@@ -92,9 +109,11 @@ export function deriveSegments(period: WorkPeriod, now: string, { isToday = true
     })
     if (parseMinutes(stoppedAt) > parseMinutes(cursor)) cursor = stoppedAt
   }
+  return { cursor, mainIndex }
+}
 
-  if (parseMinutes(periodEnd) > parseMinutes(cursor)) pushMain(cursor, periodEnd, running && !live)
-
+/** Retro-logged subtasks have no clock time — carve their hours off the main stretches, then list them. */
+function placeRetroSubtasks(segments: DaySegment[], period: WorkPeriod): void {
   const retro = period.subtasks.filter((s) => !s.startedAt)
   carveFromMain(
     segments,
@@ -115,6 +134,22 @@ export function deriveSegments(period: WorkPeriod, now: string, { isToday = true
       note: subtask.note,
     })
   }
+}
+
+export function deriveSegments(period: WorkPeriod, now: string, { isToday = true }: SegmentOptions = {}): DaySegment[] {
+  const running = isPeriodRunning(period, now, isToday)
+  const periodEnd = (running ? now : period.end) ?? now
+  const segments: DaySegment[] = []
+
+  const live = period.subtasks.find(isLiveSubtask)
+  const started = sortedStartedSubtasks(period)
+  const { cursor, mainIndex } = placeStartedSubtasks(segments, period, started, live, now)
+
+  if (parseMinutes(periodEnd) > parseMinutes(cursor)) {
+    pushMainSegment(segments, period, mainIndex, cursor, periodEnd, running && !live)
+  }
+
+  placeRetroSubtasks(segments, period)
 
   return segments
 }

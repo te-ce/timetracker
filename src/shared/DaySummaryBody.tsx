@@ -25,6 +25,72 @@ interface DaySummaryBodyProps extends DaySummaryData {
   dark?: boolean
 }
 
+interface DaySummaryStyles {
+  labelCls: string
+  explanationCls: string
+  dividerCls: string
+  totalCls: string
+  gridCls: string
+  noteCls: string
+}
+
+function getDaySummaryStyles(dark: boolean): DaySummaryStyles {
+  if (dark) {
+    return {
+      labelCls: 'font-semibold',
+      explanationCls: 'mt-0.5 ml-4 text-gray-300',
+      dividerCls: 'mt-1.5 border-t border-gray-600 pt-1.5',
+      totalCls: 'text-gray-300 mb-0.5',
+      gridCls: 'grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-gray-400',
+      noteCls: 'mt-1.5 border-t border-gray-600 pt-1.5 whitespace-pre-wrap text-gray-200',
+    }
+  }
+  return {
+    labelCls: 'text-sm font-semibold text-gray-800 dark:text-gray-200',
+    explanationCls: 'mt-0.5 ml-4 text-xs text-gray-500 dark:text-gray-400',
+    dividerCls: 'mb-3 border-t border-gray-100 dark:border-gray-700 pt-2',
+    totalCls: 'text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1',
+    gridCls: 'grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-xs text-gray-600 dark:text-gray-400',
+    noteCls:
+      'mt-1.5 border-t border-gray-100 dark:border-gray-700 pt-1.5 text-xs whitespace-pre-wrap text-gray-500 dark:text-gray-400',
+  }
+}
+
+function resolveExplanation(leaveType: DaySummaryData['leaveType'], reason: string): string | null {
+  return leaveType ? (LEAVE_TYPE_LABEL[leaveType] ?? null) : reason || null
+}
+
+interface CategoryBreakdownGridProps {
+  categoryBreakdown: Record<string, number>
+  categoryDescriptions: Record<string, string> | undefined
+  timeFormat: TimeFormat
+  gridCls: string
+}
+
+function CategoryBreakdownGrid({
+  categoryBreakdown,
+  categoryDescriptions,
+  timeFormat,
+  gridCls,
+}: CategoryBreakdownGridProps) {
+  return (
+    <div className={gridCls}>
+      {Object.entries(categoryBreakdown).map(([cat, hours]) => {
+        const desc = categoryDescriptions?.[cat]
+        return (
+          <Fragment key={cat}>
+            <span className="text-right tabular-nums">{formatHoursCompact(hours, timeFormat)}</span>
+            <span>
+              {cat}
+              {desc ? ` (${desc})` : ''}
+            </span>
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
 export function DaySummaryBody({
   displayStatus,
   reason,
@@ -36,21 +102,9 @@ export function DaySummaryBody({
   timeFormat,
   dark = false,
 }: DaySummaryBodyProps) {
-  const explanation = leaveType ? (LEAVE_TYPE_LABEL[leaveType] ?? null) : reason || null
+  const explanation = resolveExplanation(leaveType, reason)
   const hasHours = workedHours > 0 || Object.keys(categoryBreakdown).length > 0
-
-  const labelCls = dark ? 'font-semibold' : 'text-sm font-semibold text-gray-800 dark:text-gray-200'
-  const explanationCls = dark ? 'mt-0.5 ml-4 text-gray-300' : 'mt-0.5 ml-4 text-xs text-gray-500 dark:text-gray-400'
-  const dividerCls = dark
-    ? 'mt-1.5 border-t border-gray-600 pt-1.5'
-    : 'mb-3 border-t border-gray-100 dark:border-gray-700 pt-2'
-  const totalCls = dark ? 'text-gray-300 mb-0.5' : 'text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1'
-  const gridCls = dark
-    ? 'grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-gray-400'
-    : 'grid grid-cols-[auto_1fr] items-baseline gap-x-2 gap-y-0.5 text-xs text-gray-600 dark:text-gray-400'
-  const noteCls = dark
-    ? 'mt-1.5 border-t border-gray-600 pt-1.5 whitespace-pre-wrap text-gray-200'
-    : 'mt-1.5 border-t border-gray-100 dark:border-gray-700 pt-1.5 text-xs whitespace-pre-wrap text-gray-500 dark:text-gray-400'
+  const styles = getDaySummaryStyles(dark)
 
   return (
     <div>
@@ -59,31 +113,23 @@ export function DaySummaryBody({
           className={`inline-block h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[displayStatus]}`}
           aria-hidden="true"
         />
-        <span className={labelCls}>{STATUS_LABEL[displayStatus]}</span>
+        <span className={styles.labelCls}>{STATUS_LABEL[displayStatus]}</span>
       </div>
-      {explanation && <p className={explanationCls}>{explanation}</p>}
+      {explanation && <p className={styles.explanationCls}>{explanation}</p>}
 
       {hasHours && (
-        <div className={dividerCls}>
-          <p className={totalCls}>{formatHoursCompact(workedHours, timeFormat)} total</p>
-          <div className={gridCls}>
-            {Object.entries(categoryBreakdown).map(([cat, hours]) => {
-              const desc = categoryDescriptions?.[cat]
-              return (
-                <Fragment key={cat}>
-                  <span className="text-right tabular-nums">{formatHoursCompact(hours, timeFormat)}</span>
-                  <span>
-                    {cat}
-                    {desc ? ` (${desc})` : ''}
-                  </span>
-                </Fragment>
-              )
-            })}
-          </div>
+        <div className={styles.dividerCls}>
+          <p className={styles.totalCls}>{formatHoursCompact(workedHours, timeFormat)} total</p>
+          <CategoryBreakdownGrid
+            categoryBreakdown={categoryBreakdown}
+            categoryDescriptions={categoryDescriptions}
+            timeFormat={timeFormat}
+            gridCls={styles.gridCls}
+          />
         </div>
       )}
 
-      {note && <p className={noteCls}>{note}</p>}
+      {note && <p className={styles.noteCls}>{note}</p>}
     </div>
   )
 }

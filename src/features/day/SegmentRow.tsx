@@ -26,6 +26,89 @@ function timeEditLabel(segment: DaySegment): string {
   return segment.placed ? `Edit ${category} subtask times` : `Edit ${category} subtask duration`
 }
 
+function segmentKindLabel(segment: DaySegment): string {
+  if (segment.kind === 'main') return 'main'
+  return segment.placed ? 'subtask' : 'retro'
+}
+
+interface TimeEditButtonProps {
+  segment: DaySegment
+  overlaps: boolean
+  onEditPeriodTimes: () => void
+  onEditSubtask: () => void
+}
+
+function TimeEditButton({ segment, overlaps, onEditPeriodTimes, onEditSubtask }: TimeEditButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={segment.subtask ? onEditSubtask : onEditPeriodTimes}
+      aria-label={timeEditLabel(segment)}
+      className={`w-24 shrink-0 text-left font-mono text-xs tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
+        overlaps ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
+      }`}
+    >
+      {segment.placed ? `${segment.start}–${segment.end ?? 'now'}` : '· · · ·'}
+    </button>
+  )
+}
+
+interface SegmentHoursProps {
+  segment: DaySegment
+}
+
+function SegmentHours({ segment }: SegmentHoursProps) {
+  const timeFormat = useTimeFormatStore((s) => s.format)
+  return (
+    <span
+      className={`w-14 shrink-0 text-right font-mono text-sm tabular-nums ${
+        segment.live ? 'font-semibold text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
+      }`}
+    >
+      {formatHours(segment.hours, timeFormat)}
+    </span>
+  )
+}
+
+interface SegmentCategoryProps {
+  segment: DaySegment
+  onEditSubtask: () => void
+}
+
+function SegmentCategory({ segment, onEditSubtask }: SegmentCategoryProps) {
+  if (!segment.subtask) return <span className="truncate">{categoryLabel(segment.category)}</span>
+  return (
+    <button
+      type="button"
+      onClick={onEditSubtask}
+      aria-label={`Edit ${categoryLabel(segment.category)} subtask`}
+      className="truncate text-left hover:text-indigo-600 dark:hover:text-indigo-400"
+    >
+      {categoryLabel(segment.category)}
+      {segment.note && <span className="ml-2 text-xs italic text-gray-500 dark:text-gray-400">{segment.note}</span>}
+    </button>
+  )
+}
+
+interface DeleteSubtaskButtonProps {
+  segment: DaySegment
+  onDeleteSubtask: () => void
+}
+
+function DeleteSubtaskButton({ segment, onDeleteSubtask }: DeleteSubtaskButtonProps) {
+  if (!segment.subtask || segment.live) return null
+  return (
+    <button
+      type="button"
+      onClick={onDeleteSubtask}
+      aria-label={`Remove ${categoryLabel(segment.category)} subtask`}
+      className="px-1 text-gray-400 hover:text-red-500 dark:text-gray-500"
+    >
+      ×
+    </button>
+  )
+}
+
 /** One stretch of the day: the period's own category, or a subtask inside it. */
 export function SegmentRow({
   segment,
@@ -59,7 +142,7 @@ export function SegmentRow({
     )
   }
 
-  const kindLabel = segment.kind === 'main' ? 'main' : segment.placed ? 'subtask' : 'retro'
+  const kindLabel = segmentKindLabel(segment)
 
   return (
     <li
@@ -71,47 +154,16 @@ export function SegmentRow({
       <span className="flex w-4 shrink-0 justify-center self-stretch" aria-hidden="true">
         <span className={`w-1 rounded-full ${segment.live ? 'bg-emerald-400' : 'bg-indigo-200 dark:bg-indigo-900'}`} />
       </span>
-      <button
-        type="button"
-        onClick={subtask ? () => setEditing(true) : onEditPeriodTimes}
-        aria-label={timeEditLabel(segment)}
-        className={`w-24 shrink-0 text-left font-mono text-xs tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
-          overlaps ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
-        }`}
-      >
-        {segment.placed ? `${segment.start}–${segment.end ?? 'now'}` : '· · · ·'}
-      </button>
-      <span
-        className={`w-14 shrink-0 text-right font-mono text-sm tabular-nums ${
-          segment.live ? 'font-semibold text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
-        }`}
-      >
-        {formatHours(segment.hours, timeFormat)}
-      </span>
-      {subtask ? (
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          aria-label={`Edit ${categoryLabel(segment.category)} subtask`}
-          className="truncate text-left hover:text-indigo-600 dark:hover:text-indigo-400"
-        >
-          {categoryLabel(segment.category)}
-          {segment.note && <span className="ml-2 text-xs italic text-gray-500 dark:text-gray-400">{segment.note}</span>}
-        </button>
-      ) : (
-        <span className="truncate">{categoryLabel(segment.category)}</span>
-      )}
+      <TimeEditButton
+        segment={segment}
+        overlaps={overlaps}
+        onEditPeriodTimes={onEditPeriodTimes}
+        onEditSubtask={() => setEditing(true)}
+      />
+      <SegmentHours segment={segment} />
+      <SegmentCategory segment={segment} onEditSubtask={() => setEditing(true)} />
       <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">{kindLabel}</span>
-      {subtask && !segment.live && (
-        <button
-          type="button"
-          onClick={onDeleteSubtask}
-          aria-label={`Remove ${categoryLabel(segment.category)} subtask`}
-          className="px-1 text-gray-400 hover:text-red-500 dark:text-gray-500"
-        >
-          ×
-        </button>
-      )}
+      <DeleteSubtaskButton segment={segment} onDeleteSubtask={onDeleteSubtask} />
       {trailing && <span className="ml-auto flex items-center gap-3 text-xs">{trailing}</span>}
     </li>
   )

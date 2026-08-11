@@ -56,36 +56,44 @@ export interface ResolvedAppConfig {
   sprintRoundingMode: 'nearest' | 'up' | 'down'
 }
 
-export function resolveAppConfig(config: AppConfig | undefined): ResolvedAppConfig {
+function pick<T>(value: T | null | undefined, fallback: T): T {
+  return value ?? fallback
+}
+
+function resolveDefinedConfig(config: AppConfig): ResolvedAppConfig {
   return {
-    weekdayHours: config?.weekdayHours ?? DEFAULT_WEEKDAY_HOURS,
-    autoCategory: config?.autoCategory ?? null,
-    federalState: config?.federalState ?? null,
-    sprintLengthDays: config?.sprintLengthDays ?? 14,
-    sprintStartDate: config?.sprintStartDate ?? null,
-    customCategories: config?.customCategories ?? [],
-    categoryOrder: config?.categoryOrder ?? [],
-    defaultWorkLocation: config?.defaultWorkLocation ?? 'Remote',
-    sharepointUrl: config?.sharepointUrl ?? null,
-    targetSheet: config?.targetSheet ?? null,
-    categoryMapping: config?.categoryMapping ?? {},
-    categoryDescriptions: config?.categoryDescriptions ?? {},
-    categoryImportOrder: config?.categoryImportOrder ?? [],
-    localExcelFile: config?.localExcelFile ?? null,
-    launchAtLogin: config?.launchAtLogin ?? false,
-    startMinimized: config?.startMinimized ?? false,
-    closeToTray: config?.closeToTray ?? true,
-    hotkeys: config?.hotkeys ?? defaultHotkeyConfig(),
-    officeStats: config?.officeStats ?? true,
-    showWorkedHoursInNav: config?.showWorkedHoursInNav ?? true,
-    showWorkedHoursInTray: config?.showWorkedHoursInTray ?? true,
-    showWorkedHoursInTrayBreakdown: config?.showWorkedHoursInTrayBreakdown ?? true,
-    remainingTimeReference: config?.remainingTimeReference ?? 'planned-stop',
-    remainingTimeMode: config?.remainingTimeMode ?? 'until-zero-overtime',
-    showTotalWorked: config?.showTotalWorked ?? false,
-    startupView: config?.startupView ?? null,
-    archiveSprintSheet: config?.archiveSprintSheet ?? false,
-    sprintRoundingStep: config?.sprintRoundingStep ?? 0,
-    sprintRoundingMode: config?.sprintRoundingMode ?? 'nearest',
+    weekdayHours: pick(config.weekdayHours, DEFAULT_WEEKDAY_HOURS),
+    autoCategory: pick(config.autoCategory, null),
+    federalState: pick(config.federalState, null),
+    sprintLengthDays: pick(config.sprintLengthDays, 14),
+    sprintStartDate: pick(config.sprintStartDate, null),
+    customCategories: pick(config.customCategories, []),
+    categoryOrder: pick(config.categoryOrder, []),
+    defaultWorkLocation: pick(config.defaultWorkLocation, 'Remote'),
+    sharepointUrl: pick(config.sharepointUrl, null),
+    targetSheet: pick(config.targetSheet, null),
+    categoryMapping: pick(config.categoryMapping, {}),
+    categoryDescriptions: pick(config.categoryDescriptions, {}),
+    categoryImportOrder: pick(config.categoryImportOrder, []),
+    localExcelFile: pick(config.localExcelFile, null),
+    launchAtLogin: pick(config.launchAtLogin, false),
+    startMinimized: pick(config.startMinimized, false),
+    closeToTray: pick(config.closeToTray, true),
+    hotkeys: pick(config.hotkeys, defaultHotkeyConfig()),
+    officeStats: pick(config.officeStats, true),
+    showWorkedHoursInNav: pick(config.showWorkedHoursInNav, true),
+    showWorkedHoursInTray: pick(config.showWorkedHoursInTray, true),
+    showWorkedHoursInTrayBreakdown: pick(config.showWorkedHoursInTrayBreakdown, true),
+    remainingTimeReference: pick(config.remainingTimeReference, 'planned-stop'),
+    remainingTimeMode: pick(config.remainingTimeMode, 'until-zero-overtime'),
+    showTotalWorked: pick(config.showTotalWorked, false),
+    startupView: pick(config.startupView, null),
+    archiveSprintSheet: pick(config.archiveSprintSheet, false),
+    sprintRoundingStep: pick(config.sprintRoundingStep, 0),
+    sprintRoundingMode: pick(config.sprintRoundingMode, 'nearest'),
   }
+}
+
+export function resolveAppConfig(config: AppConfig | undefined): ResolvedAppConfig {
+  return resolveDefinedConfig(config ?? DEFAULT_APP_CONFIG)
 }
