@@ -69,8 +69,14 @@ export async function handleStopSubtask(
 
 export async function handleStopAll(monthRepo: MonthRepository, today: string, windows: WorkPeriod[]): Promise<void> {
   const now = nowHHMM()
+  const active = findActivePeriods(windows, now)
+  const open = active.filter((p) => p.end === null)
+  // A Planned-Stop period already carries a stop time the user set. Only
+  // force-close it early when it is the only thing running; if a genuinely
+  // open period exists, Stop All closes that and leaves the set time alone.
+  const targets = open.length > 0 ? open : active
 
-  for (const period of findActivePeriods(windows, now)) {
+  for (const period of targets) {
     const liveSubtask = period.subtasks.find((s) => s.startedAt && !s.stoppedAt)
     if (liveSubtask) {
       await monthRepo.stopLiveSubtask(today, period.id, liveSubtask.id, now)

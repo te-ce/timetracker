@@ -146,6 +146,15 @@ describe('handleStopAll', () => {
     expect(stopLiveSubtask).toHaveBeenCalledWith('2026-06-09', 'wp2', 's2', expect.any(String))
   })
 
+  it('leaves an already-set stop time untouched while another period is still open', async () => {
+    const closed = makeWindow({ id: 'wp1', start: '09:00', end: '23:59' })
+    const open = makeWindow({ id: 'wp2', start: '23:00', end: null })
+    const { repo, stopWorkPeriod } = makeMockMonthRepo()
+    await handleStopAll(repo, '2026-06-09', [closed, open])
+    expect(stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp2', expect.any(String))
+    expect(stopWorkPeriod).toHaveBeenCalledTimes(1)
+  })
+
   it('force-closes a planned-stop period early when it is the only active one', async () => {
     const planned = makeWindow({ id: 'wp1', start: '09:00', end: '23:59' })
     const { repo, stopWorkPeriod } = makeMockMonthRepo()
