@@ -287,8 +287,8 @@ export function DayTimeline(props: DayTimelineProps) {
     mutations.saveWithAbsorbed.mutate({ date, window: merged, absorbed })
   }
 
-  function startTracking(category: string, startTime?: string) {
-    addPeriod(startTime ?? nowHHMM(), null, category)
+  function startTracking(category: string, startTime: string) {
+    addPeriod(startTime, null, category)
   }
 
   /** Filling a break means the work never actually stopped, so it continues the earlier category. */
@@ -297,9 +297,8 @@ export function DayTimeline(props: DayTimelineProps) {
     addPeriod(dayBreak.start, dayBreak.end, before?.category ?? defaultCategory)
   }
 
-  function stopTracking() {
+  function stopTracking(endTime: string) {
     if (!active) return
-    const endTime = nowHHMM()
     mutations.stopPeriod.mutate({
       date,
       periodId: active.period.id,
@@ -326,16 +325,16 @@ export function DayTimeline(props: DayTimelineProps) {
           mutations.startLiveSubtask.mutate({
             date,
             periodId: active.period.id,
-            subtask: { id: crypto.randomUUID(), category, hours: 0, startedAt: startTime ?? nowHHMM() },
+            subtask: { id: crypto.randomUUID(), category, hours: 0, startedAt: startTime },
           })
         }}
-        onStopSubtask={() => {
+        onStopSubtask={(stoppedAt) => {
           if (!active?.subtask) return
           mutations.stopLiveSubtask.mutate({
             date,
             periodId: active.period.id,
             subtaskId: active.subtask.id,
-            stoppedAt: nowHHMM(),
+            stoppedAt,
           })
         }}
       />

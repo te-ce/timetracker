@@ -4,6 +4,7 @@ import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { CategoryPicker } from './CategoryPicker'
 import { categoryLabel } from './categoryLabel'
 import type { ActiveTracking } from './dayStreamModel'
+import { TimeNowField } from './TimeNowField'
 
 interface TrackingBarProps {
   active: ActiveTracking | undefined
@@ -13,11 +14,11 @@ interface TrackingBarProps {
   categoryDescriptions?: Record<string, string> | undefined
   /** False for a day that is over: live tracking gives way to writing the period down. */
   isToday: boolean
-  onStart: (category: string, startTime?: string) => void
+  onStart: (category: string, startTime: string) => void
   onAddPeriod: (start: string, end: string, category: string) => void
-  onStop: () => void
-  onStartSubtask: (category: string, startTime?: string) => void
-  onStopSubtask: () => void
+  onStop: (stopTime: string) => void
+  onStartSubtask: (category: string, startTime: string) => void
+  onStopSubtask: (stopTime: string) => void
 }
 
 interface LogPastWorkRowProps {
@@ -91,24 +92,22 @@ interface NotTrackingRowProps {
   categories: string[]
   defaultCategory: string
   categoryDescriptions?: Record<string, string> | undefined
-  onStart: (category: string, startTime?: string) => void
+  onStart: (category: string, startTime: string) => void
 }
 
 function NotTrackingRow({ now, categories, defaultCategory, categoryDescriptions, onStart }: NotTrackingRowProps) {
   const [category, setCategory] = useState(defaultCategory)
   const [seenDefault, setSeenDefault] = useState(defaultCategory)
-  const [editingStartTime, setEditingStartTime] = useState(false)
-  const [customStart, setCustomStart] = useState('')
+  const [customStart, setCustomStart] = useState<string | null>(null)
 
   if (defaultCategory !== seenDefault) {
     setSeenDefault(defaultCategory)
     setCategory(defaultCategory)
   }
 
-  const start = (startTime?: string) => {
-    onStart(category, startTime)
-    setEditingStartTime(false)
-    setCustomStart('')
+  const start = () => {
+    onStart(category, customStart ?? now)
+    setCustomStart(null)
   }
 
   return (
@@ -122,57 +121,16 @@ function NotTrackingRow({ now, categories, defaultCategory, categoryDescriptions
         ariaLabel="Category to start"
         categoryDescriptions={categoryDescriptions}
       />
-      {editingStartTime ? (
-        <span className="ml-auto flex items-center gap-2">
-          <input
-            type="time"
-            aria-label="Start time"
-            value={customStart || now}
-            onChange={(e) => setCustomStart(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && start(customStart || now)}
-            className="rounded border px-1.5 py-1 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-          />
-          <button
-            type="button"
-            onClick={() => start(customStart || now)}
-            className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
-          >
-            ▶ Start tracking
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setEditingStartTime(false)
-              setCustomStart('')
-            }}
-            className="text-xs text-gray-500 dark:text-gray-400"
-          >
-            Cancel
-          </button>
-        </span>
-      ) : (
-        <span className="ml-auto inline-flex items-stretch rounded-lg shadow-sm">
-          <button
-            type="button"
-            onClick={() => start()}
-            className="rounded-l-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
-          >
-            ▶ Start tracking at {now}
-          </button>
-          <button
-            type="button"
-            aria-label="Edit start time"
-            title="Edit start time"
-            onClick={() => {
-              setCustomStart(now)
-              setEditingStartTime(true)
-            }}
-            className="rounded-r-lg border-l border-emerald-700/40 bg-emerald-600 px-2 py-1.5 text-sm text-white hover:bg-emerald-700 dark:border-emerald-300/30 dark:bg-emerald-500 dark:hover:bg-emerald-400"
-          >
-            ✎
-          </button>
-        </span>
-      )}
+      <span className="ml-auto flex items-center gap-2">
+        <TimeNowField now={now} value={customStart} onChange={setCustomStart} ariaLabel="Start time" />
+        <button
+          type="button"
+          onClick={start}
+          className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+        >
+          ▶ Start tracking
+        </button>
+      </span>
     </div>
   )
 }
@@ -182,9 +140,9 @@ interface ActiveTrackingRowProps {
   now: string
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
-  onStop: () => void
-  onStartSubtask: (category: string, startTime?: string) => void
-  onStopSubtask: () => void
+  onStop: (stopTime: string) => void
+  onStartSubtask: (category: string, startTime: string) => void
+  onStopSubtask: (stopTime: string) => void
 }
 
 function ActiveTrackingRow({
@@ -199,8 +157,9 @@ function ActiveTrackingRow({
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [subtaskCategory, setSubtaskCategory] = useState(active.period.category)
   const [seenPeriodCategory, setSeenPeriodCategory] = useState(active.period.category)
-  const [editingSubtaskStartTime, setEditingSubtaskStartTime] = useState(false)
-  const [customSubtaskStart, setCustomSubtaskStart] = useState('')
+  const [customSubtaskStart, setCustomSubtaskStart] = useState<string | null>(null)
+  const [customSubtaskStop, setCustomSubtaskStop] = useState<string | null>(null)
+  const [customStop, setCustomStop] = useState<string | null>(null)
 
   if (active.period.category !== seenPeriodCategory) {
     setSeenPeriodCategory(active.period.category)
@@ -208,9 +167,8 @@ function ActiveTrackingRow({
   }
 
   const startSubtask = () => {
-    onStartSubtask(subtaskCategory, editingSubtaskStartTime ? customSubtaskStart || now : undefined)
-    setEditingSubtaskStartTime(false)
-    setCustomSubtaskStart('')
+    onStartSubtask(subtaskCategory, customSubtaskStart ?? now)
+    setCustomSubtaskStart(null)
   }
 
   return (
@@ -225,13 +183,24 @@ function ActiveTrackingRow({
       </span>
       <span className="ml-auto flex items-center gap-2">
         {active.subtask ? (
-          <button
-            type="button"
-            onClick={onStopSubtask}
-            className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
-          >
-            ■ Stop subtask → back to {categoryLabel(active.period.category)}
-          </button>
+          <span className="flex items-center gap-2">
+            <TimeNowField
+              now={now}
+              value={customSubtaskStop}
+              onChange={setCustomSubtaskStop}
+              ariaLabel="Subtask stop time"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                onStopSubtask(customSubtaskStop ?? now)
+                setCustomSubtaskStop(null)
+              }}
+              className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+            >
+              ■ Stop subtask → back to {categoryLabel(active.period.category)}
+            </button>
+          </span>
         ) : (
           <span className="flex items-center gap-2">
             <CategoryPicker
@@ -242,58 +211,31 @@ function ActiveTrackingRow({
               ariaLabel="Subtask category"
               categoryDescriptions={categoryDescriptions}
             />
-            {editingSubtaskStartTime && (
-              <input
-                type="time"
-                aria-label="Subtask start time"
-                value={customSubtaskStart || now}
-                onChange={(e) => setCustomSubtaskStart(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && startSubtask()}
-                className="rounded border px-1.5 py-1 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-              />
-            )}
-            <span className="inline-flex items-stretch rounded-lg shadow-sm">
-              <button
-                type="button"
-                onClick={startSubtask}
-                className="inline-flex h-7 items-center justify-center rounded-l-lg border border-emerald-300 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
-              >
-                ▶ Start subtask
-              </button>
-              <button
-                type="button"
-                aria-label="Edit subtask start time"
-                title="Edit subtask start time"
-                onClick={() => {
-                  setCustomSubtaskStart(now)
-                  setEditingSubtaskStartTime(true)
-                }}
-                className="inline-flex h-7 items-center justify-center rounded-r-lg border border-l-0 border-emerald-300 px-1.5 text-sm text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
-              >
-                ✎
-              </button>
-            </span>
-            {editingSubtaskStartTime && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingSubtaskStartTime(false)
-                  setCustomSubtaskStart('')
-                }}
-                className="text-sm text-gray-500 dark:text-gray-400"
-              >
-                Cancel
-              </button>
-            )}
+            <TimeNowField
+              now={now}
+              value={customSubtaskStart}
+              onChange={setCustomSubtaskStart}
+              ariaLabel="Subtask start time"
+            />
+            <button
+              type="button"
+              onClick={startSubtask}
+              className="inline-flex h-7 items-center justify-center rounded-lg border border-emerald-300 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+            >
+              ▶ Start subtask
+            </button>
           </span>
         )}
-        <button
-          type="button"
-          onClick={onStop}
-          className="inline-flex h-7 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
-        >
-          ■ Stop work
-        </button>
+        <span className="flex items-center gap-2">
+          <TimeNowField now={now} value={customStop} onChange={setCustomStop} ariaLabel="Stop time" />
+          <button
+            type="button"
+            onClick={() => onStop(customStop ?? now)}
+            className="inline-flex h-7 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
+          >
+            ■ Stop work
+          </button>
+        </span>
       </span>
     </div>
   )
