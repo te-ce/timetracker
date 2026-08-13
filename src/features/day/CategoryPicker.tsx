@@ -26,7 +26,7 @@ export function CategoryPicker({
   }, [focusOnMount])
 
   const selectClass = compact
-    ? 'text-sm rounded border bg-transparent pl-2 pr-6 py-1 dark:border-gray-600 dark:text-gray-100 max-w-[10rem]'
+    ? 'h-7 text-sm rounded border bg-transparent pl-2 pr-6 dark:border-gray-600 dark:text-gray-100 max-w-[10rem]'
     : 'text-sm rounded border bg-transparent pl-2 pr-6 py-1.5 dark:border-gray-600 dark:text-gray-100 min-w-[8rem] max-w-[14rem]'
 
   return (

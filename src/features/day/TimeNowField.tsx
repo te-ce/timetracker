@@ -13,7 +13,7 @@ export function TimeNowField({ now, value, onChange, ariaLabel }: TimeNowFieldPr
         aria-label={ariaLabel}
         value={value ?? now}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded border px-1.5 py-1 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
+        className="h-7 rounded border bg-transparent px-1.5 font-mono text-sm dark:border-gray-600 dark:text-gray-100"
       />
       {value !== null && (
         <button
