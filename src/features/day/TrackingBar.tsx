@@ -157,9 +157,7 @@ function ActiveTrackingRow({
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [subtaskCategory, setSubtaskCategory] = useState(active.period.category)
   const [seenPeriodCategory, setSeenPeriodCategory] = useState(active.period.category)
-  const [customSubtaskStart, setCustomSubtaskStart] = useState<string | null>(null)
-  const [customSubtaskStop, setCustomSubtaskStop] = useState<string | null>(null)
-  const [customStop, setCustomStop] = useState<string | null>(null)
+  const [customTime, setCustomTime] = useState<string | null>(null)
 
   if (active.period.category !== seenPeriodCategory) {
     setSeenPeriodCategory(active.period.category)
@@ -167,8 +165,18 @@ function ActiveTrackingRow({
   }
 
   const startSubtask = () => {
-    onStartSubtask(subtaskCategory, customSubtaskStart ?? now)
-    setCustomSubtaskStart(null)
+    onStartSubtask(subtaskCategory, customTime ?? now)
+    setCustomTime(null)
+  }
+
+  const stopSubtask = () => {
+    onStopSubtask(customTime ?? now)
+    setCustomTime(null)
+  }
+
+  const stopWork = () => {
+    onStop(customTime ?? now)
+    setCustomTime(null)
   }
 
   return (
@@ -182,27 +190,17 @@ function ActiveTrackingRow({
         {active.subtask ? 'subtask' : 'main'} · since {active.since}
       </span>
       <span className="ml-auto flex items-center gap-2">
+        <TimeNowField now={now} value={customTime} onChange={setCustomTime} ariaLabel="Time" />
         {active.subtask ? (
-          <span className="flex items-center gap-2">
-            <TimeNowField
-              now={now}
-              value={customSubtaskStop}
-              onChange={setCustomSubtaskStop}
-              ariaLabel="Subtask stop time"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                onStopSubtask(customSubtaskStop ?? now)
-                setCustomSubtaskStop(null)
-              }}
-              className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
-            >
-              ■ Stop subtask → back to {categoryLabel(active.period.category)}
-            </button>
-          </span>
+          <button
+            type="button"
+            onClick={stopSubtask}
+            className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+          >
+            ■ Stop subtask → back to {categoryLabel(active.period.category)}
+          </button>
         ) : (
-          <span className="flex items-center gap-2">
+          <>
             <CategoryPicker
               value={subtaskCategory}
               categories={categories}
@@ -211,12 +209,6 @@ function ActiveTrackingRow({
               ariaLabel="Subtask category"
               categoryDescriptions={categoryDescriptions}
             />
-            <TimeNowField
-              now={now}
-              value={customSubtaskStart}
-              onChange={setCustomSubtaskStart}
-              ariaLabel="Subtask start time"
-            />
             <button
               type="button"
               onClick={startSubtask}
@@ -224,18 +216,15 @@ function ActiveTrackingRow({
             >
               ▶ Start subtask
             </button>
-          </span>
+          </>
         )}
-        <span className="flex items-center gap-2">
-          <TimeNowField now={now} value={customStop} onChange={setCustomStop} ariaLabel="Stop time" />
-          <button
-            type="button"
-            onClick={() => onStop(customStop ?? now)}
-            className="inline-flex h-7 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
-          >
-            ■ Stop work
-          </button>
-        </span>
+        <button
+          type="button"
+          onClick={stopWork}
+          className="inline-flex h-7 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
+        >
+          ■ Stop work
+        </button>
       </span>
     </div>
   )

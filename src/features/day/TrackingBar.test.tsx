@@ -70,7 +70,7 @@ describe('TrackingBar', () => {
         onStopSubtask={() => {}}
       />,
     )
-    expect(screen.getByLabelText('Stop time')).toHaveValue('10:30')
+    expect(screen.getByLabelText('Time')).toHaveValue('10:30')
     fireEvent.click(screen.getByRole('button', { name: /stop work/i }))
     expect(onStop).toHaveBeenCalledWith('10:30')
   })
@@ -91,7 +91,7 @@ describe('TrackingBar', () => {
         onStopSubtask={() => {}}
       />,
     )
-    fireEvent.change(screen.getByLabelText('Stop time'), { target: { value: '10:45' } })
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '10:45' } })
     fireEvent.click(screen.getByRole('button', { name: /stop work/i }))
     expect(onStop).toHaveBeenCalledWith('10:45')
   })
@@ -112,7 +112,7 @@ describe('TrackingBar', () => {
         onStopSubtask={() => {}}
       />,
     )
-    fireEvent.change(screen.getByLabelText('Subtask start time'), { target: { value: '10:20' } })
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '10:20' } })
     fireEvent.click(screen.getByRole('button', { name: /start subtask/i }))
     expect(onStartSubtask).toHaveBeenCalledWith('Work', '10:20')
   })
@@ -137,7 +137,7 @@ describe('TrackingBar', () => {
         onStopSubtask={onStopSubtask}
       />,
     )
-    fireEvent.change(screen.getByLabelText('Subtask stop time'), { target: { value: '10:25' } })
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '10:25' } })
     fireEvent.click(screen.getByRole('button', { name: /stop subtask/i }))
     expect(onStopSubtask).toHaveBeenCalledWith('10:25')
   })

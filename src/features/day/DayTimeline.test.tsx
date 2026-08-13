@@ -215,7 +215,7 @@ describe('DayTimeline', () => {
 
     // When the user sets a custom subtask start time
     await userEvent.selectOptions(await screen.findByLabelText(/subtask category/i), 'Review')
-    fireEvent.change(screen.getByLabelText(/^subtask start time$/i), { target: { value: '10:45' } })
+    fireEvent.change(screen.getByLabelText(/^time$/i), { target: { value: '10:45' } })
     await userEvent.click(screen.getByRole('button', { name: /start subtask/i }))
 
     // Then the live subtask begins at that time
