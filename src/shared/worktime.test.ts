@@ -11,6 +11,7 @@ import {
   calculateProjectedWorkedHours,
   derivePlannedStopState,
   elapsedHours,
+  elapsedHoursSince,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
@@ -45,6 +46,24 @@ describe('elapsedHours', () => {
 
   it('with race tolerance, a negative diff beyond the window still wraps', () => {
     expect(elapsedHours('09:10', '09:00', { raceToleranceMinutes: 5 })).toBeCloseTo(23.833, 3)
+  })
+})
+
+describe('elapsedHoursSince', () => {
+  it('returns hours between since and a wall-clock Date', () => {
+    expect(elapsedHoursSince('09:00', new Date(2026, 4, 25, 10, 30, 0))).toBe(1.5)
+  })
+
+  it('includes sub-minute precision from seconds', () => {
+    expect(elapsedHoursSince('09:00', new Date(2026, 4, 25, 9, 0, 30))).toBeCloseTo(30 / 3600, 6)
+  })
+
+  it('wraps past midnight when the current time is before since', () => {
+    expect(elapsedHoursSince('23:00', new Date(2026, 4, 25, 1, 0, 0))).toBe(2)
+  })
+
+  it('returns 0 right at since', () => {
+    expect(elapsedHoursSince('09:00', new Date(2026, 4, 25, 9, 0, 0))).toBe(0)
   })
 })
 

@@ -43,6 +43,20 @@ export function elapsedHours(start: string, end: string, options: ElapsedHoursOp
   return adjusted / 60
 }
 
+/**
+ * Hours between `since` ("HH:MM") and a wall-clock Date, sub-minute precision
+ * included. Used for a live elapsed display that ticks faster than the
+ * app's minute-grained `now`, so it needs real seconds rather than a second
+ * HH:MM string to diff against.
+ */
+export function elapsedHoursSince(since: string, at: Date): number {
+  const sinceMinutes = parseMinutes(since)
+  const atMinutes = at.getHours() * 60 + at.getMinutes() + at.getSeconds() / 60 + at.getMilliseconds() / 60_000
+  const dayMinutes = 24 * 60
+  const diff = (((atMinutes - sinceMinutes) % dayMinutes) + dayMinutes) % dayMinutes
+  return diff / 60
+}
+
 export function parseDurationInput(raw: string): number | null {
   const trimmed = raw.trim()
   const hhmmMatch = /^(\d{1,2}):(\d{2})$/.exec(trimmed)

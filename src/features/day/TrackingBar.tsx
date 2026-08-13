@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { CategoryPicker } from './CategoryPicker'
 import { categoryLabel } from './categoryLabel'
 import type { ActiveTracking } from './dayStreamModel'
+import { LiveElapsed } from './LiveElapsed'
 import { TimeNowField } from './TimeNowField'
 
 interface TrackingBarProps {
@@ -183,7 +183,7 @@ function ActiveTrackingRow({
     <div className="flex flex-wrap items-center gap-3 rounded-lg border border-emerald-400 bg-emerald-50 px-3 py-2 text-sm dark:border-emerald-700 dark:bg-emerald-950/30">
       <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" aria-hidden="true" />
       <span className="font-mono text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
-        {formatHours(active.elapsed, timeFormat)}
+        <LiveElapsed since={active.since} timeFormat={timeFormat} />
       </span>
       <span className="font-medium text-gray-800 dark:text-gray-100">{categoryLabel(active.category)}</span>
       <span className="text-xs text-gray-500 dark:text-gray-400">
