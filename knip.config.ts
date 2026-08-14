@@ -13,6 +13,10 @@ const config: KnipConfig = {
     'src/features/month/index.ts',
     'src/features/table/index.ts',
     'src/features/excel/index.ts',
+    // Ambient type declarations (CONTRIBUTING.md: "Adding browser APIs not in TypeScript's DOM
+    // lib") — never imported, only picked up globally by tsc, so knip sees no reference to them.
+    'src/types/electron.d.ts',
+    'src/types/file-system-access.d.ts',
   ],
   ignoreBinaries: [
     // macOS system binary used by scripts/generate-icons.mjs, not an npm package
