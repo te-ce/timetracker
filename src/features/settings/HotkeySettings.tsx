@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import {
+  acceleratorFromKeyEvent,
   defaultHotkeyConfig,
   getEffectiveShortcut,
   HOTKEY_DEFAULTS,
@@ -44,10 +45,12 @@ function KeyCaptureField({
   currentKey,
   onCapture,
   actionLabel,
+  captureValue = (e) => e.key,
 }: {
   currentKey: string | null
   onCapture: (key: string) => void
   actionLabel: string
+  captureValue?: (e: React.KeyboardEvent<HTMLInputElement>) => string | null
 }) {
   const [recording, setRecording] = useState(false)
 
@@ -67,7 +70,9 @@ function KeyCaptureField({
         className="w-32 rounded border px-2 py-1 text-sm text-center dark:bg-gray-700 dark:border-gray-500"
         onKeyDown={(e) => {
           e.preventDefault()
-          onCapture(e.key)
+          const value = captureValue(e)
+          if (value === null) return
+          onCapture(value)
           setRecording(false)
         }}
         onBlur={() => setRecording(false)}
@@ -85,6 +90,10 @@ function KeyCaptureField({
       {currentKey === null ? <span className="text-gray-400">disabled</span> : <kbd>{currentKey}</kbd>}
     </button>
   )
+}
+
+function captureAccelerator(e: React.KeyboardEvent<HTMLInputElement>): string | null {
+  return acceleratorFromKeyEvent(e)
 }
 
 export function HotkeySettings({ repository }: Props) {
@@ -110,13 +119,15 @@ export function HotkeySettings({ repository }: Props) {
   }
 
   function saveGlobal(value: string | null) {
-    mutation.mutate({ ...hotkeys, globalToggle: value })
-    void window.electronAPI?.hotkey.setGlobal(value)
+    void mutation
+      .mutateAsync({ ...hotkeys, globalToggle: value })
+      .then(() => window.electronAPI?.hotkey.setGlobal(value))
   }
 
   function savePresentingMode(value: string | null) {
-    mutation.mutate({ ...hotkeys, presentingMode: value })
-    void window.electronAPI?.hotkey.setPresenting(value)
+    void mutation
+      .mutateAsync({ ...hotkeys, presentingMode: value })
+      .then(() => window.electronAPI?.hotkey.setPresenting(value))
   }
 
   return (
@@ -127,25 +138,20 @@ export function HotkeySettings({ repository }: Props) {
           <div className="flex items-center justify-between">
             <span className="text-sm dark:text-gray-300">Toggle tracking</span>
             <div className="flex items-center gap-2">
-              <kbd className="rounded border px-2 py-1 text-sm dark:border-gray-500">
-                {hotkeys.globalToggle ?? 'disabled'}
-              </kbd>
-              <button
-                type="button"
-                aria-label="Disable global hotkey"
-                onClick={() => saveGlobal(null)}
-                className="text-xs text-red-500 hover:text-red-700"
-              >
-                Disable
-              </button>
-              {hotkeys.globalToggle === null && (
+              <KeyCaptureField
+                currentKey={hotkeys.globalToggle}
+                actionLabel="Toggle tracking"
+                captureValue={captureAccelerator}
+                onCapture={(value) => saveGlobal(value)}
+              />
+              {hotkeys.globalToggle !== null && (
                 <button
                   type="button"
-                  aria-label="Re-enable global hotkey"
-                  onClick={() => saveGlobal(HOTKEY_DEFAULTS.globalToggle)}
-                  className="text-xs text-indigo-500 hover:text-indigo-700"
+                  aria-label="Disable global hotkey"
+                  onClick={() => saveGlobal(null)}
+                  className="text-xs text-red-500 hover:text-red-700"
                 >
-                  Re-enable
+                  Disable
                 </button>
               )}
             </div>
@@ -153,9 +159,12 @@ export function HotkeySettings({ repository }: Props) {
           <div className="flex items-center justify-between">
             <span className="text-sm dark:text-gray-300">Toggle privacy mode</span>
             <div className="flex items-center gap-2">
-              <kbd className="rounded border px-2 py-1 text-sm dark:border-gray-500">
-                {hotkeys.presentingMode ?? 'disabled'}
-              </kbd>
+              <KeyCaptureField
+                currentKey={hotkeys.presentingMode}
+                actionLabel="privacy mode"
+                captureValue={captureAccelerator}
+                onCapture={(value) => savePresentingMode(value)}
+              />
               {hotkeys.presentingMode !== null && (
                 <button
                   type="button"
@@ -164,16 +173,6 @@ export function HotkeySettings({ repository }: Props) {
                   className="text-xs text-red-500 hover:text-red-700"
                 >
                   Disable
-                </button>
-              )}
-              {hotkeys.presentingMode === null && (
-                <button
-                  type="button"
-                  aria-label="Re-enable privacy mode shortcut"
-                  onClick={() => savePresentingMode(HOTKEY_DEFAULTS.presentingMode)}
-                  className="text-xs text-indigo-500 hover:text-indigo-700"
-                >
-                  Re-enable
                 </button>
               )}
             </div>

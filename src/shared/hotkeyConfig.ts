@@ -17,12 +17,12 @@ export interface HotkeyConfig {
 }
 
 export const HOTKEY_DEFAULTS: {
-  globalToggle: string
-  presentingMode: string
+  globalToggle: null
+  presentingMode: null
   inApp: Record<InAppShortcutAction, string>
 } = {
-  globalToggle: 'CommandOrControl+Shift+Space',
-  presentingMode: 'CommandOrControl+Shift+P',
+  globalToggle: null,
+  presentingMode: null,
   inApp: {
     monthView: 'M',
     tableView: 'G',
@@ -65,4 +65,40 @@ export function getEffectiveShortcut(config: HotkeyConfig, action: InAppShortcut
     return config.inApp[action] ?? null
   }
   return HOTKEY_DEFAULTS.inApp[action]
+}
+
+const ACCELERATOR_MODIFIER_KEYS = new Set(['Control', 'Shift', 'Alt', 'Meta'])
+
+const ACCELERATOR_NAMED_KEYS: Record<string, string> = {
+  ' ': 'Space',
+  ArrowLeft: 'Left',
+  ArrowRight: 'Right',
+  ArrowUp: 'Up',
+  ArrowDown: 'Down',
+  Escape: 'Esc',
+}
+
+export interface CapturedKeyEvent {
+  key: string
+  ctrlKey: boolean
+  metaKey: boolean
+  shiftKey: boolean
+  altKey: boolean
+}
+
+/**
+ * Converts a captured keydown event into an Electron `globalShortcut` accelerator string
+ * (e.g. "CommandOrControl+Shift+P"). Returns null for a bare modifier keypress, since a
+ * global accelerator needs a non-modifier key to anchor it.
+ */
+export function acceleratorFromKeyEvent(e: CapturedKeyEvent): string | null {
+  if (ACCELERATOR_MODIFIER_KEYS.has(e.key)) return null
+
+  const parts: string[] = []
+  if (e.ctrlKey || e.metaKey) parts.push('CommandOrControl')
+  if (e.altKey) parts.push('Alt')
+  if (e.shiftKey) parts.push('Shift')
+  parts.push(ACCELERATOR_NAMED_KEYS[e.key] ?? (e.key.length === 1 ? e.key.toUpperCase() : e.key))
+
+  return parts.join('+')
 }
