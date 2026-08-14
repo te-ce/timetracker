@@ -3,9 +3,10 @@ interface TimeNowFieldProps {
   value: string | null
   onChange: (value: string | null) => void
   ariaLabel: string
+  onConfirm?: () => void
 }
 
-export function TimeNowField({ now, value, onChange, ariaLabel }: TimeNowFieldProps) {
+export function TimeNowField({ now, value, onChange, ariaLabel, onConfirm }: TimeNowFieldProps) {
   return (
     <span className="inline-flex items-center gap-1">
       <input
@@ -13,6 +14,7 @@ export function TimeNowField({ now, value, onChange, ariaLabel }: TimeNowFieldPr
         aria-label={ariaLabel}
         value={value ?? now}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && onConfirm?.()}
         className="h-7 rounded border bg-transparent px-1.5 font-mono text-sm dark:border-gray-600 dark:text-gray-100"
       />
       {value !== null && (

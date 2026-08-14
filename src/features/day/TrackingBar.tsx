@@ -122,7 +122,13 @@ function NotTrackingRow({ now, categories, defaultCategory, categoryDescriptions
         categoryDescriptions={categoryDescriptions}
       />
       <span className="ml-auto flex items-center gap-2">
-        <TimeNowField now={now} value={customStart} onChange={setCustomStart} ariaLabel="Start time" />
+        <TimeNowField
+          now={now}
+          value={customStart}
+          onChange={setCustomStart}
+          ariaLabel="Start time"
+          onConfirm={start}
+        />
         <button
           type="button"
           onClick={start}
@@ -190,7 +196,7 @@ function ActiveTrackingRow({
         {active.subtask ? 'subtask' : 'main'} · since {active.since}
       </span>
       <span className="ml-auto flex items-center gap-2">
-        <TimeNowField now={now} value={customTime} onChange={setCustomTime} ariaLabel="Time" />
+        <TimeNowField now={now} value={customTime} onChange={setCustomTime} ariaLabel="Time" onConfirm={stopWork} />
         {active.subtask ? (
           <button
             type="button"

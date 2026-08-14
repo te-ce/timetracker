@@ -15,4 +15,11 @@ describe('TimeNowField', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reset to now' }))
     expect(onChange).toHaveBeenCalledWith(null)
   })
+
+  it('calls onConfirm when Enter is pressed', () => {
+    const onConfirm = vi.fn()
+    render(<TimeNowField now="09:00" value="10:15" onChange={() => {}} ariaLabel="Start time" onConfirm={onConfirm} />)
+    fireEvent.keyDown(screen.getByLabelText('Start time'), { key: 'Enter' })
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
 })
