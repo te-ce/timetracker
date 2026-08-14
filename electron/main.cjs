@@ -309,9 +309,6 @@ function createWindow() {
   })
 }
 
-const DEFAULT_GLOBAL_HOTKEY = 'CommandOrControl+Shift+Space'
-const DEFAULT_PRESENTING_MODE_HOTKEY = 'CommandOrControl+Shift+P'
-
 function registerGlobalHotkeys({ globalToggle, presentingMode }) {
   globalShortcut.unregisterAll()
 
@@ -335,9 +332,26 @@ function registerGlobalHotkeys({ globalToggle, presentingMode }) {
   }
 }
 
+// The renderer's storage mode (default userData JSON vs. a user-chosen local folder) decides
+// where config.json actually lives. That mode itself, and the chosen folder path, are mirrored
+// into the default userData storage by the renderer (see bootstrapConfig.ts /
+// electron-local-folder-adapter.ts) specifically so the main process can resolve this without
+// ever having access to renderer localStorage.
+function configJsonPath() {
+  try {
+    if (JSON.parse(fs.readFileSync(storagePath('local-folder-mode'), 'utf8')) === true) {
+      const basePath = JSON.parse(fs.readFileSync(storagePath('local-folder-path'), 'utf8'))
+      if (typeof basePath === 'string' && basePath) return localFolderPath(basePath, 'config.json')
+    }
+  } catch {
+    // Flag/path not written yet (or malformed) — fall back to default storage below.
+  }
+  return storagePath('config.json')
+}
+
 function loadConfig() {
   try {
-    const raw = fs.readFileSync(storagePath('config.json'), 'utf8')
+    const raw = fs.readFileSync(configJsonPath(), 'utf8')
     return JSON.parse(raw)
   } catch {
     return {}
@@ -346,18 +360,17 @@ function loadConfig() {
 
 function loadGlobalHotkey() {
   const config = loadConfig()
-  return config?.hotkeys?.globalToggle !== undefined ? config.hotkeys.globalToggle : DEFAULT_GLOBAL_HOTKEY
+  return config?.hotkeys?.globalToggle ?? null
 }
 
 function loadPresentingModeHotkey() {
   const config = loadConfig()
-  return config?.hotkeys?.presentingMode !== undefined ? config.hotkeys.presentingMode : DEFAULT_PRESENTING_MODE_HOTKEY
+  return config?.hotkeys?.presentingMode ?? null
 }
 
 async function syncAutoLaunch() {
   try {
-    const raw = fs.readFileSync(storagePath('config.json'), 'utf8')
-    const config = JSON.parse(raw)
+    const config = loadConfig()
     const shouldEnable = config?.launchAtLogin === true
     const isEnabled = await autoLauncher.isEnabled()
     if (shouldEnable && !isEnabled) await autoLauncher.enable()

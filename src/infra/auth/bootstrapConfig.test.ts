@@ -1,10 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   readBootstrapConfig,
   writeBootstrapConfig,
   clearBootstrapConfig,
   isSetupSkipped,
   skipSetup,
+  setLocalFolderMode,
+  LOCAL_FOLDER_MODE_STORAGE_KEY,
 } from './bootstrapConfig'
 
 const STORAGE_KEY = 'msal-bootstrap-config'
@@ -20,6 +22,10 @@ beforeEach(() => {
     writable: true,
     configurable: true,
   })
+})
+
+afterEach(() => {
+  delete window.electronAPI
 })
 
 describe('readBootstrapConfig', () => {
@@ -64,6 +70,30 @@ describe('clearBootstrapConfig', () => {
     clearBootstrapConfig()
     expect(readBootstrapConfig()).toBeNull()
     expect(isSetupSkipped()).toBe(false)
+  })
+
+  it('mirrors the local-folder-mode flag to Electron storage so the main process can see it', () => {
+    const put = vi.fn(() => Promise.resolve())
+    window.electronAPI = {
+      storage: { get: () => Promise.resolve(null), put, delete: () => Promise.resolve() },
+    } as unknown as NonNullable<typeof window.electronAPI>
+    clearBootstrapConfig()
+    expect(put).toHaveBeenCalledWith(LOCAL_FOLDER_MODE_STORAGE_KEY, false)
+  })
+})
+
+describe('setLocalFolderMode', () => {
+  it('mirrors the local-folder-mode flag to Electron storage so the main process can see it', () => {
+    const put = vi.fn(() => Promise.resolve())
+    window.electronAPI = {
+      storage: { get: () => Promise.resolve(null), put, delete: () => Promise.resolve() },
+    } as unknown as NonNullable<typeof window.electronAPI>
+    setLocalFolderMode()
+    expect(put).toHaveBeenCalledWith(LOCAL_FOLDER_MODE_STORAGE_KEY, true)
+  })
+
+  it('does not throw when Electron APIs are unavailable (browser mode)', () => {
+    expect(() => setLocalFolderMode()).not.toThrow()
   })
 })
 
