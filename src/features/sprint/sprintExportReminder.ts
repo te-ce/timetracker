@@ -1,4 +1,4 @@
-import { getSprintBoundaries, getSprintForDate } from './sprint'
+import { getSprintBoundaries, getSprintForDate, sprintDayProgress } from './sprint'
 import type { Sprint, SprintConfig } from './sprint'
 
 export interface SprintReminderData {
@@ -31,6 +31,23 @@ export function sprintExportBadgeLabel(sprints: Sprint[]): string {
 export function sprintExportTooltipText(sprints: Sprint[]): string | null {
   if (sprints.length <= 1) return null
   return `Sprint ${sprints.map((s) => s.index + 1).join(', ')}`
+}
+
+export type SprintBadgeState = { kind: 'export'; sprints: Sprint[] } | { kind: 'countdown'; daysLeft: number }
+
+export function getSprintBadgeState(today: string, config: SprintConfig, data: SprintReminderData[]): SprintBadgeState {
+  const sprintsNeedingExport = getSprintsNeedingExport(today, config, data)
+  if (sprintsNeedingExport.length > 0) return { kind: 'export', sprints: sprintsNeedingExport }
+
+  const currentSprint = getSprintForDate(today, config)
+  const { day, total } = sprintDayProgress(currentSprint, today)
+  return { kind: 'countdown', daysLeft: total - day }
+}
+
+export function sprintCountdownLabel(daysLeft: number): string {
+  if (daysLeft <= 0) return 'Sprint ends today'
+  if (daysLeft === 1) return '1 day left in sprint'
+  return `${daysLeft} days left in sprint`
 }
 
 export function dispatchSprintExportNotification(indices: number[]): void {

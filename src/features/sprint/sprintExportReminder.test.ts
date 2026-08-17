@@ -4,6 +4,8 @@ import {
   sprintExportBadgeLabel,
   sprintExportTooltipText,
   shouldNotifyToday,
+  getSprintBadgeState,
+  sprintCountdownLabel,
 } from './sprintExportReminder'
 import type { SprintConfig } from './sprint'
 
@@ -109,5 +111,36 @@ describe('shouldNotifyToday', () => {
   it('returns true when notified on a previous day', () => {
     const stored = JSON.stringify({ date: '2026-06-24', indices: [4] })
     expect(shouldNotifyToday('2026-06-25', [4], stored)).toBe(true)
+  })
+})
+
+describe('getSprintBadgeState', () => {
+  it('prioritizes export over countdown when a sprint needs export', () => {
+    const state = getSprintBadgeState('2026-01-14', config, [{ index: 0, totalHours: 40, exportStatus: 'pending' }])
+    expect(state).toEqual({ kind: 'export', sprints: [{ index: 0, start: '2026-01-01', end: '2026-01-14' }] })
+  })
+
+  it('falls back to countdown when nothing needs export', () => {
+    const state = getSprintBadgeState('2026-01-01', config, [])
+    expect(state).toEqual({ kind: 'countdown', daysLeft: 13 })
+  })
+
+  it('countdown reaches zero on the sprint last day', () => {
+    const state = getSprintBadgeState('2026-01-14', config, [{ index: 0, totalHours: 0, exportStatus: 'pending' }])
+    expect(state).toEqual({ kind: 'countdown', daysLeft: 0 })
+  })
+})
+
+describe('sprintCountdownLabel', () => {
+  it('shows "ends today" at zero days left', () => {
+    expect(sprintCountdownLabel(0)).toBe('Sprint ends today')
+  })
+
+  it('singular phrasing for one day left', () => {
+    expect(sprintCountdownLabel(1)).toBe('1 day left in sprint')
+  })
+
+  it('plural phrasing for multiple days left', () => {
+    expect(sprintCountdownLabel(5)).toBe('5 days left in sprint')
   })
 })

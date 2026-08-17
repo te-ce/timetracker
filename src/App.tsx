@@ -695,7 +695,7 @@ function App() {
     year: currentMonthYear,
     month: currentMonth,
   } = usePrefetchCurrentMonth()
-  const sprintsNeedingExport = useSprintExportReminder()
+  const sprintBadgeState = useSprintExportReminder()
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
   const navigate = useNavigate()
@@ -885,7 +885,7 @@ function App() {
         {/* Hamburger — visible only on small screens */}
         <NavDropdown currentPath={currentPath} />
         <div className="ml-auto flex items-center gap-2">
-          <SprintExportBadge sprints={sprintsNeedingExport} />
+          <SprintExportBadge state={sprintBadgeState} />
           <HeaderControls onToggleLegend={() => setLegendOpen((v) => !v)} />
         </div>
       </nav>

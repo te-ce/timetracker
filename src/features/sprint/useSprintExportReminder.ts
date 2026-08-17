@@ -5,14 +5,14 @@ import { QUERY_KEYS } from '../../shared/queryKeys'
 import { toLocalIso } from '../../shared/dateUtils'
 import { resolveAppConfig } from '../../shared/appConfigDefaults'
 import { getSprintForDate, getSprintBoundaries, aggregateSprintHours } from './sprint'
-import type { SprintConfig, Sprint } from './sprint'
+import type { SprintConfig } from './sprint'
 import {
-  getSprintsNeedingExport,
+  getSprintBadgeState,
   shouldNotifyToday,
   dispatchSprintExportNotification,
   SPRINT_EXPORT_NOTIFY_KEY,
 } from './sprintExportReminder'
-import type { SprintReminderData } from './sprintExportReminder'
+import type { SprintReminderData, SprintBadgeState } from './sprintExportReminder'
 
 const LOOKBACK = 6
 
@@ -26,7 +26,7 @@ function resolveSprintConfig(
   }
 }
 
-export function useSprintExportReminder(): Sprint[] {
+export function useSprintExportReminder(): SprintBadgeState {
   const { configRepo, monthRepo, sprintExportRepo } = useRepositories()
   const today = toLocalIso(new Date())
 
@@ -63,8 +63,10 @@ export function useSprintExportReminder(): Sprint[] {
     return { index, totalHours, exportStatus }
   })
 
-  const sprintsNeedingExport = config ? getSprintsNeedingExport(today, sprintConfig, reminderData) : []
-  const pendingKey = sprintsNeedingExport.map((s) => s.index).join(',')
+  const badgeState: SprintBadgeState = config
+    ? getSprintBadgeState(today, sprintConfig, reminderData)
+    : { kind: 'countdown', daysLeft: 0 }
+  const pendingKey = badgeState.kind === 'export' ? badgeState.sprints.map((s) => s.index).join(',') : ''
 
   useEffect(() => {
     if (!pendingKey) return
@@ -75,5 +77,5 @@ export function useSprintExportReminder(): Sprint[] {
     localStorage.setItem(SPRINT_EXPORT_NOTIFY_KEY, JSON.stringify({ date: today, indices: sprintIndices }))
   }, [pendingKey, today])
 
-  return sprintsNeedingExport
+  return badgeState
 }

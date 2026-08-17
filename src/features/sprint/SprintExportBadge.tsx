@@ -1,18 +1,25 @@
 import { useNavigate } from '@tanstack/react-router'
 import { Tooltip } from '../../shared/Tooltip'
-import { sprintExportBadgeLabel, sprintExportTooltipText } from './sprintExportReminder'
-import type { Sprint } from './sprint'
+import { sprintExportBadgeLabel, sprintExportTooltipText, sprintCountdownLabel } from './sprintExportReminder'
+import type { SprintBadgeState } from './sprintExportReminder'
 
 interface Props {
-  sprints: Sprint[]
+  state: SprintBadgeState
 }
 
-export function SprintExportBadge({ sprints }: Props) {
+export function SprintExportBadge({ state }: Props) {
   const navigate = useNavigate()
-  if (sprints.length === 0) return null
 
-  const label = sprintExportBadgeLabel(sprints)
-  const tooltip = sprintExportTooltipText(sprints)
+  if (state.kind === 'countdown') {
+    return (
+      <span className="flex items-center gap-1.5 rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+        {sprintCountdownLabel(state.daysLeft)}
+      </span>
+    )
+  }
+
+  const label = sprintExportBadgeLabel(state.sprints)
+  const tooltip = sprintExportTooltipText(state.sprints)
 
   return (
     <Tooltip content={tooltip ?? label} placement="bottom">
