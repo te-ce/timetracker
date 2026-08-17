@@ -1,6 +1,7 @@
 import type { WorkPeriod } from '../infra/repositories/types'
 import { calculateRemaining, type RemainingTimeMode } from './remainingCalc'
 import {
+  addHoursToTime,
   calculateProjectedWorkedHours,
   derivePlannedStopState,
   elapsedHours,
@@ -36,6 +37,8 @@ export interface DayBalance {
   remaining: number
   /** Remaining at the planned stop, rather than at `now`. */
   projectedRemaining: number
+  /** Wall-clock time `remaining` hits zero, projected forward from `now`. Null once reached or on a day that isn't today. */
+  etaTime: string | null
   isPlannedStopMode: boolean
   plannedStopTime: string | null
   countdownHours: number
@@ -105,6 +108,7 @@ export function deriveDayBalance(input: DayBalanceInput): DayBalance {
     requiredToday,
     remaining,
     projectedRemaining: sollstunden - priorOvertime - projectedWorked,
+    etaTime: isToday && remaining > 0 ? addHoursToTime(now, remaining) : null,
     isPlannedStopMode,
     plannedStopTime,
     countdownHours,

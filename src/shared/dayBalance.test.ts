@@ -131,6 +131,25 @@ describe('deriveDayBalance remaining', () => {
   })
 })
 
+describe('deriveDayBalance etaTime', () => {
+  it('projects when remaining hours will be reached from now', () => {
+    const b = derive({ windows: [period('09:00', '11:00')], now: '11:00' })
+    expect(b.remaining).toBeCloseTo(6)
+    expect(b.etaTime).toBe('17:00')
+  })
+
+  it('is null once remaining has already been reached', () => {
+    const b = derive({ windows: [period('09:00', '17:00')], now: '17:00', sollstunden: 8 })
+    expect(b.remaining).toBeLessThanOrEqual(0)
+    expect(b.etaTime).toBeNull()
+  })
+
+  it('is null for a day that is not today', () => {
+    const b = derive({ windows: [period('09:00', '11:00')], now: '11:00', isToday: false })
+    expect(b.etaTime).toBeNull()
+  })
+})
+
 describe('hasLiveActivity', () => {
   it('is true for an open period', () => {
     expect(hasLiveActivity([period('09:00', null)], '12:00')).toBe(true)

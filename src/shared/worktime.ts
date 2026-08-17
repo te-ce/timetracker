@@ -170,3 +170,15 @@ export function derivePlannedStopState(
 export function calcSubtaskHours(startedAt: string, stoppedAt: string): number {
   return elapsedHours(startedAt, stoppedAt)
 }
+
+/**
+ * Wall-clock time `hours` after `time` ("HH:MM"), wrapping past midnight.
+ * Used to project when a countdown (e.g. remaining hours) will hit zero.
+ */
+export function addHoursToTime(time: string, hours: number): string {
+  const dayMinutes = 24 * 60
+  const total = (((parseMinutes(time) + Math.round(hours * 60)) % dayMinutes) + dayMinutes) % dayMinutes
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}

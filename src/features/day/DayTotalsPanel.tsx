@@ -21,8 +21,8 @@ interface BalanceRowsProps {
 
 /** Target ± overtime = required; required − worked = remaining. Folds the OvertimeBar's numbers into the totals panel. */
 function BalanceRows({ balance, isLoading, timeFormat }: BalanceRowsProps) {
-  const { sollstunden, requiredToday, priorOvertime, remaining, plannedStopTime } = balance
-  const summary = `${formatHours(sollstunden, timeFormat)} target, ${formatSignedHours(priorOvertime, timeFormat)} overtime, ${formatHours(requiredToday, timeFormat)} required, ${formatHours(remaining, timeFormat)} remaining`
+  const { sollstunden, requiredToday, priorOvertime, remaining, plannedStopTime, etaTime } = balance
+  const summary = `${formatHours(sollstunden, timeFormat)} target, ${formatSignedHours(priorOvertime, timeFormat)} overtime, ${formatHours(requiredToday, timeFormat)} required, ${formatHours(remaining, timeFormat)} remaining${etaTime ? `, done at ${etaTime}` : ''}`
   const { overtimeUnknown, resultUnknown, ariaLabel } = deriveLoadingState(balance, isLoading, false, summary)
 
   return (
@@ -62,6 +62,14 @@ function BalanceRows({ balance, isLoading, timeFormat }: BalanceRowsProps) {
           {resultUnknown ? <Skeleton className="w-14" /> : formatHours(remaining, timeFormat)}
         </span>
       </div>
+      {etaTime && !resultUnknown && (
+        <div className="flex justify-between">
+          <span className="text-gray-500 dark:text-gray-400">Done at</span>
+          <span className="font-mono tabular-nums" aria-hidden="true">
+            {etaTime}
+          </span>
+        </div>
+      )}
       {plannedStopTime && (
         <div className="mt-0.5 rounded-md bg-blue-100 px-1.5 py-0.5 text-center text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
           projected at {plannedStopTime}

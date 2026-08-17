@@ -12,6 +12,7 @@ import {
   derivePlannedStopState,
   elapsedHours,
   elapsedHoursSince,
+  addHoursToTime,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
@@ -302,5 +303,23 @@ describe('derivePlannedStopState', () => {
   it('is not in planned-stop mode when reference is target-hours, even with a planned stop', () => {
     const result = derivePlannedStopState([makeWindow('13:00', '17:00')], '15:00', 'target-hours')
     expect(result).toEqual({ isPlannedStopMode: false, plannedStopTime: '17:00', countdownHours: 2 })
+  })
+})
+
+describe('addHoursToTime', () => {
+  it('adds hours within the same day', () => {
+    expect(addHoursToTime('09:00', 2.5)).toBe('11:30')
+  })
+
+  it('wraps past midnight', () => {
+    expect(addHoursToTime('23:00', 2)).toBe('01:00')
+  })
+
+  it('rounds to the nearest minute', () => {
+    expect(addHoursToTime('09:00', 1 / 3)).toBe('09:20')
+  })
+
+  it('returns the same time when adding zero hours', () => {
+    expect(addHoursToTime('14:15', 0)).toBe('14:15')
   })
 })
