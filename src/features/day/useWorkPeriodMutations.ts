@@ -56,6 +56,12 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
     ({ date, id }: { date: string; id: string }) => repository.removeWorkPeriod(date, id),
   )
 
+  const fixOverlap = useUndoableDayMutation(
+    repository,
+    'Fix subtask overlap',
+    ({ date, window }: { date: string; window: WorkPeriod }) => repository.saveWorkPeriod(date, window),
+  )
+
   const saveWithAbsorbed = useUndoableDayMutation(
     repository,
     'Merge work periods',
@@ -141,6 +147,7 @@ export function useWorkPeriodMutations(repository: MonthRepository) {
 
   return {
     save,
+    fixOverlap,
     remove,
     saveWithAbsorbed,
     setPeriodCategory,

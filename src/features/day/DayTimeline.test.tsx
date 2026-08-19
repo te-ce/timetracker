@@ -339,8 +339,28 @@ describe('DayTimeline', () => {
     ])
 
     // Then both problems are reported
-    expect(await screen.findByText(/overlap/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Overlaps Review by/)).toBeInTheDocument()
     expect(await screen.findByText(/exceed/i)).toBeInTheDocument()
+  })
+
+  it('repairs an overlap from the bar under the later subtask', async () => {
+    // Given Review 10:00-10:45 and Meeting 10:30-11:00 sharing a quarter hour
+    const { repo } = setup([
+      period('a', '10:00', '11:00', 'Work', [
+        { id: 's1', category: 'Review', hours: 0.75, startedAt: '10:00', stoppedAt: '10:45' },
+        { id: 's2', category: 'Meeting', hours: 0.5, startedAt: '10:30', stoppedAt: '11:00' },
+      ]),
+    ])
+
+    // When the offered fix is taken
+    await userEvent.click(await screen.findByRole('button', { name: 'End Review at 10:30' }))
+
+    // Then Review is trimmed, its hours recomputed, and the bar is gone
+    await vi.waitFor(async () => {
+      const [fixed] = await getWindows(repo)
+      expect(fixed?.subtasks[0]).toMatchObject({ startedAt: '10:00', stoppedAt: '10:30', hours: 0.5 })
+    })
+    expect(screen.queryByText(/Overlaps Review by/)).not.toBeInTheDocument()
   })
 
   it('summarises the day next to the timeline: worked, categories, start, breaks and desk time', async () => {

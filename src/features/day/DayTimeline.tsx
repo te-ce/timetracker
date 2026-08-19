@@ -19,6 +19,8 @@ import { SegmentRow } from './SegmentRow'
 import { BreakRow } from './BreakRow'
 import { DayTotalsPanel } from './DayTotalsPanel'
 import { derivePeriodWarnings } from './daySegments'
+import { applyOverlapFix, findSubtaskOverlaps, type OverlapFix } from './overlapRepair'
+import { OverlapRepairBar } from './OverlapRepairBar'
 import { SubtaskForm } from './SubtaskForm'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { hasLiveActivity } from '../../shared/dayBalance'
@@ -113,7 +115,6 @@ function DeleteConfirmDialog({
 
 interface SegmentTrailingActionsProps {
   periodId: string
-  overlappingCount: number
   overbookedBy: number
   timeFormat: TimeFormat
   loggingFor: string | null
@@ -127,7 +128,6 @@ interface SegmentTrailingActionsProps {
 
 function SegmentTrailingActions({
   periodId,
-  overlappingCount,
   overbookedBy,
   timeFormat,
   loggingFor,
@@ -140,11 +140,6 @@ function SegmentTrailingActions({
 }: SegmentTrailingActionsProps) {
   return (
     <>
-      {overlappingCount > 0 && (
-        <span className="font-medium text-red-600 dark:text-red-400">
-          Subtasks overlap in time — check their start and stop times.
-        </span>
-      )}
       {overbookedBy > 0 && (
         <span className="font-medium text-red-600 dark:text-red-400">
           Subtasks exceed this work period by {formatHours(overbookedBy, timeFormat)}.
@@ -194,6 +189,7 @@ interface DayStreamRowProps {
   onStartLogging: (periodId: string) => void
   onStopLogging: () => void
   onAddSubtask: (periodId: string, subtask: WorkPeriodSubtask) => void
+  onFixOverlap: (period: WorkPeriod, fix: OverlapFix) => void
 }
 
 function DayStreamRow({
@@ -219,6 +215,7 @@ function DayStreamRow({
   onStartLogging,
   onStopLogging,
   onAddSubtask,
+  onFixOverlap,
 }: DayStreamRowProps) {
   if (item.type === 'period') {
     return (
@@ -246,6 +243,19 @@ function DayStreamRow({
 
   const { segment } = item
   const warnings = derivePeriodWarnings(item.period, now, dayOptions)
+  // The bar hangs off the later subtask of each pair, where the eye already is.
+  const repairs = findSubtaskOverlaps(item.period).filter((o) => o.later.id === segment.subtask?.id)
+  const repairBars = repairs.length
+    ? repairs.map((overlap) => (
+        <OverlapRepairBar
+          key={overlap.earlier.id}
+          overlap={overlap}
+          categoryDescriptions={categoryDescriptions}
+          preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
+          onApply={(fix) => onFixOverlap(item.period, fix)}
+        />
+      ))
+    : undefined
   return (
     <SegmentRow
       segment={segment}
@@ -257,11 +267,11 @@ function DayStreamRow({
       overlaps={!!segment.subtask && warnings.overlappingSubtaskIds.includes(segment.subtask.id)}
       onDeleteSubtask={() => segment.subtask && onDeleteSubtask(segment.periodId, segment.subtask)}
       onEditPeriodTimes={() => onStartEditingTimes(item.period.id)}
+      repair={repairBars}
       trailing={
         item.last ? (
           <SegmentTrailingActions
             periodId={item.period.id}
-            overlappingCount={warnings.overlappingSubtaskIds.length}
             overbookedBy={warnings.overbookedBy}
             timeFormat={timeFormat}
             loggingFor={loggingFor}
@@ -394,6 +404,9 @@ export function DayTimeline(props: DayTimelineProps) {
               onDeletePeriod={(period) => setDeleting({ kind: 'period', period })}
               onDeleteSubtask={(periodId, subtask) => setDeleting({ kind: 'subtask', periodId, subtask })}
               onFillBreak={fillBreak}
+              onFixOverlap={(period, fix) =>
+                mutations.fixOverlap.mutate({ date, window: applyOverlapFix(period, fix) })
+              }
               loggingFor={loggingFor}
               onStartLogging={(periodId) => setLoggingFor(periodId)}
               onStopLogging={() => setLoggingFor(null)}

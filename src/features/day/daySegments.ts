@@ -1,6 +1,7 @@
 import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
 import { elapsedHours, isPlannedStop, parseMinutes } from '../../shared/worktime'
-import { isLiveSubtask, isTimedSubtask } from './workPeriodShared'
+import { isLiveSubtask } from './workPeriodShared'
+import { findSubtaskOverlaps } from './overlapRepair'
 
 /**
  * A contiguous stretch inside a WorkPeriod attributed to a single category —
@@ -166,18 +167,11 @@ export function derivePeriodWarnings(
   now: string,
   { isToday = true }: SegmentOptions = {},
 ): PeriodWarnings {
-  const timed = period.subtasks.filter(isTimedSubtask)
   const overlapping = new Set<string>()
-  timed.forEach((a, i) => {
-    for (const b of timed.slice(i + 1)) {
-      const overlaps =
-        parseMinutes(a.startedAt) < parseMinutes(b.stoppedAt) && parseMinutes(b.startedAt) < parseMinutes(a.stoppedAt)
-      if (overlaps) {
-        overlapping.add(a.id)
-        overlapping.add(b.id)
-      }
-    }
-  })
+  for (const { earlier, later } of findSubtaskOverlaps(period)) {
+    overlapping.add(earlier.id)
+    overlapping.add(later.id)
+  }
 
   const running = period.end === null || (isToday && isPlannedStop(period, now))
   const subtasked = period.subtasks.reduce((sum, s) => sum + s.hours, 0)

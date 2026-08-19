@@ -19,6 +19,8 @@ interface SegmentRowProps {
   onEditPeriodTimes: () => void
   /** Per-period actions, rendered on the period's last segment. */
   trailing?: React.ReactNode
+  /** Overlap repair bars for this segment's subtask, on their own line below the row. */
+  repair?: React.ReactNode
 }
 
 function categoryText(
@@ -158,6 +160,7 @@ export function SegmentRow({
   onDeleteSubtask,
   onEditPeriodTimes,
   trailing,
+  repair,
 }: SegmentRowProps) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const [editing, setEditing] = useState(false)
@@ -216,6 +219,7 @@ export function SegmentRow({
         onDeleteSubtask={onDeleteSubtask}
       />
       {trailing && <span className="ml-auto flex items-center gap-3 text-xs">{trailing}</span>}
+      {repair && <span className="w-full basis-full text-xs">{repair}</span>}
     </li>
   )
 }
