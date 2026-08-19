@@ -31,6 +31,10 @@ function displayCategoryName(cat: string): string {
   return cat.replace(/^_/, '')
 }
 
+function headerText(cat: string, description: string | undefined, preferDescription: boolean): string {
+  return preferDescription && description ? description : displayCategoryName(cat)
+}
+
 function handleRenameKeyDown(
   e: React.KeyboardEvent<HTMLInputElement>,
   cat: string,
@@ -148,6 +152,7 @@ export function CategoryColumnHeader({
     colDragOverIdx === catIdx ? 'ring-2 ring-inset ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/40' : ''
   const color = colorForCategory(cat, allCategories)
   const nameClass = `block truncate text-[11px] ${color.text} ${onCategoryRename ? 'cursor-text' : ''}`
+  const headerLabel = headerText(cat, description, preferCategoryDescriptionAsPrimary ?? false)
   const tooltipContent = (
     <CategoryTooltipContent
       cat={cat}
@@ -194,7 +199,7 @@ export function CategoryColumnHeader({
               }
             }}
           >
-            {displayCategoryName(cat)}
+            {headerLabel}
           </span>
         </Tooltip>
       )}

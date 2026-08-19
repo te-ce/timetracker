@@ -1,11 +1,19 @@
 import { formatHours } from '../../shared/formatHours'
+import { categoryDisplay } from '../day/categoryLabel'
 
 interface Props {
   hoursPerCategory: Record<string, number>
   allCategories: string[]
+  categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
 }
 
-export function SprintReportPanel({ hoursPerCategory, allCategories }: Props) {
+export function SprintReportPanel({
+  hoursPerCategory,
+  allCategories,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+}: Props) {
   const total = allCategories.reduce((sum, cat) => sum + (hoursPerCategory[cat] ?? 0), 0)
   const maxHours = Math.max(...allCategories.map((c) => hoursPerCategory[c] ?? 0), 1)
 
@@ -15,12 +23,22 @@ export function SprintReportPanel({ hoursPerCategory, allCategories }: Props) {
         <tbody>
           {allCategories.map((category, i) => {
             const hours = hoursPerCategory[category] ?? 0
+            const { primary, secondary } = categoryDisplay(
+              category,
+              categoryDescriptions ?? {},
+              preferCategoryDescriptionAsPrimary ?? false,
+            )
             return (
               <tr
                 key={category}
                 className={i % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800/60'}
               >
-                <td className="px-3 py-1.5 font-medium">{category}</td>
+                <td className="px-3 py-1.5 font-medium">
+                  {primary}
+                  {secondary && (
+                    <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">{secondary}</span>
+                  )}
+                </td>
                 <td className="w-32 px-3 py-1.5">
                   <div className="h-1.5 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700">
                     <div

@@ -30,6 +30,31 @@ describe('SprintReportPanel', () => {
     expect(screen.getAllByText('0.00h')).toHaveLength(2)
   })
 
+  it('shows the description as the primary label when preferCategoryDescriptionAsPrimary is set', () => {
+    render(
+      <SprintReportPanel
+        hoursPerCategory={{ QA: 3 }}
+        allCategories={['QA']}
+        categoryDescriptions={{ QA: 'Quality assurance' }}
+        preferCategoryDescriptionAsPrimary
+      />,
+    )
+    expect(screen.getByText('Quality assurance')).toBeInTheDocument()
+    expect(screen.getByText('QA')).toBeInTheDocument()
+  })
+
+  it('keeps the category name primary when the preference is off', () => {
+    render(
+      <SprintReportPanel
+        hoursPerCategory={{ QA: 3 }}
+        allCategories={['QA']}
+        categoryDescriptions={{ QA: 'Quality assurance' }}
+      />,
+    )
+    expect(screen.getByText('QA')).toBeInTheDocument()
+    expect(screen.getByText('Quality assurance')).toBeInTheDocument()
+  })
+
   it('formats fractional hours correctly in both formats', () => {
     render(<SprintReportPanel hoursPerCategory={{ Dev: 1.75 }} allCategories={['Dev']} />)
     expect(screen.getAllByText('1.75h')).toHaveLength(2)

@@ -106,7 +106,12 @@ export function SprintView() {
             onSprintIndexChange={setSprintIndex}
             today={today}
           />
-          <SprintReportPanel hoursPerCategory={hoursPerCategory} allCategories={allCategories} />
+          <SprintReportPanel
+            hoursPerCategory={hoursPerCategory}
+            allCategories={allCategories}
+            categoryDescriptions={config.categoryDescriptions}
+            preferCategoryDescriptionAsPrimary={config.preferCategoryDescriptionAsPrimary}
+          />
         </>
       )}
       <SprintConfigPanel

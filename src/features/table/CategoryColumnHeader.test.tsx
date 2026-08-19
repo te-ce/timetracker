@@ -40,6 +40,20 @@ describe('CategoryColumnHeader', () => {
       expect(screen.getByRole('columnheader')).toBeInTheDocument()
       expect(screen.getByText('SUPPORT')).toBeInTheDocument()
     })
+
+    it('renders the description as header text when preferCategoryDescriptionAsPrimary is set', () => {
+      setup({
+        categoryDescriptions: { _SUPPORT: 'Customer support tasks' },
+        preferCategoryDescriptionAsPrimary: true,
+      })
+      expect(screen.getByText('Customer support tasks')).toBeInTheDocument()
+      expect(screen.queryByText('SUPPORT')).not.toBeInTheDocument()
+    })
+
+    it('falls back to the category name when the preference is set but no description exists', () => {
+      setup({ preferCategoryDescriptionAsPrimary: true })
+      expect(screen.getByText('SUPPORT')).toBeInTheDocument()
+    })
   })
 
   describe('tooltip', () => {
