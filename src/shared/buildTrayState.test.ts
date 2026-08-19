@@ -186,6 +186,39 @@ describe('buildTrayState', () => {
     })
   })
 
+  describe('categoryLabels', () => {
+    it('maps each category to its own code when there are no descriptions', () => {
+      const result = buildTrayState(baseInput)
+      expect(result.categoryLabels).toEqual({
+        _COREMEDIA: '_COREMEDIA',
+        _SUPPORT: '_SUPPORT',
+        _INFRA: '_INFRA',
+      })
+    })
+
+    it('maps each category to its code when preferCategoryDescriptionAsPrimary is off', () => {
+      const result = buildTrayState({
+        ...baseInput,
+        categoryDescriptions: { _COREMEDIA: 'CoreMedia project' },
+        preferCategoryDescriptionAsPrimary: false,
+      })
+      expect(result.categoryLabels._COREMEDIA).toBe('_COREMEDIA')
+    })
+
+    it('maps a category to its description when preferCategoryDescriptionAsPrimary is on', () => {
+      const result = buildTrayState({
+        ...baseInput,
+        categoryDescriptions: { _COREMEDIA: 'CoreMedia project' },
+        preferCategoryDescriptionAsPrimary: true,
+      })
+      expect(result.categoryLabels).toEqual({
+        _COREMEDIA: 'CoreMedia project',
+        _SUPPORT: '_SUPPORT',
+        _INFRA: '_INFRA',
+      })
+    })
+  })
+
   describe('showTotalWorked', () => {
     it('shows total worked hours in badge label when showTotalWorked is true', () => {
       const result = buildTrayState({ ...baseInput, showTotalWorked: true })

@@ -136,6 +136,8 @@ export function useElectronTraySync() {
       showWorkedHoursInTrayBreakdown: resolved.showWorkedHoursInTrayBreakdown,
       presentingMode: hideHours,
       isOvertimeReady,
+      categoryDescriptions: resolved.categoryDescriptions,
+      preferCategoryDescriptionAsPrimary: resolved.preferCategoryDescriptionAsPrimary,
     })
 
     window.electronAPI.tray.sync(trayState)

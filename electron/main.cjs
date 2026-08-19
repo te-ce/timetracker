@@ -24,6 +24,7 @@ let trayState = {
   autoCategory: null,
   activeSubtaskCategory: null,
   categories: [],
+  categoryLabels: {},
   isTracking: false,
   startedAt: null,
   presentingMode: false,
@@ -179,8 +180,16 @@ function receiptLinesToMenuItems(lines) {
 }
 
 function buildTrayMenu() {
-  const { receiptLines, autoCategory, activeSubtaskCategory, categories, isTracking, startedAt, presentingMode } =
-    trayState
+  const {
+    receiptLines,
+    autoCategory,
+    activeSubtaskCategory,
+    categories,
+    categoryLabels,
+    isTracking,
+    startedAt,
+    presentingMode,
+  } = trayState
 
   const openItem = {
     label: 'Open Timetracker',
@@ -198,7 +207,7 @@ function buildTrayMenu() {
     ? categories.map((cat) => {
         const isSelected = activeSubtaskCategory ? cat === activeSubtaskCategory : cat === autoCategory
         return {
-          label: cat,
+          label: categoryLabels?.[cat] ?? cat,
           type: 'checkbox',
           checked: isSelected,
           click: () => {
@@ -215,7 +224,7 @@ function buildTrayMenu() {
   // When not tracking: show all categories to start a new work period
   const startWorkPeriodItems = !isTracking
     ? categories.map((cat) => ({
-        label: cat,
+        label: categoryLabels?.[cat] ?? cat,
         click: () => {
           mainWindow.webContents.send('tray:startWorkPeriod', cat)
         },
