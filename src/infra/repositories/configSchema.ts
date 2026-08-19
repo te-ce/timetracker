@@ -55,6 +55,7 @@ const appConfigFields = z.object({
   sprintRoundingStep: z.number().optional(),
   sprintRoundingMode: z.enum(['nearest', 'up', 'down']).optional(),
   trashRetentionDays: z.number().nullable().optional(),
+  preferCategoryDescriptionAsPrimary: z.boolean().optional(),
 })
 
 export type AppConfig = z.infer<typeof appConfigFields>

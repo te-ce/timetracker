@@ -17,6 +17,7 @@ export interface CategoryColumnHeaderProps {
   editValue: string
   colDragOverIdx: number | null
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onCategoryReorder?: ((order: string[]) => void) | undefined
   onCategoryRename?: ((oldName: string, newName: string) => void) | undefined
   onAutoCategoryChange?: ((category: string) => void) | undefined
@@ -68,18 +69,23 @@ function CategoryTooltipContent({
   cat,
   isAuto,
   description,
+  preferDescription,
   renamable,
 }: {
   cat: string
   isAuto: boolean
   description: string | undefined
+  preferDescription: boolean
   renamable: boolean
 }) {
+  const name = displayCategoryName(cat)
+  const primary = preferDescription && description ? description : name
+  const secondary = preferDescription && description ? name : description
   return (
     <div>
-      <p className="font-semibold">{displayCategoryName(cat)}</p>
+      <p className="font-semibold">{primary}</p>
       {isAuto && <p className="mt-1 text-gray-300">auto category — absorbs remaining hours</p>}
-      {description && <p className="mt-1 text-gray-300">{description}</p>}
+      {secondary && <p className="mt-1 text-gray-300">{secondary}</p>}
       {renamable && <p className="mt-1.5 text-gray-400 text-[10px]">Double-click to rename</p>}
     </div>
   )
@@ -126,6 +132,7 @@ export function CategoryColumnHeader({
   editValue,
   colDragOverIdx,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   onCategoryReorder,
   onCategoryRename,
   onAutoCategoryChange,
@@ -142,7 +149,13 @@ export function CategoryColumnHeader({
   const color = colorForCategory(cat, allCategories)
   const nameClass = `block truncate text-[11px] ${color.text} ${onCategoryRename ? 'cursor-text' : ''}`
   const tooltipContent = (
-    <CategoryTooltipContent cat={cat} isAuto={isAuto} description={description} renamable={!!onCategoryRename} />
+    <CategoryTooltipContent
+      cat={cat}
+      isAuto={isAuto}
+      description={description}
+      preferDescription={preferCategoryDescriptionAsPrimary ?? false}
+      renamable={!!onCategoryRename}
+    />
   )
   return (
     <th

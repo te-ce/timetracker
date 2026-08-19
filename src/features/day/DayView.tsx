@@ -120,7 +120,7 @@ export function DayView() {
   const locationIcon = effectiveLocation === 'Office' ? '🏢' : '🏠'
   const locationToggle = effectiveLocation === 'Office' ? 'Remote' : 'Office'
 
-  const { customCategories, categoryOrder, categoryDescriptions } = config
+  const { customCategories, categoryOrder, categoryDescriptions, preferCategoryDescriptionAsPrimary } = config
   const isLeaveDay = selectedDayType === 'Vacation' || selectedDayType === 'SickDay'
   const showOfficeStats = config.officeStats
   const isToday = selectedDate === todayIso
@@ -212,6 +212,7 @@ export function DayView() {
             customCategories={customCategories}
             categoryOrder={categoryOrder}
             categoryDescriptions={categoryDescriptions}
+            preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
             balance={viewedDayBalance}
             isBalanceLoading={!isOvertimeReady}
           />

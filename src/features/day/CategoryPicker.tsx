@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react'
+import { categoryDisplay } from './categoryLabel'
 
 interface CategoryPickerProps {
   value: string
@@ -7,6 +8,7 @@ interface CategoryPickerProps {
   compact?: boolean
   focusOnMount?: boolean
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   ariaLabel?: string
 }
 
@@ -17,6 +19,7 @@ export function CategoryPicker({
   compact,
   focusOnMount,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary = false,
   ariaLabel = 'Category',
 }: CategoryPickerProps) {
   const selectRef = useRef<HTMLSelectElement>(null)
@@ -37,11 +40,18 @@ export function CategoryPicker({
       onChange={(e) => onChange(e.target.value)}
       className={selectClass}
     >
-      {categories.map((c) => (
-        <option key={c} value={c}>
-          {categoryDescriptions?.[c] ? `${c} (${categoryDescriptions[c]})` : c}
-        </option>
-      ))}
+      {categories.map((c) => {
+        const { primary, secondary } = categoryDisplay(
+          c,
+          categoryDescriptions ?? {},
+          preferCategoryDescriptionAsPrimary,
+        )
+        return (
+          <option key={c} value={c}>
+            {secondary ? `${primary} (${secondary})` : primary}
+          </option>
+        )
+      })}
     </select>
   )
 }

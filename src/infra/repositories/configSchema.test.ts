@@ -80,6 +80,35 @@ describe('appConfigSchema migration', () => {
     expect(result.data.trashRetentionDays).toBeNull()
   })
 
+  it('accepts preferCategoryDescriptionAsPrimary as a boolean', () => {
+    const cfg = {
+      autoCategory: null,
+      federalState: null,
+      sprintLengthDays: 14,
+      sprintStartDate: null,
+      customCategories: [],
+      preferCategoryDescriptionAsPrimary: true,
+    }
+    const result = appConfigSchema.safeParse(cfg)
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.preferCategoryDescriptionAsPrimary).toBe(true)
+  })
+
+  it('leaves preferCategoryDescriptionAsPrimary undefined when absent', () => {
+    const cfg = {
+      autoCategory: null,
+      federalState: null,
+      sprintLengthDays: 14,
+      sprintStartDate: null,
+      customCategories: [],
+    }
+    const result = appConfigSchema.safeParse(cfg)
+    expect(result.success).toBe(true)
+    if (!result.success) return
+    expect(result.data.preferCategoryDescriptionAsPrimary).toBeUndefined()
+  })
+
   it('fails when weekdayHours has wrong length', () => {
     const cfg = {
       weekdayHours: [0, 8, 8, 8, 8, 8],

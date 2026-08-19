@@ -54,6 +54,7 @@ export interface ResolvedAppConfig {
   archiveSprintSheet: boolean
   sprintRoundingStep: number
   sprintRoundingMode: 'nearest' | 'up' | 'down'
+  preferCategoryDescriptionAsPrimary: boolean
 }
 
 function pick<T>(value: T | null | undefined, fallback: T): T {
@@ -91,6 +92,7 @@ function resolveDefinedConfig(config: AppConfig): ResolvedAppConfig {
     archiveSprintSheet: pick(config.archiveSprintSheet, false),
     sprintRoundingStep: pick(config.sprintRoundingStep, 0),
     sprintRoundingMode: pick(config.sprintRoundingMode, 'nearest'),
+    preferCategoryDescriptionAsPrimary: pick(config.preferCategoryDescriptionAsPrimary, false),
   }
 }
 

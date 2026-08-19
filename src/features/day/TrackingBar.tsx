@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { CategoryPicker } from './CategoryPicker'
-import { categoryLabel } from './categoryLabel'
+import { categoryDisplay } from './categoryLabel'
 import type { ActiveTracking } from './dayStreamModel'
 import { LiveElapsed } from './LiveElapsed'
 import { TimeNowField } from './TimeNowField'
@@ -12,6 +12,7 @@ interface TrackingBarProps {
   categories: string[]
   defaultCategory: string
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   /** False for a day that is over: live tracking gives way to writing the period down. */
   isToday: boolean
   onStart: (category: string, startTime: string) => void
@@ -25,10 +26,17 @@ interface LogPastWorkRowProps {
   categories: string[]
   defaultCategory: string
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onAddPeriod: (start: string, end: string, category: string) => void
 }
 
-function LogPastWorkRow({ categories, defaultCategory, categoryDescriptions, onAddPeriod }: LogPastWorkRowProps) {
+function LogPastWorkRow({
+  categories,
+  defaultCategory,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+  onAddPeriod,
+}: LogPastWorkRowProps) {
   const [category, setCategory] = useState(defaultCategory)
   const [seenDefault, setSeenDefault] = useState(defaultCategory)
   const [newStart, setNewStart] = useState('')
@@ -74,6 +82,7 @@ function LogPastWorkRow({ categories, defaultCategory, categoryDescriptions, onA
         compact
         ariaLabel="Category for the new work period"
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       />
       <button
         type="button"
@@ -92,10 +101,18 @@ interface NotTrackingRowProps {
   categories: string[]
   defaultCategory: string
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onStart: (category: string, startTime: string) => void
 }
 
-function NotTrackingRow({ now, categories, defaultCategory, categoryDescriptions, onStart }: NotTrackingRowProps) {
+function NotTrackingRow({
+  now,
+  categories,
+  defaultCategory,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+  onStart,
+}: NotTrackingRowProps) {
   const [category, setCategory] = useState(defaultCategory)
   const [seenDefault, setSeenDefault] = useState(defaultCategory)
   const [customStart, setCustomStart] = useState<string | null>(null)
@@ -120,6 +137,7 @@ function NotTrackingRow({ now, categories, defaultCategory, categoryDescriptions
         compact
         ariaLabel="Category to start"
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       />
       <span className="ml-auto flex items-center gap-2">
         <TimeNowField
@@ -146,6 +164,7 @@ interface ActiveTrackingRowProps {
   now: string
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onStop: (stopTime: string) => void
   onStartSubtask: (category: string, startTime: string) => void
   onStopSubtask: (stopTime: string) => void
@@ -156,6 +175,7 @@ function ActiveTrackingRow({
   now,
   categories,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   onStop,
   onStartSubtask,
   onStopSubtask,
@@ -191,7 +211,12 @@ function ActiveTrackingRow({
       <span className="font-mono text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
         <LiveElapsed since={active.since} timeFormat={timeFormat} />
       </span>
-      <span className="font-medium text-gray-800 dark:text-gray-100">{categoryLabel(active.category)}</span>
+      <span className="font-medium text-gray-800 dark:text-gray-100">
+        {
+          categoryDisplay(active.category, categoryDescriptions ?? {}, preferCategoryDescriptionAsPrimary ?? false)
+            .primary
+        }
+      </span>
       <span className="text-xs text-gray-500 dark:text-gray-400">
         {active.subtask ? 'subtask' : 'main'} · since {active.since}
       </span>
@@ -203,7 +228,14 @@ function ActiveTrackingRow({
             onClick={stopSubtask}
             className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
           >
-            ■ Stop subtask → back to {categoryLabel(active.period.category)}
+            ■ Stop subtask → back to{' '}
+            {
+              categoryDisplay(
+                active.period.category,
+                categoryDescriptions ?? {},
+                preferCategoryDescriptionAsPrimary ?? false,
+              ).primary
+            }
           </button>
         ) : (
           <>
@@ -214,6 +246,7 @@ function ActiveTrackingRow({
               compact
               ariaLabel="Subtask category"
               categoryDescriptions={categoryDescriptions}
+              preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
             />
             <button
               type="button"
@@ -246,6 +279,7 @@ export function TrackingBar({
   categories,
   defaultCategory,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   isToday,
   onStart,
   onAddPeriod,
@@ -260,6 +294,7 @@ export function TrackingBar({
         now={now}
         categories={categories}
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         onStop={onStop}
         onStartSubtask={onStartSubtask}
         onStopSubtask={onStopSubtask}
@@ -273,6 +308,7 @@ export function TrackingBar({
         categories={categories}
         defaultCategory={defaultCategory}
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         onAddPeriod={onAddPeriod}
       />
     )
@@ -284,6 +320,7 @@ export function TrackingBar({
       categories={categories}
       defaultCategory={defaultCategory}
       categoryDescriptions={categoryDescriptions}
+      preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       onStart={onStart}
     />
   )

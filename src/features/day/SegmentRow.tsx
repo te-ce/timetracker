@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { SubtaskEditForm } from './SubtaskEditForm'
-import { categoryLabel } from './categoryLabel'
+import { categoryDisplay } from './categoryLabel'
 import type { DaySegment } from './daySegments'
 import type { useWorkPeriodMutations } from './useWorkPeriodMutations'
 
@@ -11,6 +11,7 @@ interface SegmentRowProps {
   date: string
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   mutations: ReturnType<typeof useWorkPeriodMutations>
   overlaps: boolean
   onDeleteSubtask: () => void
@@ -20,8 +21,20 @@ interface SegmentRowProps {
   trailing?: React.ReactNode
 }
 
-function timeEditLabel(segment: DaySegment): string {
-  const category = categoryLabel(segment.category)
+function categoryText(
+  category: string,
+  categoryDescriptions: Record<string, string> | undefined,
+  preferCategoryDescriptionAsPrimary: boolean | undefined,
+): string {
+  return categoryDisplay(category, categoryDescriptions ?? {}, preferCategoryDescriptionAsPrimary ?? false).primary
+}
+
+function timeEditLabel(
+  segment: DaySegment,
+  categoryDescriptions: Record<string, string> | undefined,
+  preferCategoryDescriptionAsPrimary: boolean | undefined,
+): string {
+  const category = categoryText(segment.category, categoryDescriptions, preferCategoryDescriptionAsPrimary)
   if (!segment.subtask) return `Edit work period times ${segment.start}–${segment.end ?? 'now'}`
   return segment.placed ? `Edit ${category} subtask times` : `Edit ${category} subtask duration`
 }
@@ -33,17 +46,26 @@ function segmentKindLabel(segment: DaySegment): string {
 
 interface TimeEditButtonProps {
   segment: DaySegment
+  categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   overlaps: boolean
   onEditPeriodTimes: () => void
   onEditSubtask: () => void
 }
 
-function TimeEditButton({ segment, overlaps, onEditPeriodTimes, onEditSubtask }: TimeEditButtonProps) {
+function TimeEditButton({
+  segment,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+  overlaps,
+  onEditPeriodTimes,
+  onEditSubtask,
+}: TimeEditButtonProps) {
   return (
     <button
       type="button"
       onClick={segment.subtask ? onEditSubtask : onEditPeriodTimes}
-      aria-label={timeEditLabel(segment)}
+      aria-label={timeEditLabel(segment, categoryDescriptions, preferCategoryDescriptionAsPrimary)}
       className={`w-24 shrink-0 text-left font-mono text-xs tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
         overlaps ? 'font-medium text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
       }`}
@@ -72,19 +94,27 @@ function SegmentHours({ segment }: SegmentHoursProps) {
 
 interface SegmentCategoryProps {
   segment: DaySegment
+  categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onEditSubtask: () => void
 }
 
-function SegmentCategory({ segment, onEditSubtask }: SegmentCategoryProps) {
-  if (!segment.subtask) return <span className="truncate">{categoryLabel(segment.category)}</span>
+function SegmentCategory({
+  segment,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+  onEditSubtask,
+}: SegmentCategoryProps) {
+  const label = categoryText(segment.category, categoryDescriptions, preferCategoryDescriptionAsPrimary)
+  if (!segment.subtask) return <span className="truncate">{label}</span>
   return (
     <button
       type="button"
       onClick={onEditSubtask}
-      aria-label={`Edit ${categoryLabel(segment.category)} subtask`}
+      aria-label={`Edit ${label} subtask`}
       className="truncate text-left hover:text-indigo-600 dark:hover:text-indigo-400"
     >
-      {categoryLabel(segment.category)}
+      {label}
       {segment.note && <span className="ml-2 text-xs italic text-gray-500 dark:text-gray-400">{segment.note}</span>}
     </button>
   )
@@ -92,16 +122,23 @@ function SegmentCategory({ segment, onEditSubtask }: SegmentCategoryProps) {
 
 interface DeleteSubtaskButtonProps {
   segment: DaySegment
+  categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onDeleteSubtask: () => void
 }
 
-function DeleteSubtaskButton({ segment, onDeleteSubtask }: DeleteSubtaskButtonProps) {
+function DeleteSubtaskButton({
+  segment,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+  onDeleteSubtask,
+}: DeleteSubtaskButtonProps) {
   if (!segment.subtask || segment.live) return null
   return (
     <button
       type="button"
       onClick={onDeleteSubtask}
-      aria-label={`Remove ${categoryLabel(segment.category)} subtask`}
+      aria-label={`Remove ${categoryText(segment.category, categoryDescriptions, preferCategoryDescriptionAsPrimary)} subtask`}
       className="px-1 text-gray-400 hover:text-red-500 dark:text-gray-500"
     >
       ×
@@ -115,6 +152,7 @@ export function SegmentRow({
   date,
   categories,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   mutations,
   overlaps,
   onDeleteSubtask,
@@ -134,6 +172,7 @@ export function SegmentRow({
           date={date}
           categories={categories}
           categoryDescriptions={categoryDescriptions}
+          preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
           stripeBg=""
           mutations={mutations}
           onDone={() => setEditing(false)}
@@ -146,7 +185,7 @@ export function SegmentRow({
 
   return (
     <li
-      aria-label={`${categoryLabel(segment.category)} ${formatHours(segment.hours, timeFormat)} ${kindLabel}`}
+      aria-label={`${categoryText(segment.category, categoryDescriptions, preferCategoryDescriptionAsPrimary)} ${formatHours(segment.hours, timeFormat)} ${kindLabel}`}
       className={`flex flex-wrap items-center gap-3 py-1 text-sm ${
         segment.live ? 'rounded bg-emerald-50 dark:bg-emerald-950/30' : ''
       }`}
@@ -156,14 +195,26 @@ export function SegmentRow({
       </span>
       <TimeEditButton
         segment={segment}
+        categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         overlaps={overlaps}
         onEditPeriodTimes={onEditPeriodTimes}
         onEditSubtask={() => setEditing(true)}
       />
       <SegmentHours segment={segment} />
-      <SegmentCategory segment={segment} onEditSubtask={() => setEditing(true)} />
+      <SegmentCategory
+        segment={segment}
+        categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
+        onEditSubtask={() => setEditing(true)}
+      />
       <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">{kindLabel}</span>
-      <DeleteSubtaskButton segment={segment} onDeleteSubtask={onDeleteSubtask} />
+      <DeleteSubtaskButton
+        segment={segment}
+        categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
+        onDeleteSubtask={onDeleteSubtask}
+      />
       {trailing && <span className="ml-auto flex items-center gap-3 text-xs">{trailing}</span>}
     </li>
   )

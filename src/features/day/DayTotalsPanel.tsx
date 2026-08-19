@@ -3,11 +3,13 @@ import { useTimeFormatStore, type TimeFormat } from '../../shared/timeFormatStor
 import { Skeleton, deriveLoadingState } from '../month/OvertimeBar'
 import type { DayBalance } from '../../shared/dayBalance'
 import { balanceInk, formatSignedHours } from '../month/monthBalanceFormat'
-import { categoryLabel } from './categoryLabel'
+import { categoryDisplay } from './categoryLabel'
 import type { DayStats } from './dayStreamModel'
 
 interface Props {
   stats: DayStats
+  categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   /** When present, renders the target/overtime/required/remaining block below the worked-today figure. */
   balance?: DayBalance | undefined
   isLoading?: boolean | undefined
@@ -92,7 +94,13 @@ function projectedTotals(stats: DayStats, balance: DayBalance | undefined): Proj
 }
 
 /** The numbers the day is judged by, kept on screen next to the timeline. */
-export function DayTotalsPanel({ stats, balance, isLoading = false }: Props) {
+export function DayTotalsPanel({
+  stats,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+  balance,
+  isLoading = false,
+}: Props) {
   const timeFormat = useTimeFormatStore((s) => s.format)
   const largest = Math.max(0.01, ...stats.categoryTotals.map((t) => t.hours))
   const { isProjected, worked: displayWorked, atDesk: displayAtDesk } = projectedTotals(stats, balance)
@@ -114,7 +122,15 @@ export function DayTotalsPanel({ stats, balance, isLoading = false }: Props) {
           {stats.categoryTotals.map((total) => (
             <li key={total.category} className="text-xs">
               <span className="flex items-baseline justify-between gap-2">
-                <span className="truncate text-gray-700 dark:text-gray-300">{categoryLabel(total.category)}</span>
+                <span className="truncate text-gray-700 dark:text-gray-300">
+                  {
+                    categoryDisplay(
+                      total.category,
+                      categoryDescriptions ?? {},
+                      preferCategoryDescriptionAsPrimary ?? false,
+                    ).primary
+                  }
+                </span>
                 <span className="font-mono tabular-nums text-gray-500 dark:text-gray-400">
                   {formatHours(total.hours, timeFormat)}
                 </span>

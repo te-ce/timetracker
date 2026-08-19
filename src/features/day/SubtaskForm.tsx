@@ -3,6 +3,7 @@ import type { WorkPeriodSubtask } from '../../infra/repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import { parseDurationInput } from '../../shared/worktime'
 import { CategoryPicker } from './CategoryPicker'
+import { categoryDisplay } from './categoryLabel'
 import { useBlurWarning, BlurCancelHint } from './workPeriodShared'
 
 interface SubtaskFormProps {
@@ -10,9 +11,16 @@ interface SubtaskFormProps {
   onAdd: (subtask: WorkPeriodSubtask) => void
   onCancel: () => void
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
 }
 
-export function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions }: SubtaskFormProps) {
+export function SubtaskForm({
+  categories,
+  onAdd,
+  onCancel,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+}: SubtaskFormProps) {
   const [category, setCategory] = useState(categories[0] ?? UNCATEGORIZED_CATEGORY)
   const [durationRaw, setDurationRaw] = useState('')
   const [note, setNote] = useState('')
@@ -60,9 +68,14 @@ export function SubtaskForm({ categories, onAdd, onCancel, categoryDescriptions 
         onChange={setCategory}
         compact
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       />
-      {categoryDescriptions?.[category] && (
-        <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">({categoryDescriptions[category]})</span>
+      {categoryDisplay(category, categoryDescriptions ?? {}, preferCategoryDescriptionAsPrimary ?? false).secondary && (
+        <span className="text-sm text-gray-400 dark:text-gray-500 shrink-0">
+          (
+          {categoryDisplay(category, categoryDescriptions ?? {}, preferCategoryDescriptionAsPrimary ?? false).secondary}
+          )
+        </span>
       )}
       <input
         type="text"

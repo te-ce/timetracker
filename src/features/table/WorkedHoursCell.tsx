@@ -17,6 +17,7 @@ interface Props {
   customCategories?: string[] | undefined
   categoryOrder?: string[] | undefined
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   daySummaryData?: DaySummaryData | undefined
   className?: string | undefined
   /** Day's target hours — draws a fill behind the number so days are comparable without reading. */
@@ -41,6 +42,7 @@ export function WorkedHoursCell({
   customCategories,
   categoryOrder,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   daySummaryData,
   className = '',
   targetHours,
@@ -136,6 +138,7 @@ export function WorkedHoursCell({
                 customCategories={customCategories}
                 categoryOrder={categoryOrder}
                 categoryDescriptions={categoryDescriptions}
+                preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
               />
             </div>
           </div>

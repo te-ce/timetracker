@@ -53,6 +53,7 @@ interface SubtaskEditFormProps {
   date: string
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   stripeBg: string
   mutations: ReturnType<typeof useWorkPeriodMutations>
   onDone: () => void
@@ -180,6 +181,7 @@ export function SubtaskEditForm({
   date,
   categories,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   stripeBg,
   mutations,
   onDone,
@@ -258,6 +260,7 @@ export function SubtaskEditForm({
         onChange={setEditCategory}
         compact
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       />
       <TimedRangeFields
         submode={submode}

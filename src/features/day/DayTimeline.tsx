@@ -26,10 +26,11 @@ import type { DayBalance } from '../../shared/dayBalance'
 import { nowHHMM } from '../../shared/worktime'
 import { useClock } from '../../shared/useClock'
 import { toLocalIso } from '../../shared/dateUtils'
-import { categoryLabel } from './categoryLabel'
+import { categoryDisplay } from './categoryLabel'
 
 type PendingDelete =
-  { kind: 'period'; period: WorkPeriod } | { kind: 'subtask'; periodId: string; subtask: WorkPeriodSubtask }
+  | { kind: 'period'; period: WorkPeriod }
+  | { kind: 'subtask'; periodId: string; subtask: WorkPeriodSubtask }
 
 interface DayTimelineProps {
   date: string
@@ -39,6 +40,7 @@ interface DayTimelineProps {
   customCategories?: string[] | undefined
   categoryOrder?: string[] | undefined
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   initialCategory?: string | undefined
   /** Off where the host is too narrow for it, e.g. the month table's day dialog. */
   showTotals?: boolean
@@ -78,17 +80,25 @@ function resolveDefaultCategory(
 
 interface DeleteConfirmDialogProps {
   deleting: PendingDelete | null
+  categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onConfirm: (deleting: PendingDelete) => void
   onCancel: () => void
 }
 
-function DeleteConfirmDialog({ deleting, onConfirm, onCancel }: DeleteConfirmDialogProps) {
+function DeleteConfirmDialog({
+  deleting,
+  categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
+  onConfirm,
+  onCancel,
+}: DeleteConfirmDialogProps) {
   if (!deleting) return null
   const title = deleting.kind === 'period' ? 'Delete work period?' : 'Delete subtask?'
   const message =
     deleting.kind === 'period'
       ? `Delete the work period ${deleting.period.start} – ${deleting.period.end ?? 'now'}?`
-      : `Delete the ${categoryLabel(deleting.subtask.category)} subtask?`
+      : `Delete the ${categoryDisplay(deleting.subtask.category, categoryDescriptions ?? {}, preferCategoryDescriptionAsPrimary ?? false).primary} subtask?`
   return (
     <ConfirmDialog
       title={title}
@@ -109,6 +119,7 @@ interface SegmentTrailingActionsProps {
   loggingFor: string | null
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   onAddSubtask: (subtask: WorkPeriodSubtask) => void
   onStartLogging: () => void
   onStopLogging: () => void
@@ -122,6 +133,7 @@ function SegmentTrailingActions({
   loggingFor,
   categories,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   onAddSubtask,
   onStartLogging,
   onStopLogging,
@@ -142,6 +154,7 @@ function SegmentTrailingActions({
         <SubtaskForm
           categories={categories}
           categoryDescriptions={categoryDescriptions}
+          preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
           onAdd={onAddSubtask}
           onCancel={onStopLogging}
         />
@@ -163,6 +176,7 @@ interface DayStreamRowProps {
   date: string
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   mutations: ReturnType<typeof useWorkPeriodMutations>
   active: ActiveTracking | undefined
   now: string
@@ -187,6 +201,7 @@ function DayStreamRow({
   date,
   categories,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   mutations,
   active,
   now,
@@ -214,6 +229,7 @@ function DayStreamRow({
         running={active?.period.id === item.period.id}
         categories={categories}
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         editing={editingTimesFor === item.period.id}
         onStartEditing={() => onStartEditingTimes(item.period.id)}
         onStopEditing={onStopEditingTimes}
@@ -236,6 +252,7 @@ function DayStreamRow({
       date={date}
       categories={categories}
       categoryDescriptions={categoryDescriptions}
+      preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       mutations={mutations}
       overlaps={!!segment.subtask && warnings.overlappingSubtaskIds.includes(segment.subtask.id)}
       onDeleteSubtask={() => segment.subtask && onDeleteSubtask(segment.periodId, segment.subtask)}
@@ -250,6 +267,7 @@ function DayStreamRow({
             loggingFor={loggingFor}
             categories={categories}
             categoryDescriptions={categoryDescriptions}
+            preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
             onAddSubtask={(subtask) => onAddSubtask(item.period.id, subtask)}
             onStartLogging={() => onStartLogging(item.period.id)}
             onStopLogging={onStopLogging}
@@ -261,8 +279,17 @@ function DayStreamRow({
 }
 
 export function DayTimeline(props: DayTimelineProps) {
-  const { date, windows, repository, autoCategory, categoryOrder, categoryDescriptions, initialCategory, balance } =
-    props
+  const {
+    date,
+    windows,
+    repository,
+    autoCategory,
+    categoryOrder,
+    categoryDescriptions,
+    preferCategoryDescriptionAsPrimary,
+    initialCategory,
+    balance,
+  } = props
   const { customCategories, showTotals, isBalanceLoading } = resolveDayTimelineOptions(props)
   const timeFormat = useTimeFormatStore((s) => s.format)
   // Planned stops and live segments only make sense while looking at today.
@@ -316,6 +343,7 @@ export function DayTimeline(props: DayTimelineProps) {
         categories={categories}
         defaultCategory={defaultCategory}
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         isToday={dayOptions.isToday}
         onStart={startTracking}
         onAddPeriod={(start, end, category) => addPeriod(start, end, category)}
@@ -348,6 +376,7 @@ export function DayTimeline(props: DayTimelineProps) {
               date={date}
               categories={categories}
               categoryDescriptions={categoryDescriptions}
+              preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
               mutations={mutations}
               active={active}
               now={now}
@@ -376,11 +405,21 @@ export function DayTimeline(props: DayTimelineProps) {
           ))}
         </ol>
 
-        {showTotals && <DayTotalsPanel stats={stats} balance={balance} isLoading={isBalanceLoading} />}
+        {showTotals && (
+          <DayTotalsPanel
+            stats={stats}
+            categoryDescriptions={categoryDescriptions}
+            preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
+            balance={balance}
+            isLoading={isBalanceLoading}
+          />
+        )}
       </div>
 
       <DeleteConfirmDialog
         deleting={deleting}
+        categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         onConfirm={(pending) => {
           if (pending.kind === 'period') {
             mutations.remove.mutate({ date, id: pending.period.id })

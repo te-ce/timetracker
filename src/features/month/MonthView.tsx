@@ -79,6 +79,7 @@ export function MonthView() {
       categoryBreakdown: day.categoryBreakdown,
       ...(day.leaveType !== undefined ? { leaveType: day.leaveType } : {}),
       categoryDescriptions: config.categoryDescriptions,
+      preferCategoryDescriptionAsPrimary: config.preferCategoryDescriptionAsPrimary,
     }
   }
   const dayNoteMap: Record<string, string> = Object.fromEntries(dayNotes)

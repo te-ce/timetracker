@@ -12,6 +12,7 @@ interface PeriodBoundaryRowProps {
   running: boolean
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   editing: boolean
   onStartEditing: () => void
   onStopEditing: () => void
@@ -120,6 +121,7 @@ export function PeriodBoundaryRow({
   running,
   categories,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   editing,
   onStartEditing,
   onStopEditing,
@@ -202,6 +204,7 @@ export function PeriodBoundaryRow({
         compact
         ariaLabel={`Main category of ${label}`}
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       />
       <span className="text-[10px] uppercase tracking-wide text-gray-400 dark:text-gray-500">
         work period {ordinal}

@@ -27,7 +27,13 @@ const localFolder = isLocalFolderMode()
 const isElectron = typeof window !== 'undefined' && !!window.electronAPI
 
 export type SectionId =
-  'general' | 'schedule-categories' | 'work-location' | 'sync-storage' | 'desktop-app' | 'trash' | 'danger-zone'
+  | 'general'
+  | 'schedule-categories'
+  | 'work-location'
+  | 'sync-storage'
+  | 'desktop-app'
+  | 'trash'
+  | 'danger-zone'
 
 export interface SectionDef {
   id: SectionId
@@ -120,6 +126,13 @@ function ScheduleCategoriesSection({ repository }: { repository: ConfigRepositor
       <BundeslandSettings repository={repository} />
       <AutoCategorySettings repository={repository} />
       <CategorySettings repository={repository} />
+      <SettingToggle
+        repository={repository}
+        label="Show category description as primary"
+        description="When a category has a description, show it as the main text and the category name as a fallback wherever categories are displayed."
+        isChecked={(c) => c.preferCategoryDescriptionAsPrimary === true}
+        applyChange={(c, checked) => ({ ...c, preferCategoryDescriptionAsPrimary: checked })}
+      />
     </SettingSection>
   )
 }

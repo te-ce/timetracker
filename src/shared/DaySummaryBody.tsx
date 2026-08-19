@@ -3,6 +3,7 @@ import type { DisplayStatus } from './statusColors'
 import { STATUS_DOT, STATUS_LABEL } from './statusColors'
 import type { TimeFormat } from './timeFormatStore'
 import { formatHoursCompact } from './formatHours'
+import { categoryDisplay } from '../features/day/categoryLabel'
 
 export const LEAVE_TYPE_LABEL: Record<string, string> = {
   Vacation: 'Vacation',
@@ -15,6 +16,7 @@ export interface DaySummaryData {
   workedHours: number
   categoryBreakdown: Record<string, number>
   categoryDescriptions?: Record<string, string>
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   leaveType?: 'Vacation' | 'SickDay'
   note?: string
 }
@@ -63,6 +65,7 @@ function resolveExplanation(leaveType: DaySummaryData['leaveType'], reason: stri
 interface CategoryBreakdownGridProps {
   categoryBreakdown: Record<string, number>
   categoryDescriptions: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary: boolean | undefined
   timeFormat: TimeFormat
   gridCls: string
 }
@@ -70,19 +73,24 @@ interface CategoryBreakdownGridProps {
 function CategoryBreakdownGrid({
   categoryBreakdown,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   timeFormat,
   gridCls,
 }: CategoryBreakdownGridProps) {
   return (
     <div className={gridCls}>
       {Object.entries(categoryBreakdown).map(([cat, hours]) => {
-        const desc = categoryDescriptions?.[cat]
+        const { primary, secondary } = categoryDisplay(
+          cat,
+          categoryDescriptions ?? {},
+          preferCategoryDescriptionAsPrimary ?? false,
+        )
         return (
           <Fragment key={cat}>
             <span className="text-right tabular-nums">{formatHoursCompact(hours, timeFormat)}</span>
             <span>
-              {cat}
-              {desc ? ` (${desc})` : ''}
+              {primary}
+              {secondary ? ` (${secondary})` : ''}
             </span>
           </Fragment>
         )
@@ -97,6 +105,7 @@ export function DaySummaryBody({
   workedHours,
   categoryBreakdown,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   leaveType,
   note,
   timeFormat,
@@ -123,6 +132,7 @@ export function DaySummaryBody({
           <CategoryBreakdownGrid
             categoryBreakdown={categoryBreakdown}
             categoryDescriptions={categoryDescriptions}
+            preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
             timeFormat={timeFormat}
             gridCls={styles.gridCls}
           />

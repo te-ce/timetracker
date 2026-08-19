@@ -68,6 +68,7 @@ function buildDaySummaryData(
   row: MonthTableRow,
   classified: ReturnType<typeof classifyRow>,
   categoryDescriptions?: Record<string, string>,
+  preferCategoryDescriptionAsPrimary?: boolean,
 ): DaySummaryData {
   const { displayStatus, reason, leaveType } = classified
   return {
@@ -76,6 +77,7 @@ function buildDaySummaryData(
     workedHours: row.workedHours,
     categoryBreakdown: categoryBreakdownWithAuto(row),
     ...(categoryDescriptions !== undefined ? { categoryDescriptions } : {}),
+    ...(preferCategoryDescriptionAsPrimary !== undefined ? { preferCategoryDescriptionAsPrimary } : {}),
     ...(leaveType !== undefined ? { leaveType } : {}),
   }
 }
@@ -254,6 +256,7 @@ interface MonthTableDataRowProps {
   customCategories?: string[] | undefined
   categoryOrder?: string[] | undefined
   categoryDescriptions?: Record<string, string> | undefined
+  preferCategoryDescriptionAsPrimary?: boolean | undefined
   allCategories: string[]
   workLocations: Map<string, WorkLocation>
   defaultWorkLocation: WorkLocation
@@ -279,6 +282,7 @@ function MonthTableDataRow({
   customCategories,
   categoryOrder,
   categoryDescriptions,
+  preferCategoryDescriptionAsPrimary,
   allCategories,
   workLocations,
   defaultWorkLocation,
@@ -301,7 +305,7 @@ function MonthTableDataRow({
   const dim = isDimRow(row)
   const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' })
   const rowDelta = dayDelta(row.workedHours, row.targetHours, row.accumulatedOvertime)
-  const daySummaryData = buildDaySummaryData(row, classified, categoryDescriptions)
+  const daySummaryData = buildDaySummaryData(row, classified, categoryDescriptions, preferCategoryDescriptionAsPrimary)
   const note = dayNotes.get(row.date)
   return (
     <tr key={row.date} aria-label={row.date} className={rowClassName(row, isToday, dim)}>
@@ -329,6 +333,7 @@ function MonthTableDataRow({
         customCategories={customCategories}
         categoryOrder={categoryOrder}
         categoryDescriptions={categoryDescriptions}
+        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         daySummaryData={daySummaryData}
         targetHours={row.targetHours}
         className={workedHoursCellClassName(isToday)}
@@ -394,6 +399,7 @@ export function MonthGrid({
     customCategories,
     categoryOrder,
     categoryDescriptions,
+    preferCategoryDescriptionAsPrimary,
     sprintStartDate,
     sprintLengthDays,
     defaultWorkLocation,
@@ -519,6 +525,7 @@ export function MonthGrid({
       workedHours: row.workedHours,
       categoryBreakdown,
       categoryDescriptions,
+      preferCategoryDescriptionAsPrimary,
       ...(leaveType !== undefined ? { leaveType } : {}),
     })
   }
@@ -592,6 +599,7 @@ export function MonthGrid({
                   editValue={editValue}
                   colDragOverIdx={colDragOverIdx}
                   categoryDescriptions={categoryDescriptions}
+                  preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
                   onCategoryReorder={onCategoryReorder}
                   onCategoryRename={onCategoryRename}
                   onAutoCategoryChange={onAutoCategoryChange}
@@ -632,6 +640,7 @@ export function MonthGrid({
                   customCategories={customCategories}
                   categoryOrder={categoryOrder}
                   categoryDescriptions={categoryDescriptions}
+                  preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
                   allCategories={allCategories}
                   workLocations={workLocations}
                   defaultWorkLocation={defaultWorkLocation}
@@ -776,6 +785,7 @@ export function MonthGrid({
                   customCategories={customCategories}
                   categoryOrder={categoryOrder}
                   categoryDescriptions={categoryDescriptions}
+                  preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
                   initialCategory={activeDialogCategory ?? undefined}
                 />
               </div>
