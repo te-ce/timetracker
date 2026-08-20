@@ -40,7 +40,7 @@ describe('buildTrayState', () => {
   describe('badgeLabel', () => {
     it('shows remaining when remaining > 0', () => {
       const result = buildTrayState(baseInput)
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
     })
 
     it('shows Done when remaining = 0', () => {
@@ -50,12 +50,12 @@ describe('buildTrayState', () => {
 
     it('shows overtime when remaining < 0', () => {
       const result = buildTrayState({ ...baseInput, workedHours: 9, remaining: -1 })
-      expect(result.badgeLabel).toBe('1.00h overtime')
+      expect(result.badgeLabel).toBe('+1.00h')
     })
 
     it('accounts for priorOvertime in remaining', () => {
       const result = buildTrayState({ ...baseInput, priorOvertime: 2, remaining: 3 })
-      expect(result.badgeLabel).toBe('3.00h left')
+      expect(result.badgeLabel).toBe('-3.00h')
     })
 
     it('ignores priorOvertime when remainingTimeMode is until-daily-target', () => {
@@ -65,7 +65,7 @@ describe('buildTrayState', () => {
         remaining: 5,
         remainingTimeMode: 'until-daily-target',
       })
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
     })
 
     it('uses priorOvertime when remainingTimeMode is until-zero-overtime', () => {
@@ -75,12 +75,12 @@ describe('buildTrayState', () => {
         remaining: 3,
         remainingTimeMode: 'until-zero-overtime',
       })
-      expect(result.badgeLabel).toBe('3.00h left')
+      expect(result.badgeLabel).toBe('-3.00h')
     })
 
     it('accounts for liveElapsed in remaining', () => {
       const result = buildTrayState({ ...baseInput, liveElapsed: 1, remaining: 4 })
-      expect(result.badgeLabel).toBe('4.00h left')
+      expect(result.badgeLabel).toBe('-4.00h')
     })
   })
 
@@ -232,7 +232,7 @@ describe('buildTrayState', () => {
 
     it('still shows remaining when showTotalWorked is false', () => {
       const result = buildTrayState({ ...baseInput, showTotalWorked: false })
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
     })
   })
 
@@ -249,7 +249,7 @@ describe('buildTrayState', () => {
 
     it('still shows the badge label and receipt lines when presentingMode is false', () => {
       const result = buildTrayState({ ...baseInput, presentingMode: false })
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
       expect(result.receiptLines.length).toBeGreaterThan(0)
     })
 
@@ -273,7 +273,7 @@ describe('buildTrayState', () => {
 
     it('does not affect the badge label', () => {
       const result = buildTrayState({ ...baseInput, showWorkedHoursInTrayBreakdown: false })
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
     })
   })
 
@@ -286,13 +286,13 @@ describe('buildTrayState', () => {
 
     it('shows the real badge and receipt once overtime is ready', () => {
       const result = buildTrayState({ ...baseInput, isOvertimeReady: true })
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
       expect(result.receiptLines.length).toBeGreaterThan(0)
     })
 
     it('defaults to ready when isOvertimeReady is omitted, for callers that have not adopted it', () => {
       const result = buildTrayState(baseInput)
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
       expect(result.receiptLines.length).toBeGreaterThan(0)
     })
 
@@ -308,7 +308,7 @@ describe('buildTrayState', () => {
         isOvertimeReady: false,
         remainingTimeMode: 'until-daily-target',
       })
-      expect(result.badgeLabel).toBe('5.00h left')
+      expect(result.badgeLabel).toBe('-5.00h')
       expect(result.receiptLines).toEqual([])
     })
   })

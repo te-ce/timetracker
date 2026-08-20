@@ -80,16 +80,16 @@ describe('calculateRemaining', () => {
 })
 
 describe('buildBadgeLabel', () => {
-  it('shows "left" when remaining is positive', () => {
-    expect(buildBadgeLabel(2, 5, 'decimal', false)).toBe('2.00h left')
+  it('shows "-" prefix when remaining is positive', () => {
+    expect(buildBadgeLabel(2, 5, 'decimal', false)).toBe('-2.00h')
   })
 
   it('shows "Done" when remaining is exactly zero', () => {
     expect(buildBadgeLabel(0, 8, 'decimal', false)).toBe('Done')
   })
 
-  it('shows overtime when remaining is negative', () => {
-    expect(buildBadgeLabel(-1, 9, 'decimal', false)).toBe('1.00h overtime')
+  it('shows "+" prefix when remaining is negative (overtime)', () => {
+    expect(buildBadgeLabel(-1, 9, 'decimal', false)).toBe('+1.00h')
   })
 
   it('shows total worked when showTotalWorked is set, regardless of remaining', () => {

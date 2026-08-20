@@ -87,7 +87,7 @@ export function buildBadgeLabel(
   showTotalWorked: boolean,
 ): string {
   if (showTotalWorked) return `${formatHours(totalWorked, fmt)} worked`
-  if (remaining > 0) return `${formatHours(remaining, fmt)} left`
+  if (remaining > 0) return `-${formatHours(remaining, fmt)}`
   if (remaining === 0) return 'Done'
-  return `${formatHours(Math.abs(remaining), fmt)} overtime`
+  return `+${formatHours(Math.abs(remaining), fmt)}`
 }
