@@ -1,4 +1,3 @@
-import { useRef, useEffect } from 'react'
 import { categoryDisplay } from './categoryLabel'
 
 interface CategoryPickerProps {
@@ -22,19 +21,14 @@ export function CategoryPicker({
   preferCategoryDescriptionAsPrimary = false,
   ariaLabel = 'Category',
 }: CategoryPickerProps) {
-  const selectRef = useRef<HTMLSelectElement>(null)
-
-  useEffect(() => {
-    if (focusOnMount) selectRef.current?.focus()
-  }, [focusOnMount])
-
   const selectClass = compact
     ? 'h-7 text-sm rounded border bg-transparent pl-2 pr-6 dark:border-gray-600 dark:text-gray-100 max-w-[10rem]'
     : 'text-sm rounded border bg-transparent pl-2 pr-6 py-1.5 dark:border-gray-600 dark:text-gray-100 min-w-[8rem] max-w-[14rem]'
 
   return (
     <select
-      ref={selectRef}
+      // The picker mounts already focused when it is opened as an editor.
+      autoFocus={focusOnMount}
       aria-label={ariaLabel}
       value={value}
       onChange={(e) => onChange(e.target.value)}

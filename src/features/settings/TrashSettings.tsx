@@ -1,10 +1,12 @@
 import { useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRepositories } from '../../infra/repositories/RepositoryContext'
-import { QUERY_KEYS, invalidateTrash, invalidateMonthByYearMonth } from '../../shared/queryKeys'
-import { listBackups, restoreBackup, deleteBackup } from '../../infra/storage/localBackup'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useRepositories } from '../../infra/repositories/repositories-context'
+import { QUERY_KEYS, invalidateTrash } from '../../shared/queryKeys'
+import { listBackups } from '../../infra/storage/localBackup'
 import { useConfigFieldMutation } from './useConfigFieldMutation'
-import type { ConfigRepository, TrashEntry, TrashRepository } from '../../infra/repositories/types'
+import type { ConfigRepository } from '../../infra/repositories/types'
+import { BackupRow } from './BackupRow'
+import { TrashEntryRow } from './TrashEntryRow'
 
 interface Props {
   repository: ConfigRepository
@@ -16,111 +18,6 @@ const RETENTION_OPTIONS = [
   { value: '90', label: '90 days' },
   { value: 'forever', label: 'Keep forever' },
 ]
-
-function entryLabel(entry: TrashEntry): string {
-  if (entry.type === 'day' && entry.date) return entry.date
-  const monthLabel = new Date(entry.year, entry.month - 1).toLocaleDateString('en-GB', {
-    month: 'long',
-    year: 'numeric',
-  })
-  return monthLabel
-}
-
-function formatDeletedAt(iso: string): string {
-  return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-function TrashEntryRow({ entry, trashRepo }: { entry: TrashEntry; trashRepo: TrashRepository }) {
-  const queryClient = useQueryClient()
-
-  const restoreMutation = useMutation({
-    mutationFn: () => trashRepo.restore(entry.id),
-    onSuccess: () => {
-      invalidateTrash(queryClient)
-      invalidateMonthByYearMonth(queryClient, entry.year, entry.month)
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: () => trashRepo.purge(entry.id),
-    onSuccess: () => invalidateTrash(queryClient),
-  })
-
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-medium dark:text-gray-100">
-          {entry.type === 'day' ? 'Day' : 'Month'}: {entryLabel(entry)}
-        </span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">Deleted {formatDeletedAt(entry.deletedAt)}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => restoreMutation.mutate()}
-          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          Restore
-        </button>
-        <button
-          type="button"
-          onClick={() => deleteMutation.mutate()}
-          className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950"
-        >
-          Delete permanently
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function BackupRow({ backup }: { backup: { id: string; createdAt: string } }) {
-  const queryClient = useQueryClient()
-
-  const restoreMutation = useMutation({
-    mutationFn: async () => {
-      const snapshot = await restoreBackup(backup.id)
-      if (!snapshot) return
-      for (const [key, value] of Object.entries(snapshot)) {
-        localStorage.setItem(key, value)
-      }
-    },
-    onSuccess: () => {
-      invalidateTrash(queryClient)
-      window.location.reload()
-    },
-  })
-
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteBackup(backup.id),
-    onSuccess: () => invalidateTrash(queryClient),
-  })
-
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-sm font-medium dark:text-gray-100">Local data backup</span>
-        <span className="text-xs text-gray-500 dark:text-gray-400">Saved {formatDeletedAt(backup.createdAt)}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => restoreMutation.mutate()}
-          className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
-        >
-          Restore
-        </button>
-        <button
-          type="button"
-          onClick={() => deleteMutation.mutate()}
-          className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950"
-        >
-          Delete permanently
-        </button>
-      </div>
-    </div>
-  )
-}
 
 export function TrashSettings({ repository }: Props) {
   const { trashRepo } = useRepositories()

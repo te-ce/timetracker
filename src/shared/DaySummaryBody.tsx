@@ -1,14 +1,9 @@
-import { Fragment } from 'react'
+import { LEAVE_TYPE_LABEL } from './leaveTypeLabel'
 import type { DisplayStatus } from './statusColors'
 import { STATUS_DOT, STATUS_LABEL } from './statusColors'
 import type { TimeFormat } from './timeFormatStore'
 import { formatHoursCompact } from './formatHours'
-import { categoryDisplay } from '../features/day/categoryLabel'
-
-export const LEAVE_TYPE_LABEL: Record<string, string> = {
-  Vacation: 'Vacation',
-  SickDay: 'Sick day',
-}
+import { CategoryBreakdownGrid } from './CategoryBreakdownGrid'
 
 export interface DaySummaryData {
   displayStatus: DisplayStatus
@@ -60,43 +55,6 @@ function getDaySummaryStyles(dark: boolean): DaySummaryStyles {
 
 function resolveExplanation(leaveType: DaySummaryData['leaveType'], reason: string): string | null {
   return leaveType ? (LEAVE_TYPE_LABEL[leaveType] ?? null) : reason || null
-}
-
-interface CategoryBreakdownGridProps {
-  categoryBreakdown: Record<string, number>
-  categoryDescriptions: Record<string, string> | undefined
-  preferCategoryDescriptionAsPrimary: boolean | undefined
-  timeFormat: TimeFormat
-  gridCls: string
-}
-
-function CategoryBreakdownGrid({
-  categoryBreakdown,
-  categoryDescriptions,
-  preferCategoryDescriptionAsPrimary,
-  timeFormat,
-  gridCls,
-}: CategoryBreakdownGridProps) {
-  return (
-    <div className={gridCls}>
-      {Object.entries(categoryBreakdown).map(([cat, hours]) => {
-        const { primary, secondary } = categoryDisplay(
-          cat,
-          categoryDescriptions ?? {},
-          preferCategoryDescriptionAsPrimary ?? false,
-        )
-        return (
-          <Fragment key={cat}>
-            <span className="text-right tabular-nums">{formatHoursCompact(hours, timeFormat)}</span>
-            <span>
-              {primary}
-              {secondary ? ` (${secondary})` : ''}
-            </span>
-          </Fragment>
-        )
-      })}
-    </div>
-  )
 }
 
 export function DaySummaryBody({

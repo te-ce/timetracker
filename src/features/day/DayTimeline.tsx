@@ -1,38 +1,27 @@
+import type { PendingDelete } from './pendingDelete'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { MonthData, MonthRepository, WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
+import type { MonthData, MonthRepository, WorkPeriod } from '../../infra/repositories/types'
 import { getAllCategories } from '../../shared/categories'
 import { pickCategoryWithMostHours } from '../../shared/autoCategory'
 import { sumCategoryHoursAcrossMonths } from '../../shared/periodCategories'
 import { loadAllMonths } from '../../shared/loadAllMonths'
 import { QUERY_KEYS } from '../../shared/queryKeys'
-import { formatHours } from '../../shared/formatHours'
-import { useTimeFormatStore, type TimeFormat } from '../../shared/timeFormatStore'
+import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { buildDayStream, deriveDayStats, findActiveTracking } from './dayStreamModel'
-import type { ActiveTracking, DayOptions, DayStreamItem } from './dayStreamModel'
 import type { DayBreak } from './dayBreaks'
 import { mergeAdjacentInto } from '../../infra/repositories/work-period-merge'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
 import { TrackingBar } from './TrackingBar'
-import { PeriodBoundaryRow } from './PeriodBoundaryRow'
-import { SegmentRow } from './SegmentRow'
-import { BreakRow } from './BreakRow'
 import { DayTotalsPanel } from './DayTotalsPanel'
-import { derivePeriodWarnings } from './daySegments'
-import { applyOverlapFix, findSubtaskOverlaps, type OverlapFix } from './overlapRepair'
-import { OverlapRepairBar } from './OverlapRepairBar'
-import { SubtaskForm } from './SubtaskForm'
-import { ConfirmDialog } from '../../shared/ConfirmDialog'
+import { applyOverlapFix } from './overlapRepair'
 import { hasLiveActivity } from '../../shared/dayBalance'
 import type { DayBalance } from '../../shared/dayBalance'
 import { nowHHMM } from '../../shared/worktime'
 import { useClock } from '../../shared/useClock'
 import { toLocalIso } from '../../shared/dateUtils'
-import { categoryDisplay } from './categoryLabel'
-
-type PendingDelete =
-  | { kind: 'period'; period: WorkPeriod }
-  | { kind: 'subtask'; periodId: string; subtask: WorkPeriodSubtask }
+import { DayStreamRow } from './DayStreamRow'
+import { DeleteConfirmDialog } from './DeleteConfirmDialog'
 
 interface DayTimelineProps {
   date: string
@@ -78,214 +67,6 @@ function resolveDefaultCategory(
   const allTimeCategoryHours = sumCategoryHoursAcrossMonths(allTimeMonthData)
   const mostBookedCategory = pickCategoryWithMostHours(allTimeCategoryHours, categories) ?? categories[0] ?? ''
   return initialCategory ?? autoCategory ?? mostBookedCategory
-}
-
-interface DeleteConfirmDialogProps {
-  deleting: PendingDelete | null
-  categoryDescriptions?: Record<string, string> | undefined
-  preferCategoryDescriptionAsPrimary?: boolean | undefined
-  onConfirm: (deleting: PendingDelete) => void
-  onCancel: () => void
-}
-
-function DeleteConfirmDialog({
-  deleting,
-  categoryDescriptions,
-  preferCategoryDescriptionAsPrimary,
-  onConfirm,
-  onCancel,
-}: DeleteConfirmDialogProps) {
-  if (!deleting) return null
-  const title = deleting.kind === 'period' ? 'Delete work period?' : 'Delete subtask?'
-  const message =
-    deleting.kind === 'period'
-      ? `Delete the work period ${deleting.period.start} – ${deleting.period.end ?? 'now'}?`
-      : `Delete the ${categoryDisplay(deleting.subtask.category, categoryDescriptions ?? {}, preferCategoryDescriptionAsPrimary ?? false).primary} subtask?`
-  return (
-    <ConfirmDialog
-      title={title}
-      message={message}
-      confirmLabel="Delete"
-      danger
-      onConfirm={() => onConfirm(deleting)}
-      onCancel={onCancel}
-    />
-  )
-}
-
-interface SegmentTrailingActionsProps {
-  periodId: string
-  overbookedBy: number
-  timeFormat: TimeFormat
-  loggingFor: string | null
-  categories: string[]
-  categoryDescriptions?: Record<string, string> | undefined
-  preferCategoryDescriptionAsPrimary?: boolean | undefined
-  onAddSubtask: (subtask: WorkPeriodSubtask) => void
-  onStartLogging: () => void
-  onStopLogging: () => void
-}
-
-function SegmentTrailingActions({
-  periodId,
-  overbookedBy,
-  timeFormat,
-  loggingFor,
-  categories,
-  categoryDescriptions,
-  preferCategoryDescriptionAsPrimary,
-  onAddSubtask,
-  onStartLogging,
-  onStopLogging,
-}: SegmentTrailingActionsProps) {
-  return (
-    <>
-      {overbookedBy > 0 && (
-        <span className="font-medium text-red-600 dark:text-red-400">
-          Subtasks exceed this work period by {formatHours(overbookedBy, timeFormat)}.
-        </span>
-      )}
-      {loggingFor === periodId ? (
-        <SubtaskForm
-          categories={categories}
-          categoryDescriptions={categoryDescriptions}
-          preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
-          onAdd={onAddSubtask}
-          onCancel={onStopLogging}
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={onStartLogging}
-          className="text-gray-500 underline decoration-dotted hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400"
-        >
-          + Log untracked subtask
-        </button>
-      )}
-    </>
-  )
-}
-
-interface DayStreamRowProps {
-  item: DayStreamItem
-  date: string
-  categories: string[]
-  categoryDescriptions?: Record<string, string> | undefined
-  preferCategoryDescriptionAsPrimary?: boolean | undefined
-  mutations: ReturnType<typeof useWorkPeriodMutations>
-  active: ActiveTracking | undefined
-  now: string
-  dayOptions: DayOptions
-  timeFormat: TimeFormat
-  editingTimesFor: string | null
-  onStartEditingTimes: (periodId: string) => void
-  onStopEditingTimes: () => void
-  onSaveTimes: (period: WorkPeriod, start: string, end: string | null) => void
-  onChangeCategory: (periodId: string, category: string) => void
-  onDeletePeriod: (period: WorkPeriod) => void
-  onDeleteSubtask: (periodId: string, subtask: WorkPeriodSubtask) => void
-  onFillBreak: (dayBreak: DayBreak) => void
-  loggingFor: string | null
-  onStartLogging: (periodId: string) => void
-  onStopLogging: () => void
-  onAddSubtask: (periodId: string, subtask: WorkPeriodSubtask) => void
-  onFixOverlap: (period: WorkPeriod, fix: OverlapFix) => void
-}
-
-function DayStreamRow({
-  item,
-  date,
-  categories,
-  categoryDescriptions,
-  preferCategoryDescriptionAsPrimary,
-  mutations,
-  active,
-  now,
-  dayOptions,
-  timeFormat,
-  editingTimesFor,
-  onStartEditingTimes,
-  onStopEditingTimes,
-  onSaveTimes,
-  onChangeCategory,
-  onDeletePeriod,
-  onDeleteSubtask,
-  onFillBreak,
-  loggingFor,
-  onStartLogging,
-  onStopLogging,
-  onAddSubtask,
-  onFixOverlap,
-}: DayStreamRowProps) {
-  if (item.type === 'period') {
-    return (
-      <PeriodBoundaryRow
-        period={item.period}
-        ordinal={item.ordinal}
-        duration={item.duration}
-        running={active?.period.id === item.period.id}
-        categories={categories}
-        categoryDescriptions={categoryDescriptions}
-        preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
-        editing={editingTimesFor === item.period.id}
-        onStartEditing={() => onStartEditingTimes(item.period.id)}
-        onStopEditing={onStopEditingTimes}
-        onSaveTimes={(start, end) => onSaveTimes(item.period, start, end)}
-        onChangeCategory={(category) => onChangeCategory(item.period.id, category)}
-        onDelete={() => onDeletePeriod(item.period)}
-      />
-    )
-  }
-
-  if (item.type === 'break') {
-    return <BreakRow dayBreak={item.break} onFill={() => onFillBreak(item.break)} />
-  }
-
-  const { segment } = item
-  const warnings = derivePeriodWarnings(item.period, now, dayOptions)
-  // The bar hangs off the later subtask of each pair, where the eye already is.
-  const repairs = findSubtaskOverlaps(item.period).filter((o) => o.later.id === segment.subtask?.id)
-  const repairBars = repairs.length
-    ? repairs.map((overlap) => (
-        <OverlapRepairBar
-          key={overlap.earlier.id}
-          overlap={overlap}
-          categoryDescriptions={categoryDescriptions}
-          preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
-          onApply={(fix) => onFixOverlap(item.period, fix)}
-        />
-      ))
-    : undefined
-  return (
-    <SegmentRow
-      segment={segment}
-      date={date}
-      categories={categories}
-      categoryDescriptions={categoryDescriptions}
-      preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
-      mutations={mutations}
-      overlaps={!!segment.subtask && warnings.overlappingSubtaskIds.includes(segment.subtask.id)}
-      onDeleteSubtask={() => segment.subtask && onDeleteSubtask(segment.periodId, segment.subtask)}
-      onEditPeriodTimes={() => onStartEditingTimes(item.period.id)}
-      repair={repairBars}
-      trailing={
-        item.last ? (
-          <SegmentTrailingActions
-            periodId={item.period.id}
-            overbookedBy={warnings.overbookedBy}
-            timeFormat={timeFormat}
-            loggingFor={loggingFor}
-            categories={categories}
-            categoryDescriptions={categoryDescriptions}
-            preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
-            onAddSubtask={(subtask) => onAddSubtask(item.period.id, subtask)}
-            onStartLogging={() => onStartLogging(item.period.id)}
-            onStopLogging={onStopLogging}
-          />
-        ) : undefined
-      }
-    />
-  )
 }
 
 export function DayTimeline(props: DayTimelineProps) {

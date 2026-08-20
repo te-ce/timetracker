@@ -1,9 +1,11 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 import type { WorkPeriod } from '../../infra/repositories/types'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { CategoryPicker } from './CategoryPicker'
-import { BlurCancelHint, useBlurWarning } from './workPeriodShared'
+import { useBlurWarning } from './workPeriodShared'
+import { PeriodTimeButton } from './PeriodTimeButton'
+import { PeriodEditFields } from './PeriodEditFields'
 
 interface PeriodBoundaryRowProps {
   period: WorkPeriod
@@ -31,89 +33,6 @@ function periodLabelSuffix(ordinal: number, running: boolean): string {
   return `${first}${live}`
 }
 
-interface PeriodEditFieldsProps {
-  ordinal: number
-  start: string
-  setStart: (v: string) => void
-  end: string
-  setEnd: (v: string) => void
-  startInputRef: React.RefObject<HTMLInputElement | null>
-  pendingCancel: boolean
-  handleBlur: (e: React.FocusEvent) => void
-  handleFocus: () => void
-  onSave: () => void
-  onCancel: () => void
-  onKeyDown: (e: React.KeyboardEvent) => void
-}
-
-function PeriodEditFields({
-  ordinal,
-  start,
-  setStart,
-  end,
-  setEnd,
-  startInputRef,
-  pendingCancel,
-  handleBlur,
-  handleFocus,
-  onSave,
-  onCancel,
-  onKeyDown,
-}: PeriodEditFieldsProps) {
-  return (
-    <span className="relative flex items-center gap-1" onBlur={handleBlur} onFocus={handleFocus}>
-      {pendingCancel && <BlurCancelHint />}
-      <input
-        ref={startInputRef}
-        type="time"
-        aria-label={`Work period ${ordinal} start`}
-        value={start}
-        onChange={(e) => setStart(e.target.value)}
-        onKeyDown={onKeyDown}
-        className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-      />
-      <span className="text-gray-400">–</span>
-      <input
-        type="time"
-        aria-label={`Work period ${ordinal} end`}
-        value={end}
-        onChange={(e) => setEnd(e.target.value)}
-        onKeyDown={onKeyDown}
-        className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
-      />
-      <button type="button" onClick={onSave} className="ml-1 font-medium text-indigo-600 dark:text-indigo-400">
-        Save
-      </button>
-      <button type="button" onClick={onCancel} className="ml-1 text-gray-500 dark:text-gray-400">
-        Cancel
-      </button>
-    </span>
-  )
-}
-
-interface PeriodTimeButtonProps {
-  period: WorkPeriod
-  running: boolean
-  label: string
-  onStartEditing: () => void
-}
-
-function PeriodTimeButton({ period, running, label, onStartEditing }: PeriodTimeButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onStartEditing}
-      aria-label={`Edit times of ${label}`}
-      className={`font-mono font-semibold tabular-nums hover:text-indigo-600 dark:hover:text-indigo-400 ${
-        running ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
-      }`}
-    >
-      {period.start} → {period.end ?? 'now'}
-    </button>
-  )
-}
-
-/** Announces a WorkPeriod in the timeline: when it ran, how long, and what it was. */
 export function PeriodBoundaryRow({
   period,
   ordinal,
@@ -133,7 +52,6 @@ export function PeriodBoundaryRow({
   const [start, setStart] = useState(period.start)
   const [end, setEnd] = useState(period.end ?? '')
   const [seenEditing, setSeenEditing] = useState(editing)
-  const startInputRef = useRef<HTMLInputElement>(null)
   const label = `work period ${ordinal}, ${period.start} to ${period.end ?? 'now'}`
   const isDirty = isPeriodTimesDirty(start, end, period)
   const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
@@ -157,10 +75,6 @@ export function PeriodBoundaryRow({
     }
   }
 
-  useEffect(() => {
-    if (editing) startInputRef.current?.focus()
-  }, [editing])
-
   function save() {
     onSaveTimes(start, end || null)
     onStopEditing()
@@ -183,7 +97,6 @@ export function PeriodBoundaryRow({
           setStart={setStart}
           end={end}
           setEnd={setEnd}
-          startInputRef={startInputRef}
           pendingCancel={pendingCancel}
           handleBlur={handleBlur}
           handleFocus={handleFocus}

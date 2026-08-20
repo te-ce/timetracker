@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
+import { requireConfig } from '../../shared/appConfigDefaults'
 import {
   acceleratorFromKeyEvent,
   defaultHotkeyConfig,
@@ -10,6 +10,7 @@ import {
   type HotkeyConfig,
   type InAppShortcutAction,
 } from '../../shared/hotkeyConfig'
+import { KeyCaptureField } from './KeyCaptureField'
 
 interface Props {
   repository: ConfigRepository
@@ -41,57 +42,6 @@ const IN_APP_ACTIONS: InAppShortcutAction[] = [
   'toggleLegend',
 ]
 
-function KeyCaptureField({
-  currentKey,
-  onCapture,
-  actionLabel,
-  captureValue = (e) => e.key,
-}: {
-  currentKey: string | null
-  onCapture: (key: string) => void
-  actionLabel: string
-  captureValue?: (e: React.KeyboardEvent<HTMLInputElement>) => string | null
-}) {
-  const [recording, setRecording] = useState(false)
-
-  const inputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (recording) inputRef.current?.focus()
-  }, [recording])
-
-  if (recording) {
-    return (
-      <input
-        ref={inputRef}
-        type="text"
-        aria-label="Press a key"
-        readOnly
-        placeholder="Press a key…"
-        className="w-32 rounded border px-2 py-1 text-sm text-center dark:bg-gray-700 dark:border-gray-500"
-        onKeyDown={(e) => {
-          e.preventDefault()
-          const value = captureValue(e)
-          if (value === null) return
-          onCapture(value)
-          setRecording(false)
-        }}
-        onBlur={() => setRecording(false)}
-      />
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      aria-label={`Change ${actionLabel} shortcut`}
-      onClick={() => setRecording(true)}
-      className="rounded border px-2 py-1 text-sm dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-    >
-      {currentKey === null ? <span className="text-gray-400">disabled</span> : <kbd>{currentKey}</kbd>}
-    </button>
-  )
-}
-
 function captureAccelerator(e: React.KeyboardEvent<HTMLInputElement>): string | null {
   return acceleratorFromKeyEvent(e)
 }
@@ -106,7 +56,7 @@ export function HotkeySettings({ repository }: Props) {
   })
 
   const mutation = useMutation({
-    mutationFn: (hotkeys: HotkeyConfig) => repository.save({ ...config!, hotkeys }),
+    mutationFn: (hotkeys: HotkeyConfig) => repository.save({ ...requireConfig(config), hotkeys }),
     onSuccess: () => invalidateConfig(queryClient),
   })
 

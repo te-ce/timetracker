@@ -1,5 +1,8 @@
+import { displayCategoryName } from './categoryColumnLabels'
 import { Tooltip } from '../../shared/Tooltip'
 import { colorForCategory } from './catColors'
+import { CategoryBadge } from './CategoryBadge'
+import { CategoryTooltipContent } from './CategoryTooltipContent'
 
 export interface ColumnDragHandlers {
   onDragStart: (idx: number) => void
@@ -25,10 +28,6 @@ export interface CategoryColumnHeaderProps {
   onEditValueChange: (v: string) => void
   onCommitRename: (cat: string) => void
   onSetEditingCat: (cat: string | null) => void
-}
-
-function displayCategoryName(cat: string): string {
-  return cat.replace(/^_/, '')
 }
 
 function headerText(cat: string, description: string | undefined, preferDescription: boolean): string {
@@ -67,64 +66,6 @@ function startColumnDrag(e: React.DragEvent<HTMLElement>, cat: string): void {
     dt.setDragImage(ghost, ghost.offsetWidth / 2, ghost.offsetHeight / 2)
   }
   setTimeout(() => document.body.removeChild(ghost), 0)
-}
-
-function CategoryTooltipContent({
-  cat,
-  isAuto,
-  description,
-  preferDescription,
-  renamable,
-}: {
-  cat: string
-  isAuto: boolean
-  description: string | undefined
-  preferDescription: boolean
-  renamable: boolean
-}) {
-  const name = displayCategoryName(cat)
-  const primary = preferDescription && description ? description : name
-  const secondary = preferDescription && description ? name : description
-  return (
-    <div>
-      <p className="font-semibold">{primary}</p>
-      {isAuto && <p className="mt-1 text-gray-300">auto category — absorbs remaining hours</p>}
-      {secondary && <p className="mt-1 text-gray-300">{secondary}</p>}
-      {renamable && <p className="mt-1.5 text-gray-400 text-[10px]">Double-click to rename</p>}
-    </div>
-  )
-}
-
-function CategoryBadge({
-  cat,
-  isAuto,
-  onAutoCategoryChange,
-}: {
-  cat: string
-  isAuto: boolean
-  onAutoCategoryChange?: ((cat: string) => void) | undefined
-}) {
-  if (isAuto)
-    return (
-      <span className="text-[9px] text-indigo-400 dark:text-indigo-300 font-medium tracking-wide leading-none">
-        auto
-      </span>
-    )
-  if (onAutoCategoryChange)
-    return (
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onAutoCategoryChange(cat)
-        }}
-        className="text-[9px] text-gray-300 dark:text-gray-600 hover:text-indigo-400 dark:hover:text-indigo-300 leading-none transition-colors"
-        data-tooltip={`Set "${cat}" as auto category`}
-      >
-        ○
-      </button>
-    )
-  return <span className="text-[9px] leading-none">&nbsp;</span>
 }
 
 export function CategoryColumnHeader({

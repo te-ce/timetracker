@@ -1,8 +1,8 @@
 import { useEffect, useCallback } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { resolveAppConfig } from './appConfigDefaults'
+import { requireConfig, resolveAppConfig } from './appConfigDefaults'
 import { QUERY_KEYS, invalidateMonth, invalidateConfig } from './queryKeys'
-import { useRepositories } from '../infra/repositories/RepositoryContext'
+import { useRepositories } from '../infra/repositories/repositories-context'
 import { getAllCategories } from './categories'
 import { useTodayIso } from './useTodayIso'
 import { useRemainingHours } from './useRemainingHours'
@@ -104,7 +104,10 @@ export function useElectronTraySync() {
 
   const toggleShowWorkedHoursInTray = useMutation({
     mutationFn: () =>
-      configRepo.save({ ...config!, showWorkedHoursInTray: !resolveAppConfig(config).showWorkedHoursInTray }),
+      configRepo.save({
+        ...requireConfig(config),
+        showWorkedHoursInTray: !resolveAppConfig(config).showWorkedHoursInTray,
+      }),
     onSuccess: () => invalidateConfig(queryClient),
   })
   const toggleHoursDisplay = useCallback(() => {

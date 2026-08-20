@@ -29,10 +29,11 @@ export class CloudMonthRepository extends AbstractMonthRepository {
 
   private getStore(year: number, month: number): JsonRecordStore<Day> {
     const key = monthKey(year, month)
-    if (!this.stores.has(key)) {
-      this.stores.set(key, new JsonRecordStore<Day>(this.adapter, key, validateDay))
-    }
-    return this.stores.get(key)!
+    const existing = this.stores.get(key)
+    if (existing) return existing
+    const store = new JsonRecordStore<Day>(this.adapter, key, validateDay)
+    this.stores.set(key, store)
+    return store
   }
 
   async getMonth(year: number, month: number): Promise<MonthData> {

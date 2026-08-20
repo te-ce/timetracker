@@ -163,7 +163,8 @@ export function derivePlannedStopState(
   const plannedStopPeriod = findPlannedStopPeriod(windows, nowHHMM)
   const isPlannedStopMode = !!plannedStopPeriod && remainingTimeReference !== 'target-hours'
   const plannedStopTime = plannedStopPeriod?.end ?? null
-  const countdownHours = plannedStopPeriod ? (parseMinutes(plannedStopPeriod.end!) - parseMinutes(nowHHMM)) / 60 : 0
+  const plannedStopEnd = plannedStopPeriod?.end
+  const countdownHours = plannedStopEnd ? (parseMinutes(plannedStopEnd) - parseMinutes(nowHHMM)) / 60 : 0
   return { isPlannedStopMode, plannedStopTime, countdownHours }
 }
 

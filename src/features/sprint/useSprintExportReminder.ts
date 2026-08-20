@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useQuery, useQueries } from '@tanstack/react-query'
-import { useRepositories } from '../../infra/repositories/RepositoryContext'
+import { useRepositories } from '../../infra/repositories/repositories-context'
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import { toLocalIso } from '../../shared/dateUtils'
 import { resolveAppConfig } from '../../shared/appConfigDefaults'

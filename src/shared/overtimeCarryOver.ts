@@ -21,14 +21,16 @@ export function calculateOvertimeCarryOver(input: OvertimeCarryOverInput): Overt
   let isManualOverride = false
 
   for (const { month, overtime } of relevant) {
-    if (manualOverrides.has(month)) {
-      carryOver = manualOverrides.get(month)!
+    const override = manualOverrides.get(month)
+    if (override !== undefined) {
+      carryOver = override
     }
     carryOver += overtime
   }
 
-  if (manualOverrides.has(targetMonth)) {
-    carryOver = manualOverrides.get(targetMonth)!
+  const targetOverride = manualOverrides.get(targetMonth)
+  if (targetOverride !== undefined) {
+    carryOver = targetOverride
     isManualOverride = true
   }
 

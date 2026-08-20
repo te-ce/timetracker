@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useRepositories } from '../infra/repositories/RepositoryContext'
+import { useRepositories } from '../infra/repositories/repositories-context'
 import { QUERY_KEYS } from './queryKeys'
 import { resolveAppConfig, type ResolvedAppConfig } from './appConfigDefaults'
 

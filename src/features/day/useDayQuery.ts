@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useRepositories } from '../../infra/repositories/RepositoryContext'
+import { useRepositories } from '../../infra/repositories/repositories-context'
 import { useTodayIso } from '../../shared/useTodayIso'
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import { composeDayContext, type DayContext } from './dayContext'

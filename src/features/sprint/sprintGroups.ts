@@ -25,7 +25,7 @@ export function computeSprintGroups(
 
     if (currentSprintIdx === null || sprintIdx !== currentSprintIdx) {
       if (currentRows.length > 0) {
-        groups.push({ label: `Sprint ${currentSprintIdx! + 1}`, rows: currentRows })
+        groups.push({ label: `Sprint ${(currentSprintIdx ?? 0) + 1}`, rows: currentRows })
       }
       currentRows = [row]
       currentSprintIdx = sprintIdx
@@ -35,7 +35,7 @@ export function computeSprintGroups(
   }
 
   if (currentRows.length > 0) {
-    groups.push({ label: `Sprint ${currentSprintIdx! + 1}`, rows: currentRows })
+    groups.push({ label: `Sprint ${(currentSprintIdx ?? 0) + 1}`, rows: currentRows })
   }
 
   return groups

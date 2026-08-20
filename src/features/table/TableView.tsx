@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRepositories } from '../../infra/repositories/RepositoryContext'
+import { useRepositories } from '../../infra/repositories/repositories-context'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import { renameCategoryAcrossAllMonths } from './categoryMutations'
 import { MonthGrid } from './MonthTable'
@@ -65,11 +65,6 @@ export function TableView() {
 
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [clearDayDate, setClearDayDate] = useState<string | null>(null)
-  // Consume the deep-link logDate once so the dialog only opens on arrival.
-  const [pendingLogDate, setPendingLogDate] = useState(search.logDate)
-  useEffect(() => {
-    if (pendingLogDate) setPendingLogDate(undefined)
-  }, [pendingLogDate])
 
   const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', {
     month: 'long',
@@ -117,6 +112,8 @@ export function TableView() {
 
   const showOfficeStats = config.officeStats
 
+  // `initialLogDate` is read once, to seed the dialog: MonthGrid only uses it on
+  // mount, so arriving with ?logDate= opens it and a later render does not reopen it.
   const table = (
     <MonthGrid
       view={view}
@@ -128,7 +125,7 @@ export function TableView() {
       onNoteChange={(date, note) => noteMutation.mutate({ date, note })}
       onSelectDate={(date) => void navigate({ to: '/', search: { date } })}
       onClearDay={(date) => setClearDayDate(date)}
-      initialLogDate={pendingLogDate}
+      initialLogDate={search.logDate}
     />
   )
 

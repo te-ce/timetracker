@@ -33,7 +33,9 @@ export function createWorkbookService(config: AppConfig, isAuthenticated: boolea
   if (!source.ready) {
     throw new Error(localFolder ? 'No local Excel file selected.' : 'SharePoint URL or auth missing.')
   }
-  return buildFromSource(source)!
+  const service = buildFromSource(source)
+  if (!service) throw new Error('Could not build a workbook service.')
+  return service
 }
 
 export function buildWorkbookService(config: AppConfig | undefined, isAuthenticated: boolean): WorkbookService | null {

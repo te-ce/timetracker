@@ -1,89 +1,17 @@
 import { DayNoteEditor } from './DayNoteEditor'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useRepositories } from '../../infra/repositories/RepositoryContext'
+import { useRepositories } from '../../infra/repositories/repositories-context'
 import { DayTimeline } from './DayTimeline'
 import { DayTypePicker } from './DayTypePicker'
 import { toLocalIso } from '../../shared/dateUtils'
-import { STATUS_BADGE, STATUS_LABEL } from '../../shared/statusColors'
-import type { DayStatus } from '../../shared/dayStatus'
 import { nowHHMM } from '../../shared/worktime'
 import { deriveDayBalance, hasLiveActivity } from '../../shared/dayBalance'
 import { useClock } from '../../shared/useClock'
-import { Tooltip } from '../../shared/Tooltip'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
-import { LEAVE_TYPE_LABEL } from '../../shared/DaySummaryBody'
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-}
-
-interface DayActionsProps {
-  badgeStatus: Exclude<DayStatus, 'today'>
-  statusReason: string
-}
-
-function DayActions({ badgeStatus, statusReason }: DayActionsProps) {
-  if (badgeStatus === 'future') return null
-  return (
-    <Tooltip content={statusReason}>
-      <span
-        className={`inline-flex items-center cursor-help rounded-md border border-transparent px-3 py-1.5 text-sm font-medium ${STATUS_BADGE[badgeStatus].bg} ${STATUS_BADGE[badgeStatus].text}`}
-      >
-        {STATUS_LABEL[badgeStatus]}
-      </span>
-    </Tooltip>
-  )
-}
-
-interface DayNavProps {
-  selectedDate: string
-  todayIso: string
-  onPrev: () => void
-  onNext: () => void
-  onToday: () => void
-}
-
-function DayNav({ selectedDate, todayIso, onPrev, onNext, onToday }: DayNavProps) {
-  const isToday = selectedDate === todayIso
-  return (
-    <div className="flex items-center gap-4">
-      <button
-        type="button"
-        aria-label="Previous day"
-        className="rounded-md border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-        onClick={onPrev}
-      >
-        ← Prev
-      </button>
-      <div className="flex flex-1 items-center justify-center gap-2">
-        <h2 className="text-xl font-semibold">{formatDate(selectedDate)}</h2>
-        <button
-          type="button"
-          className={`rounded-md border px-2 py-0.5 text-xs font-medium transition-opacity dark:border-gray-700 ${isToday ? 'text-gray-400 dark:text-gray-500 opacity-40 cursor-default pointer-events-none' : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/40'}`}
-          onClick={onToday}
-          disabled={isToday}
-          aria-label="Go to today"
-        >
-          Current
-        </button>
-      </div>
-      <button
-        type="button"
-        aria-label="Next day"
-        className="rounded-md border px-3 py-1 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700"
-        onClick={onNext}
-      >
-        Next →
-      </button>
-    </div>
-  )
-}
+import { LEAVE_TYPE_LABEL } from '../../shared/leaveTypeLabel'
+import { DayNav } from './DayNav'
+import { DayActions } from './DayActions'
 
 export function DayView() {
   const { monthRepo } = useRepositories()

@@ -99,3 +99,16 @@ function resolveDefinedConfig(config: AppConfig): ResolvedAppConfig {
 export function resolveAppConfig(config: AppConfig | undefined): ResolvedAppConfig {
   return resolveDefinedConfig(config ?? DEFAULT_APP_CONFIG)
 }
+
+/**
+ * The loaded config, or a thrown error.
+ *
+ * A mutation that saves `{ ...config, field }` cannot run before the config query
+ * has resolved: spreading `undefined` would persist a config with every other
+ * field missing. Callers reach this only from a mutationFn, where the query has
+ * already settled, so the throw is a guard and not a code path.
+ */
+export function requireConfig(config: AppConfig | undefined): AppConfig {
+  if (!config) throw new Error('Cannot save: the app config has not loaded yet.')
+  return config
+}

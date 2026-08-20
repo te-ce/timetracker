@@ -1,4 +1,4 @@
-import { useRepositories } from '../../infra/repositories/RepositoryContext'
+import { useRepositories } from '../../infra/repositories/repositories-context'
 import { SettingsNav } from './SettingsNav'
 import { SECTION_DEFS, renderSection } from './SettingsSections'
 import { useSettingsScrollSpy } from './useSettingsScrollSpy'
