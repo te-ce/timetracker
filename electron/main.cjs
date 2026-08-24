@@ -31,6 +31,7 @@ let trayState = {
 }
 
 const autoLauncher = new AutoLaunch({ name: 'Timetracker' })
+console.log('autoLauncher resolved opts:', autoLauncher.opts)
 
 // ── Window state persistence ──────────────────────────────────────────────────
 
@@ -384,8 +385,8 @@ async function syncAutoLaunch() {
     const isEnabled = await autoLauncher.isEnabled()
     if (shouldEnable && !isEnabled) await autoLauncher.enable()
     else if (!shouldEnable && isEnabled) await autoLauncher.disable()
-  } catch {
-    // config not yet written; leave OS autolaunch state unchanged
+  } catch (err) {
+    console.error('syncAutoLaunch failed:', err)
   }
 }
 
@@ -424,8 +425,18 @@ ipcMain.handle('hotkey:setPresenting', (_, accelerator) => {
   registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: accelerator })
 })
 
-ipcMain.handle('autolaunch:get', () => autoLauncher.isEnabled())
-ipcMain.handle('autolaunch:set', (_, enabled) => (enabled ? autoLauncher.enable() : autoLauncher.disable()))
+ipcMain.handle('autolaunch:get', () =>
+  autoLauncher.isEnabled().catch((err) => {
+    console.error('autolaunch:get failed:', err)
+    throw err
+  }),
+)
+ipcMain.handle('autolaunch:set', (_, enabled) =>
+  (enabled ? autoLauncher.enable() : autoLauncher.disable()).catch((err) => {
+    console.error('autolaunch:set failed:', err)
+    throw err
+  }),
+)
 
 ipcMain.on('tray:sync', (_, data) => {
   if (!tray) return
