@@ -1,5 +1,5 @@
 import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
-import { calculateWorkedHours, elapsedHours, findActivePeriod, parseMinutes } from '../../shared/worktime'
+import { calculateWorkedHours, elapsedHours, parseMinutes } from '../../shared/worktime'
 import { findBreaks, type DayBreak } from './dayBreaks'
 import { deriveSegments, type DaySegment } from './daySegments'
 import { isLiveSubtask } from './workPeriodShared'
@@ -17,19 +17,17 @@ export interface ActiveTracking {
 }
 
 export interface DayOptions {
-  /** A Planned-Stop WorkPeriod only counts as running on today's day (ADR 0009). */
+  /** A Planned-Stop WorkPeriod's projected segment only renders on today's day (ADR 0009). */
   isToday?: boolean
 }
 
-export function findActiveTracking(
-  windows: WorkPeriod[],
-  now: string,
-  { isToday = true }: DayOptions = {},
-): ActiveTracking | undefined {
+export function findActiveTracking(windows: WorkPeriod[], now: string): ActiveTracking | undefined {
   const ordered = orderedPeriods(windows)
-  // Per ADR 0006 the latest open WorkPeriod is the current session; on today a
-  // Planned-Stop WorkPeriod counts as running too (ADR 0009).
-  const period = ordered.findLast((w) => w.end === null) ?? (isToday ? findActivePeriod(ordered, now) : undefined)
+  // Per ADR 0006 the latest open WorkPeriod is the current session. A
+  // Planned-Stop WorkPeriod (ADR 0009) is not: it already has a declared
+  // stop, so the tracking bar and "what's running" state treat it as done
+  // (ADR 0012).
+  const period = ordered.findLast((w) => w.end === null)
   if (!period) return undefined
   const subtask = period.subtasks.find(isLiveSubtask)
   const since = subtask?.startedAt ?? period.start
@@ -127,7 +125,7 @@ export function deriveDayStats(windows: WorkPeriod[], now: string, options: DayO
   const breaks = findBreaks(windows)
   const breakHours = breaks.reduce((sum, b) => sum + b.hours, 0)
   const worked = calculateWorkedHours(windows, options.isToday === false ? undefined : now)
-  const active = findActiveTracking(windows, now, options)
+  const active = findActiveTracking(windows, now)
 
   return {
     worked,

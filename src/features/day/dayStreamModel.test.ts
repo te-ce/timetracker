@@ -76,25 +76,14 @@ describe('findActiveTracking', () => {
     expect(active).toMatchObject({ category: '_GUILDS', since: '13:50', elapsed: 0.5 })
   })
 
-  it('still counts a Planned-Stop WorkPeriod as running', () => {
-    // Given a WorkPeriod declared to run until 18:00
+  it('does not count a Planned-Stop WorkPeriod as running', () => {
+    // Given a WorkPeriod declared to stop at 18:00
     const windows = [period('13:00', '18:00')]
 
-    // When it is 14:00
+    // When it is 14:00, before that declared stop
     const active = findActiveTracking(windows, '14:00')
 
-    // Then work is still being tracked
-    expect(active).toMatchObject({ category: '_COREMEDIA', since: '13:00', elapsed: 1 })
-  })
-
-  it('does not read a past day’s finished WorkPeriod as a planned stop', () => {
-    // Given a day that is not today, holding a period that ended at 17:00
-    const windows = [period('09:00', '17:00')]
-
-    // When it is 14:00 on the wall clock but the viewed day is over
-    const active = findActiveTracking(windows, '14:00', { isToday: false })
-
-    // Then nothing is being tracked
+    // Then nothing is being tracked — the declared stop already closed it
     expect(active).toBeUndefined()
   })
 

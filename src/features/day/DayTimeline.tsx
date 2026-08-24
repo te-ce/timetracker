@@ -90,7 +90,7 @@ export function DayTimeline(props: DayTimelineProps) {
   const mutations = useWorkPeriodMutations(repository)
   const stream = buildDayStream(windows, now, dayOptions)
   const stats = deriveDayStats(windows, now, dayOptions)
-  const active = findActiveTracking(windows, now, dayOptions)
+  const active = findActiveTracking(windows, now)
   const categories = getAllCategories(customCategories, categoryOrder)
   const [loggingFor, setLoggingFor] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<PendingDelete | null>(null)

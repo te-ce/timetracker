@@ -280,7 +280,7 @@ describe('DayTimeline', () => {
     })
   })
 
-  it('keeps tracking when the end is set to a time still in the future', async () => {
+  it('stops tracking when the end is set to a time still in the future', async () => {
     // Given work running since 09:00
     const { repo } = setup([period('a', '09:00', null, 'Work')])
     const future = '23:59'
@@ -290,11 +290,11 @@ describe('DayTimeline', () => {
     fireEvent.change(screen.getByLabelText(/work period 1 end/i), { target: { value: future } })
     await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
 
-    // Then the planned end is stored and work is still being tracked
+    // Then the planned end is stored, but there is no open WorkPeriod anymore
     await vi.waitFor(async () => {
       expect((await getWindows(repo))[0]?.end).toBe(future)
     })
-    expect(await screen.findByRole('button', { name: /stop work/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /stop work/i })).not.toBeInTheDocument()
   })
 
   it('changes the main category of a work period', async () => {
