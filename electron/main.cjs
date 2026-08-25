@@ -297,6 +297,11 @@ function createWindow() {
     show: false,
   })
 
+  // Dock icon tracks window visibility: hidden while only the tray is showing.
+  app.dock?.hide()
+  mainWindow.on('show', () => app.dock?.show())
+  mainWindow.on('hide', () => app.dock?.hide())
+
   mainWindow.on('resize', saveWindowState)
   mainWindow.on('move', saveWindowState)
 
