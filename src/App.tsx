@@ -96,9 +96,19 @@ function App() {
     if (!api) return
     const onShow = () => {
       const cfg = appConfigRef.current
-      if (!cfg?.startupView) return
       const today = toLocalIso(new Date())
-      router.history.push(resolveStartupPath(cfg.startupView, getLastViewPath(), today))
+      if (cfg?.startupView) {
+        router.history.push(resolveStartupPath(cfg.startupView, getLastViewPath(), today))
+        return
+      }
+      // closeToTray keeps the window (and its router state) alive across "close" —
+      // restoring from the tray on a later day must re-sync a stale day view even
+      // with no configured startupView. Only when the last saved view was "today"
+      // (normalized to bare "/"): a deliberate past-date view stays untouched.
+      const loc = router.state.location
+      if (loc.pathname === '/' && isDaySearch(loc.search) && loc.search.date !== today && getLastViewPath() === '/') {
+        router.history.push(`/?date=${today}`)
+      }
     }
     api.onShow(onShow)
     return () => api.offShow(onShow)

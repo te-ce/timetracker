@@ -7,6 +7,51 @@ import { useThemeStore } from './shared/themeStore'
 import { useAuthStore } from './shared/authStore'
 import { useUndoStore } from './shared/undoStore'
 
+function noop() {}
+
+function mockElectronWindowApi(): { onShow: (() => void) | undefined } {
+  const handle: { onShow: (() => void) | undefined } = { onShow: undefined }
+  window.electronAPI = {
+    autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
+    tray: {
+      sync: noop,
+      onStartSubtask: noop,
+      offStartSubtask: noop,
+      onStopSubtask: noop,
+      offStopSubtask: noop,
+      onStopAll: noop,
+      offStopAll: noop,
+      onStartWorkPeriod: noop,
+      offStartWorkPeriod: noop,
+      onTogglePresentingMode: noop,
+      offTogglePresentingMode: noop,
+    },
+    hotkey: {
+      onToggle: noop,
+      offToggle: noop,
+      onTogglePresenting: noop,
+      offTogglePresenting: noop,
+      setGlobal: () => Promise.resolve(),
+      setPresenting: () => Promise.resolve(),
+    },
+    storage: { get: () => Promise.resolve(null), put: () => Promise.resolve(), delete: () => Promise.resolve() },
+    localFolder: {
+      pickFolder: () => Promise.resolve(null),
+      get: () => Promise.resolve(null),
+      put: () => Promise.resolve(),
+      delete: () => Promise.resolve(),
+    },
+    notify: { goalReached: noop, sprintExportDue: noop },
+    window: {
+      onShow: (cb: () => void) => {
+        handle.onShow = cb
+      },
+      offShow: noop,
+    },
+  }
+  return handle
+}
+
 function renderApp(path = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const memoryHistory = createMemoryHistory({ initialEntries: [path] })
@@ -167,6 +212,41 @@ describe('App', () => {
     await waitFor(() => {
       expect(redo).toHaveBeenCalled()
     })
+  })
+
+  it('re-syncs a stale day view to today when the window is restored from the tray', async () => {
+    const electronApi = mockElectronWindowApi()
+
+    renderApp('/?date=2000-01-01')
+    await screen.findByText('Timetracker')
+    // Overwrite what the mount's own location-save effect just wrote: this simulates
+    // a window that has been sitting hidden in the tray since a genuine "today" visit,
+    // with no navigation happening (and so no re-save) as the calendar day rolled over.
+    localStorage.setItem('timetracker-last-view', '/')
+
+    electronApi.onShow?.()
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/')
+    })
+    expect((router.state.location.search as { date: string }).date).not.toBe('2000-01-01')
+
+    delete window.electronAPI
+  })
+
+  it('leaves a deliberately-navigated past date alone when the window is restored from the tray', async () => {
+    const electronApi = mockElectronWindowApi()
+
+    renderApp('/?date=2000-01-01')
+    await screen.findByText('Timetracker')
+    localStorage.setItem('timetracker-last-view', '/?date=2000-01-01')
+
+    electronApi.onShow?.()
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect((router.state.location.search as { date: string }).date).toBe('2000-01-01')
+
+    delete window.electronAPI
   })
 
   it('opens keyboard shortcut legend with "?" key', async () => {
