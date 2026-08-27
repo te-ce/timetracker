@@ -146,9 +146,9 @@ function updateTrayDisplay() {
   if (!tray) return
   const { badgeLabel, isTracking, startedAt } = trayState
 
-  // Tray title: recording dot while tracking, then badge label (remaining / overtime / done)
-  const dot = isTracking ? '🔴 ' : ''
-  tray.setTitle(badgeLabel ? `${dot}${badgeLabel}` : '')
+  // Tray title: recording dot while tracking (shown even with Display Hours off), then badge label
+  const dot = isTracking ? '🔺 ' : ''
+  tray.setTitle(dot || badgeLabel ? `${dot}${badgeLabel}` : '')
 
   // Tooltip: receipt-style breakdown (value first, sub-items indented)
   const lines = ['Timetracker']
