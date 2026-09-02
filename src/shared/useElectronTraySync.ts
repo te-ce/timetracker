@@ -9,7 +9,7 @@ import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
-import { findActivePeriod, findActivePeriods, nowHHMM } from './worktime'
+import { findActivePeriod, nowHHMM } from './worktime'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
 function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string): string | null {
@@ -69,12 +69,10 @@ export async function handleStopSubtask(
 
 export async function handleStopAll(monthRepo: MonthRepository, today: string, windows: WorkPeriod[]): Promise<void> {
   const now = nowHHMM()
-  const active = findActivePeriods(windows, now)
-  const open = active.filter((p) => p.end === null)
-  // A Planned-Stop period already carries a stop time the user set. Only
-  // force-close it early when it is the only thing running; if a genuinely
-  // open period exists, Stop All closes that and leaves the set time alone.
-  const targets = open.length > 0 ? open : active
+  // Stop All only fills empty stop fields. A period that already carries a
+  // stop time — including a Planned-Stop one still counting down — keeps the
+  // time the user set; overwriting it would silently destroy their input.
+  const targets = windows.filter((p) => p.end === null)
 
   for (const period of targets) {
     const liveSubtask = period.subtasks.find((s) => s.startedAt && !s.stoppedAt)

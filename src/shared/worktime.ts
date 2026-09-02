@@ -97,18 +97,6 @@ export function findActivePeriod(windows: WorkPeriod[], nowHHMM: string): WorkPe
 }
 
 /**
- * Returns every WorkPeriod that is currently live-tracked — fully open
- * (end: null) or a Planned-Stop WorkPeriod whose declared end hasn't passed
- * yet — in their original order. Unlike findActivePeriod, this doesn't pick
- * a single "the" active period: normally at most one period is open, but a
- * manual edit can leave more than one without an explicit stop time, and
- * callers like Stop All need to close all of them, not just one.
- */
-export function findActivePeriods(windows: WorkPeriod[], nowHHMM: string): WorkPeriod[] {
-  return windows.filter((w) => w.end === null || isPlannedStop(w, nowHHMM))
-}
-
-/**
  * Calculates projected total worked hours for today.
  * Planned-Stop periods contribute their full planned duration (end − start).
  * Open periods (end: null) contribute live elapsed (now − start).

@@ -155,11 +155,21 @@ describe('handleStopAll', () => {
     expect(stopWorkPeriod).toHaveBeenCalledTimes(1)
   })
 
-  it('force-closes a planned-stop period early when it is the only active one', async () => {
+  it('never overwrites a stop time that is already set, even with no period open', async () => {
+    // Planned periods carry a stop time the user chose. Stop All only fills
+    // empty stop fields — it must not rewrite these to "now".
+    const morning = makeWindow({ id: 'wp1', start: '09:00', end: '12:00' })
+    const afternoon = makeWindow({ id: 'wp2', start: '13:00', end: '23:59' })
+    const { repo, stopWorkPeriod } = makeMockMonthRepo()
+    await handleStopAll(repo, '2026-06-09', [morning, afternoon])
+    expect(stopWorkPeriod).not.toHaveBeenCalled()
+  })
+
+  it('leaves a lone planned-stop period on its own stop time', async () => {
     const planned = makeWindow({ id: 'wp1', start: '09:00', end: '23:59' })
     const { repo, stopWorkPeriod } = makeMockMonthRepo()
     await handleStopAll(repo, '2026-06-09', [planned])
-    expect(stopWorkPeriod).toHaveBeenCalledWith('2026-06-09', 'wp1', expect.any(String))
+    expect(stopWorkPeriod).not.toHaveBeenCalled()
   })
 })
 
