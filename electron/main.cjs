@@ -25,6 +25,7 @@ let trayState = {
   activeSubtaskCategory: null,
   categories: [],
   categoryLabels: {},
+  isOvertime: false,
   isTracking: false,
   startedAt: null,
   presentingMode: false,
@@ -144,10 +145,10 @@ function elapsedHours(startedAt) {
 
 function updateTrayDisplay() {
   if (!tray) return
-  const { badgeLabel, isTracking, startedAt } = trayState
+  const { badgeLabel, isOvertime, isTracking, startedAt } = trayState
 
   // Tray title: recording dot while tracking (shown even with Display Hours off), then badge label
-  const dot = isTracking ? '🔺 ' : ''
+  const dot = isTracking ? (isOvertime ? '🔹 ' : '🔸 ') : ''
   tray.setTitle(dot || badgeLabel ? `${dot}${badgeLabel}` : '')
 
   // Tooltip: receipt-style breakdown (value first, sub-items indented)

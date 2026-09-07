@@ -37,6 +37,7 @@ export interface TrayState {
   categories: string[]
   /** Display label per category code, honoring preferCategoryDescriptionAsPrimary. */
   categoryLabels: Record<string, string>
+  isOvertime: boolean
   isTracking: boolean
   startedAt: string | null
   presentingMode: boolean
@@ -104,6 +105,7 @@ export function buildTrayState(input: TrayStateInput): TrayState {
     activeSubtaskCategory,
     categories: input.categories,
     categoryLabels,
+    isOvertime: remaining < 0,
     isTracking: input.isTracking,
     startedAt: input.startedAt,
     presentingMode,

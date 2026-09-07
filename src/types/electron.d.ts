@@ -11,6 +11,7 @@ interface Window {
         autoCategory: string | null
         activeSubtaskCategory: string | null
         categories: string[]
+        isOvertime: boolean
         isTracking: boolean
         startedAt: string | null
         presentingMode: boolean

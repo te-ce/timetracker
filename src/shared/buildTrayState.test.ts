@@ -84,6 +84,17 @@ describe('buildTrayState', () => {
     })
   })
 
+  describe('isOvertime', () => {
+    it('is true when remaining hours are negative', () => {
+      expect(buildTrayState({ ...baseInput, remaining: -1 }).isOvertime).toBe(true)
+    })
+
+    it('is false when remaining hours are zero or positive', () => {
+      expect(buildTrayState({ ...baseInput, remaining: 0 }).isOvertime).toBe(false)
+      expect(buildTrayState(baseInput).isOvertime).toBe(false)
+    })
+  })
+
   describe('receiptLines', () => {
     it('returns Required as first line with target minus carry-over', () => {
       // baseInput: sollstunden=8, priorOvertime=0, workedHours=3 → required=8
