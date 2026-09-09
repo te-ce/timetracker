@@ -218,6 +218,10 @@ describe('App', () => {
     const electronApi = mockElectronWindowApi()
 
     renderApp('/?date=2000-01-01')
+    // The router is a shared singleton that stays mounted across tests, so
+    // swapping in a new memory history does not load it by itself. Load
+    // explicitly so the assertions below observe the intended location.
+    await router.load()
     await screen.findByText('Timetracker')
     // Overwrite what the mount's own location-save effect just wrote: this simulates
     // a window that has been sitting hidden in the tray since a genuine "today" visit,
@@ -239,6 +243,9 @@ describe('App', () => {
 
     renderApp('/?date=2000-01-01')
     await screen.findByText('Timetracker')
+    // Same shared-singleton race as above: wait for the new history to load
+    // before seeding last-view and firing onShow.
+    await router.load()
     localStorage.setItem('timetracker-last-view', '/?date=2000-01-01')
 
     electronApi.onShow?.()
