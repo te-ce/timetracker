@@ -117,13 +117,19 @@ export function DayTimeline(props: DayTimelineProps) {
 
   function stopTracking(endTime: string) {
     if (!active) return
-    mutations.stopPeriod.mutate({
-      date,
-      periodId: active.period.id,
-      endTime,
-      liveSubtaskId: active.subtask?.id,
-      stoppedAt: active.subtask ? endTime : undefined,
-    })
+    // Stray periods can end up with end: null without being the active one
+    // (e.g. edited by hand). One Stop click must close all of them, never
+    // just the active period, so no open period is left dangling.
+    for (const w of windows) {
+      if (w.end !== null) continue
+      mutations.stopPeriod.mutate({
+        date,
+        periodId: w.id,
+        endTime,
+        liveSubtaskId: w.id === active.period.id ? active.subtask?.id : undefined,
+        stoppedAt: w.id === active.period.id && active.subtask ? endTime : undefined,
+      })
+    }
   }
 
   return (

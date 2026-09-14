@@ -182,6 +182,29 @@ describe('DayTimeline', () => {
     })
   })
 
+  it('closes every open period on one click, not only the active one, and leaves already-closed periods untouched', async () => {
+    // Given a stale open period from an earlier edit, a closed period, and the currently active one
+    const { repo } = setup([
+      period('stale', '07:00', null, 'Meeting'),
+      period('closed', '08:00', '08:30', 'Review'),
+      period('active', '09:00', null, 'Work'),
+    ])
+
+    // When the user stops the running work period with one click
+    await userEvent.click(await screen.findByRole('button', { name: /stop work/i }))
+
+    // Then every open period is closed, and the already-set stop time is untouched
+    await vi.waitFor(async () => {
+      const windows = await getWindows(repo)
+      const stale = windows.find((w) => w.id === 'stale')
+      const closed = windows.find((w) => w.id === 'closed')
+      const active = windows.find((w) => w.id === 'active')
+      expect(stale?.end).toMatch(/^\d{2}:\d{2}$/)
+      expect(closed?.end).toBe('08:30')
+      expect(active?.end).toMatch(/^\d{2}:\d{2}$/)
+    })
+  })
+
   it('tracks a subtask on another category and hands tracking back on stop', async () => {
     // Given work running on Work
     const { repo } = setup([period('a', '09:00', null, 'Work')])
