@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link, Outlet, useRouterState, useNavigate, useRouter } from '@tanstack/react-router'
 import { useUndoStore } from './shared/undoStore'
 import { useElectronTraySync } from './shared/useElectronTraySync'
+import { useFaviconIndicator } from './shared/useFaviconIndicator'
 import { useGoalNotification } from './shared/useGoalNotification'
 import { useSprintExportReminder } from './features/sprint/useSprintExportReminder'
 import { SprintExportBadge } from './features/sprint/SprintExportBadge'
@@ -32,7 +33,8 @@ function isDaySearch(search: unknown): search is { date: string } {
 function App() {
   const { configRepo } = useRepositories()
   const queryClient = useQueryClient()
-  useElectronTraySync()
+  const { isTracking, isOvertime } = useElectronTraySync()
+  useFaviconIndicator(isTracking, isOvertime)
   useGoalNotification()
   const {
     isPending: monthIsPending,

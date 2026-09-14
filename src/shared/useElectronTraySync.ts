@@ -83,7 +83,7 @@ export async function handleStopAll(monthRepo: MonthRepository, today: string, w
   }
 }
 
-export function useElectronTraySync() {
+export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolean } {
   const { configRepo, monthRepo } = useRepositories()
   const queryClient = useQueryClient()
   const { workedHours, sollstunden, priorOvertime, liveElapsed, remaining, isOvertimeReady } = useRemainingHours()
@@ -233,4 +233,6 @@ export function useElectronTraySync() {
       api.hotkey.offTogglePresenting(toggleHoursDisplay)
     }
   }, [toggleHoursDisplay])
+
+  return { isTracking, isOvertime: remaining < 0 }
 }
