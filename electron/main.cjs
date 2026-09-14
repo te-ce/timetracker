@@ -156,9 +156,27 @@ function trayIconColor(isTracking, isOvertime) {
   return isTracking ? TRAY_ICON_COLORS.orange : TRAY_ICON_COLORS.red
 }
 
+// nativeImage has no SVG decoder, so the dot is drawn as a raw BGRA bitmap instead of an SVG data URL.
 function trayIconImage(color) {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="${color}"/><path d="M6.5 7h19v4.2h-7.3V25h-4.4V11.2H6.5z" fill="#f9fafb"/></svg>`
-  return nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`)
+  const r = parseInt(color.slice(1, 3), 16)
+  const g = parseInt(color.slice(3, 5), 16)
+  const b = parseInt(color.slice(5, 7), 16)
+  const size = 16
+  const radius = size / 2
+  const buf = Buffer.alloc(size * size * 4)
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = x - radius + 0.5
+      const dy = y - radius + 0.5
+      const inside = dx * dx + dy * dy <= radius * radius
+      const i = (y * size + x) * 4
+      buf[i] = b
+      buf[i + 1] = g
+      buf[i + 2] = r
+      buf[i + 3] = inside ? 0xff : 0
+    }
+  }
+  return nativeImage.createFromBitmap(buf, { width: size, height: size })
 }
 
 function updateTrayDisplay() {
