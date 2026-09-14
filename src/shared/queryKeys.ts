@@ -53,4 +53,6 @@ export const QUERY_KEYS = {
 
   trash: ['trash'] as const,
   trashBackups: ['trashBackups'] as const,
+
+  autoLaunch: ['autoLaunch'] as const,
 }
