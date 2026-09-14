@@ -13,6 +13,7 @@
     "test:mutation": "stryker run",
     "knip": "knip",
     "e2e": "playwright test",
+    "e2e:electron": "playwright test --config=e2e-electron/playwright.config.ts",
     "preview": "vite preview",
     "format": "prettier --write .",
     "prepare": "husky",

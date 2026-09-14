@@ -458,6 +458,17 @@ ipcMain.on('tray:sync', (_, data) => {
   }
 })
 
+// Test-only seam: lets an e2e test click the real "Stop All" tray menu item —
+// built by the same buildTrayMenu() the live tray uses — since Playwright has
+// no way to drive a native OS tray menu directly.
+if (process.env.E2E_ELECTRON_TEST === 'true') {
+  global.__e2eClickTrayStopAll = () => {
+    const item = buildTrayMenu().items.find((i) => i.label === '⏹ Stop All')
+    if (!item) throw new Error('Stop All tray item not present (is a period being tracked?)')
+    item.click()
+  }
+}
+
 ipcMain.on('notify:goalReached', () => {
   if (Notification.isSupported()) {
     new Notification({

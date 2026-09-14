@@ -30,6 +30,7 @@
     "playwright.config.ts",
     "knip.config.ts",
     "stryker.config.mjs",
-    "e2e/**/*.ts"
+    "e2e/**/*.ts",
+    "e2e-electron/**/*.ts"
   ]
 }
