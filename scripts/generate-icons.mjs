@@ -11,22 +11,40 @@ const outDir = join(root, 'electron', 'icons')
 
 mkdirSync(outDir, { recursive: true })
 
-const svg = readFileSync(svgPath)
+const svg = readFileSync(svgPath).toString('utf8')
 
-function renderPng(size) {
-  return new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng()
+function renderPng(source, size) {
+  return new Resvg(source, { fitTo: { mode: 'width', value: size } }).render().asPng()
 }
 
 // Tray icons
 for (const size of [16, 32]) {
-  const png = renderPng(size)
+  const png = renderPng(svg, size)
   const name = size === 32 ? 'tray@2x.png' : 'tray.png'
   writeFileSync(join(outDir, name), png)
   console.log(`Generated electron/icons/${name} (${size}x${size})`)
 }
 
+// Tray status icons: same mark, background recolored per tracking/overtime state.
+// Mirrors src/shared/useFaviconIndicator.ts's faviconColor mapping.
+const TRAY_STATUS_COLORS = {
+  red: '#dc2626',
+  orange: '#f97316',
+  green: '#16a34a',
+  blue: '#2563eb',
+}
+for (const [name, color] of Object.entries(TRAY_STATUS_COLORS)) {
+  const coloredSvg = svg.replace(/fill="#4f46e5"/, `fill="${color}"`).replace(/<circle[^>]*\/>/, '')
+  for (const size of [16, 32]) {
+    const png = renderPng(coloredSvg, size)
+    const fileName = size === 32 ? `tray-${name}@2x.png` : `tray-${name}.png`
+    writeFileSync(join(outDir, fileName), png)
+    console.log(`Generated electron/icons/${fileName} (${size}x${size})`)
+  }
+}
+
 // Linux / Windows fallback PNG
-const png512 = renderPng(512)
+const png512 = renderPng(svg, 512)
 writeFileSync(join(outDir, '512x512.png'), png512)
 console.log('Generated electron/icons/512x512.png')
 
@@ -35,8 +53,8 @@ const iconsetDir = join(outDir, 'app.iconset')
 mkdirSync(iconsetDir, { recursive: true })
 const icnsSizes = [16, 32, 64, 128, 256, 512]
 for (const s of icnsSizes) {
-  writeFileSync(join(iconsetDir, `icon_${s}x${s}.png`), renderPng(s))
-  writeFileSync(join(iconsetDir, `icon_${s}x${s}@2x.png`), renderPng(s * 2))
+  writeFileSync(join(iconsetDir, `icon_${s}x${s}.png`), renderPng(svg, s))
+  writeFileSync(join(iconsetDir, `icon_${s}x${s}@2x.png`), renderPng(svg, s * 2))
 }
 const icnsPath = join(outDir, 'app.icns')
 execSync(`iconutil -c icns "${iconsetDir}" -o "${icnsPath}"`)
@@ -45,7 +63,7 @@ console.log('Generated electron/icons/app.icns')
 
 // Windows .ico — pack several sizes into one file using raw ICO format
 const icoSizes = [16, 32, 48, 256]
-const pngs = icoSizes.map((s) => renderPng(s))
+const pngs = icoSizes.map((s) => renderPng(svg, s))
 
 // Minimal ICO writer (ICONDIR + ICONDIRENTRYs + PNG blobs)
 const count = icoSizes.length

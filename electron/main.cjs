@@ -143,47 +143,32 @@ function elapsedHours(startedAt) {
   return (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60)
 }
 
-const TRAY_ICON_COLORS = {
-  red: '#dc2626',
-  orange: '#f97316',
-  green: '#16a34a',
-  blue: '#2563eb',
-}
-
+// Pre-rendered by scripts/generate-icons.mjs from public/favicon.svg (background recolored per state).
+// nativeImage has no SVG decoder, so these ship as PNGs rather than being rasterized at runtime.
 // Mirrors src/shared/useFaviconIndicator.ts's faviconColor mapping.
-function trayIconColor(isTracking, isOvertime) {
-  if (isOvertime) return isTracking ? TRAY_ICON_COLORS.green : TRAY_ICON_COLORS.blue
-  return isTracking ? TRAY_ICON_COLORS.orange : TRAY_ICON_COLORS.red
+const TRAY_ICON_NAMES = {
+  red: 'tray-red.png',
+  orange: 'tray-orange.png',
+  green: 'tray-green.png',
+  blue: 'tray-blue.png',
 }
+const trayIconImages = Object.fromEntries(
+  Object.entries(TRAY_ICON_NAMES).map(([name, file]) => [
+    name,
+    nativeImage.createFromPath(path.join(__dirname, 'icons', file)),
+  ]),
+)
 
-// nativeImage has no SVG decoder, so the dot is drawn as a raw BGRA bitmap instead of an SVG data URL.
-function trayIconImage(color) {
-  const r = parseInt(color.slice(1, 3), 16)
-  const g = parseInt(color.slice(3, 5), 16)
-  const b = parseInt(color.slice(5, 7), 16)
-  const size = 16
-  const radius = size / 2
-  const buf = Buffer.alloc(size * size * 4)
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const dx = x - radius + 0.5
-      const dy = y - radius + 0.5
-      const inside = dx * dx + dy * dy <= radius * radius
-      const i = (y * size + x) * 4
-      buf[i] = b
-      buf[i + 1] = g
-      buf[i + 2] = r
-      buf[i + 3] = inside ? 0xff : 0
-    }
-  }
-  return nativeImage.createFromBitmap(buf, { width: size, height: size })
+function trayIconImage(isTracking, isOvertime) {
+  if (isOvertime) return isTracking ? trayIconImages.green : trayIconImages.blue
+  return isTracking ? trayIconImages.orange : trayIconImages.red
 }
 
 function updateTrayDisplay() {
   if (!tray) return
   const { badgeLabel, startedAt, isTracking, isOvertime } = trayState
 
-  tray.setImage(trayIconImage(trayIconColor(isTracking, isOvertime)))
+  tray.setImage(trayIconImage(isTracking, isOvertime))
   tray.setTitle(badgeLabel)
 
   // Tooltip: receipt-style breakdown (value first, sub-items indented)
