@@ -101,6 +101,6 @@ export function stopPeriod(
   const withSubtaskStopped = liveSubtaskId && stoppedAt ? stopLiveSubtask(day, periodId, liveSubtaskId, stoppedAt) : day
   return {
     ...withSubtaskStopped,
-    windows: withSubtaskStopped.windows.map((w) => (w.id === periodId ? { ...w, end: endTime } : w)),
+    windows: withSubtaskStopped.windows.map((w) => (w.id === periodId && w.end === null ? { ...w, end: endTime } : w)),
   }
 }

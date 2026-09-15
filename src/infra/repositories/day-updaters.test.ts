@@ -336,4 +336,10 @@ describe('stopPeriod', () => {
     const result = stopPeriod(day, 'w1', '12:00')
     expect(result.windows.find((w) => w.id === 'w2')?.end).toBeNull()
   })
+
+  it('does not overwrite an end that is already set', () => {
+    const day = { ...emptyDay(), windows: [win('w1', '09:00', '17:00')] }
+    const result = stopPeriod(day, 'w1', '18:30')
+    expect(result.windows[0]?.end).toBe('17:00')
+  })
 })
