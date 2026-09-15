@@ -190,6 +190,41 @@ describe('buildTrayState', () => {
     })
   })
 
+  describe('hasLiveSubtask', () => {
+    it('is false when the open period has no subtasks', () => {
+      const result = buildTrayState(baseInput)
+      expect(result.hasLiveSubtask).toBe(false)
+    })
+
+    it('is true when a subtask on the open period is live', () => {
+      const windows = [
+        makePeriod({
+          subtasks: [{ id: 's1', category: '_SUPPORT', hours: 0, startedAt: '2026-06-09T10:00:00Z' }],
+        }),
+      ]
+      const result = buildTrayState({ ...baseInput, windows })
+      expect(result.hasLiveSubtask).toBe(true)
+    })
+
+    it('is false when the only subtask on the open period has already stopped', () => {
+      const windows = [
+        makePeriod({
+          subtasks: [
+            {
+              id: 's1',
+              category: '_SUPPORT',
+              hours: 1,
+              startedAt: '2026-06-09T10:00:00Z',
+              stoppedAt: '2026-06-09T11:00:00Z',
+            },
+          ],
+        }),
+      ]
+      const result = buildTrayState({ ...baseInput, windows })
+      expect(result.hasLiveSubtask).toBe(false)
+    })
+  })
+
   describe('categories', () => {
     it('passes through categories list', () => {
       const result = buildTrayState(baseInput)

@@ -34,6 +34,7 @@ export interface TrayState {
   badgeLabel: string
   autoCategory: string | null
   activeSubtaskCategory: string | null
+  hasLiveSubtask: boolean
   categories: string[]
   /** Display label per category code, honoring preferCategoryDescriptionAsPrimary. */
   categoryLabels: Record<string, string>
@@ -52,6 +53,11 @@ function findLiveSubtaskCategory(windows: WorkPeriod[], nowHHMM: string): string
   if (!activePeriod) return null
   const live = activePeriod.subtasks.find(isLiveSubtask)
   return live?.category ?? activePeriod.category
+}
+
+function hasLiveSubtask(windows: WorkPeriod[], nowHHMM: string): boolean {
+  const activePeriod = findActivePeriod(windows, nowHHMM)
+  return activePeriod?.subtasks.some(isLiveSubtask) ?? false
 }
 
 function buildCategoryLabels(
@@ -103,6 +109,7 @@ export function buildTrayState(input: TrayStateInput): TrayState {
     badgeLabel,
     autoCategory: input.autoCategory,
     activeSubtaskCategory,
+    hasLiveSubtask: hasLiveSubtask(input.windows, input.nowHHMM),
     categories: input.categories,
     categoryLabels,
     isOvertime: remaining < 0,

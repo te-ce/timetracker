@@ -23,6 +23,7 @@ let trayState = {
   badgeLabel: '',
   autoCategory: null,
   activeSubtaskCategory: null,
+  hasLiveSubtask: false,
   categories: [],
   categoryLabels: {},
   isOvertime: false,
@@ -207,6 +208,7 @@ function buildTrayMenu() {
     receiptLines,
     autoCategory,
     activeSubtaskCategory,
+    hasLiveSubtask,
     categories,
     categoryLabels,
     isTracking,
@@ -234,10 +236,12 @@ function buildTrayMenu() {
           type: 'checkbox',
           checked: isSelected,
           click: () => {
-            if (isSelected) {
+            if (!isSelected) {
+              mainWindow.webContents.send('tray:startSubtask', cat)
+            } else if (hasLiveSubtask) {
               mainWindow.webContents.send('tray:stopSubtask')
             } else {
-              mainWindow.webContents.send('tray:startSubtask', cat)
+              mainWindow.webContents.send('tray:stopAll')
             }
           },
         }
@@ -485,6 +489,12 @@ if (process.env.E2E_ELECTRON_TEST === 'true') {
   global.__e2eClickTrayStopAll = () => {
     const item = buildTrayMenu().items.find((i) => i.label === '⏹ Stop All')
     if (!item) throw new Error('Stop All tray item not present (is a period being tracked?)')
+    item.click()
+  }
+
+  global.__e2eClickTrayCategory = (label) => {
+    const item = buildTrayMenu().items.find((i) => i.label === label)
+    if (!item) throw new Error(`Tray category item "${label}" not present`)
     item.click()
   }
 }

@@ -10,6 +10,7 @@ interface Window {
         badgeLabel: string
         autoCategory: string | null
         activeSubtaskCategory: string | null
+        hasLiveSubtask: boolean
         categories: string[]
         isOvertime: boolean
         isTracking: boolean
