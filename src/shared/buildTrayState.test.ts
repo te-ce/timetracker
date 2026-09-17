@@ -82,6 +82,16 @@ describe('buildTrayState', () => {
       const result = buildTrayState({ ...baseInput, liveElapsed: 1, remaining: 4 })
       expect(result.badgeLabel).toBe('-4.00h')
     })
+
+    it('prepends a warning emoji when a sprint export is due', () => {
+      const result = buildTrayState({ ...baseInput, needsSprintExport: true })
+      expect(result.badgeLabel).toBe('⚠️ -5.00h')
+    })
+
+    it('omits the sprint export warning in presenting mode', () => {
+      const result = buildTrayState({ ...baseInput, needsSprintExport: true, presentingMode: true })
+      expect(result.badgeLabel).toBe('')
+    })
   })
 
   describe('isOvertime', () => {

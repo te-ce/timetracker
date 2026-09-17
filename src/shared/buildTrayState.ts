@@ -25,6 +25,7 @@ export interface TrayStateInput {
   presentingMode?: boolean
   /** False while the prior-months overtime carry-over is still loading — see `useDayQuery`'s `isOvertimeReady`. */
   isOvertimeReady?: boolean
+  needsSprintExport?: boolean
   categoryDescriptions?: Record<string, string>
   preferCategoryDescriptionAsPrimary?: boolean
 }
@@ -60,6 +61,21 @@ function hasLiveSubtask(windows: WorkPeriod[], nowHHMM: string): boolean {
   return activePeriod?.subtasks.some(isLiveSubtask) ?? false
 }
 
+function buildBadgeLabelWithWarning(
+  presentingMode: boolean,
+  resultUnknown: boolean,
+  needsSprintExport: boolean,
+  remaining: number,
+  totalWorked: number,
+  timeFormat: TimeFormat,
+  showTotalWorked: boolean,
+): string {
+  if (presentingMode) return ''
+  if (resultUnknown) return '…'
+  const warning = needsSprintExport ? '⚠️ ' : ''
+  return warning + buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
+}
+
 function buildCategoryLabels(
   categories: string[],
   categoryDescriptions: Record<string, string> | undefined,
@@ -92,11 +108,15 @@ export function buildTrayState(input: TrayStateInput): TrayState {
     : []
   const showBreakdown = input.showWorkedHoursInTrayBreakdown !== false
   const receiptLines = showBreakdown ? rawReceiptLines : []
-  const badgeLabel = presentingMode
-    ? ''
-    : resultUnknown
-      ? '…'
-      : buildBadgeLabel(remaining, totalWorked, timeFormat, showTotalWorked)
+  const badgeLabel = buildBadgeLabelWithWarning(
+    presentingMode,
+    resultUnknown,
+    input.needsSprintExport === true,
+    remaining,
+    totalWorked,
+    timeFormat,
+    showTotalWorked,
+  )
 
   const categoryLabels = buildCategoryLabels(
     input.categories,

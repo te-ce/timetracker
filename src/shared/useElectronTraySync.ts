@@ -10,6 +10,7 @@ import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
 import { findActivePeriod, nowHHMM } from './worktime'
+import { useSprintExportReminder } from '../features/sprint/useSprintExportReminder'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
 function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string): string | null {
@@ -90,6 +91,8 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
   const timeFormat = useTimeFormatStore((s) => s.format)
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
+  const sprintBadgeState = useSprintExportReminder()
+  const needsSprintExport = sprintBadgeState.kind === 'export'
 
   const openPeriod = findActivePeriod(windows, nowHHMM())
   const isTracking = !!openPeriod
@@ -139,6 +142,7 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
       isOvertimeReady,
       categoryDescriptions: resolved.categoryDescriptions,
       preferCategoryDescriptionAsPrimary: resolved.preferCategoryDescriptionAsPrimary,
+      needsSprintExport,
     })
 
     window.electronAPI.tray.sync(trayState)
@@ -156,6 +160,7 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
     resolvedAutoCategory,
     hideHours,
     isOvertimeReady,
+    needsSprintExport,
   ])
 
   const onStartSubtask = useCallback(
