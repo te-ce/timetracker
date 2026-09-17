@@ -161,7 +161,7 @@ const trayIconImages = Object.fromEntries(
 )
 
 function trayIconImage(isTracking, isOvertime) {
-  if (isOvertime) return isTracking ? trayIconImages.green : trayIconImages.blue
+  if (isOvertime) return isTracking ? trayIconImages.blue : trayIconImages.green
   return isTracking ? trayIconImages.orange : trayIconImages.red
 }
 

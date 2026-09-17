@@ -11,12 +11,12 @@ describe('faviconColor', () => {
     expect(faviconColor(true, false)).toBe('#f97316')
   })
 
-  it('is green when tracking and in overtime', () => {
-    expect(faviconColor(true, true)).toBe('#16a34a')
+  it('is blue when tracking and in overtime', () => {
+    expect(faviconColor(true, true)).toBe('#2563eb')
   })
 
-  it('is blue when not tracking and in overtime', () => {
-    expect(faviconColor(false, true)).toBe('#2563eb')
+  it('is green when not tracking and in overtime', () => {
+    expect(faviconColor(false, true)).toBe('#16a34a')
   })
 })
 
@@ -32,7 +32,7 @@ describe('useFaviconIndicator', () => {
   it('recolors the favicon link to match the current state', () => {
     renderHook(() => useFaviconIndicator(true, true))
     const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
-    expect(link?.href).toContain(encodeURIComponent('#16a34a'))
+    expect(link?.href).toContain(encodeURIComponent('#2563eb'))
   })
 
   it('updates the favicon when state changes', () => {
@@ -41,6 +41,6 @@ describe('useFaviconIndicator', () => {
     })
     rerender({ isTracking: false, isOvertime: true })
     const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
-    expect(link?.href).toContain(encodeURIComponent('#2563eb'))
+    expect(link?.href).toContain(encodeURIComponent('#16a34a'))
   })
 })

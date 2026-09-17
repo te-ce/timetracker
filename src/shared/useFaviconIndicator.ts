@@ -8,7 +8,7 @@ const COLORS = {
 } as const
 
 export function faviconColor(isTracking: boolean, isOvertime: boolean): string {
-  if (isOvertime) return isTracking ? COLORS.green : COLORS.blue
+  if (isOvertime) return isTracking ? COLORS.blue : COLORS.green
   return isTracking ? COLORS.orange : COLORS.red
 }
 
