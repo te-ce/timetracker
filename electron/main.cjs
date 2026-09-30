@@ -11,7 +11,6 @@ const {
 } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const AutoLaunch = require('electron-auto-launch')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
@@ -32,8 +31,8 @@ let trayState = {
   presentingMode: false,
 }
 
-const autoLauncher = new AutoLaunch({ name: 'Timetracker' })
-console.log('autoLauncher resolved opts:', autoLauncher.opts)
+const isLaunchAtLoginEnabled = () => app.getLoginItemSettings().openAtLogin
+const setLaunchAtLogin = (enabled) => app.setLoginItemSettings({ openAtLogin: enabled })
 
 // ── Window state persistence ──────────────────────────────────────────────────
 
@@ -409,13 +408,11 @@ function loadPresentingModeHotkey() {
   return config?.hotkeys?.presentingMode ?? null
 }
 
-async function syncAutoLaunch() {
+function syncAutoLaunch() {
   try {
     const config = loadConfig()
     const shouldEnable = config?.launchAtLogin === true
-    const isEnabled = await autoLauncher.isEnabled()
-    if (shouldEnable && !isEnabled) await autoLauncher.enable()
-    else if (!shouldEnable && isEnabled) await autoLauncher.disable()
+    if (shouldEnable !== isLaunchAtLoginEnabled()) setLaunchAtLogin(shouldEnable)
   } catch (err) {
     console.error('syncAutoLaunch failed:', err)
   }
@@ -426,7 +423,7 @@ app.whenReady().then(async () => {
   createWindow()
 
   registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: loadPresentingModeHotkey() })
-  await syncAutoLaunch()
+  syncAutoLaunch()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -456,18 +453,8 @@ ipcMain.handle('hotkey:setPresenting', (_, accelerator) => {
   registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: accelerator })
 })
 
-ipcMain.handle('autolaunch:get', () =>
-  autoLauncher.isEnabled().catch((err) => {
-    console.error('autolaunch:get failed:', err)
-    throw err
-  }),
-)
-ipcMain.handle('autolaunch:set', (_, enabled) =>
-  (enabled ? autoLauncher.enable() : autoLauncher.disable()).catch((err) => {
-    console.error('autolaunch:set failed:', err)
-    throw err
-  }),
-)
+ipcMain.handle('autolaunch:get', () => isLaunchAtLoginEnabled())
+ipcMain.handle('autolaunch:set', (_, enabled) => setLaunchAtLogin(enabled === true))
 
 ipcMain.on('tray:sync', (_, data) => {
   if (!tray) return

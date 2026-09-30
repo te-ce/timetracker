@@ -28,7 +28,6 @@
     "@azure/msal-react": "^5.4.1",
     "@tanstack/react-query": "^5.100.11",
     "@tanstack/react-router": "^1.170.4",
-    "electron-auto-launch": "^5.0.7",
     "exceljs": "^4.4.0",
     "msw": "^2.14.6",
     "react": "^19.2.6",
