@@ -5,6 +5,7 @@ import { QUERY_KEYS, invalidateMonth, invalidateConfig } from './queryKeys'
 import { useRepositories } from '../infra/repositories/repositories-context'
 import { getAllCategories } from './categories'
 import { useTodayIso } from './useTodayIso'
+import { toLocalIso } from './dateUtils'
 import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
@@ -23,12 +24,12 @@ function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string):
   return d.toISOString()
 }
 
-export async function handleStartWorkPeriod(
-  category: string,
-  monthRepo: MonthRepository,
-  today: string,
-): Promise<void> {
+// Resolves the day at click time: todayIso from useTodayIso can lag behind
+// midnight while the window stays hidden (its timer doesn't run during sleep).
+export async function handleStartWorkPeriod(category: string, monthRepo: MonthRepository): Promise<string> {
+  const today = toLocalIso(new Date())
   await monthRepo.openWorkPeriod(today, category, nowHHMM())
+  return today
 }
 
 export async function handleStartSubtask(
@@ -183,10 +184,10 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
 
   const onStartWorkPeriod = useCallback(
     async (category: string) => {
-      await handleStartWorkPeriod(category, monthRepo, todayIso)
-      invalidateMonth(queryClient, todayIso)
+      const today = await handleStartWorkPeriod(category, monthRepo)
+      invalidateMonth(queryClient, today)
     },
-    [monthRepo, todayIso, queryClient],
+    [monthRepo, queryClient],
   )
 
   useEffect(() => {

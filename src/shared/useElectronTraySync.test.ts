@@ -174,16 +174,16 @@ describe('handleStopAll', () => {
 })
 
 describe('handleStartWorkPeriod', () => {
-  it('opens a work period in the month repo', async () => {
-    const { repo: monthRepo, openWorkPeriod } = makeMockMonthRepo()
-    await handleStartWorkPeriod('_SUPPORT', monthRepo, '2026-06-09')
-    expect(openWorkPeriod).toHaveBeenCalledWith('2026-06-09', '_SUPPORT', expect.stringMatching(/^\d{2}:\d{2}$/))
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
-  it('starts a new work period for a different category', async () => {
+  it('opens a work period on the current day in the month repo', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 5, 9, 10, 15))
     const { repo: monthRepo, openWorkPeriod } = makeMockMonthRepo()
-    await handleStartWorkPeriod('_INFRA', monthRepo, '2026-06-09')
-    expect(openWorkPeriod).toHaveBeenCalledWith('2026-06-09', '_INFRA', expect.stringMatching(/^\d{2}:\d{2}$/))
+    await handleStartWorkPeriod('_SUPPORT', monthRepo)
+    expect(openWorkPeriod).toHaveBeenCalledWith('2026-06-09', '_SUPPORT', '10:15')
   })
 })
 
@@ -306,5 +306,30 @@ describe('useElectronTraySync hook', () => {
     const hotkeyListener = api.hotkey.onTogglePresenting.mock.calls.at(-1)?.[0]
     hotkeyListener()
     await vi.waitFor(async () => expect((await configRepo.get()).showWorkedHoursInTray).not.toBe(false))
+  })
+})
+
+describe('useElectronTraySync — day rollover while the window stays hidden', () => {
+  afterEach(() => {
+    delete window.electronAPI
+    vi.useRealTimers()
+  })
+
+  it('starts a work period from the tray on the current day, not the day the app was last opened', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 1, 17, 0))
+    const api = makeElectronAPI()
+    window.electronAPI = api
+    const { useElectronTraySync } = await import('./useElectronTraySync')
+    const { monthRepo } = await import('../infra/repositories/shared')
+    const openWorkPeriod = vi.spyOn(monthRepo, 'openWorkPeriod')
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
+
+    vi.setSystemTime(new Date(2026, 9, 2, 8, 30))
+    const startListener = api.tray.onStartWorkPeriod.mock.calls.at(-1)?.[0]
+    startListener('_COREMEDIA')
+
+    await vi.waitFor(() => expect(openWorkPeriod).toHaveBeenCalledWith('2026-10-02', '_COREMEDIA', '08:30'))
   })
 })
