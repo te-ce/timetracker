@@ -9,16 +9,15 @@ export function useTodayIso(): string {
       setTodayIso(toLocalIso(new Date()))
     }
 
-    const now = new Date()
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    const id = setTimeout(update, tomorrow.getTime() - now.getTime())
-
+    // Polls the wall clock instead of scheduling a timeout for midnight: timers
+    // pause during system sleep, so a midnight timeout fires hours late.
+    const id = setInterval(update, 60_000)
     document.addEventListener('visibilitychange', update)
     return () => {
-      clearTimeout(id)
+      clearInterval(id)
       document.removeEventListener('visibilitychange', update)
     }
-  }, [todayIso])
+  }, [])
 
   return todayIso
 }

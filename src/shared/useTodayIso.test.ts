@@ -25,7 +25,7 @@ describe('useTodayIso', () => {
 
     act(() => {
       vi.setSystemTime(new Date(2026, 5, 30, 0, 0, 1))
-      vi.runAllTimers()
+      vi.advanceTimersByTime(60_000)
     })
     expect(result.current).toBe('2026-06-30')
   })
@@ -38,6 +38,17 @@ describe('useTodayIso', () => {
     act(() => {
       vi.setSystemTime(new Date(2026, 5, 30, 9, 0, 0))
       document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(result.current).toBe('2026-06-30')
+  })
+
+  it('catches up within a minute when the machine slept past midnight with the window hidden', () => {
+    vi.setSystemTime(new Date(2026, 5, 29, 23, 0, 0))
+    const { result } = renderHook(() => useTodayIso())
+
+    act(() => {
+      vi.setSystemTime(new Date(2026, 5, 30, 9, 0, 0))
+      vi.advanceTimersByTime(60_000)
     })
     expect(result.current).toBe('2026-06-30')
   })
