@@ -178,9 +178,12 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
   }, [monthRepo, todayIso, windows, queryClient])
 
   const onStopAll = useCallback(async () => {
-    await handleStopAll(monthRepo, todayIso, windows)
+    const today = toLocalIso(new Date())
+    const month = await monthRepo.getMonth(Number(today.slice(0, 4)), Number(today.slice(5, 7)))
+    await handleStopAll(monthRepo, today, month[today]?.windows ?? [])
+    invalidateMonth(queryClient, today)
     invalidateMonth(queryClient, todayIso)
-  }, [monthRepo, todayIso, windows, queryClient])
+  }, [monthRepo, todayIso, queryClient])
 
   const onStartWorkPeriod = useCallback(
     async (category: string) => {
