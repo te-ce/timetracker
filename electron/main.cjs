@@ -317,6 +317,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       preload: path.join(__dirname, 'preload.cjs'),
+      // The hidden window still drives the tray label via its minute tick;
+      // throttled timers leave the tray stale until the window is shown again.
+      backgroundThrottling: false,
     },
     titleBarStyle: 'default',
     show: false,
