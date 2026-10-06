@@ -19,6 +19,8 @@ function mockElectronWindowApi(): { onShow: (() => void) | undefined } {
       offStartSubtask: noop,
       onStopSubtask: noop,
       offStopSubtask: noop,
+      onTick: noop,
+      offTick: noop,
       onStopAll: noop,
       offStopAll: noop,
       onStartWorkPeriod: noop,

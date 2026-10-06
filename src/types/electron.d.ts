@@ -21,6 +21,8 @@ interface Window {
       offStartSubtask: (cb: (category: string) => void) => void
       onStopSubtask: (cb: () => void) => void
       offStopSubtask: (cb: () => void) => void
+      onTick: (cb: () => void) => void
+      offTick: (cb: () => void) => void
       onStopAll: (cb: () => void) => void
       offStopAll: (cb: () => void) => void
       onStartWorkPeriod: (cb: (category: string) => void) => void

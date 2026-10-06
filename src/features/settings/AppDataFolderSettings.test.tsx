@@ -32,6 +32,8 @@ function makeElectronApiStub(overrides: {
       offStartSubtask: () => {},
       onStopSubtask: () => {},
       offStopSubtask: () => {},
+      onTick: () => {},
+      offTick: () => {},
       onStopAll: () => {},
       offStopAll: () => {},
       onStartWorkPeriod: () => {},

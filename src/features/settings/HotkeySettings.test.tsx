@@ -21,6 +21,8 @@ function makeElectronApiStub(): NonNullable<typeof window.electronAPI> {
       offStartSubtask: () => {},
       onStopSubtask: () => {},
       offStopSubtask: () => {},
+      onTick: () => {},
+      offTick: () => {},
       onStopAll: () => {},
       offStopAll: () => {},
       onStartWorkPeriod: () => {},

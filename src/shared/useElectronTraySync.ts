@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { requireConfig, resolveAppConfig } from './appConfigDefaults'
 import { QUERY_KEYS, invalidateMonth, invalidateConfig } from './queryKeys'
@@ -90,6 +90,7 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
   const queryClient = useQueryClient()
   const { workedHours, sollstunden, priorOvertime, liveElapsed, remaining, isOvertimeReady } = useRemainingHours()
   const timeFormat = useTimeFormatStore((s) => s.format)
+  const [, setTick] = useState(0)
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
   const sprintBadgeState = useSprintExportReminder()
@@ -219,6 +220,16 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
       api.tray.offStartWorkPeriod(startWorkPeriodListener)
     }
   }, [onStartSubtask, onStopSubtask, onStopAll, onStartWorkPeriod])
+
+  // Main-process heartbeat: re-renders so the clock is re-read even when the
+  // renderer's own interval was throttled or suspended (hidden window, sleep).
+  useEffect(() => {
+    const api = window.electronAPI
+    if (!api) return
+    const listener = () => setTick((t) => t + 1)
+    api.tray.onTick(listener)
+    return () => api.tray.offTick(listener)
+  }, [])
 
   useEffect(() => {
     const api = window.electronAPI

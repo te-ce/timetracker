@@ -198,6 +198,8 @@ function makeElectronAPI() {
       offStartSubtask: vi.fn(),
       onStopSubtask: vi.fn(),
       offStopSubtask: vi.fn(),
+      onTick: vi.fn(),
+      offTick: vi.fn(),
       onStopAll: vi.fn(),
       offStopAll: vi.fn(),
       onStartWorkPeriod: vi.fn(),

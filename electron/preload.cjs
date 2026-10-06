@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     offStartSubtask: (cb) => ipcRenderer.removeListener('tray:startSubtask', cb),
     onStopSubtask: (cb) => ipcRenderer.on('tray:stopSubtask', () => cb()),
     offStopSubtask: (cb) => ipcRenderer.removeListener('tray:stopSubtask', cb),
+    onTick: (cb) => ipcRenderer.on('tray:tick', () => cb()),
+    offTick: (cb) => ipcRenderer.removeListener('tray:tick', cb),
     onStopAll: (cb) => ipcRenderer.on('tray:stopAll', () => cb()),
     offStopAll: (cb) => ipcRenderer.removeListener('tray:stopAll', cb),
     onStartWorkPeriod: (cb) => ipcRenderer.on('tray:startWorkPeriod', (_, cat) => cb(cat)),

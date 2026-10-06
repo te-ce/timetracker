@@ -8,6 +8,7 @@ const {
   globalShortcut,
   Notification,
   dialog,
+  powerMonitor,
 } = require('electron')
 const path = require('path')
 const fs = require('fs')
@@ -468,8 +469,18 @@ ipcMain.on('tray:sync', (_, data) => {
 
   if (elapsedTimer) clearInterval(elapsedTimer)
   if (data.isTracking && data.startedAt) {
-    elapsedTimer = setInterval(updateTrayDisplay, 60_000)
+    // The renderer's own timers can be delayed (App Nap, sleep); this one lives in the main process.
+    elapsedTimer = setInterval(sendTrayTick, 60_000)
   }
+})
+
+function sendTrayTick() {
+  mainWindow?.webContents.send('tray:tick')
+}
+
+app.whenReady().then(() => {
+  powerMonitor.on('resume', sendTrayTick)
+  powerMonitor.on('unlock-screen', sendTrayTick)
 })
 
 // Test-only seam: lets an e2e test click the real "Stop All" tray menu item —
