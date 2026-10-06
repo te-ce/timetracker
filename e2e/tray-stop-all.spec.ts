@@ -52,6 +52,8 @@ function stubElectronAPI(page: Page) {
       autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
       tray: {
         sync: () => {},
+        onTick: () => {},
+        offTick: () => {},
         onStartSubtask: () => {},
         offStartSubtask: () => {},
         onStopSubtask: () => {},
