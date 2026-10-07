@@ -49,6 +49,7 @@ function mockElectronWindowApi(): { onShow: (() => void) | undefined } {
         handle.onShow = cb
       },
       offShow: noop,
+      show: noop,
     },
   }
   return handle

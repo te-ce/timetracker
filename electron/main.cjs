@@ -509,6 +509,12 @@ ipcMain.on('notify:goalReached', () => {
   }
 })
 
+// Plain show: the 'window:show' event would also re-navigate to the startup view.
+ipcMain.on('window:requestShow', () => {
+  mainWindow.show()
+  mainWindow.focus()
+})
+
 ipcMain.on('notify:sprintExportDue', (_, body) => {
   if (Notification.isSupported()) {
     new Notification({ title: 'Timetracker', body }).show()

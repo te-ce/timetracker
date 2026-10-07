@@ -46,5 +46,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   window: {
     onShow: (cb) => ipcRenderer.on('window:show', cb),
     offShow: (cb) => ipcRenderer.removeListener('window:show', cb),
+    show: () => ipcRenderer.send('window:requestShow'),
   },
 })

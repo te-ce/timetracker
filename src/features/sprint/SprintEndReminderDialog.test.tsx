@@ -62,6 +62,16 @@ describe('SprintEndReminderDialog', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('asks Electron to surface the window when the reminder is due', async () => {
+    const show = vi.fn()
+    vi.stubGlobal('electronAPI', { window: { show } })
+    setup()
+    requestSprintEndReminder()
+    await screen.findByRole('dialog')
+    expect(show).toHaveBeenCalled()
+    vi.unstubAllGlobals()
+  })
+
   it('stays hidden when the sprint is already exported', async () => {
     setup(true)
     requestSprintEndReminder()

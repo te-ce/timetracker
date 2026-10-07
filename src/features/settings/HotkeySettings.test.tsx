@@ -50,7 +50,7 @@ function makeElectronApiStub(): NonNullable<typeof window.electronAPI> {
       delete: () => Promise.resolve(),
     },
     notify: { goalReached: () => {}, sprintExportDue: () => {} },
-    window: { onShow: () => {}, offShow: () => {} },
+    window: { onShow: () => {}, offShow: () => {}, show: () => {} },
   }
 }
 

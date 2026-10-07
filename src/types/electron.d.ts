@@ -56,6 +56,7 @@ interface Window {
     window: {
       onShow: (cb: () => void) => void
       offShow: (cb: () => void) => void
+      show: () => void
     }
   }
 }

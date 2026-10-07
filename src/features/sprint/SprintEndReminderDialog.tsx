@@ -18,6 +18,8 @@ export function SprintEndReminderDialog({ config }: Props) {
 
   useEffect(() => {
     if (requested && due === false) close()
+    // A tray stop leaves the window hidden, so surface it for the dialog.
+    if (requested && due) window.electronAPI?.window.show()
   }, [requested, due])
 
   if (!requested || !due) return null
