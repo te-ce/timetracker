@@ -6,6 +6,7 @@ import { useElectronTraySync } from './shared/useElectronTraySync'
 import { useFaviconIndicator } from './shared/useFaviconIndicator'
 import { useGoalNotification } from './shared/useGoalNotification'
 import { useSprintExportReminder } from './features/sprint/useSprintExportReminder'
+import { SprintEndReminderDialog } from './features/sprint/SprintEndReminderDialog'
 import { SprintExportBadge } from './features/sprint/SprintExportBadge'
 import { usePrefetchCurrentMonth } from './shared/usePrefetchCurrentMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -246,6 +247,7 @@ function App() {
           <HeaderControls onToggleLegend={() => setLegendOpen((v) => !v)} />
         </div>
       </nav>
+      <SprintEndReminderDialog config={appConfig} />
       {legendOpen && <KeyboardShortcutLegend onClose={() => setLegendOpen(false)} />}
 
       <main className="flex-1 overflow-y-auto p-6">

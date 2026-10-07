@@ -22,6 +22,7 @@ import { useClock } from '../../shared/useClock'
 import { toLocalIso } from '../../shared/dateUtils'
 import { DayStreamRow } from './DayStreamRow'
 import { DeleteConfirmDialog } from './DeleteConfirmDialog'
+import { requestSprintEndReminder } from '../../shared/sprintEndReminderStore'
 
 interface DayTimelineProps {
   date: string
@@ -130,6 +131,7 @@ export function DayTimeline(props: DayTimelineProps) {
         stoppedAt: w.id === active.period.id && active.subtask ? endTime : undefined,
       })
     }
+    requestSprintEndReminder()
   }
 
   return (

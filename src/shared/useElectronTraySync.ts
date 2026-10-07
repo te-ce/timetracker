@@ -12,6 +12,7 @@ import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
 import { findActivePeriod, nowHHMM } from './worktime'
 import { useSprintExportReminder } from '../features/sprint/useSprintExportReminder'
+import { requestSprintEndReminder } from './sprintEndReminderStore'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
 
 function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string): string | null {
@@ -184,6 +185,7 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
     await handleStopAll(monthRepo, today, month[today]?.windows ?? [])
     invalidateMonth(queryClient, today)
     invalidateMonth(queryClient, todayIso)
+    requestSprintEndReminder()
   }, [monthRepo, todayIso, queryClient])
 
   const onStartWorkPeriod = useCallback(

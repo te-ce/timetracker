@@ -16,7 +16,7 @@ import type { SprintReminderData, SprintBadgeState } from './sprintExportReminde
 
 const LOOKBACK = 6
 
-function resolveSprintConfig(
+export function resolveSprintConfig(
   config: { sprintStartDate: string | null; sprintLengthDays: number } | undefined,
   today: string,
 ): SprintConfig {
