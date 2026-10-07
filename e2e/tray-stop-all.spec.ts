@@ -16,8 +16,9 @@ const BASE_CONFIG = {
   sollstunden: 8,
   autoCategory: null,
   federalState: null,
-  sprintLengthDays: 14,
-  sprintStartDate: null,
+  // One endless sprint, so stopping work never lands on a sprint's last day and opens the export reminder.
+  sprintLengthDays: 100000,
+  sprintStartDate: '2000-01-01',
   customCategories: [],
   sharepointUrl: null,
   targetSheet: null,
