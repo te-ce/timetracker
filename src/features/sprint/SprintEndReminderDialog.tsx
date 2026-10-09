@@ -2,31 +2,28 @@ import { useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useSprintEndReminderStore } from '../../shared/sprintEndReminderStore'
-import { toLocalIso } from '../../shared/dateUtils'
-import { useSprintEndReminderDue } from './useSprintEndReminder'
+import { sprintExportBadgeLabel } from './sprintExportReminder'
+import { useSprintExportReminder } from './useSprintExportReminder'
 
-interface Props {
-  config: { sprintStartDate: string | null; sprintLengthDays: number } | undefined
-}
-
-export function SprintEndReminderDialog({ config }: Props) {
+export function SprintEndReminderDialog() {
   const navigate = useNavigate()
   const requested = useSprintEndReminderStore((s) => s.requested)
-  const due = useSprintEndReminderDue(config, toLocalIso(new Date()))
+  const state = useSprintExportReminder()
+  const due = state?.kind === 'export'
 
   const close = () => useSprintEndReminderStore.setState({ requested: false })
 
   useEffect(() => {
-    if (requested && due === false) close()
+    if (requested && state && !due) close()
     // A tray stop leaves the window hidden, so surface it for the dialog.
     if (requested && due) window.electronAPI?.window.show()
-  }, [requested, due])
+  }, [requested, state, due])
 
-  if (!requested || !due) return null
+  if (!requested || state?.kind !== 'export') return null
   return (
     <ConfirmDialog
-      title="Last day of the sprint"
-      message="Don't forget to export this sprint before you log off."
+      title="Sprint export pending"
+      message={`${sprintExportBadgeLabel(state.sprints)} before you log off.`}
       confirmLabel="Go to export"
       onConfirm={() => {
         close()

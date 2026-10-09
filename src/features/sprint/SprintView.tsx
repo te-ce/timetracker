@@ -1,6 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getSprintBoundaries, getSprintForDate, aggregateSprintHours, roundHoursPerCategory } from './sprint'
+import {
+  getSprintBoundaries,
+  getSprintForDate,
+  aggregateSprintHours,
+  roundHoursPerCategory,
+  sprintExportStatus,
+} from './sprint'
 import type { SprintConfig, Sprint } from './sprint'
 import { SprintConfigPanel } from './SprintConfigPanel'
 import { SprintReportPanel } from './SprintReportPanel'
@@ -81,7 +87,7 @@ export function SprintView() {
     onSuccess: () => invalidateSprintExport(queryClient, activeIndex),
   })
 
-  const exportStatus = sprintExport ? sprintExport.status : 'pending'
+  const exportStatus = sprintExportStatus(sprintExport, sprint)
 
   async function handleExport(overwrite: boolean): Promise<void> {
     if (!config) return

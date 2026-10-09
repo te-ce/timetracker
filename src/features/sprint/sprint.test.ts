@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest'
 import {
   getSprintBoundaries,
   getSprintForDate,
+  sprintExportStatus,
   aggregateSprintHours,
   sprintDayProgress,
   roundHours,
@@ -131,5 +132,23 @@ describe('roundHoursPerCategory', () => {
 
   it('rounds every category to the given step and mode', () => {
     expect(roundHoursPerCategory({ QA: 3.27, Dev: 1.13 }, 0.5, 'nearest')).toEqual({ QA: 3.5, Dev: 1 })
+  })
+})
+
+describe('sprintExportStatus', () => {
+  const sprint = { index: 2, start: '2026-09-17', end: '2026-10-07' }
+
+  it('is pending without a record', () => {
+    expect(sprintExportStatus(null, sprint)).toBe('pending')
+  })
+
+  it('is exported when exported on or after the sprint start', () => {
+    expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-10-07' }, sprint)).toBe(
+      'exported',
+    )
+  })
+
+  it('ignores a stale record exported before the sprint began', () => {
+    expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-08-06' }, sprint)).toBe('pending')
   })
 })

@@ -23,10 +23,6 @@ export function getSprintsNeedingExport(today: string, config: SprintConfig, dat
   return result.sort((a, b) => a.index - b.index)
 }
 
-export function isSprintLastDay(today: string, config: SprintConfig): boolean {
-  return getSprintForDate(today, config).end === today
-}
-
 export function sprintExportBadgeLabel(sprints: Sprint[]): string {
   if (sprints.length === 1 && sprints[0]) return `Export Sprint ${sprints[0].index + 1}`
   return 'Export Sprints'

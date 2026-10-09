@@ -247,7 +247,7 @@ function App() {
           <HeaderControls onToggleLegend={() => setLegendOpen((v) => !v)} />
         </div>
       </nav>
-      <SprintEndReminderDialog config={appConfig} />
+      <SprintEndReminderDialog />
       {legendOpen && <KeyboardShortcutLegend onClose={() => setLegendOpen(false)} />}
 
       <main className="flex-1 overflow-y-auto p-6">

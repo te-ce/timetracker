@@ -4,11 +4,13 @@ import { sprintExportBadgeLabel, sprintExportTooltipText, sprintCountdownLabel }
 import type { SprintBadgeState } from './sprintExportReminder'
 
 interface Props {
-  state: SprintBadgeState
+  state: SprintBadgeState | undefined
 }
 
 export function SprintExportBadge({ state }: Props) {
   const navigate = useNavigate()
+
+  if (!state) return null
 
   if (state.kind === 'countdown') {
     return (

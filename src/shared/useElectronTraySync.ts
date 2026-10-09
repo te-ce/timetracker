@@ -95,7 +95,7 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
   const todayIso = useTodayIso()
   const { windows, autoCategory: resolvedAutoCategory } = useDayQuery(todayIso)
   const sprintBadgeState = useSprintExportReminder()
-  const needsSprintExport = sprintBadgeState.kind === 'export'
+  const needsSprintExport = sprintBadgeState?.kind === 'export'
 
   const openPeriod = findActivePeriod(windows, nowHHMM())
   const isTracking = !!openPeriod

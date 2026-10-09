@@ -1,63 +1,37 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createElement } from 'react'
-import type { ReactNode } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SprintEndReminderDialog } from './SprintEndReminderDialog'
-import { RepositoryProvider } from '../../infra/repositories/RepositoryContext'
-import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
-import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/config-repository'
-import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
-import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
-import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+import type { SprintBadgeState } from './sprintExportReminder'
 import { requestSprintEndReminder, useSprintEndReminderStore } from '../../shared/sprintEndReminderStore'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
+let state: SprintBadgeState | undefined
+vi.mock('./useSprintExportReminder', () => ({ useSprintExportReminder: () => state }))
 
 const navigateSpy = vi.fn()
 vi.mock('@tanstack/react-router', () => ({ useNavigate: () => navigateSpy }))
 
-let today = '2026-01-18'
-vi.mock('../../shared/dateUtils', () => ({ toLocalIso: () => today }))
-
-const CONFIG = { sprintStartDate: '2026-01-05', sprintLengthDays: 14 }
-
-function setup(exported = false) {
-  const sprintExportRepo = new InMemorySprintExportRepository()
-  if (exported) void sprintExportRepo.save({ sprintIndex: 0, status: 'exported', exportedAt: '2026-01-18' })
-  const monthRepo = new InMemoryMonthRepository({})
-  const repos = {
-    monthRepo,
-    configRepo: new InMemoryConfigRepository(DEFAULT_APP_CONFIG),
-    sprintExportRepo,
-    trashRepo: new InMemoryTrashRepository(monthRepo),
-  }
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  const wrapper = ({ children }: { children: ReactNode }) =>
-    createElement(QueryClientProvider, { client: qc }, createElement(RepositoryProvider, { repos, children }))
-  return render(<SprintEndReminderDialog config={CONFIG} />, { wrapper })
-}
+const EXPORT_DUE: SprintBadgeState = { kind: 'export', sprints: [{ index: 2, start: '2026-09-17', end: '2026-10-07' }] }
+const COUNTDOWN: SprintBadgeState = { kind: 'countdown', daysLeft: 5 }
 
 describe('SprintEndReminderDialog', () => {
   beforeEach(() => {
-    today = '2026-01-18'
     navigateSpy.mockClear()
     useSprintEndReminderStore.setState({ requested: false })
   })
 
-  it('stays hidden until a stop is requested', async () => {
-    setup()
+  it('stays hidden until a stop is requested', () => {
+    state = EXPORT_DUE
+    render(<SprintEndReminderDialog />)
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('shows on the last sprint day when not exported and navigates to export', async () => {
-    setup()
+  it('shows when a sprint needs export and navigates to export', async () => {
+    state = EXPORT_DUE
+    render(<SprintEndReminderDialog />)
     requestSprintEndReminder()
-    await userEvent.click(await screen.findByRole('button', { name: 'Go to export' }))
+    expect(await screen.findByText('Export Sprint 3 before you log off.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Go to export' }))
     expect(navigateSpy).toHaveBeenCalledWith({ to: '/sprint', search: { sprint: undefined } })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
@@ -65,25 +39,29 @@ describe('SprintEndReminderDialog', () => {
   it('asks Electron to surface the window when the reminder is due', async () => {
     const show = vi.fn()
     vi.stubGlobal('electronAPI', { window: { show } })
-    setup()
+    state = EXPORT_DUE
+    render(<SprintEndReminderDialog />)
     requestSprintEndReminder()
     await screen.findByRole('dialog')
     expect(show).toHaveBeenCalled()
     vi.unstubAllGlobals()
   })
 
-  it('stays hidden when the sprint is already exported', async () => {
-    setup(true)
+  it('drops the request when no export is due', async () => {
+    state = COUNTDOWN
+    render(<SprintEndReminderDialog />)
     requestSprintEndReminder()
     await waitFor(() => expect(useSprintEndReminderStore.getState().requested).toBe(false))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('stays hidden on a non-final day', async () => {
-    today = '2026-01-17'
-    setup()
+  it('keeps the request while the state is still loading', async () => {
+    state = undefined
+    const { rerender } = render(<SprintEndReminderDialog />)
     requestSprintEndReminder()
-    await waitFor(() => expect(useSprintEndReminderStore.getState().requested).toBe(false))
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(useSprintEndReminderStore.getState().requested).toBe(true)
+    state = EXPORT_DUE
+    rerender(<SprintEndReminderDialog />)
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
 })

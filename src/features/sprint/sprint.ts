@@ -1,4 +1,4 @@
-import type { DatedTimeEntry } from '../../infra/repositories/types'
+import type { DatedTimeEntry, SprintExport } from '../../infra/repositories/types'
 
 export interface SprintConfig {
   startDate: string
@@ -12,6 +12,14 @@ export interface Sprint {
 }
 
 export type ExportStatus = 'pending' | 'exported'
+
+// Exports are keyed by sprint index, so changing the sprint start/length leaves old
+// records pointing at different sprints. One made before the sprint began is stale.
+export function sprintExportStatus(sprintExport: SprintExport | null | undefined, sprint: Sprint): ExportStatus {
+  if (sprintExport?.status !== 'exported') return 'pending'
+  if (sprintExport.exportedAt !== null && sprintExport.exportedAt < sprint.start) return 'pending'
+  return 'exported'
+}
 
 function addDays(isoDate: string, days: number): string {
   const d = new Date(isoDate)
