@@ -10,6 +10,7 @@ import { useClock } from '../../shared/useClock'
 import { useDayQuery } from './useDayQuery'
 import { useDayMutations } from './useDayMutations'
 import { LEAVE_TYPE_LABEL } from '../../shared/leaveTypeLabel'
+import { targetHoursForDate } from '../../shared/weekdayHours'
 import { DayNav } from './DayNav'
 import { DayActions } from './DayActions'
 
@@ -117,7 +118,8 @@ export function DayView() {
           aria-label="Leave day info"
           className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-300"
         >
-          This day counts as {sollstunden}h On Leave — no work periods expected.
+          This day counts as {targetHoursForDate(selectedDate, config.weekdayHours)}h On Leave — no work periods
+          expected.
         </div>
       ) : (
         <section aria-label="Work periods">

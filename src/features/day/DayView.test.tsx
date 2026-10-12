@@ -202,8 +202,12 @@ describe('DayView', () => {
       expect(screen.getByText(/8h on leave/i)).toBeInTheDocument()
     })
 
-    it('shows leave banner with configured sollstunden hours', () => {
-      stubQuery({ selectedDayType: 'Vacation', sollstunden: 6 })
+    it('shows leave banner with the weekday target hours', () => {
+      stubQuery({
+        selectedDayType: 'Vacation',
+        sollstunden: 0,
+        config: { ...resolveAppConfig(DEFAULT_APP_CONFIG), weekdayHours: [0, 8, 8, 8, 8, 6, 0] },
+      })
       render(<DayView />, { wrapper: makeWrapper(monthRepo) })
       expect(screen.getByText(/6h on leave/i)).toBeInTheDocument()
     })
