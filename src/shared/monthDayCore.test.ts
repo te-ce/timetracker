@@ -65,6 +65,34 @@ describe('deriveMonthDayCores', () => {
     expect(days[0]!.dayType).toBe('PublicHoliday')
   })
 
+  it('zeroes the target on a day-off override so remaining hours drop immediately', () => {
+    const monthData: MonthData = {
+      '2026-05-04': { windows: [], dayTypeOverride: 'SickDay' },
+      '2026-05-05': { windows: [], dayTypeOverride: 'Vacation' },
+      '2026-05-06': { windows: [], dayTypeOverride: 'PublicHoliday' },
+    }
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-04',
+    })
+    expect(days.slice(3, 6).map((d) => d.targetHours)).toEqual([0, 0, 0])
+    expect(days[6]!.targetHours).toBe(8)
+  })
+
+  it('keeps a configured Saturday target on a calendar weekend', () => {
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: {},
+      weekdayHours: [0, 8, 8, 8, 8, 8, 2],
+      today: '2026-05-01',
+    })
+    expect(days[1]!.targetHours).toBe(2)
+  })
+
   it('caps a past day open WorkPeriod at 23:59 rather than counting zero duration', () => {
     const monthData: MonthData = { '2026-05-18': { windows: [openWin('a', '09:00')] } }
     const { days } = deriveMonthDayCores({

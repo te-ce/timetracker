@@ -52,6 +52,9 @@ function resolveDayType(
   return dayData?.dayTypeOverride ?? dayTypes?.get(iso) ?? classifyDayType(date)
 }
 
+// Weekend is left to weekdayHours so a configured Saturday target still applies.
+const DAY_OFF_TYPES: ReadonlySet<DayType> = new Set(['PublicHoliday', 'Vacation', 'SickDay'])
+
 function splitCategoryTotals(categoryHours: Record<string, number>): {
   entryTotal: number
   uncategorizedHours: number
@@ -77,7 +80,7 @@ function deriveDayCore(
   const categoryHours = calculateDayCategoryHours(dayData ?? { windows: [] }, iso, weekdayHours, now)
   const { entryTotal, uncategorizedHours } = splitCategoryTotals(categoryHours)
   const dayType = resolveDayType(dayData, date, dayTypes, iso)
-  const targetHours = effectiveTargetHours(date, weekdayHours, halfDayLeave)
+  const targetHours = DAY_OFF_TYPES.has(dayType) ? 0 : effectiveTargetHours(date, weekdayHours, halfDayLeave)
 
   return {
     date: iso,
