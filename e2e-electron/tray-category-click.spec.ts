@@ -13,8 +13,8 @@ declare global {
  * Drives the real tray menu's main-category item (checked, no active
  * subtask) via electron/main.cjs's test-only `global.__e2eClickTrayCategory`
  * seam — same rationale as tray-stop-all.spec.ts. Not part of the default
- * `npm run e2e` run — invoke with
- * `npx playwright test --config=e2e-electron/playwright.config.ts`.
+ * `pnpm e2e` run — invoke with
+ * `pnpm exec playwright test --config=e2e-electron/playwright.config.ts`.
  */
 
 const DEV_URL = 'http://timetracker.localhost:5173'
@@ -50,7 +50,7 @@ let devServer: ChildProcess
 let userDataDir: string
 
 test.beforeAll(async () => {
-  devServer = spawn('npm', ['run', 'dev', '--', '--host', 'timetracker.localhost', '--port', '5173', '--strictPort'], {
+  devServer = spawn('pnpm', ['dev', '--host', 'timetracker.localhost', '--port', '5173', '--strictPort'], {
     cwd: join(import.meta.dirname, '..'),
     stdio: 'ignore',
   })

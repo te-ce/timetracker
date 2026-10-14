@@ -50,7 +50,7 @@ return data as T // unknown → T is acceptable; any → T is not
 - Domain logic: pure unit tests co-located with source (`domain/*.test.ts`).
 - Components: `@testing-library/react` with **in-memory repositories** — never mocks.
 - Every new domain function needs a test file. Every new component prop/behaviour needs at least one test.
-- Run `npx tsc --noEmit && npx vitest run` before committing. All tests must pass.
+- Run `pnpm exec tsc --noEmit && pnpm exec vitest run` before committing. All tests must pass.
 
 ## Repository pattern
 

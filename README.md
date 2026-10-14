@@ -23,45 +23,45 @@ A time-tracking app (PWA + Electron desktop) that logs working hours against cat
 ## Prerequisites
 
 - Node.js v20 or later
-- npm (comes with Node.js)
+- pnpm (`corepack enable` picks up the pinned version)
 
 ## Getting Started
 
 ```bash
-npm install
-npm run dev        # dev server at http://localhost:5173
-npm run build      # type-check + production build → dist/
-npm run preview    # serve dist/ locally
+pnpm install
+pnpm dev     # dev server at http://localhost:5173
+pnpm build   # type-check + production build → dist/
+pnpm preview # serve dist/ locally
 ```
 
 ## Scripts
 
-| Script                   | Description                                  |
-| ------------------------ | -------------------------------------------- |
-| `npm run dev`            | Start Vite dev server with HMR               |
-| `npm run build`          | Type-check and build for production          |
-| `npm run preview`        | Serve the production build locally           |
-| `npm run lint`           | Run oxlint + ESLint                          |
-| `npm run test`           | Run unit/component tests (Vitest)            |
-| `npm run test:coverage`  | Run tests with coverage report               |
-| `npm run test:mutation`  | Run Stryker mutation tests                   |
-| `npm run knip`           | Check for unused exports and files           |
-| `npm run e2e`            | Run end-to-end tests (Playwright)            |
-| `npm run format`         | Format with Prettier                         |
-| `npm start`              | Start Vite + Electron together (desktop app) |
-| `npm run electron:build` | Build Electron distributable                 |
+| Script                | Description                                  |
+| --------------------- | -------------------------------------------- |
+| `pnpm dev`            | Start Vite dev server with HMR               |
+| `pnpm build`          | Type-check and build for production          |
+| `pnpm preview`        | Serve the production build locally           |
+| `pnpm lint`           | Run oxlint + ESLint                          |
+| `pnpm test`           | Run unit/component tests (Vitest)            |
+| `pnpm test:coverage`  | Run tests with coverage report               |
+| `pnpm test:mutation`  | Run Stryker mutation tests                   |
+| `pnpm knip`           | Check for unused exports and files           |
+| `pnpm e2e`            | Run end-to-end tests (Playwright)            |
+| `pnpm format`         | Format with Prettier                         |
+| `pnpm start`          | Start Vite + Electron together (desktop app) |
+| `pnpm electron:build` | Build Electron distributable                 |
 
 ## Running Tests
 
 ```bash
-npm run test
+pnpm test
 ```
 
 E2E tests require Playwright browser binaries (one-time install):
 
 ```bash
-npx playwright install --with-deps chromium
-npm run e2e
+pnpm exec playwright install --with-deps chromium
+pnpm e2e
 ```
 
 ## Project Structure

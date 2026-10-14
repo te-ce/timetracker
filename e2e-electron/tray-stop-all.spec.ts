@@ -14,8 +14,8 @@ declare global {
  * `global.__e2eClickTrayStopAll` seam — Playwright cannot click a native OS
  * tray menu directly) instead of stubbing window.electronAPI as the browser
  * e2e suite does. Slow and needs a display (Xvfb in headless CI), so it is
- * not part of the default `npm run e2e` run — invoke with
- * `npx playwright test --config=e2e-electron/playwright.config.ts`.
+ * not part of the default `pnpm e2e` run — invoke with
+ * `pnpm exec playwright test --config=e2e-electron/playwright.config.ts`.
  */
 
 const DEV_URL = 'http://timetracker.localhost:5173'
@@ -56,7 +56,7 @@ let devServer: ChildProcess
 let userDataDir: string
 
 test.beforeAll(async () => {
-  devServer = spawn('npm', ['run', 'dev', '--', '--host', 'timetracker.localhost', '--port', '5173', '--strictPort'], {
+  devServer = spawn('pnpm', ['dev', '--host', 'timetracker.localhost', '--port', '5173', '--strictPort'], {
     cwd: join(import.meta.dirname, '..'),
     stdio: 'ignore',
   })

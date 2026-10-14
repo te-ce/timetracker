@@ -3,13 +3,13 @@
 ## Prerequisites
 
 - Node.js v20 or later
-- npm (comes with Node.js)
-- For E2E tests: `npx playwright install --with-deps chromium` (one-time)
+- pnpm (`corepack enable` picks up the pinned version)
+- For E2E tests: `pnpm exec playwright install --with-deps chromium` (one-time)
 
 ## Setup
 
 ```bash
-npm install
+pnpm install
 ```
 
 Copy `.env.example` to `.env.local` if you need local environment overrides.
@@ -17,16 +17,16 @@ Copy `.env.example` to `.env.local` if you need local environment overrides.
 ## Development
 
 ```bash
-npm run dev          # Vite dev server at http://localhost:5173 (HMR)
-npm start            # Vite + Electron together (desktop app)
+pnpm dev     # Vite dev server at http://localhost:5173 (HMR)
+pnpm start   # Vite + Electron together (desktop app)
 ```
 
 ## Building
 
 ```bash
-npm run build               # type-check + production build → dist/
-npm run preview             # serve dist/ locally
-npm run electron:build      # build Electron distributable
+pnpm build            # type-check + production build → dist/
+pnpm preview          # serve dist/ locally
+pnpm electron:build   # build Electron distributable
 ```
 
 ## Testing
@@ -34,17 +34,17 @@ npm run electron:build      # build Electron distributable
 ### Unit and component tests (Vitest)
 
 ```bash
-npm run test                # run all tests once
-npm run test:coverage       # with coverage report
-npm run test:mutation       # Stryker mutation tests
+pnpm test             # run all tests once
+pnpm test:coverage    # with coverage report
+pnpm test:mutation    # Stryker mutation tests
 ```
 
 Run tests for a single feature:
 
 ```bash
-npx vitest run src/features/day
-npx vitest run src/features/month
-npx vitest run src/infra
+pnpm exec vitest run src/features/day
+pnpm exec vitest run src/features/month
+pnpm exec vitest run src/infra
 ```
 
 **Testing rules:**
@@ -58,7 +58,7 @@ npx vitest run src/infra
 ### End-to-end tests (Playwright)
 
 ```bash
-npm run e2e
+pnpm e2e
 ```
 
 E2E tests run against the Vite dev server (started automatically by Playwright's `webServer` config). Tests cover critical user flows that unit tests can't — routing, multi-step interactions, persistence across views.
@@ -66,7 +66,7 @@ E2E tests run against the Vite dev server (started automatically by Playwright's
 ### Before committing
 
 ```bash
-npx tsc --noEmit && npx oxlint --type-aware src/ && npx vitest run
+pnpm exec tsc --noEmit && pnpm exec oxlint --type-aware src/ && pnpm exec vitest run
 ```
 
 All three must pass. CI enforces this.
@@ -160,9 +160,9 @@ Type guard functions live in the feature module closest to their type (e.g. `isD
 - When a rule fires, fix the code — never silence it
 
 ```bash
-npm run lint       # oxlint, with type-aware rules (--type-aware)
-npm run knip       # check for unused exports and files
-npm run format     # Prettier
+pnpm lint    # oxlint, with type-aware rules (--type-aware)
+pnpm knip    # check for unused exports and files
+pnpm format  # Prettier
 ```
 
 ## Code style

@@ -29,7 +29,7 @@ The renderer uses `ElectronStorageAdapter` (in `src/infra/storage/electron-adapt
 
 ## Dev vs production
 
-| Mode             | How to run                                                               |
-| ---------------- | ------------------------------------------------------------------------ |
-| Development      | `npm start` — starts Vite dev server + Electron concurrently             |
-| Production build | `npm run electron:build` — bundles app + packages Electron distributable |
+| Mode             | How to run                                                            |
+| ---------------- | --------------------------------------------------------------------- |
+| Development      | `pnpm start` — starts Vite dev server + Electron concurrently         |
+| Production build | `pnpm electron:build` — bundles app + packages Electron distributable |

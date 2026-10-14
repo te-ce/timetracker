@@ -10,7 +10,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev -- --host localhost --port 5297 --strictPort',
+    command: 'pnpm dev --host localhost --port 5297 --strictPort',
     url: 'http://localhost:5297',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

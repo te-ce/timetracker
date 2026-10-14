@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "main": "electron/main.cjs",
+  "packageManager": "pnpm@11.26.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -18,10 +19,10 @@
     "format": "prettier --write .",
     "prepare": "husky",
     "electron:icons": "node scripts/generate-icons.mjs",
-    "electron:dev": "npm run electron:icons && wait-on http://timetracker.localhost:5173 && NODE_ENV=development electron .",
-    "electron:build": "npm run electron:icons && npm run build && electron-builder",
-    "start": "concurrently --kill-others-on-fail \"npm run dev\" \"npm run electron:dev\"",
-    "doctor": "npx react-doctor@latest"
+    "electron:dev": "pnpm electron:icons && wait-on http://timetracker.localhost:5173 && NODE_ENV=development electron .",
+    "electron:build": "pnpm electron:icons && pnpm build && electron-builder",
+    "start": "concurrently --kill-others-on-fail \"pnpm dev\" \"pnpm electron:dev\"",
+    "doctor": "pnpm dlx react-doctor@latest"
   },
   "dependencies": {
     "@azure/msal-browser": "^5.10.1",
@@ -105,10 +106,6 @@
         "AppImage"
       ]
     }
-  },
-  "overrides": {
-    "qs": "^6.15.2",
-    "uuid": "^11.1.1"
   },
   "msw": {
     "workerDirectory": [

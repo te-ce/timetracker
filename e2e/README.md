@@ -15,13 +15,13 @@ Playwright end-to-end tests. Run against the full app (Vite dev server + MSW for
 One-time browser setup:
 
 ```bash
-npx playwright install --with-deps chromium
+pnpm exec playwright install --with-deps chromium
 ```
 
 Run all E2E tests:
 
 ```bash
-npm run e2e
+pnpm e2e
 ```
 
 Tests run against `http://localhost:5173`. The dev server must be running, or use `webServer` config in `playwright.config.ts` (already configured).
