@@ -44,6 +44,7 @@ Persist all app data as JSON files in the user's OneDrive App Folder via Microso
 - On app load: fetch all files, cache in memory
 - On mutation: write-through (update memory + fire async PUT)
 - ETag-based conflict detection (last-write-wins with warning)
+- Refined by [ADR 0013](0013-sync-queue-pending-writes-and-etag-conflicts.md): pending offline writes, serialized per-key writes, If-Match conflict retry
 
 ## Consequences
 

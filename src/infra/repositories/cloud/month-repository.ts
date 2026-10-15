@@ -43,15 +43,11 @@ export class CloudMonthRepository extends AbstractMonthRepository {
   async updateDay(date: string, updater: (current: Day) => Day): Promise<void> {
     const year = parseInt(date.slice(0, 4))
     const month = parseInt(date.slice(5, 7))
-    const store = this.getStore(year, month)
-    const current = (await store.get(date)) ?? { windows: [] }
-    const updated = updater(current)
-    if (isDayEmpty(updated)) {
-      await store.remove(date)
-    } else {
-      await store.set(date, updated)
-      await this.indexStore.set(yearMonth(date), true)
-    }
+    const saved = await this.getStore(year, month).update(date, (current) => {
+      const updated = updater(current ?? { windows: [] })
+      return isDayEmpty(updated) ? null : updated
+    })
+    if (saved) await this.indexStore.set(yearMonth(date), true)
   }
 
   async deleteMonth(year: number, month: number): Promise<void> {

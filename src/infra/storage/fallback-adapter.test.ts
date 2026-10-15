@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { FallbackStorageAdapter } from './fallback-adapter'
 import { InMemoryStorageAdapter } from './in-memory-adapter'
-import type { StorageAdapter } from './adapter'
+import { StorageConflictError, type StorageAdapter } from './adapter'
 
 class SwitchableAdapter extends InMemoryStorageAdapter {
   online = true
@@ -11,6 +11,8 @@ class SwitchableAdapter extends InMemoryStorageAdapter {
     if (!this.online) throw new Error('network')
   }
 
+  conflictOnNextWrite = false
+
   override get<T>(key: string): Promise<T | null> {
     this.check()
     return super.get<T>(key)
@@ -18,6 +20,10 @@ class SwitchableAdapter extends InMemoryStorageAdapter {
 
   override put<T>(key: string, data: T): Promise<void> {
     this.check()
+    if (this.conflictOnNextWrite) {
+      this.conflictOnNextWrite = false
+      return Promise.reject(new StorageConflictError(key))
+    }
     return super.put(key, data)
   }
 
@@ -131,6 +137,35 @@ describe('FallbackStorageAdapter', () => {
     const adapter = new FallbackStorageAdapter(primary, fallback)
     expect(await adapter.get('key')).toBeNull()
     expect(await fallback.get('key')).toBeNull()
+  })
+
+  it('surfaces a write conflict to the caller and serves the remote version on the next read', async () => {
+    const primary = new SwitchableAdapter()
+    const fallback = new InMemoryStorageAdapter()
+    await primary.put('key', 'other device')
+    const adapter = new FallbackStorageAdapter(primary, fallback)
+
+    primary.conflictOnNextWrite = true
+    await expect(adapter.put('key', 'mine')).rejects.toBeInstanceOf(StorageConflictError)
+    expect(adapter.pendingCount()).toBe(0)
+    expect(await adapter.get('key')).toBe('other device')
+  })
+
+  it('uploads an offline edit even if the remote copy changed meanwhile (last write wins)', async () => {
+    const primary = new SwitchableAdapter()
+    const adapter = new FallbackStorageAdapter(primary, new InMemoryStorageAdapter())
+    primary.online = false
+    await adapter.put('key', 'offline edit')
+    primary.online = true
+    primary.conflictOnNextWrite = true
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    await adapter.flush()
+
+    expect(await primary.get('key')).toBe('offline edit')
+    expect(adapter.pendingCount()).toBe(0)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('changed remotely'))
+    warnSpy.mockRestore()
   })
 
   it('mirrors a successful primary read into the fallback for offline use', async () => {

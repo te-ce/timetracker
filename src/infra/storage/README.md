@@ -35,7 +35,7 @@ interface StorageAdapter {
 | Offline / skip       | `LocalStorageAdapter`       | —                                                  |
 | Tests                | `InMemoryStorageAdapter`    | —                                                  |
 
-`FallbackStorageAdapter`: reads try primary first; 404 → return null, other errors propagate. Writes go to both so offline edits survive until the next sync.
+`FallbackStorageAdapter`: writes go to the fallback first; a write the primary rejects stays a **pending key** (persisted) whose local copy wins on read and is retried on read / `flush()`. For non-pending keys the primary is the truth (404 → deleted, local copy dropped); the fallback is used only when the primary is unreachable. `OneDriveStorageAdapter` sends `If-Match` eTags and throws `StorageConflictError` on 412/409. See ADR 0013.
 
 ## Folder handle lifecycle (`folder-handle-store.ts`)
 

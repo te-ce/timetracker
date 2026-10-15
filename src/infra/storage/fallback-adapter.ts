@@ -1,4 +1,4 @@
-import type { StorageAdapter } from './adapter'
+import { StorageConflictError, type StorageAdapter } from './adapter'
 
 const PENDING_KEY = 'sync-pending.json'
 
@@ -9,6 +9,10 @@ const PENDING_KEY = 'sync-pending.json'
  * A write that cannot reach the primary is kept as a pending key (persisted in
  * the fallback). While a key is pending its local copy wins over the primary
  * and every read or `flush()` retries the upload. See ADR 0013.
+ *
+ * A conflict on a live write is passed to the caller (it re-reads and
+ * re-applies its change); a conflict while replaying an offline write keeps
+ * the local version (last write wins, with a warning).
  */
 export class FallbackStorageAdapter implements StorageAdapter {
   private primary: StorageAdapter
@@ -35,7 +39,7 @@ export class FallbackStorageAdapter implements StorageAdapter {
     return this.serialize(key, async () => {
       await this.fallback.put(key, data)
       await this.setPending(key, true)
-      await this.push(key, data)
+      await this.push(key, data, 'throw')
     })
   }
 
@@ -43,7 +47,7 @@ export class FallbackStorageAdapter implements StorageAdapter {
     return this.serialize(key, async () => {
       await this.fallback.delete(key)
       await this.setPending(key, true)
-      await this.push(key, null)
+      await this.push(key, null, 'throw')
     })
   }
 
@@ -53,7 +57,7 @@ export class FallbackStorageAdapter implements StorageAdapter {
     await Promise.all(
       keys.map((key) =>
         this.serialize(key, async () => {
-          if (this.pending?.has(key)) await this.push(key, await this.fallback.get(key))
+          if (this.pending?.has(key)) await this.push(key, await this.fallback.get(key), 'overwrite')
         }),
       ),
     )
@@ -66,7 +70,7 @@ export class FallbackStorageAdapter implements StorageAdapter {
   private async read<T>(key: string): Promise<T | null> {
     if ((await this.loadPending()).has(key)) {
       const local = await this.fallback.get<T>(key)
-      await this.push(key, local)
+      await this.push(key, local, 'overwrite')
       return local
     }
     let remote: T | null
@@ -88,14 +92,29 @@ export class FallbackStorageAdapter implements StorageAdapter {
     }
   }
 
-  private async push(key: string, data: unknown): Promise<void> {
+  private async push(key: string, data: unknown, onConflict: 'throw' | 'overwrite'): Promise<void> {
     try {
-      if (data === null) await this.primary.delete(key)
-      else await this.primary.put(key, data)
-    } catch {
-      return
+      await this.upload(key, data)
+    } catch (e) {
+      if (!(e instanceof StorageConflictError)) return
+      if (onConflict === 'throw') {
+        await this.setPending(key, false)
+        throw e
+      }
+      console.warn(`[FallbackStorageAdapter] "${key}" changed remotely while offline; keeping the local version`)
+      try {
+        await this.primary.get(key)
+        await this.upload(key, data)
+      } catch {
+        return
+      }
     }
     await this.setPending(key, false)
+  }
+
+  private async upload(key: string, data: unknown): Promise<void> {
+    if (data === null) await this.primary.delete(key)
+    else await this.primary.put(key, data)
   }
 
   private async loadPending(): Promise<Set<string>> {

@@ -115,7 +115,26 @@ describe('CloudConfigRepository', () => {
   })
 })
 
+/** Every PUT takes a while, so overlapping repository calls interleave. */
+class SlowAdapter extends InMemoryStorageAdapter {
+  override async put<T>(key: string, data: T): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 5))
+    await super.put(key, data)
+  }
+}
+
 describe('CloudMonthRepository', () => {
+  it('keeps both changes when two updates to the same day overlap', async () => {
+    const adapter = new SlowAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await Promise.all([
+      repo.updateDay('2026-05-15', (day) => ({ ...day, note: 'note' })),
+      repo.updateDay('2026-05-15', (day) => ({ ...day, location: 'Office' })),
+    ])
+    const fresh = new CloudMonthRepository(adapter)
+    expect((await fresh.getMonth(2026, 5))['2026-05-15']).toMatchObject({ note: 'note', location: 'Office' })
+  })
+
   it('returns empty object for month with no data', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)

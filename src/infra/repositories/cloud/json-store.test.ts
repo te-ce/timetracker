@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach } from 'vitest'
-import { JsonCollectionStore, JsonRecordStore } from './json-store'
-import type { StorageAdapter } from '../../storage/adapter'
+import { JsonCollectionStore, JsonRecordStore, JsonValueStore } from './json-store'
+import { StorageConflictError, type StorageAdapter } from '../../storage/adapter'
 
 function createMockAdapter(): StorageAdapter & { data: Record<string, unknown> } {
   const data: Record<string, unknown> = {}
@@ -242,5 +242,140 @@ describe('JsonRecordStore with validator', () => {
     expect(await store.getAll()).toEqual({})
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('expected object'), expect.anything())
     warnSpy.mockRestore()
+  })
+})
+
+/**
+ * Adapter with eTag-like versions (like OneDriveStorageAdapter): a write over
+ * a key that changed since this adapter instance last read it throws
+ * StorageConflictError. Writes can be delayed or made to fail.
+ */
+class VersionedAdapter implements StorageAdapter {
+  private files = new Map<string, { json: string; version: number }>()
+  private seen = new Map<string, number>()
+  putDelaysMs: number[] = []
+  failNextPut = false
+
+  /** Another device writes the key. */
+  writeRemote(key: string, value: unknown): void {
+    const version = (this.files.get(key)?.version ?? 0) + 1
+    this.files.set(key, { json: JSON.stringify(value), version })
+  }
+
+  stored(key: string): unknown {
+    const file = this.files.get(key)
+    return file ? JSON.parse(file.json) : null
+  }
+
+  get<T>(key: string): Promise<T | null> {
+    const file = this.files.get(key)
+    this.seen.set(key, file?.version ?? 0)
+    return Promise.resolve(file ? (JSON.parse(file.json) as T) : null)
+  }
+
+  async put<T>(key: string, value: T): Promise<void> {
+    const json = JSON.stringify(value)
+    await new Promise((resolve) => setTimeout(resolve, this.putDelaysMs.shift() ?? 0))
+    if (this.failNextPut) {
+      this.failNextPut = false
+      throw new Error('network')
+    }
+    const current = this.files.get(key)?.version ?? 0
+    if (this.seen.has(key) && this.seen.get(key) !== current) throw new StorageConflictError(key)
+    this.files.set(key, { json, version: current + 1 })
+    this.seen.set(key, current + 1)
+  }
+
+  delete(key: string): Promise<void> {
+    this.files.delete(key)
+    this.seen.set(key, 0)
+    return Promise.resolve()
+  }
+}
+
+function isNumber(v: unknown): number | null {
+  return typeof v === 'number' ? v : null
+}
+
+describe('JsonRecordStore write ordering, failures and conflicts', () => {
+  it('serializes concurrent read-modify-write updates so none is lost', async () => {
+    const adapter = new VersionedAdapter()
+    adapter.putDelaysMs = [5, 1, 4, 0, 2]
+    const store = new JsonRecordStore<number>(adapter, 'n.json', isNumber)
+    await Promise.all(Array.from({ length: 5 }, () => store.update('count', (n) => (n ?? 0) + 1)))
+    expect(await store.get('count')).toBe(5)
+    expect(adapter.stored('n.json')).toEqual({ count: 5 })
+  })
+
+  it('persists writes in call order even when an earlier PUT is slower', async () => {
+    const adapter = new VersionedAdapter()
+    adapter.putDelaysMs = [20, 0]
+    const store = new JsonRecordStore<string>(adapter, 'r.json', isString)
+    await Promise.all([store.set('a', 'first'), store.set('a', 'second')])
+    expect(adapter.stored('r.json')).toEqual({ a: 'second' })
+  })
+
+  it('leaves the cache untouched when the write fails', async () => {
+    const adapter = new VersionedAdapter()
+    adapter.writeRemote('r.json', { a: 'kept' })
+    const store = new JsonRecordStore<string>(adapter, 'r.json', isString)
+    adapter.failNextPut = true
+    await expect(store.set('b', 'lost')).rejects.toThrow('network')
+    expect(await store.getAll()).toEqual({ a: 'kept' })
+  })
+
+  it('re-reads and re-applies the change when another device wrote in between', async () => {
+    const adapter = new VersionedAdapter()
+    adapter.writeRemote('r.json', { a: 'one' })
+    const store = new JsonRecordStore<string>(adapter, 'r.json', isString)
+    await store.getAll()
+    adapter.writeRemote('r.json', { a: 'one', b: 'other device' })
+
+    await store.set('c', 'mine')
+
+    expect(adapter.stored('r.json')).toEqual({ a: 'one', b: 'other device', c: 'mine' })
+    expect(await store.getAll()).toEqual({ a: 'one', b: 'other device', c: 'mine' })
+  })
+
+  it('mutate writes several records in a single PUT', async () => {
+    const adapter = new VersionedAdapter()
+    const putSpy = vi.spyOn(adapter, 'put')
+    const store = new JsonRecordStore<string>(adapter, 'r.json', isString)
+    await store.mutate((current) => ({ ...current, a: '1', b: '2' }))
+    expect(putSpy).toHaveBeenCalledOnce()
+    expect(adapter.stored('r.json')).toEqual({ a: '1', b: '2' })
+  })
+})
+
+describe('JsonCollectionStore write failures and conflicts', () => {
+  it('leaves the cache untouched when the write fails', async () => {
+    const adapter = new VersionedAdapter()
+    const store = new JsonCollectionStore<Item>(adapter, 'items.json', isItem)
+    await store.upsert({ id: 'a', value: 1 }, (i) => i.id)
+    adapter.failNextPut = true
+    await expect(store.upsert({ id: 'a', value: 2 }, (i) => i.id)).rejects.toThrow('network')
+    expect(await store.getAll()).toEqual([{ id: 'a', value: 1 }])
+  })
+
+  it('re-reads and re-applies the change when another device wrote in between', async () => {
+    const adapter = new VersionedAdapter()
+    const store = new JsonCollectionStore<Item>(adapter, 'items.json', isItem)
+    await store.getAll()
+    adapter.writeRemote('items.json', [{ id: 'remote', value: 1 }])
+    await store.upsert({ id: 'mine', value: 2 }, (i) => i.id)
+    expect(adapter.stored('items.json')).toEqual([
+      { id: 'remote', value: 1 },
+      { id: 'mine', value: 2 },
+    ])
+  })
+})
+
+describe('JsonValueStore write failures', () => {
+  it('leaves the cache untouched when the write fails', async () => {
+    const adapter = new VersionedAdapter()
+    const store = new JsonValueStore<string>(adapter, 'v.json', isString, 'default')
+    adapter.failNextPut = true
+    await expect(store.set('new')).rejects.toThrow('network')
+    expect(await store.get()).toBe('default')
   })
 })

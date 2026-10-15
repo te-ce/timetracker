@@ -43,6 +43,6 @@ repositories/
 
 `RepositoryContext.tsx` creates instances (cloud or in-memory depending on sync mode) and provides them to the component tree. Feature hooks call `useRepository()` to obtain the relevant repository.
 
-Cloud repositories delegate all I/O to `json-store.ts`, which wraps a `StorageAdapter` key with an in-memory cache — first read loads from storage, writes update cache and persist. In-memory repositories hold all state in plain JS Maps; no adapter dependency.
+Cloud repositories delegate all I/O to `json-store.ts`, which wraps a `StorageAdapter` key with an in-memory cache — first read loads from storage; writes to one key run serially (read → mutate → put), the cache takes the new value only after the put succeeds, and a `StorageConflictError` re-reads and re-applies the mutation (ADR 0013). In-memory repositories hold all state in plain JS Maps; no adapter dependency.
 
 `configSchema.ts` validates the config JSON on load via Zod, filling in defaults for missing fields so config files from older app versions parse without throwing.
