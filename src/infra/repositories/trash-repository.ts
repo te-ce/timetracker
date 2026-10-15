@@ -3,6 +3,7 @@ import type { StorageAdapter } from '../storage/adapter'
 import type { Day, MonthData, MonthRepository, TrashEntry, TrashRepository as ITrashRepository } from './types'
 import { JsonRecordStore, JsonValueStore } from './cloud/json-store'
 import { validateDay } from './configSchema'
+import { mergeRestoredDay } from './month-restore-merge'
 
 const trashEntrySchema = z.object({
   id: z.string(),
@@ -38,9 +39,7 @@ export class TrashRepository implements ITrashRepository {
   async moveMonthToTrash(year: number, month: number, data: MonthData): Promise<string> {
     const id = crypto.randomUUID()
     const store = new JsonRecordStore<Day>(this.adapter, payloadKey(id), validateDay)
-    for (const [date, day] of Object.entries(data)) {
-      await store.set(date, day)
-    }
+    await store.mutate(() => ({ ...data }))
     await this.index.set(id, { id, type: 'month', year, month, deletedAt: new Date().toISOString() })
     return id
   }
@@ -70,7 +69,7 @@ export class TrashRepository implements ITrashRepository {
     } else if (entry.date) {
       const store = new JsonValueStore<Day>(this.adapter, payloadKey(id), validateDay, { windows: [] })
       const day = await store.get()
-      await this.monthRepo.updateDay(entry.date, () => day)
+      await this.monthRepo.updateDay(entry.date, (current) => mergeRestoredDay(current, day))
     }
     await this.purge(id)
   }

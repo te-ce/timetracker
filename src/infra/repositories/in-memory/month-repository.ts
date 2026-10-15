@@ -1,5 +1,6 @@
 import type { Day, MonthData } from '../types'
 import { AbstractMonthRepository, isDayEmpty } from '../abstract-month-repository'
+import { mergeRestoredMonth } from '../month-restore-merge'
 
 function monthKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`
@@ -39,7 +40,8 @@ export class InMemoryMonthRepository extends AbstractMonthRepository {
   }
 
   restoreMonth(year: number, month: number, data: MonthData): Promise<void> {
-    this.months.set(monthKey(year, month), structuredClone(data))
+    const ym = monthKey(year, month)
+    this.months.set(ym, mergeRestoredMonth(this.months.get(ym) ?? {}, structuredClone(data)))
     return Promise.resolve()
   }
 

@@ -3,6 +3,7 @@ import type { Day, MonthData } from '../types'
 import { JsonRecordStore } from './json-store'
 import { validateDay } from '../configSchema'
 import { AbstractMonthRepository, isDayEmpty } from '../abstract-month-repository'
+import { mergeRestoredMonth } from '../month-restore-merge'
 
 function monthKey(year: number, month: number): string {
   return `months/${year}-${String(month).padStart(2, '0')}.json`
@@ -59,13 +60,9 @@ export class CloudMonthRepository extends AbstractMonthRepository {
   }
 
   async restoreMonth(year: number, month: number, data: MonthData): Promise<void> {
-    const store = this.getStore(year, month)
-    for (const [date, day] of Object.entries(data)) {
-      await store.set(date, day)
-    }
-    if (Object.keys(data).length > 0) {
-      await this.indexStore.set(`${year}-${String(month).padStart(2, '0')}`, true)
-    }
+    if (Object.keys(data).length === 0) return
+    await this.getStore(year, month).mutate((current) => mergeRestoredMonth(current, data))
+    await this.indexStore.set(`${year}-${String(month).padStart(2, '0')}`, true)
   }
 
   async getAllMonths(): Promise<string[]> {

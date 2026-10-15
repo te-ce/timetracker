@@ -1,4 +1,5 @@
 import type { Day, MonthData, MonthRepository, TrashEntry, TrashRepository } from '../types'
+import { mergeRestoredDay } from '../month-restore-merge'
 
 export class InMemoryTrashRepository implements TrashRepository {
   private monthRepo: MonthRepository
@@ -46,7 +47,7 @@ export class InMemoryTrashRepository implements TrashRepository {
     }
     const dayRecord = this.dayEntries.get(id)
     if (dayRecord?.entry.date) {
-      await this.monthRepo.updateDay(dayRecord.entry.date, () => dayRecord.payload)
+      await this.monthRepo.updateDay(dayRecord.entry.date, (current) => mergeRestoredDay(current, dayRecord.payload))
       this.dayEntries.delete(id)
     }
   }
