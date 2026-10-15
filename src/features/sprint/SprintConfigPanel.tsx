@@ -4,6 +4,7 @@ import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import type { AppConfig } from '../../infra/repositories/configSchema'
 import { SprintExportControls } from './SprintExportControls'
+import type { UnmappedHoursItem } from './UnmappedHoursBanner'
 import type { ExportStatus, SprintRoundingMode } from './sprint'
 
 function isSprintRoundingMode(value: string): value is SprintRoundingMode {
@@ -40,9 +41,21 @@ interface Props {
   exportStatus?: ExportStatus | undefined
   exportReady?: boolean | undefined
   onExport?: ((overwrite: boolean) => Promise<void>) | undefined
+  exportBlockedReason?: string | undefined
+  exportKey?: string | undefined
+  unmappedHours?: UnmappedHoursItem[] | undefined
 }
 
-export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, exportReady, onExport }: Props) {
+export function SprintConfigPanel({
+  repository,
+  onConfigChanged,
+  exportStatus,
+  exportReady,
+  onExport,
+  exportBlockedReason,
+  exportKey,
+  unmappedHours,
+}: Props) {
   const queryClient = useQueryClient()
   const [startDate, setStartDate] = useState('')
   const [lengthDays, setLengthDays] = useState('')
@@ -170,7 +183,16 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
         </button>
       )}
 
-      {onExport && <SprintExportControls exportStatus={exportStatus} exportReady={exportReady} onExport={onExport} />}
+      {onExport && (
+        <SprintExportControls
+          key={exportKey}
+          exportStatus={exportStatus}
+          exportReady={exportReady}
+          blockedReason={exportBlockedReason}
+          unmappedHours={unmappedHours ?? []}
+          onExport={onExport}
+        />
+      )}
     </div>
   )
 }

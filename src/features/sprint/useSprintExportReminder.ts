@@ -38,9 +38,16 @@ export function useSprintExportReminder(): SprintBadgeState | undefined {
   const oldestIndex = indices[indices.length - 1] ?? currentIndex
   const oldestStart = getSprintBoundaries(oldestIndex, sprintConfig).start
 
+  const { weekdayHours } = resolveAppConfig(config)
   const { data: entries } = useQuery({
-    queryKey: ['sprintReminderEntries', oldestStart, today, sprintConfig.startDate, sprintConfig.lengthDays],
-    queryFn: () => monthRepo.findEntriesByDateRange(oldestStart, today, resolveAppConfig(config).weekdayHours),
+    queryKey: QUERY_KEYS.sprintReminderEntries(
+      oldestStart,
+      today,
+      sprintConfig.startDate,
+      sprintConfig.lengthDays,
+      weekdayHours,
+    ),
+    queryFn: () => monthRepo.findEntriesByDateRange(oldestStart, today, weekdayHours),
     enabled: !!config,
   })
 
