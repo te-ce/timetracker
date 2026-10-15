@@ -226,6 +226,12 @@ describe('findPlannedStopPeriod', () => {
     const planned = makeWindow('09:00', '17:00')
     expect(findPlannedStopPeriod([makeWindow('07:00', '08:00'), planned], '15:00')).toBe(planned)
   })
+
+  it('picks the earliest planned stop by time, not by array order', () => {
+    const later = { ...makeWindow('18:00', '19:00'), id: 'later' }
+    const current = { ...makeWindow('13:00', '17:00'), id: 'current' }
+    expect(findPlannedStopPeriod([later, current], '15:00')).toBe(current)
+  })
 })
 
 describe('calculateProjectedWorkedHours', () => {

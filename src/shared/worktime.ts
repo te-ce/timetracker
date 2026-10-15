@@ -78,10 +78,12 @@ export function isPlannedStop(period: WorkPeriod, nowHHMM: string): boolean {
 }
 
 /**
- * Returns the first WorkPeriod whose end is a future time (Planned-Stop WorkPeriod).
+ * Returns the earliest-starting WorkPeriod whose end is a future time (Planned-Stop WorkPeriod).
  */
 export function findPlannedStopPeriod(windows: WorkPeriod[], nowHHMM: string): WorkPeriod | undefined {
-  return windows.find((w) => isPlannedStop(w, nowHHMM))
+  return windows
+    .filter((w) => isPlannedStop(w, nowHHMM))
+    .toSorted((a, b) => parseMinutes(a.start) - parseMinutes(b.start))[0]
 }
 
 /**
