@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createElement } from 'react'
 import type { ReactNode } from 'react'
@@ -11,10 +11,7 @@ import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/con
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
 import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 
-vi.mock('@tanstack/react-router', () => ({
-  useNavigate: () => vi.fn(),
-  useSearch: () => ({ logDate: '2099-01-15' }),
-}))
+import { renderRoute } from '../../test/renderRoute'
 
 function makeWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -32,12 +29,12 @@ function makeWrapper() {
 
 describe('TableView logDate deep link', () => {
   it('opens the work period dialog once on arrival', async () => {
-    render(<TableView />, { wrapper: makeWrapper() })
+    await renderRoute(TableView, { path: '/table', search: { logDate: '2099-01-15' }, wrapper: makeWrapper() })
     expect(await screen.findByText(/work periods/i)).toBeInTheDocument()
   })
 
   it('does not reopen the dialog after it was closed', async () => {
-    render(<TableView />, { wrapper: makeWrapper() })
+    await renderRoute(TableView, { path: '/table', search: { logDate: '2099-01-15' }, wrapper: makeWrapper() })
     await screen.findByText(/work periods/i)
     await userEvent.click(screen.getByRole('button', { name: /^close$/i }))
     expect(screen.queryByText(/work periods/i)).not.toBeInTheDocument()
