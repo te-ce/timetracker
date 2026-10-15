@@ -27,13 +27,13 @@ async function buildXlsx(sheets: SheetSpec[]): Promise<Uint8Array> {
     for (const row of rows) ws.addRow(row)
   }
   const out: unknown = await wb.xlsx.writeBuffer()
-  if (out instanceof Uint8Array) return out.slice()
+  if (out instanceof Uint8Array) return Uint8Array.from(out)
   throw new Error('unexpected writeBuffer result')
 }
 
 async function readXlsx(bytes: Uint8Array): Promise<ExcelJS.Workbook> {
   const wb = new ExcelJS.Workbook()
-  await wb.xlsx.load(bytes.slice().buffer)
+  await wb.xlsx.load(Uint8Array.from(bytes).buffer)
   return wb
 }
 
@@ -47,11 +47,11 @@ function makeFile(initial: Uint8Array): InMemoryFile {
   let content = initial
   let writes = 0
   const handle = {
-    getFile: () => Promise.resolve({ arrayBuffer: () => Promise.resolve(content.slice().buffer) }),
+    getFile: () => Promise.resolve({ arrayBuffer: () => Promise.resolve(Uint8Array.from(content).buffer) }),
     createWritable: () =>
       Promise.resolve({
         write: (data: ArrayBuffer | Uint8Array) => {
-          content = data instanceof Uint8Array ? data.slice() : new Uint8Array(data)
+          content = data instanceof Uint8Array ? Uint8Array.from(data) : new Uint8Array(data)
           writes++
           return Promise.resolve()
         },
