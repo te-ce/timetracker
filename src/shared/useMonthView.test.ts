@@ -11,11 +11,6 @@ import { InMemoryTrashRepository } from '../infra/repositories/in-memory/trash-r
 import type { WorkPeriod } from '../infra/repositories/types'
 import { useMonthView } from './useMonthView'
 
-vi.mock('../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 function period(id: string, start: string, end: string): WorkPeriod {
   return { id, start, end, category: '_COREMEDIA', subtasks: [] }
 }

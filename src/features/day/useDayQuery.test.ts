@@ -31,11 +31,6 @@ class DelayedConfigRepository implements ConfigRepository {
   }
 }
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 const DATE = '2026-05-15'
 
 function period(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {

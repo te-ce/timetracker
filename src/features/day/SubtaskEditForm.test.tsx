@@ -7,11 +7,6 @@ import { useWorkPeriodMutations } from './useWorkPeriodMutations'
 import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/month-repository'
 import type { MonthRepository, WorkPeriodSubtask } from '../../infra/repositories/types'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 describe('resolveSubtaskEdit', () => {
   const sl: WorkPeriodSubtask = { id: 'sl-1', category: 'Work', hours: 1 }
 

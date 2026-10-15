@@ -15,11 +15,6 @@ import { resolveAppConfig } from '../../shared/appConfigDefaults'
 import { useUndoStore } from '../../shared/undoStore'
 import type { WorkPeriod } from '../../infra/repositories/types'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
   useSearch: () => ({}),

@@ -14,11 +14,6 @@ import type { DayQueryResult } from './useDayQuery'
 import type { OvertimeToDate } from '../month'
 import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => navigateSpy,
   useSearch: () => ({ date: '2026-05-15' }),

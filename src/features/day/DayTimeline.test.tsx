@@ -7,11 +7,6 @@ import type { MonthData, MonthRepository, WorkPeriod, WorkPeriodSubtask } from '
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import { toLocalIso } from '../../shared/dateUtils'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 // The timeline shows live tracking, planned stops and breaks relative to now, so
 // these tests run against today — but at a pinned wall-clock time. Left on the
 // real clock, the fixtures' 08:00–17:00 periods are still in the future when the

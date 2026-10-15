@@ -11,11 +11,6 @@ import { InMemoryConfigRepository } from '../../infra/repositories/in-memory/con
 import { InMemorySprintExportRepository } from '../../infra/repositories/in-memory/sprint-export-repository'
 import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 vi.mock('@tanstack/react-router', () => ({
   useNavigate: () => vi.fn(),
   useSearch: () => ({ logDate: '2099-01-15' }),

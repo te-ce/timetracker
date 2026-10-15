@@ -14,11 +14,6 @@ vi.mock('../infra/repositories/shared', () => ({
   resetAllRepositories: vi.fn(),
 }))
 
-vi.mock('../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 import { useMsal } from '@azure/msal-react'
 import { resetAllRepositories } from '../infra/repositories/shared'
 import { useMsalSync } from './useMsalSync'

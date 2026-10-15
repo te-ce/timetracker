@@ -11,11 +11,6 @@ import { InMemorySprintExportRepository } from '../../infra/repositories/in-memo
 import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 import type { MonthData } from '../../infra/repositories/types'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 /** Mon 6th – Wed 8th July 2026, one of them in the office. */
 const JULY: MonthData = {
   '2026-07-06': {

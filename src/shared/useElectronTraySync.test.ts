@@ -8,11 +8,6 @@ import type { WorkPeriod } from '../infra/repositories/types'
 import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
 import preloadSource from '../../electron/preload.cjs?raw'
 
-vi.mock('../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 function makeWindow(overrides: Partial<WorkPeriod> = {}): WorkPeriod {
   return {
     id: 'wp1',
