@@ -100,18 +100,6 @@ ipcMain.handle('localfolder:delete', (_, basePath, key) => {
 
 // ── Tray helpers ──────────────────────────────────────────────────────────────
 
-function formatHHMM(hours) {
-  const totalMinutes = Math.round(hours * 60)
-  const h = Math.floor(totalMinutes / 60)
-  const m = totalMinutes % 60
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
-
-function elapsedHours(startedAt) {
-  if (!startedAt) return 0
-  return Math.max(0, Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60)
-}
-
 // Pre-rendered by scripts/generate-icons.mjs from public/favicon.svg (background recolored per state).
 // nativeImage has no SVG decoder, so these ship as PNGs rather than being rasterized at runtime.
 // Mirrors src/shared/useFaviconIndicator.ts's faviconColor mapping.
