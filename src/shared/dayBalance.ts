@@ -36,8 +36,6 @@ export interface DayBalance {
   projectedWorked: number
   requiredToday: number
   remaining: number
-  /** Remaining at the planned stop, rather than at `now`. */
-  projectedRemaining: number
   /** Wall-clock time `remaining` hits zero, projected forward from `now`. Null once reached or on a day that isn't today. */
   etaTime: string | null
   isPlannedStopMode: boolean
@@ -109,7 +107,6 @@ export function deriveDayBalance(input: DayBalanceInput): DayBalance {
     projectedWorked,
     requiredToday,
     remaining,
-    projectedRemaining: sollstunden - priorOvertime - projectedWorked,
     etaTime: isToday && remaining > 0 ? addHoursToTime(now, remaining) : null,
     isPlannedStopMode,
     plannedStopTime,
