@@ -109,7 +109,7 @@ function formatHHMM(hours) {
 
 function elapsedHours(startedAt) {
   if (!startedAt) return 0
-  return (Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60)
+  return Math.max(0, Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60)
 }
 
 // Pre-rendered by scripts/generate-icons.mjs from public/favicon.svg (background recolored per state).
