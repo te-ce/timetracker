@@ -407,4 +407,120 @@ describe('buildAllTimeStats milestones', () => {
     const data: MonthData = { '2026-07-06': { windows: [period('08:00', '16:00')] } }
     expect(stats(months({ ym: '2026-07', data }), '2026-07-10').trackingSinceDays).toBe(5)
   })
+
+  describe('category stats', () => {
+    const HALF_LEAVE: MonthData = {
+      '2026-07-01': { windows: [period('08:00', '12:00', '_COREMEDIA')], halfDayLeave: 'Vacation' },
+    }
+
+    it('excludes auto-booked _LEAVE from category stats and top category', () => {
+      const result = stats(months({ ym: '2026-07', data: HALF_LEAVE }))
+      expect(result.categories.map((c) => c.category)).toEqual(['_COREMEDIA'])
+      expect(result.months[0]?.topCategory).toBe('_COREMEDIA')
+    })
+
+    it('computes category percent against total tracked hours', () => {
+      const data: MonthData = {
+        '2026-07-01': { windows: [period('08:00', '12:00', '_COREMEDIA'), period('12:00', '14:00', '_OTHER')] },
+        '2026-07-02': { windows: [period('08:00', '10:00', '_COREMEDIA')], halfDayLeave: 'Vacation' },
+      }
+      const result = stats(months({ ym: '2026-07', data }))
+      expect(result.totalHours).toBe(8)
+      expect(result.categories.find((c) => c.category === '_COREMEDIA')?.percent).toBeCloseTo(75)
+      expect(result.categories.find((c) => c.category === '_OTHER')?.percent).toBeCloseTo(25)
+    })
+  })
+
+  describe('breaks', () => {
+    function breakStats(data: MonthData) {
+      return stats(months({ ym: '2026-07', data })).breaks
+    }
+
+    it('measures gaps from the latest end so overlapping periods do not inflate breaks', () => {
+      const result = breakStats({
+        '2026-07-01': { windows: [period('08:00', '12:00'), period('09:00', '10:00'), period('13:00', '14:00')] },
+      })
+      expect(result.avgMinutesPerDay).toBe(60)
+      expect(result.longestWithinDay).toEqual({ date: '2026-07-01', minutes: 60 })
+    })
+
+    it('counts back-to-back periods as unbroken and averages only those days', () => {
+      const result = breakStats({
+        '2026-07-01': { windows: [period('08:00', '12:00'), period('12:00', '14:00')] },
+        '2026-07-02': { windows: [period('08:00', '10:00')] },
+        '2026-07-03': { windows: [period('08:00', '10:00'), period('11:00', '17:00')] },
+      })
+      expect(result.daysWithoutBreak).toBe(2)
+      expect(result.unbrokenAvgHours).toBeCloseTo(4)
+    })
+  })
+
+  describe('absence and leave', () => {
+    it('ignores workdays before the first tracked day when finding the longest absence', () => {
+      const data: MonthData = { '2026-07-20': { windows: [period('08:00', '16:00')] } }
+      const result = stats(months({ ym: '2026-07', data }))
+      expect(result.extremes.longestAbsence).toEqual({ workdays: 9, from: '2026-07-21', to: '2026-07-31' })
+    })
+
+    it('counts only leave days up to today', () => {
+      const data: MonthData = {
+        '2026-07-06': { windows: [], dayTypeOverride: 'Vacation' },
+        '2026-07-07': { windows: [], dayTypeOverride: 'SickDay' },
+        '2026-07-20': { windows: [], dayTypeOverride: 'Vacation' },
+        '2026-07-21': { windows: [], dayTypeOverride: 'SickDay' },
+      }
+      const result = stats(months({ ym: '2026-07', data }), '2026-07-10')
+      expect(result.vacationDays).toBe(1)
+      expect(result.sickDays).toBe(1)
+    })
+  })
+
+  describe('busiest weekday', () => {
+    it('picks by average hours, needing at least two occurrences when possible', () => {
+      const data: MonthData = {
+        '2026-07-06': { windows: [period('08:00', '16:00')] },
+        '2026-07-13': { windows: [period('08:00', '16:00')] },
+        '2026-07-07': { windows: [period('06:00', '18:00')] },
+        '2026-07-08': { windows: [period('08:00', '12:00')] },
+        '2026-07-15': { windows: [period('08:00', '12:00'), period('13:00', '22:00')] },
+      }
+      const result = stats(months({ ym: '2026-07', data }))
+      expect(result.busiestWeekday?.label).toBe('Wednesday')
+    })
+
+    it('falls back to single occurrences when no weekday repeats', () => {
+      const data: MonthData = {
+        '2026-07-06': { windows: [period('08:00', '16:00')] },
+        '2026-07-07': { windows: [period('06:00', '18:00')] },
+      }
+      expect(stats(months({ ym: '2026-07', data })).busiestWeekday?.label).toBe('Tuesday')
+    })
+  })
+
+  describe('default work location', () => {
+    const data: MonthData = {
+      '2026-07-01': { windows: [period('08:00', '16:00')] },
+      '2026-07-02': { windows: [period('08:00', '16:00')], location: 'Remote' },
+      '2026-07-03': { windows: [period('08:00', '16:00')], location: 'Office' },
+    }
+    function withDefault(defaultWorkLocation?: 'Office' | 'Remote') {
+      return buildAllTimeStats({
+        months: [{ ym: '2026-07', data }],
+        weekdayHours: DEFAULT_WEEKDAY_HOURS,
+        today: '2026-07-31',
+        now: '18:00',
+        ...(defaultWorkLocation ? { defaultWorkLocation } : {}),
+      })
+    }
+
+    it('treats days without a location as remote by default', () => {
+      expect(withDefault().location).toMatchObject({ officeDays: 1, remoteDays: 2 })
+    })
+
+    it('treats days without a location as office when that is the default', () => {
+      const result = withDefault('Office')
+      expect(result.location).toMatchObject({ officeDays: 2, remoteDays: 1 })
+      expect(result.months[0]?.officePercent).toBe(67)
+    })
+  })
 })

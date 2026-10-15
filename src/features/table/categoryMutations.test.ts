@@ -195,4 +195,58 @@ describe('renameCategoryAcrossAllMonths', () => {
       expect(saved.categoryOrder).toEqual([])
     })
   })
+
+  describe('validation and references', () => {
+    it('refuses to rename to an existing category', async () => {
+      const cfg = { ...DEFAULT_APP_CONFIG, customCategories: ['A', 'B'] }
+      const configRepo = new InMemoryConfigRepository(cfg)
+      const monthRepo = new InMemoryMonthRepository({ '2026-01': { '2026-01-10': { windows: [period('a', 'A')] } } })
+
+      await renameCategoryAcrossAllMonths('A', 'B', configRepo, monthRepo)
+
+      expect((await configRepo.get()).customCategories).toEqual(['A', 'B'])
+      expect((await monthRepo.getMonth(2026, 1))['2026-01-10']?.windows[0]?.category).toBe('A')
+    })
+
+    it('refuses to rename a system category', async () => {
+      const configRepo = new InMemoryConfigRepository({ ...DEFAULT_APP_CONFIG })
+      const monthRepo = new InMemoryMonthRepository({
+        '2026-01': { '2026-01-10': { windows: [period('a', '_OTHER')] } },
+      })
+
+      await renameCategoryAcrossAllMonths('_OTHER', 'Misc', configRepo, monthRepo)
+
+      expect((await monthRepo.getMonth(2026, 1))['2026-01-10']?.windows[0]?.category).toBe('_OTHER')
+    })
+
+    it('refuses a new name starting with underscore', async () => {
+      const configRepo = new InMemoryConfigRepository({ ...DEFAULT_APP_CONFIG, customCategories: ['A'] })
+      const monthRepo = new InMemoryMonthRepository()
+
+      await renameCategoryAcrossAllMonths('A', '_X', configRepo, monthRepo)
+
+      expect((await configRepo.get()).customCategories).toEqual(['A'])
+    })
+
+    it('renames autoCategory and per-day autoCategoryOverride', async () => {
+      const configRepo = new InMemoryConfigRepository({
+        ...DEFAULT_APP_CONFIG,
+        customCategories: ['A'],
+        autoCategory: 'A',
+      })
+      const monthRepo = new InMemoryMonthRepository({
+        '2026-01': {
+          '2026-01-10': { windows: [], autoCategoryOverride: 'A' },
+          '2026-01-11': { windows: [], autoCategoryOverride: 'Z' },
+        },
+      })
+
+      await renameCategoryAcrossAllMonths('A', 'N', configRepo, monthRepo)
+
+      expect((await configRepo.get()).autoCategory).toBe('N')
+      const jan = await monthRepo.getMonth(2026, 1)
+      expect(jan['2026-01-10']?.autoCategoryOverride).toBe('N')
+      expect(jan['2026-01-11']?.autoCategoryOverride).toBe('Z')
+    })
+  })
 })

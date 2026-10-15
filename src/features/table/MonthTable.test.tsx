@@ -7,9 +7,10 @@ import { DEFAULT_CATEGORIES, UNCATEGORIZED_CATEGORY } from '../../infra/reposito
 import type { DayTypeOverride, MonthData, WorkLocation, WorkPeriod } from '../../infra/repositories/types'
 import { buildMonthView } from '../../shared/useMonthView'
 import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
-import { toLocalIso } from '../../shared/dateUtils'
-import { nowHHMM } from '../../shared/worktime'
 import { useUndoStore } from '../../shared/undoStore'
+
+const VIEW_TODAY = '2026-05-20'
+const VIEW_NOW = '12:00'
 
 function w(id: string, start: string, end: string, category = '_COREMEDIA'): WorkPeriod {
   return { id, start, end, category, subtasks: [] }
@@ -48,14 +49,21 @@ function foldIntoMonthData(opts: SetupOptions): MonthData {
   return monthData
 }
 
-function makeView(year: number, month: number, monthData: MonthData = {}, autoCategory = '_COREMEDIA') {
+function makeView(
+  year: number,
+  month: number,
+  monthData: MonthData = {},
+  autoCategory = '_COREMEDIA',
+  customCategories: string[] = [],
+  todayIso = VIEW_TODAY,
+) {
   return buildMonthView({
     year,
     month,
     monthData,
-    config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, autoCategory }),
-    todayIso: toLocalIso(new Date()),
-    now: nowHHMM(),
+    config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, autoCategory, customCategories }),
+    todayIso,
+    now: VIEW_NOW,
   })
 }
 
@@ -78,8 +86,8 @@ function setup(opts: SetupOptions = {}) {
     month: 5,
     monthData,
     config,
-    todayIso: toLocalIso(new Date()),
-    now: nowHHMM(),
+    todayIso: VIEW_TODAY,
+    now: VIEW_NOW,
   })
 
   render(
@@ -260,7 +268,11 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid view={makeView(2026, 5)} repository={repo} onCategoryRename={onRename} />
+          <MonthGrid
+            view={makeView(2026, 5, {}, '_COREMEDIA', ['Alpha', 'Beta'])}
+            repository={repo}
+            onCategoryRename={onRename}
+          />
         </QueryClientProvider>,
       )
       return { repo }
@@ -269,40 +281,70 @@ describe('MonthGrid', () => {
     it('double-clicking a column header shows an edit input', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
-      expect(screen.getByDisplayValue('_SUPPORT')).toBeInTheDocument()
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      expect(screen.getByDisplayValue('Alpha')).toBeInTheDocument()
     })
 
     it('pressing Enter commits the rename', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
-      const input = screen.getByDisplayValue('_SUPPORT')
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
       await userEvent.clear(input)
-      await userEvent.type(input, 'Support{Enter}')
-      expect(onRename).toHaveBeenCalledWith('_SUPPORT', 'Support')
+      await userEvent.type(input, 'Gamma{Enter}')
+      expect(onRename).toHaveBeenCalledWith('Alpha', 'Gamma')
     })
 
     it('pressing Escape cancels without calling onCategoryRename', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
       await userEvent.keyboard('{Escape}')
       expect(onRename).not.toHaveBeenCalled()
-      expect(screen.queryByDisplayValue('_SUPPORT')).not.toBeInTheDocument()
+      expect(screen.queryByDisplayValue('Alpha')).not.toBeInTheDocument()
     })
 
     it('does not call onCategoryRename when name is unchanged', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
-      const input = screen.getByDisplayValue('_SUPPORT')
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
       await userEvent.click(input)
       await userEvent.tab()
+      expect(onRename).not.toHaveBeenCalled()
+    })
+
+    it('does not offer rename on system categories', async () => {
+      const onRename = vi.fn<(oldName: string, newName: string) => void>()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
+      await userEvent.dblClick(within(header).getByText('SUPPORT'))
+      expect(screen.queryByDisplayValue('_SUPPORT')).not.toBeInTheDocument()
+    })
+
+    it('rejects a rename to an existing category name', async () => {
+      const onRename = vi.fn<(oldName: string, newName: string) => void>()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
+      await userEvent.clear(input)
+      await userEvent.type(input, 'Beta{Enter}')
+      expect(onRename).not.toHaveBeenCalled()
+    })
+
+    it('rejects an underscore-prefixed new name', async () => {
+      const onRename = vi.fn<(oldName: string, newName: string) => void>()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
+      await userEvent.clear(input)
+      await userEvent.type(input, '_X{Enter}')
       expect(onRename).not.toHaveBeenCalled()
     })
   })
@@ -465,7 +507,7 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid view={makeView(2026, 6)} repository={repo} />
+          <MonthGrid view={makeView(2026, 6, {}, '_COREMEDIA', [], PINNED_TODAY)} repository={repo} />
         </QueryClientProvider>,
       )
       return { repo }

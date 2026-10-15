@@ -17,6 +17,8 @@ export interface AllTimeStatsInput {
   months: StatsMonth[]
   weekdayHours: WeekdayHours
   today: string
+  /** Location assumed for tracked days with none stored; defaults to Remote. */
+  defaultWorkLocation?: WorkLocation
   /** Wall-clock "HH:MM" today's still-running period is measured against. */
   now?: string
 }
@@ -64,7 +66,7 @@ export interface MonthStat {
 export interface CategoryStat {
   category: string
   hours: number
-  /** Share of all categorised hours, 0–100. */
+  /** Share of all tracked hours, 0–100. */
   percent: number
 }
 
@@ -100,6 +102,8 @@ export interface BreakStats {
   /** When the main break of a day usually starts, as minutes after midnight. */
   usualStartMinutes: number | null
   usualEndMinutes: number | null
+  /** Mean hours of the unbroken days, 0 when there are none. */
+  unbrokenAvgHours: number
 }
 
 export interface WeekStat {
@@ -219,10 +223,10 @@ interface DayFacts {
   hours: number
   targetHours: number
   categoryHours: Record<string, number>
-  periodCount: number
+  hasBreak: boolean
   firstStartMinutes: number | null
   lastEndMinutes: number | null
-  location: WorkLocation | undefined
+  location: WorkLocation
   hasNote: boolean
   subtaskCount: number
   /** Minutes between consecutive periods — time on the clock but not on a task. */
@@ -253,18 +257,18 @@ function breaksBetween(windows: WorkPeriod[]): DayBreaks {
   let longest = 0
   let longestStart: number | null = null
   let longestEnd: number | null = null
-  for (let i = 1; i < closed.length; i++) {
-    const prev = closed[i - 1]
-    const current = closed[i]
-    if (prev === undefined || current === undefined) continue
-    const gap = current.start - prev.end
-    if (gap <= 0) continue
-    total += gap
-    if (gap > longest) {
-      longest = gap
-      longestStart = prev.end
-      longestEnd = current.start
+  let maxEnd = closed[0]?.end ?? 0
+  for (const current of closed.slice(1)) {
+    const gap = current.start - maxEnd
+    if (gap > 0) {
+      total += gap
+      if (gap > longest) {
+        longest = gap
+        longestStart = maxEnd
+        longestEnd = current.start
+      }
     }
+    maxEnd = Math.max(maxEnd, current.end)
   }
   return { total, longest, longestStart, longestEnd }
 }
@@ -272,6 +276,7 @@ function breaksBetween(windows: WorkPeriod[]): DayBreaks {
 function flattenDays(input: AllTimeStatsInput): DayFacts[] {
   const sorted = [...input.months].sort((a, b) => a.ym.localeCompare(b.ym))
   const facts: DayFacts[] = []
+  const defaultLocation = input.defaultWorkLocation ?? 'Remote'
 
   sorted.forEach((month, monthIdx) => {
     const year = parseInt(month.ym.slice(0, 4))
@@ -300,10 +305,10 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
         hours: core.workedHours,
         targetHours: core.targetHours,
         categoryHours: core.categoryHours,
-        periodCount: windows.length,
+        hasBreak: breaks.longest > 0,
         firstStartMinutes: starts.length > 0 ? Math.min(...starts) : null,
         lastEndMinutes: ends.length > 0 ? Math.max(...ends) : null,
-        location: day?.location,
+        location: day?.location ?? defaultLocation,
         hasNote: (day?.note ?? '').trim().length > 0,
         subtaskCount: windows.reduce((sum, w) => sum + w.subtasks.length, 0),
         breakMinutes: breaks.total,
@@ -381,14 +386,22 @@ function buildWeekdayStats(trackedDays: DayFacts[]): WeekdayStat[] {
   })
 }
 
-function topCategoryOf(trackedDays: DayFacts[]): string | null {
+/** `_LEAVE` is auto-booked leave time, not a category the user worked in. */
+const LEAVE_CATEGORY = '_LEAVE'
+
+function categoryTotals(trackedDays: DayFacts[]): Map<string, number> {
   const totals = new Map<string, number>()
   for (const day of trackedDays) {
     for (const [category, hours] of Object.entries(day.categoryHours)) {
-      if (category === UNCATEGORIZED_CATEGORY) continue
+      if (category === UNCATEGORIZED_CATEGORY || category === LEAVE_CATEGORY) continue
       totals.set(category, (totals.get(category) ?? 0) + hours)
     }
   }
+  return totals
+}
+
+function topCategoryOf(trackedDays: DayFacts[]): string | null {
+  const totals = categoryTotals(trackedDays)
   return [...totals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 }
 
@@ -420,14 +433,8 @@ function buildMonthStats(days: DayFacts[]): MonthStat[] {
 }
 
 function buildCategoryStats(trackedDays: DayFacts[]): CategoryStat[] {
-  const totals = new Map<string, number>()
-  for (const day of trackedDays) {
-    for (const [category, hours] of Object.entries(day.categoryHours)) {
-      if (category === UNCATEGORIZED_CATEGORY) continue
-      totals.set(category, (totals.get(category) ?? 0) + hours)
-    }
-  }
-  const sum = [...totals.values()].reduce((a, b) => a + b, 0)
+  const totals = categoryTotals(trackedDays)
+  const sum = trackedDays.reduce((acc, d) => acc + d.hours, 0)
   return [...totals.entries()]
     .map(([category, hours]) => ({ category, hours, percent: sum > 0 ? (hours / sum) * 100 : 0 }))
     .sort((a, b) => b.hours - a.hours)
@@ -475,11 +482,13 @@ function buildBreakStats(tracked: DayFacts[]): BreakStats {
   // Averaged over each day's main break, so the window says "when lunch usually
   // is" rather than being dragged around by short gaps.
   const withBreak = tracked.filter((d) => d.longestBreakMinutes > 0)
+  const unbroken = tracked.filter((d) => !d.hasBreak)
   return {
     avgMinutesPerDay: mean(tracked.map((d) => d.breakMinutes)) ?? 0,
     longestWithinDay:
       longest && longest.longestBreakMinutes > 0 ? { date: longest.date, minutes: longest.longestBreakMinutes } : null,
-    daysWithoutBreak: tracked.filter((d) => d.periodCount === 1).length,
+    daysWithoutBreak: unbroken.length,
+    unbrokenAvgHours: mean(unbroken.map((d) => d.hours)) ?? 0,
     usualStartMinutes: mean(withBreak.map((d) => d.longestBreakStart).filter(isDefined)),
     usualEndMinutes: mean(withBreak.map((d) => d.longestBreakEnd).filter(isDefined)),
   }
@@ -513,8 +522,17 @@ function buildWeekStats(days: DayFacts[]): WeekStats {
   return { bestWeek: [...weeks].sort((a, b) => b.hours - a.hours)[0] ?? null }
 }
 
+function isPastWorkday(day: DayFacts, today: string, firstTrackedDate: string): boolean {
+  return day.dayType === 'WorkDay' && day.date <= today && day.date >= firstTrackedDate
+}
+
 /** Longest run of past WorkDays with nothing tracked — the longest stretch away. */
-function longestAbsenceOf(days: DayFacts[], today: string): ExtremeStats['longestAbsence'] {
+function longestAbsenceOf(
+  days: DayFacts[],
+  today: string,
+  firstTrackedDate: string | null,
+): ExtremeStats['longestAbsence'] {
+  if (firstTrackedDate === null) return null
   let best: ExtremeStats['longestAbsence'] = null
   let workdays = 0
   let from = ''
@@ -522,7 +540,7 @@ function longestAbsenceOf(days: DayFacts[], today: string): ExtremeStats['longes
 
   for (const day of days) {
     if (day.afterGap) workdays = 0
-    if (day.date > today || day.dayType !== 'WorkDay') continue
+    if (!isPastWorkday(day, today, firstTrackedDate)) continue
     if (day.hours > 0) {
       workdays = 0
       continue
@@ -536,7 +554,12 @@ function longestAbsenceOf(days: DayFacts[], today: string): ExtremeStats['longes
   return best
 }
 
-function buildExtremeStats(days: DayFacts[], tracked: DayFacts[], today: string): ExtremeStats {
+function buildExtremeStats(
+  days: DayFacts[],
+  tracked: DayFacts[],
+  today: string,
+  firstTrackedDate: string | null,
+): ExtremeStats {
   const byBalance = [...tracked].sort((a, b) => b.hours - b.targetHours - (a.hours - a.targetHours))
   const best = byBalance[0]
   const worst = byBalance.at(-1)
@@ -547,7 +570,7 @@ function buildExtremeStats(days: DayFacts[], tracked: DayFacts[], today: string)
     worstDayBalance: worst ? { date: worst.date, balance: worst.hours - worst.targetHours } : null,
     medianDayHours: median(tracked.map((d) => d.hours)),
     weekendHours: tracked.filter(isWeekend).reduce((sum, d) => sum + d.hours, 0),
-    longestAbsence: longestAbsenceOf(days, today),
+    longestAbsence: longestAbsenceOf(days, today, firstTrackedDate),
   }
 }
 
@@ -634,6 +657,14 @@ function busiestOf<T extends { hours: number }>(items: T[]): T | null {
   return [...items].sort((a, b) => b.hours - a.hours)[0] ?? null
 }
 
+/** Highest average weekday; weekdays seen only once are skipped unless nothing repeats. */
+function heaviestWeekdayOf(weekdays: WeekdayStat[]): WeekdayStat | null {
+  const seen = weekdays.filter((w) => w.trackedDays > 0)
+  const repeated = seen.filter((w) => w.trackedDays >= 2)
+  const pool = repeated.length > 0 ? repeated : seen
+  return [...pool].sort((a, b) => b.avgHours - a.avgHours)[0] ?? null
+}
+
 /** Office vs. remote split across tracked days, and the office share as a percent. */
 function computeLocationStats(tracked: DayFacts[]): { officeDays: number; remoteDays: number; officePercent: number } {
   const officeDays = tracked.filter((d) => d.location === 'Office').length
@@ -671,7 +702,7 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
   const tracked = days.filter((d) => d.hours > 0)
 
   const weekdays = buildWeekdayStats(tracked)
-  const busiestWeekday = busiestOf(weekdays.filter((w) => w.trackedDays > 0))
+  const busiestWeekday = heaviestWeekdayOf(weekdays)
   const months = buildMonthStats(days)
   const busiestMonth = busiestOf(months)
 
@@ -700,13 +731,13 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
     rhythm: buildRhythmStats(tracked),
     breaks: buildBreakStats(tracked),
     weeks: buildWeekStats(days),
-    extremes: buildExtremeStats(days, tracked, input.today),
+    extremes: buildExtremeStats(days, tracked, input.today, firstTrackedDate),
     discipline: buildDisciplineStats(days),
     hoursToNextMilestone: nextMilestoneAbove(totals.totalHours) - totals.totalHours,
     nextMilestone: nextMilestoneAbove(totals.totalHours),
     trackingSinceDays: computeTrackingSinceDays(firstTrackedDate, input.today),
-    vacationDays: days.filter((d) => d.dayType === 'Vacation').length,
-    sickDays: days.filter((d) => d.dayType === 'SickDay').length,
+    vacationDays: days.filter((d) => d.dayType === 'Vacation' && d.date <= input.today).length,
+    sickDays: days.filter((d) => d.dayType === 'SickDay' && d.date <= input.today).length,
     daysWorkedOffSchedule: tracked.filter((d) => d.dayType !== 'WorkDay').length,
   }
 }
