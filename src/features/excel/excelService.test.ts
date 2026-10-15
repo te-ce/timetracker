@@ -95,9 +95,64 @@ describe('listRows', () => {
 
     const rows = await listRows(FAKE_URL, 'Sprint 1', TOKEN)
     expect(rows).toEqual([
-      { taskId: 'TASK-001', description: 'On Leave' },
-      { taskId: 'TASK-002', description: 'Training' },
+      { taskId: 'TASK-001', description: 'On Leave', rowNumber: 1 },
+      { taskId: 'TASK-002', description: 'Training', rowNumber: 2 },
     ])
+  })
+
+  it('keeps real row numbers when blank rows are skipped', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            address: 'Sprint 1!A5:C8',
+            values: [
+              ['T-1', 0, 'a'],
+              ['', 0, ''],
+              ['T-3', 0, 'c'],
+              [null, 0, ''],
+            ],
+          }),
+      }),
+    )
+    const rows = await listRows(FAKE_URL, 'Sprint 1', TOKEN)
+    expect(rows.map((r) => [r.taskId, r.rowNumber])).toEqual([
+      ['T-1', 5],
+      ['T-3', 7],
+    ])
+  })
+
+  it('accepts numeric task IDs', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            address: 'S!A1:C2',
+            values: [
+              [12345, 0, 'num'],
+              ['T-2', 0, 'str'],
+            ],
+          }),
+      }),
+    )
+    const rows = await listRows(FAKE_URL, 'S', TOKEN)
+    expect(rows.map((r) => r.taskId)).toEqual(['12345', 'T-2'])
+  })
+
+  it('parses quoted sheet names and single-cell addresses', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ address: "'My Sheet'!A7", values: [['T-1', 0, 'x']] }),
+      }),
+    )
+    const rows = await listRows(FAKE_URL, 'My Sheet', TOKEN)
+    expect(rows[0]?.rowNumber).toBe(7)
   })
 
   it('throws on non-ok response', async () => {
@@ -188,25 +243,53 @@ describe('writeSprintData', () => {
     expect(patchCalls.some((u) => u.includes('B2'))).toBe(true)
   })
 
-  it('throws when the range address fetch fails', async () => {
-    let getCount = 0
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockImplementation((_url: string, opts?: RequestInit) => {
-        if (opts?.method === 'PATCH') return Promise.resolve({ ok: true })
-        getCount++
-        if (getCount === 1) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve({ values: [['TASK-001', 0, 'desc']], address: 'S!A1:C1' }),
-          })
-        }
-        return Promise.resolve({ ok: false, status: 503 })
-      }),
-    )
+  it('throws when the used range fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503, statusText: 'Unavailable' }))
     await expect(writeSprintData(FAKE_URL, 'S', { _CAT: 'TASK-001' }, { _CAT: 4 }, TOKEN)).rejects.toThrow(
       'range fetch failed',
     )
+  })
+
+  it('fetches the used range once', async () => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, opts?: RequestInit) => {
+      if (opts?.method === 'PATCH') return Promise.resolve({ ok: true })
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ values: [['TASK-001', 0, 'd']], address: 'S!A1:C1' }),
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await writeSprintData(FAKE_URL, 'S', { _CAT: 'TASK-001' }, { _CAT: 4 }, TOKEN)
+    const gets = fetchMock.mock.calls.filter(([, opts]) => (opts as RequestInit | undefined)?.method !== 'PATCH')
+    expect(gets).toHaveLength(1)
+  })
+
+  it('writes to the real row when a blank row precedes the task', async () => {
+    const patchUrls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+        if (opts?.method === 'PATCH') {
+          patchUrls.push(url)
+          return Promise.resolve({ ok: true })
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              address: 'S!A1:C3',
+              values: [
+                ['TASK-001', 0, 'a'],
+                ['', 0, ''],
+                ['TASK-003', 0, 'c'],
+              ],
+            }),
+        })
+      }),
+    )
+    await writeSprintData(FAKE_URL, 'S', { _A: 'TASK-001', _C: 'TASK-003' }, { _A: 1, _C: 3 }, TOKEN)
+    expect(patchUrls.some((u) => u.includes("'B3'"))).toBe(true)
+    expect(patchUrls.some((u) => u.includes("'B2'"))).toBe(false)
   })
 
   it('calculates cell address from multi-digit start row', async () => {

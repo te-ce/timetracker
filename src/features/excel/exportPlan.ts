@@ -4,6 +4,15 @@
  * only the plan's execution (PATCH request vs cell write) differs per adapter.
  */
 
+export function taskIdFromCell(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed === '' ? null : trimmed
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return null
+}
+
 export interface TaskRow {
   taskId: string
   rowNumber: number

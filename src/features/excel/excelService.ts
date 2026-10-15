@@ -5,7 +5,7 @@
  * Required scope: Files.ReadWrite.All
  */
 
-import { buildWritePlan, buildArchiveRows } from './exportPlan'
+import { buildWritePlan, buildArchiveRows, taskIdFromCell } from './exportPlan'
 
 export interface ExcelRow {
   taskId: string
@@ -50,27 +50,53 @@ export async function listSheets(sharePointUrl: string, token: string): Promise<
   return json.value.map((ws) => ws.name)
 }
 
-/**
- * Reads rows from the first three columns of the used range on the given sheet.
- * Expects columns: Task ID | Effort | Description
- * Returns all rows that have a non-empty Task ID in column A.
- */
-export async function listRows(sharePointUrl: string, sheet: string, token: string): Promise<ExcelRow[]> {
+export interface LocatedExcelRow extends ExcelRow {
+  rowNumber: number
+}
+
+interface UsedRange {
+  startRow: number
+  values: unknown[][]
+}
+
+async function fetchUsedRange(
+  sharePointUrl: string,
+  sheet: string,
+  token: string,
+  failurePrefix: string,
+): Promise<UsedRange> {
   const encodedSheet = encodeURIComponent(sheet)
   const res = await fetch(`${workbookBase(sharePointUrl)}/worksheets/${encodedSheet}/usedRange(valuesOnly=true)`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!res.ok) throw new Error(`listRows failed: ${res.status} ${res.statusText}`)
-  const json: { values: unknown[][] } = await res.json()
-  return json.values.reduce<ExcelRow[]>((rows, row) => {
-    if (typeof row[0] === 'string' && row[0].trim() !== '') {
+  if (!res.ok) throw new Error(`${failurePrefix} failed: ${res.status} ${res.statusText}`)
+  const json: { values: unknown[][]; address: string } = await res.json()
+  // address looks like "Sheet1!A1:C20" or "'My Sheet'!A10"
+  const match = /!\$?[A-Za-z]+\$?(\d+)/.exec(json.address)
+  return { startRow: match?.[1] ? parseInt(match[1], 10) : 1, values: json.values }
+}
+
+function toLocatedRows({ startRow, values }: UsedRange): LocatedExcelRow[] {
+  return values.reduce<LocatedExcelRow[]>((rows, row, idx) => {
+    const taskId = taskIdFromCell(row[0])
+    if (taskId !== null) {
       rows.push({
-        taskId: row[0].trim(),
+        taskId,
         description: typeof row[2] === 'string' ? row[2].trim() : '',
+        rowNumber: startRow + idx,
       })
     }
     return rows
   }, [])
+}
+
+/**
+ * Reads rows from the first three columns of the used range on the given sheet.
+ * Expects columns: Task ID | Effort | Description
+ * Returns all rows that have a non-empty Task ID in column A, with their real sheet row number.
+ */
+export async function listRows(sharePointUrl: string, sheet: string, token: string): Promise<LocatedExcelRow[]> {
+  return toLocatedRows(await fetchUsedRange(sharePointUrl, sheet, token, 'listRows'))
 }
 
 /**
@@ -87,25 +113,11 @@ export async function writeSprintData(
   hoursPerCategory: Record<string, number>,
   token: string,
 ): Promise<void> {
-  const rows = await listRows(sharePointUrl, sheet, token)
+  const rows = toLocatedRows(await fetchUsedRange(sharePointUrl, sheet, token, 'writeSprintData range fetch'))
   const encodedSheet = encodeURIComponent(sheet)
   const base = workbookBase(sharePointUrl)
 
-  // Determine the actual starting row of the used range
-  const rangeRes = await fetch(`${base}/worksheets/${encodedSheet}/usedRange(valuesOnly=true)`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!rangeRes.ok) throw new Error(`writeSprintData range fetch failed: ${rangeRes.status}`)
-  const rangeJson: { address: string } = await rangeRes.json()
-  // address looks like "Sheet1!A1:C20" — extract starting row number
-  const addressMatch = /!.*?(\d+):/.exec(rangeJson.address)
-  const startRow = addressMatch ? parseInt(addressMatch[1] ?? '1', 10) : 1
-
-  const plan = buildWritePlan(
-    rows.map((row, idx) => ({ taskId: row.taskId, rowNumber: startRow + idx })),
-    mapping,
-    hoursPerCategory,
-  )
+  const plan = buildWritePlan(rows, mapping, hoursPerCategory)
 
   const writes = plan.map(({ rowNumber, hours }) => {
     const cellAddress = `B${rowNumber}`

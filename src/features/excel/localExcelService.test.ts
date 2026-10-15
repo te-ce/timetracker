@@ -14,7 +14,8 @@ vi.mock('../../infra/storage/folder-handle-store', () => ({
 // We also avoid arrow-function constructors (not newable in strict mode).
 
 interface MockCell {
-  value: string | number | null
+  value: string | number | { text?: string; richText?: { text: string }[]; hyperlink?: string } | null
+  text: string
 }
 interface MockRow {
   getCell(n: number): MockCell
@@ -104,11 +105,17 @@ import {
 } from './localExcelService'
 import { SheetExistsError } from './excelService'
 
-function makeRow(col1: string | null, col2: string | null, col3: string | null): MockRow {
+function makeRow(
+  col1: MockCell['value'],
+  col2: string | null,
+  col3: string | null,
+  col1Text = typeof col1 === 'string' || typeof col1 === 'number' ? String(col1) : '',
+): MockRow {
   return {
     getCell(n: number): MockCell {
       const values = [null, col1, col2, col3]
-      return { value: values[n] ?? null }
+      const value = values[n] ?? null
+      return { value, text: n === 1 ? col1Text : typeof value === 'string' ? value : '' }
     },
   }
 }
@@ -187,8 +194,8 @@ describe('listLocalRows', () => {
 
     const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
     expect(rows).toEqual([
-      { taskId: 'TASK-1', description: 'Fix login bug' },
-      { taskId: 'TASK-2', description: 'Update dashboard' },
+      { taskId: 'TASK-1', description: 'Fix login bug', rowNumber: 1 },
+      { taskId: 'TASK-2', description: 'Update dashboard', rowNumber: 2 },
     ])
   })
 
@@ -199,6 +206,25 @@ describe('listLocalRows', () => {
     const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
     expect(rows).toHaveLength(1)
     expect(rows[0]?.taskId).toBe('TASK-1')
+  })
+
+  it('accepts numeric task IDs and keeps real row numbers', async () => {
+    mockState.rows.push(makeRow(null, null, null), makeRow(4711, null, 'Numeric'))
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
+
+    const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
+    expect(rows).toEqual([{ taskId: '4711', description: 'Numeric', rowNumber: 2 }])
+  })
+
+  it('reads rich-text and hyperlink cells through cell.text', async () => {
+    mockState.rows.push(
+      makeRow({ richText: [{ text: 'TASK' }, { text: '-1' }] }, null, null, 'TASK-1'),
+      makeRow({ text: 'TASK-2', hyperlink: 'https://x.example/2' }, null, null, ' TASK-2 '),
+    )
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
+
+    const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
+    expect(rows.map((r) => r.taskId)).toEqual(['TASK-1', 'TASK-2'])
   })
 
   it('returns empty array when sheet does not exist', async () => {
@@ -214,7 +240,7 @@ describe('listLocalRows', () => {
     vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
 
     const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
-    expect(rows[0]).toEqual({ taskId: 'TASK-1', description: 'Some task' })
+    expect(rows[0]).toEqual({ taskId: 'TASK-1', description: 'Some task', rowNumber: 1 })
   })
 })
 
@@ -233,6 +259,14 @@ describe('writeLocalSprintData', () => {
 
     expect(mockState.writtenCells.get('1:2')).toBe(12)
     expect(mockState.writtenCells.get('2:2')).toBe(3)
+  })
+
+  it('writes to numeric task ID rows', async () => {
+    mockState.rows.push(makeRow(4711, null, 'n'))
+    const { handle } = makeWritableFileHandle()
+    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _A: '4711' }, { _A: 2 })
+    expect(mockState.writtenCells.get('1:2')).toBe(2)
   })
 
   it('writes 0 for categories not in hoursPerCategory', async () => {
