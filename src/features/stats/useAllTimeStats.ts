@@ -33,6 +33,7 @@ export function useAllTimeStats(): UseAllTimeStatsResult {
       months,
       weekdayHours: config.weekdayHours,
       today: todayIso,
+      defaultWorkLocation: config.defaultWorkLocation,
       now,
     }),
     isPending: monthsQuery.isPending || isConfigPending,

@@ -17,6 +17,8 @@ export interface AllTimeStatsInput {
   months: StatsMonth[]
   weekdayHours: WeekdayHours
   today: string
+  /** Location assumed for tracked days with none stored; defaults to Remote. */
+  defaultWorkLocation?: WorkLocation
   /** Wall-clock "HH:MM" today's still-running period is measured against. */
   now?: string
 }
@@ -224,7 +226,7 @@ interface DayFacts {
   hasBreak: boolean
   firstStartMinutes: number | null
   lastEndMinutes: number | null
-  location: WorkLocation | undefined
+  location: WorkLocation
   hasNote: boolean
   subtaskCount: number
   /** Minutes between consecutive periods — time on the clock but not on a task. */
@@ -274,6 +276,7 @@ function breaksBetween(windows: WorkPeriod[]): DayBreaks {
 function flattenDays(input: AllTimeStatsInput): DayFacts[] {
   const sorted = [...input.months].sort((a, b) => a.ym.localeCompare(b.ym))
   const facts: DayFacts[] = []
+  const defaultLocation = input.defaultWorkLocation ?? 'Remote'
 
   sorted.forEach((month, monthIdx) => {
     const year = parseInt(month.ym.slice(0, 4))
@@ -305,7 +308,7 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
         hasBreak: breaks.longest > 0,
         firstStartMinutes: starts.length > 0 ? Math.min(...starts) : null,
         lastEndMinutes: ends.length > 0 ? Math.max(...ends) : null,
-        location: day?.location,
+        location: day?.location ?? defaultLocation,
         hasNote: (day?.note ?? '').trim().length > 0,
         subtaskCount: windows.reduce((sum, w) => sum + w.subtasks.length, 0),
         breakMinutes: breaks.total,

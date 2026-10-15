@@ -496,4 +496,31 @@ describe('buildAllTimeStats milestones', () => {
       expect(stats(months({ ym: '2026-07', data })).busiestWeekday?.label).toBe('Tuesday')
     })
   })
+
+  describe('default work location', () => {
+    const data: MonthData = {
+      '2026-07-01': { windows: [period('08:00', '16:00')] },
+      '2026-07-02': { windows: [period('08:00', '16:00')], location: 'Remote' },
+      '2026-07-03': { windows: [period('08:00', '16:00')], location: 'Office' },
+    }
+    function withDefault(defaultWorkLocation?: 'Office' | 'Remote') {
+      return buildAllTimeStats({
+        months: [{ ym: '2026-07', data }],
+        weekdayHours: DEFAULT_WEEKDAY_HOURS,
+        today: '2026-07-31',
+        now: '18:00',
+        ...(defaultWorkLocation ? { defaultWorkLocation } : {}),
+      })
+    }
+
+    it('treats days without a location as remote by default', () => {
+      expect(withDefault().location).toMatchObject({ officeDays: 1, remoteDays: 2 })
+    })
+
+    it('treats days without a location as office when that is the default', () => {
+      const result = withDefault('Office')
+      expect(result.location).toMatchObject({ officeDays: 2, remoteDays: 1 })
+      expect(result.months[0]?.officePercent).toBe(67)
+    })
+  })
 })
