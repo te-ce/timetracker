@@ -100,6 +100,8 @@ export interface BreakStats {
   /** When the main break of a day usually starts, as minutes after midnight. */
   usualStartMinutes: number | null
   usualEndMinutes: number | null
+  /** Mean hours of the unbroken days, 0 when there are none. */
+  unbrokenAvgHours: number
 }
 
 export interface WeekStat {
@@ -219,7 +221,7 @@ interface DayFacts {
   hours: number
   targetHours: number
   categoryHours: Record<string, number>
-  periodCount: number
+  hasBreak: boolean
   firstStartMinutes: number | null
   lastEndMinutes: number | null
   location: WorkLocation | undefined
@@ -253,18 +255,18 @@ function breaksBetween(windows: WorkPeriod[]): DayBreaks {
   let longest = 0
   let longestStart: number | null = null
   let longestEnd: number | null = null
-  for (let i = 1; i < closed.length; i++) {
-    const prev = closed[i - 1]
-    const current = closed[i]
-    if (prev === undefined || current === undefined) continue
-    const gap = current.start - prev.end
-    if (gap <= 0) continue
-    total += gap
-    if (gap > longest) {
-      longest = gap
-      longestStart = prev.end
-      longestEnd = current.start
+  let maxEnd = closed[0]?.end ?? 0
+  for (const current of closed.slice(1)) {
+    const gap = current.start - maxEnd
+    if (gap > 0) {
+      total += gap
+      if (gap > longest) {
+        longest = gap
+        longestStart = maxEnd
+        longestEnd = current.start
+      }
     }
+    maxEnd = Math.max(maxEnd, current.end)
   }
   return { total, longest, longestStart, longestEnd }
 }
@@ -300,7 +302,7 @@ function flattenDays(input: AllTimeStatsInput): DayFacts[] {
         hours: core.workedHours,
         targetHours: core.targetHours,
         categoryHours: core.categoryHours,
-        periodCount: windows.length,
+        hasBreak: breaks.longest > 0,
         firstStartMinutes: starts.length > 0 ? Math.min(...starts) : null,
         lastEndMinutes: ends.length > 0 ? Math.max(...ends) : null,
         location: day?.location,
@@ -477,11 +479,13 @@ function buildBreakStats(tracked: DayFacts[]): BreakStats {
   // Averaged over each day's main break, so the window says "when lunch usually
   // is" rather than being dragged around by short gaps.
   const withBreak = tracked.filter((d) => d.longestBreakMinutes > 0)
+  const unbroken = tracked.filter((d) => !d.hasBreak)
   return {
     avgMinutesPerDay: mean(tracked.map((d) => d.breakMinutes)) ?? 0,
     longestWithinDay:
       longest && longest.longestBreakMinutes > 0 ? { date: longest.date, minutes: longest.longestBreakMinutes } : null,
-    daysWithoutBreak: tracked.filter((d) => d.periodCount === 1).length,
+    daysWithoutBreak: unbroken.length,
+    unbrokenAvgHours: mean(unbroken.map((d) => d.hours)) ?? 0,
     usualStartMinutes: mean(withBreak.map((d) => d.longestBreakStart).filter(isDefined)),
     usualEndMinutes: mean(withBreak.map((d) => d.longestBreakEnd).filter(isDefined)),
   }

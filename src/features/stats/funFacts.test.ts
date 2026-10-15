@@ -178,4 +178,17 @@ describe('buildFunFacts omissions', () => {
     const ids = factsFor(RICH).map((f) => f.id)
     for (const id of REMOVED) expect(ids).not.toContain(id)
   })
+
+  it('reports the average of the unbroken days, not of all days', () => {
+    const data: MonthData = {
+      '2026-07-06': { windows: [{ id: 'a', start: '08:00', end: '10:00', category: '_OTHER', subtasks: [] }] },
+      '2026-07-07': {
+        windows: [
+          { id: 'b', start: '08:00', end: '10:00', category: '_OTHER', subtasks: [] },
+          { id: 'c', start: '12:00', end: '20:00', category: '_OTHER', subtasks: [] },
+        ],
+      },
+    }
+    expect(textOf(data, 'no-break-days')).toContain('2.00h average day')
+  })
 })

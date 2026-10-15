@@ -105,7 +105,7 @@ function breakFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
     facts.push({
       id: 'no-break-days',
       icon: '🥊',
-      text: `${breaks.daysWithoutBreak} ${plural(breaks.daysWithoutBreak, 'day')} went down as one unbroken period — ${formatHours(stats.avgHoursPerTrackedDay, format)} average day, no gaps logged.`,
+      text: `${breaks.daysWithoutBreak} ${plural(breaks.daysWithoutBreak, 'day')} went down as one unbroken period — ${formatHours(breaks.unbrokenAvgHours, format)} average day, no gaps logged.`,
     })
   }
 

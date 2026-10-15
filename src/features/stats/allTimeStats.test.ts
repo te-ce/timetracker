@@ -430,4 +430,28 @@ describe('buildAllTimeStats milestones', () => {
       expect(result.categories.find((c) => c.category === '_OTHER')?.percent).toBeCloseTo(25)
     })
   })
+
+  describe('breaks', () => {
+    function breakStats(data: MonthData) {
+      return stats(months({ ym: '2026-07', data })).breaks
+    }
+
+    it('measures gaps from the latest end so overlapping periods do not inflate breaks', () => {
+      const result = breakStats({
+        '2026-07-01': { windows: [period('08:00', '12:00'), period('09:00', '10:00'), period('13:00', '14:00')] },
+      })
+      expect(result.avgMinutesPerDay).toBe(60)
+      expect(result.longestWithinDay).toEqual({ date: '2026-07-01', minutes: 60 })
+    })
+
+    it('counts back-to-back periods as unbroken and averages only those days', () => {
+      const result = breakStats({
+        '2026-07-01': { windows: [period('08:00', '12:00'), period('12:00', '14:00')] },
+        '2026-07-02': { windows: [period('08:00', '10:00')] },
+        '2026-07-03': { windows: [period('08:00', '10:00'), period('11:00', '17:00')] },
+      })
+      expect(result.daysWithoutBreak).toBe(2)
+      expect(result.unbrokenAvgHours).toBeCloseTo(4)
+    })
+  })
 })
