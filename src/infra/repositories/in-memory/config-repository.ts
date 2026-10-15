@@ -16,4 +16,9 @@ export class InMemoryConfigRepository implements ConfigRepository {
     this.config = structuredClone(config)
     return Promise.resolve()
   }
+
+  update(patch: (current: AppConfig) => Partial<AppConfig>): Promise<void> {
+    this.config = structuredClone({ ...this.config, ...patch(structuredClone(this.config)) })
+    return Promise.resolve()
+  }
 }

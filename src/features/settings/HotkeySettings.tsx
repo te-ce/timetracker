@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { requireConfig } from '../../shared/appConfigDefaults'
 import {
   acceleratorFromKeyEvent,
   defaultHotkeyConfig,
@@ -56,7 +55,7 @@ export function HotkeySettings({ repository }: Props) {
   })
 
   const mutation = useMutation({
-    mutationFn: (hotkeys: HotkeyConfig) => repository.save({ ...requireConfig(config), hotkeys }),
+    mutationFn: (hotkeys: HotkeyConfig) => repository.update(() => ({ hotkeys })),
     onSuccess: () => invalidateConfig(queryClient),
   })
 

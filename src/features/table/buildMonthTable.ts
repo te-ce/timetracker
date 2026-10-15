@@ -18,6 +18,7 @@ export interface MonthTableRow {
   resolvedAutoCategory: string | null
   /** Running over/undertime total up to this date. null for future dates. */
   accumulatedOvertime: number | null
+  reviewReason?: string | undefined
 }
 
 export interface MonthTableInput {
@@ -72,6 +73,7 @@ function buildDayRow(
     entries: Object.fromEntries(Object.entries(core.categoryHours).filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)),
     autoCategoryHours: core.uncategorizedHours,
     resolvedAutoCategory: resolveAutoCategory(autoCategoryOverride, globalAutoCategory),
+    reviewReason: core.reviewReason,
   }
 }
 

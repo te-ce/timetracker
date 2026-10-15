@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WeeklyScheduleSettings } from './WeeklyScheduleSettings'
+import { DayHoursInput } from './DayHoursInput'
 import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
 
 function wrapper({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,30 @@ describe('WeeklyScheduleSettings', () => {
     await userEvent.tab()
     const saved = await repo.get()
     expect(saved.weekdayHours[6]).toBe(2) // Saturday = index 6
+  })
+
+  it('keeps an earlier edit when a second day is edited before the config refetches', async () => {
+    const repo = new InMemoryConfigRepository()
+    render(<WeeklyScheduleSettings repository={repo} />, { wrapper })
+    const monInput = await screen.findByLabelText('Monday')
+    const tueInput = screen.getByLabelText('Tuesday')
+    await userEvent.tripleClick(monInput)
+    await userEvent.keyboard('7')
+    await userEvent.tab()
+    await userEvent.tripleClick(tueInput)
+    await userEvent.keyboard('6')
+    await userEvent.tab()
+    const saved = await repo.get()
+    expect(saved.weekdayHours[1]).toBe(7)
+    expect(saved.weekdayHours[2]).toBe(6)
+    expect(monInput).toHaveValue(7)
+  })
+
+  it('re-syncs the input when the stored hours change', () => {
+    const { rerender } = render(<DayHoursInput dayIndex={1} hours={8} onSave={() => undefined} />)
+    expect(screen.getByLabelText('Monday')).toHaveValue(8)
+    rerender(<DayHoursInput dayIndex={1} hours={5} onSave={() => undefined} />)
+    expect(screen.getByLabelText('Monday')).toHaveValue(5)
   })
 
   it('saves 0 when user enters 0 (non-working day)', async () => {

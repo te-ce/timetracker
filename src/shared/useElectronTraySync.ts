@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useState } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { requireConfig, resolveAppConfig } from './appConfigDefaults'
+import { resolveAppConfig } from './appConfigDefaults'
 import { QUERY_KEYS, invalidateMonth, invalidateConfig } from './queryKeys'
 import { useRepositories } from '../infra/repositories/repositories-context'
 import { getAllCategories } from './categories'
@@ -108,10 +108,9 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
 
   const toggleShowWorkedHoursInTray = useMutation({
     mutationFn: () =>
-      configRepo.save({
-        ...requireConfig(config),
-        showWorkedHoursInTray: !resolveAppConfig(config).showWorkedHoursInTray,
-      }),
+      configRepo.update((latest) => ({
+        showWorkedHoursInTray: !resolveAppConfig(latest).showWorkedHoursInTray,
+      })),
     onSuccess: () => invalidateConfig(queryClient),
   })
   const toggleHoursDisplay = useCallback(() => {

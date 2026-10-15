@@ -15,14 +15,12 @@ import { officeStats } from '../../shared/officeStats'
 import { useUndoStore } from '../../shared/undoStore'
 import { useUndoableDayMutation } from '../day/useWorkPeriodMutations'
 
-async function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
-  const cfg = await configRepo.get()
-  await configRepo.save({ ...cfg, categoryOrder })
+function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
+  return configRepo.update(() => ({ categoryOrder }))
 }
 
-async function saveAutoCategory(configRepo: ConfigRepository, category: string): Promise<void> {
-  const cfg = await configRepo.get()
-  await configRepo.save({ ...cfg, autoCategory: category })
+function saveAutoCategory(configRepo: ConfigRepository, category: string): Promise<void> {
+  return configRepo.update(() => ({ autoCategory: category }))
 }
 
 export function TableView() {

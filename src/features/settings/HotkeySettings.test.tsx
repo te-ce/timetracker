@@ -95,10 +95,10 @@ describe('HotkeySettings', () => {
   it('persists the new global hotkey to the repository before updating the live OS registration', async () => {
     const repo = new InMemoryConfigRepository(DEFAULT_APP_CONFIG)
     const calls: string[] = []
-    const originalSave = repo.save.bind(repo)
-    repo.save = (config) => {
+    const originalUpdate = repo.update.bind(repo)
+    repo.update = (patch) => {
       calls.push('persist')
-      return originalSave(config)
+      return originalUpdate(patch)
     }
     window.electronAPI = {
       ...makeElectronApiStub(),

@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import { WEEKDAY_ORDER_MON_SUN, type WeekdayHours } from '../../shared/weekdayHours'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { requireConfig } from '../../shared/appConfigDefaults'
 import { DayHoursInput } from './DayHoursInput'
 
 interface Props {
@@ -18,7 +17,12 @@ export function WeeklyScheduleSettings({ repository }: Props) {
   })
 
   const mutation = useMutation({
-    mutationFn: (weekdayHours: WeekdayHours) => repository.save({ ...requireConfig(config), weekdayHours }),
+    mutationFn: ({ dayIndex, hours }: { dayIndex: number; hours: number }) =>
+      repository.update((latest) => {
+        const weekdayHours: WeekdayHours = [...latest.weekdayHours]
+        weekdayHours[dayIndex] = hours
+        return { weekdayHours }
+      }),
     onSuccess: () => invalidateConfig(queryClient),
   })
 
@@ -27,9 +31,7 @@ export function WeeklyScheduleSettings({ repository }: Props) {
   const weekdayHours = config.weekdayHours
 
   const handleSave = (dayIndex: number, hours: number) => {
-    const updated: WeekdayHours = [...weekdayHours]
-    updated[dayIndex] = hours
-    mutation.mutate(updated)
+    mutation.mutate({ dayIndex, hours })
   }
 
   return (

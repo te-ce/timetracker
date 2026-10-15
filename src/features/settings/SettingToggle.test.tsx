@@ -88,7 +88,7 @@ describe('SettingToggle', () => {
 
   it('shows an error message when saving fails', async () => {
     const repo = new InMemoryConfigRepository()
-    repo.save = vi.fn().mockRejectedValue(new Error('network error'))
+    repo.update = vi.fn().mockRejectedValue(new Error('network error'))
     render(
       <SettingToggle
         repository={repo}
