@@ -64,7 +64,7 @@ export interface MonthStat {
 export interface CategoryStat {
   category: string
   hours: number
-  /** Share of all categorised hours, 0–100. */
+  /** Share of all tracked hours, 0–100. */
   percent: number
 }
 
@@ -381,14 +381,22 @@ function buildWeekdayStats(trackedDays: DayFacts[]): WeekdayStat[] {
   })
 }
 
-function topCategoryOf(trackedDays: DayFacts[]): string | null {
+/** `_LEAVE` is auto-booked leave time, not a category the user worked in. */
+const LEAVE_CATEGORY = '_LEAVE'
+
+function categoryTotals(trackedDays: DayFacts[]): Map<string, number> {
   const totals = new Map<string, number>()
   for (const day of trackedDays) {
     for (const [category, hours] of Object.entries(day.categoryHours)) {
-      if (category === UNCATEGORIZED_CATEGORY) continue
+      if (category === UNCATEGORIZED_CATEGORY || category === LEAVE_CATEGORY) continue
       totals.set(category, (totals.get(category) ?? 0) + hours)
     }
   }
+  return totals
+}
+
+function topCategoryOf(trackedDays: DayFacts[]): string | null {
+  const totals = categoryTotals(trackedDays)
   return [...totals.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
 }
 
@@ -420,14 +428,8 @@ function buildMonthStats(days: DayFacts[]): MonthStat[] {
 }
 
 function buildCategoryStats(trackedDays: DayFacts[]): CategoryStat[] {
-  const totals = new Map<string, number>()
-  for (const day of trackedDays) {
-    for (const [category, hours] of Object.entries(day.categoryHours)) {
-      if (category === UNCATEGORIZED_CATEGORY) continue
-      totals.set(category, (totals.get(category) ?? 0) + hours)
-    }
-  }
-  const sum = [...totals.values()].reduce((a, b) => a + b, 0)
+  const totals = categoryTotals(trackedDays)
+  const sum = trackedDays.reduce((acc, d) => acc + d.hours, 0)
   return [...totals.entries()]
     .map(([category, hours]) => ({ category, hours, percent: sum > 0 ? (hours / sum) * 100 : 0 }))
     .sort((a, b) => b.hours - a.hours)

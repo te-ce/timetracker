@@ -407,4 +407,27 @@ describe('buildAllTimeStats milestones', () => {
     const data: MonthData = { '2026-07-06': { windows: [period('08:00', '16:00')] } }
     expect(stats(months({ ym: '2026-07', data }), '2026-07-10').trackingSinceDays).toBe(5)
   })
+
+  describe('category stats', () => {
+    const HALF_LEAVE: MonthData = {
+      '2026-07-01': { windows: [period('08:00', '12:00', '_COREMEDIA')], halfDayLeave: 'Vacation' },
+    }
+
+    it('excludes auto-booked _LEAVE from category stats and top category', () => {
+      const result = stats(months({ ym: '2026-07', data: HALF_LEAVE }))
+      expect(result.categories.map((c) => c.category)).toEqual(['_COREMEDIA'])
+      expect(result.months[0]?.topCategory).toBe('_COREMEDIA')
+    })
+
+    it('computes category percent against total tracked hours', () => {
+      const data: MonthData = {
+        '2026-07-01': { windows: [period('08:00', '12:00', '_COREMEDIA'), period('12:00', '14:00', '_OTHER')] },
+        '2026-07-02': { windows: [period('08:00', '10:00', '_COREMEDIA')], halfDayLeave: 'Vacation' },
+      }
+      const result = stats(months({ ym: '2026-07', data }))
+      expect(result.totalHours).toBe(8)
+      expect(result.categories.find((c) => c.category === '_COREMEDIA')?.percent).toBeCloseTo(75)
+      expect(result.categories.find((c) => c.category === '_OTHER')?.percent).toBeCloseTo(25)
+    })
+  })
 })
