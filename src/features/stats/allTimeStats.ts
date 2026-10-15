@@ -519,8 +519,17 @@ function buildWeekStats(days: DayFacts[]): WeekStats {
   return { bestWeek: [...weeks].sort((a, b) => b.hours - a.hours)[0] ?? null }
 }
 
+function isPastWorkday(day: DayFacts, today: string, firstTrackedDate: string): boolean {
+  return day.dayType === 'WorkDay' && day.date <= today && day.date >= firstTrackedDate
+}
+
 /** Longest run of past WorkDays with nothing tracked — the longest stretch away. */
-function longestAbsenceOf(days: DayFacts[], today: string): ExtremeStats['longestAbsence'] {
+function longestAbsenceOf(
+  days: DayFacts[],
+  today: string,
+  firstTrackedDate: string | null,
+): ExtremeStats['longestAbsence'] {
+  if (firstTrackedDate === null) return null
   let best: ExtremeStats['longestAbsence'] = null
   let workdays = 0
   let from = ''
@@ -528,7 +537,7 @@ function longestAbsenceOf(days: DayFacts[], today: string): ExtremeStats['longes
 
   for (const day of days) {
     if (day.afterGap) workdays = 0
-    if (day.date > today || day.dayType !== 'WorkDay') continue
+    if (!isPastWorkday(day, today, firstTrackedDate)) continue
     if (day.hours > 0) {
       workdays = 0
       continue
@@ -542,7 +551,12 @@ function longestAbsenceOf(days: DayFacts[], today: string): ExtremeStats['longes
   return best
 }
 
-function buildExtremeStats(days: DayFacts[], tracked: DayFacts[], today: string): ExtremeStats {
+function buildExtremeStats(
+  days: DayFacts[],
+  tracked: DayFacts[],
+  today: string,
+  firstTrackedDate: string | null,
+): ExtremeStats {
   const byBalance = [...tracked].sort((a, b) => b.hours - b.targetHours - (a.hours - a.targetHours))
   const best = byBalance[0]
   const worst = byBalance.at(-1)
@@ -553,7 +567,7 @@ function buildExtremeStats(days: DayFacts[], tracked: DayFacts[], today: string)
     worstDayBalance: worst ? { date: worst.date, balance: worst.hours - worst.targetHours } : null,
     medianDayHours: median(tracked.map((d) => d.hours)),
     weekendHours: tracked.filter(isWeekend).reduce((sum, d) => sum + d.hours, 0),
-    longestAbsence: longestAbsenceOf(days, today),
+    longestAbsence: longestAbsenceOf(days, today, firstTrackedDate),
   }
 }
 
@@ -706,13 +720,13 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
     rhythm: buildRhythmStats(tracked),
     breaks: buildBreakStats(tracked),
     weeks: buildWeekStats(days),
-    extremes: buildExtremeStats(days, tracked, input.today),
+    extremes: buildExtremeStats(days, tracked, input.today, firstTrackedDate),
     discipline: buildDisciplineStats(days),
     hoursToNextMilestone: nextMilestoneAbove(totals.totalHours) - totals.totalHours,
     nextMilestone: nextMilestoneAbove(totals.totalHours),
     trackingSinceDays: computeTrackingSinceDays(firstTrackedDate, input.today),
-    vacationDays: days.filter((d) => d.dayType === 'Vacation').length,
-    sickDays: days.filter((d) => d.dayType === 'SickDay').length,
+    vacationDays: days.filter((d) => d.dayType === 'Vacation' && d.date <= input.today).length,
+    sickDays: days.filter((d) => d.dayType === 'SickDay' && d.date <= input.today).length,
     daysWorkedOffSchedule: tracked.filter((d) => d.dayType !== 'WorkDay').length,
   }
 }

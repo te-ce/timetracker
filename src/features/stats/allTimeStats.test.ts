@@ -454,4 +454,24 @@ describe('buildAllTimeStats milestones', () => {
       expect(result.unbrokenAvgHours).toBeCloseTo(4)
     })
   })
+
+  describe('absence and leave', () => {
+    it('ignores workdays before the first tracked day when finding the longest absence', () => {
+      const data: MonthData = { '2026-07-20': { windows: [period('08:00', '16:00')] } }
+      const result = stats(months({ ym: '2026-07', data }))
+      expect(result.extremes.longestAbsence).toEqual({ workdays: 9, from: '2026-07-21', to: '2026-07-31' })
+    })
+
+    it('counts only leave days up to today', () => {
+      const data: MonthData = {
+        '2026-07-06': { windows: [], dayTypeOverride: 'Vacation' },
+        '2026-07-07': { windows: [], dayTypeOverride: 'SickDay' },
+        '2026-07-20': { windows: [], dayTypeOverride: 'Vacation' },
+        '2026-07-21': { windows: [], dayTypeOverride: 'SickDay' },
+      }
+      const result = stats(months({ ym: '2026-07', data }), '2026-07-10')
+      expect(result.vacationDays).toBe(1)
+      expect(result.sickDays).toBe(1)
+    })
+  })
 })
