@@ -5,7 +5,8 @@ vi.mock('../auth/msalInstance', () => ({
   msalInstance: { getAllAccounts: () => [], acquireTokenSilent: vi.fn() },
 }))
 
-import { resetAllRepositories, configRepo } from './shared'
+import { resetAllRepositories, configRepo, flushPendingWrites } from './shared'
+import { useSyncStatus } from '../storage/sync-status'
 
 describe('resetAllRepositories', () => {
   it('clears configRepo cache so next read goes to adapter', async () => {
@@ -25,5 +26,18 @@ describe('resetAllRepositories', () => {
   it('does not throw when called multiple times', () => {
     expect(() => resetAllRepositories()).not.toThrow()
     expect(() => resetAllRepositories()).not.toThrow()
+  })
+})
+
+describe('pending OneDrive writes', () => {
+  it('reports a write OneDrive did not accept as pending, and keeps it pending while the retry fails', async () => {
+    await configRepo.save({ ...(await configRepo.get()), autoCategory: 'pending-test' })
+    expect(useSyncStatus.getState().pendingWrites).toBeGreaterThan(0)
+
+    await flushPendingWrites()
+
+    expect(useSyncStatus.getState().pendingWrites).toBeGreaterThan(0)
+    resetAllRepositories()
+    expect((await configRepo.get()).autoCategory).toBe('pending-test')
   })
 })

@@ -17,6 +17,7 @@ import { QUERY_KEYS, invalidateConfig, invalidateMonthByYearMonth } from './shar
 import { useRepositories } from './infra/repositories/repositories-context'
 import { isLocalFolderMode } from './infra/auth/bootstrapConfig'
 import { useRetryOnFirstInteraction } from './shared/useRetryOnFirstInteraction'
+import { useResyncOnFocus } from './shared/useResyncOnFocus'
 import { HeaderControls } from './app/header/HeaderControls'
 import { NavDropdown } from './app/header/NavDropdown'
 import { NAV_ITEMS } from './app/icons/navItems'
@@ -37,6 +38,7 @@ function App() {
   const { isTracking, isOvertime } = useElectronTraySync()
   useFaviconIndicator(isTracking, isOvertime)
   useGoalNotification()
+  useResyncOnFocus()
   const {
     isPending: monthIsPending,
     isError: monthIsError,
