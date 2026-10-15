@@ -3,30 +3,15 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LocalExcelFolderSettings } from './LocalExcelFolderSettings'
 
-vi.mock('../../infra/storage/folder-handle-store', () => ({
-  loadExcelHandle: vi.fn(),
-  saveExcelHandle: vi.fn(),
-  clearExcelHandle: vi.fn(),
-  verifyPermission: vi.fn(),
-}))
+import { loadExcelHandle, saveExcelHandle } from '../../infra/storage/folder-handle-store'
+import { makeFolderHandle, resetFolderHandleDb, setUserActivation } from '../../test/folderHandle'
 
-import * as folderHandleStore from '../../infra/storage/folder-handle-store'
-
-const mockLoadExcelHandle = vi.mocked(folderHandleStore.loadExcelHandle)
-const mockSaveExcelHandle = vi.mocked(folderHandleStore.saveExcelHandle)
-const mockClearExcelHandle = vi.mocked(folderHandleStore.clearExcelHandle)
-const mockVerifyPermission = vi.mocked(folderHandleStore.verifyPermission)
-
-function makeHandle(name: string): FileSystemDirectoryHandle {
-  return { name } as FileSystemDirectoryHandle
-}
+const makeHandle = makeFolderHandle
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockLoadExcelHandle.mockResolvedValue(null)
-  mockSaveExcelHandle.mockResolvedValue(undefined)
-  mockClearExcelHandle.mockResolvedValue(undefined)
-  mockVerifyPermission.mockResolvedValue(true)
+  resetFolderHandleDb()
+  setUserActivation(true)
   vi.unstubAllGlobals()
 })
 
@@ -48,7 +33,7 @@ describe('LocalExcelFolderSettings', () => {
 
   describe('initial state — folder already set', () => {
     it('shows the stored folder name and Change / Reset buttons', async () => {
-      mockLoadExcelHandle.mockResolvedValue(makeHandle('MyWorkbooks'))
+      await saveExcelHandle(makeHandle('MyWorkbooks'))
       render(<LocalExcelFolderSettings />)
       await screen.findByText('MyWorkbooks')
       expect(screen.getByRole('button', { name: /change/i })).toBeInTheDocument()
@@ -67,8 +52,8 @@ describe('LocalExcelFolderSettings', () => {
 
       await user.click(screen.getByRole('button', { name: /use separate folder/i }))
 
-      await waitFor(() => expect(mockSaveExcelHandle).toHaveBeenCalledWith(handle))
       await screen.findByText('ChosenFolder')
+      expect((await loadExcelHandle())?.name).toBe('ChosenFolder')
     })
 
     it('shows the picked folder name after success', async () => {
@@ -102,16 +87,15 @@ describe('LocalExcelFolderSettings', () => {
 
     it('shows a permission-denied error when verifyPermission returns false', async () => {
       const user = userEvent.setup()
-      const handle = makeHandle('Denied')
+      const handle = makeHandle('Denied', 'denied')
       vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(handle))
-      mockVerifyPermission.mockResolvedValue(false)
 
       render(<LocalExcelFolderSettings />)
       await screen.findByRole('button', { name: /use separate folder/i })
       await user.click(screen.getByRole('button', { name: /use separate folder/i }))
 
       await screen.findByText(/permission denied/i)
-      expect(mockSaveExcelHandle).not.toHaveBeenCalled()
+      expect(await loadExcelHandle()).toBeNull()
     })
 
     it('shows an error message when showDirectoryPicker rejects with a non-abort error', async () => {
@@ -168,24 +152,23 @@ describe('LocalExcelFolderSettings', () => {
   describe('reset', () => {
     it('clears the stored handle and hides the folder name', async () => {
       const user = userEvent.setup()
-      mockLoadExcelHandle.mockResolvedValue(makeHandle('ToBeRemoved'))
+      await saveExcelHandle(makeHandle('ToBeRemoved'))
 
       render(<LocalExcelFolderSettings />)
       await screen.findByText('ToBeRemoved')
 
       await user.click(screen.getByRole('button', { name: /reset/i }))
 
-      await waitFor(() => expect(mockClearExcelHandle).toHaveBeenCalledOnce())
       await screen.findByText(/same as app data folder/i)
+      expect(await loadExcelHandle()).toBeNull()
       expect(screen.queryByText('ToBeRemoved')).not.toBeInTheDocument()
     })
 
     it('clears any existing error when reset is clicked', async () => {
       const user = userEvent.setup()
-      mockLoadExcelHandle.mockResolvedValue(makeHandle('AFolder'))
+      await saveExcelHandle(makeHandle('AFolder'))
       // Trigger an error via permission denial
-      vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(makeHandle('AFolder')))
-      mockVerifyPermission.mockResolvedValueOnce(false)
+      vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(makeHandle('AFolder', 'denied')))
 
       render(<LocalExcelFolderSettings />)
       await screen.findByRole('button', { name: /change/i })

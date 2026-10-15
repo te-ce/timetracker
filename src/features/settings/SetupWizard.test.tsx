@@ -3,25 +3,18 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SetupWizard } from './SetupWizard'
 
-vi.mock('../../infra/auth/bootstrapConfig', () => ({
-  writeBootstrapConfig: vi.fn(),
-  skipSetup: vi.fn(),
-  setLocalFolderMode: vi.fn(),
-}))
+import { readBootstrapConfig, isSetupSkipped, isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
+import { loadHandle } from '../../infra/storage/folder-handle-store'
+import { makeFolderHandle, resetFolderHandleDb } from '../../test/folderHandle'
 
-vi.mock('../../infra/storage/folder-handle-store', () => ({
-  saveHandle: vi.fn(),
-}))
-
-import * as bootstrapConfig from '../../infra/auth/bootstrapConfig'
-import * as folderHandleStore from '../../infra/storage/folder-handle-store'
-
-const mockSaveHandle = vi.mocked(folderHandleStore.saveHandle)
+const reloadSpy = vi.fn()
 
 beforeEach(() => {
   vi.clearAllMocks()
   vi.unstubAllGlobals()
-  mockSaveHandle.mockResolvedValue(undefined)
+  localStorage.clear()
+  resetFolderHandleDb()
+  Object.defineProperty(window.location, 'reload', { value: reloadSpy, writable: true, configurable: true })
 })
 
 describe('SetupWizard', () => {
@@ -35,44 +28,39 @@ describe('SetupWizard', () => {
     render(<SetupWizard onSkip={() => {}} />)
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
     expect(screen.getByText(/required/i)).toBeInTheDocument()
-    expect(bootstrapConfig.writeBootstrapConfig).not.toHaveBeenCalled()
+    expect(readBootstrapConfig()).toBeNull()
+    expect(reloadSpy).not.toHaveBeenCalled()
   })
 
-  it('calls writeBootstrapConfig with trimmed values on save', () => {
+  it('stores the trimmed bootstrap config on save', () => {
     render(<SetupWizard onSkip={() => {}} />)
     fireEvent.change(screen.getByLabelText(/client/i), { target: { value: ' cid ' } })
     fireEvent.change(screen.getByLabelText(/tenant/i), { target: { value: ' tid ' } })
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
-    expect(bootstrapConfig.writeBootstrapConfig).toHaveBeenCalledWith({ clientId: 'cid', tenantId: 'tid' })
+    expect(readBootstrapConfig()).toEqual({ clientId: 'cid', tenantId: 'tid' })
   })
 
-  it('calls skipSetup and onSkip when skip is clicked', () => {
+  it('marks setup skipped and calls onSkip when skip is clicked', () => {
     const onSkip = vi.fn()
     render(<SetupWizard onSkip={onSkip} />)
     fireEvent.click(screen.getByRole('button', { name: /skip/i }))
-    expect(bootstrapConfig.skipSetup).toHaveBeenCalled()
+    expect(isSetupSkipped()).toBe(true)
     expect(onSkip).toHaveBeenCalled()
   })
 
   // --- "Use Local Folder" button ---
 
-  it('calls saveHandle, setLocalFolderMode, and reloads on successful folder pick', async () => {
+  it('stores the handle, enables local folder mode, and reloads on successful folder pick', async () => {
     const user = userEvent.setup()
-    const handle = { name: 'MyFolder' } as FileSystemDirectoryHandle
+    const handle = makeFolderHandle('MyFolder')
     vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(handle))
-    const reloadSpy = vi.fn()
-    Object.defineProperty(window.location, 'reload', {
-      value: reloadSpy,
-      writable: true,
-      configurable: true,
-    })
 
     render(<SetupWizard onSkip={() => {}} />)
     await user.click(screen.getByRole('button', { name: /use local folder/i }))
 
-    await waitFor(() => expect(mockSaveHandle).toHaveBeenCalledWith(handle))
-    expect(bootstrapConfig.setLocalFolderMode).toHaveBeenCalled()
-    expect(reloadSpy).toHaveBeenCalled()
+    await waitFor(() => expect(reloadSpy).toHaveBeenCalled())
+    expect((await loadHandle())?.name).toBe('MyFolder')
+    expect(isLocalFolderMode()).toBe(true)
   })
 
   it('does not show an error when the user aborts the folder picker', async () => {

@@ -2,23 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-vi.mock('../../infra/storage/folder-handle-store', () => ({
-  loadHandle: vi.fn(),
-  saveHandle: vi.fn(),
-  verifyPermission: vi.fn(),
-}))
-
-import * as folderHandleStore from '../../infra/storage/folder-handle-store'
+import { loadHandle, saveHandle } from '../../infra/storage/folder-handle-store'
+import { makeFolderHandle, resetFolderHandleDb, setUserActivation } from '../../test/folderHandle'
 import { AppDataFolderSettings } from './AppDataFolderSettings'
 import { LOCAL_FOLDER_PATH_KEY } from '../../infra/storage/electron-local-folder-adapter'
 
-const mockLoadHandle = vi.mocked(folderHandleStore.loadHandle)
-const mockSaveHandle = vi.mocked(folderHandleStore.saveHandle)
-const mockVerifyPermission = vi.mocked(folderHandleStore.verifyPermission)
-
-function makeHandle(name: string): FileSystemDirectoryHandle {
-  return { name } as FileSystemDirectoryHandle
-}
+const makeHandle = makeFolderHandle
 
 function makeElectronApiStub(overrides: {
   storagePath?: string | null
@@ -68,16 +57,14 @@ function makeElectronApiStub(overrides: {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockLoadHandle.mockResolvedValue(null)
-  mockSaveHandle.mockResolvedValue(undefined)
-  mockVerifyPermission.mockResolvedValue(true)
+  resetFolderHandleDb()
+  setUserActivation(true)
   vi.unstubAllGlobals()
   delete window.electronAPI
 })
 
 describe('AppDataFolderSettings', () => {
   it('renders nothing when no folder handle is stored', async () => {
-    mockLoadHandle.mockResolvedValue(null)
     const { container } = render(<AppDataFolderSettings />)
     await waitFor(() => {
       expect(container).toBeEmptyDOMElement()
@@ -85,7 +72,7 @@ describe('AppDataFolderSettings', () => {
   })
 
   it('shows folder name and Change button when handle exists', async () => {
-    mockLoadHandle.mockResolvedValue(makeHandle('MyData'))
+    await saveHandle(makeHandle('MyData'))
     render(<AppDataFolderSettings />)
     await screen.findByText('MyData')
     expect(screen.getByRole('button', { name: /change/i })).toBeInTheDocument()
@@ -98,34 +85,33 @@ describe('AppDataFolderSettings', () => {
 
     const handle = makeHandle('NewFolder')
     vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(handle))
-    mockLoadHandle.mockResolvedValue(makeHandle('OldFolder'))
+    await saveHandle(makeHandle('OldFolder'))
 
     render(<AppDataFolderSettings />)
     await screen.findByRole('button', { name: /change/i })
     await user.click(screen.getByRole('button', { name: /change/i }))
 
-    await waitFor(() => expect(mockSaveHandle).toHaveBeenCalledWith(handle))
-    expect(reloadMock).toHaveBeenCalledOnce()
+    await waitFor(() => expect(reloadMock).toHaveBeenCalledOnce())
+    expect((await loadHandle())?.name).toBe('NewFolder')
   })
 
   it('shows permission-denied error when verifyPermission returns false', async () => {
     const user = userEvent.setup()
-    mockVerifyPermission.mockResolvedValue(false)
-    vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(makeHandle('Denied')))
-    mockLoadHandle.mockResolvedValue(makeHandle('ExistingFolder'))
+    vi.stubGlobal('showDirectoryPicker', vi.fn().mockResolvedValue(makeHandle('Denied', 'denied')))
+    await saveHandle(makeHandle('ExistingFolder'))
 
     render(<AppDataFolderSettings />)
     await screen.findByRole('button', { name: /change/i })
     await user.click(screen.getByRole('button', { name: /change/i }))
 
     await screen.findByText(/permission denied/i)
-    expect(mockSaveHandle).not.toHaveBeenCalled()
+    expect((await loadHandle())?.name).toBe('ExistingFolder')
   })
 
   it('shows a browser-not-supported error when showDirectoryPicker is absent', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('showDirectoryPicker', undefined)
-    mockLoadHandle.mockResolvedValue(makeHandle('ExistingFolder'))
+    await saveHandle(makeHandle('ExistingFolder'))
 
     render(<AppDataFolderSettings />)
     await screen.findByRole('button', { name: /change/i })
@@ -137,7 +123,7 @@ describe('AppDataFolderSettings', () => {
   it('shows error message when picker rejects with non-abort error', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('showDirectoryPicker', vi.fn().mockRejectedValue(new Error('disk full')))
-    mockLoadHandle.mockResolvedValue(makeHandle('ExistingFolder'))
+    await saveHandle(makeHandle('ExistingFolder'))
 
     render(<AppDataFolderSettings />)
     await screen.findByRole('button', { name: /change/i })
@@ -149,7 +135,7 @@ describe('AppDataFolderSettings', () => {
   it('shows generic error when picker rejects with non-Error value', async () => {
     const user = userEvent.setup()
     vi.stubGlobal('showDirectoryPicker', vi.fn().mockRejectedValue('something bad'))
-    mockLoadHandle.mockResolvedValue(makeHandle('ExistingFolder'))
+    await saveHandle(makeHandle('ExistingFolder'))
 
     render(<AppDataFolderSettings />)
     await screen.findByRole('button', { name: /change/i })
@@ -160,7 +146,7 @@ describe('AppDataFolderSettings', () => {
 
   it('falls back to the browser handle name in Electron when no native path is configured yet', async () => {
     window.electronAPI = makeElectronApiStub({ storagePath: null })
-    mockLoadHandle.mockResolvedValue(makeHandle('OldHandleFolder'))
+    await saveHandle(makeHandle('OldHandleFolder'))
 
     render(<AppDataFolderSettings />)
 
@@ -182,14 +168,14 @@ describe('AppDataFolderSettings', () => {
 
     await waitFor(() => expect(putSpy).toHaveBeenCalledWith(LOCAL_FOLDER_PATH_KEY, '/new/path'))
     expect(reloadMock).toHaveBeenCalledOnce()
-    expect(mockSaveHandle).not.toHaveBeenCalled()
+    expect(await loadHandle()).toBeNull()
   })
 
   it('does not show error when user aborts picker (AbortError)', async () => {
     const user = userEvent.setup()
     const abort = new DOMException('user aborted', 'AbortError')
     vi.stubGlobal('showDirectoryPicker', vi.fn().mockRejectedValue(abort))
-    mockLoadHandle.mockResolvedValue(makeHandle('ExistingFolder'))
+    await saveHandle(makeHandle('ExistingFolder'))
 
     render(<AppDataFolderSettings />)
     await screen.findByRole('button', { name: /change/i })
