@@ -13,7 +13,7 @@ export function TimeNowField({ now, value, onChange, ariaLabel, onConfirm }: Tim
         type="time"
         aria-label={ariaLabel}
         value={value ?? now}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value || null)}
         onKeyDown={(e) => e.key === 'Enter' && onConfirm?.()}
         className="h-7 rounded border bg-transparent px-1.5 font-mono text-sm dark:border-gray-600 dark:text-gray-100"
       />
