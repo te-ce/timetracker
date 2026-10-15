@@ -1,12 +1,16 @@
-import { describe, it, expect, vi } from 'vitest'
-
-vi.mock('../auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: { getAllAccounts: () => [], acquireTokenSilent: vi.fn() },
-}))
-
-import { resetAllRepositories, configRepo, flushPendingWrites } from './shared'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { useSyncStatus } from '../storage/sync-status'
+
+type SharedModule = typeof import('./shared')
+let resetAllRepositories: SharedModule['resetAllRepositories']
+let configRepo: SharedModule['configRepo']
+let flushPendingWrites: SharedModule['flushPendingWrites']
+
+beforeAll(async () => {
+  localStorage.setItem('msal-bootstrap-config', JSON.stringify({ clientId: 'test-client', tenantId: 'test-tenant' }))
+  ;({ resetAllRepositories, configRepo, flushPendingWrites } = await import('./shared'))
+  localStorage.removeItem('msal-bootstrap-config')
+})
 
 describe('resetAllRepositories', () => {
   it('clears configRepo cache so next read goes to adapter', async () => {
