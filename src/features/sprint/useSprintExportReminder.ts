@@ -4,8 +4,13 @@ import { useRepositories } from '../../infra/repositories/repositories-context'
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import { toLocalIso } from '../../shared/dateUtils'
 import { resolveAppConfig } from '../../shared/appConfigDefaults'
-import { getSprintForDate, getSprintBoundaries, aggregateSprintHours, sprintExportStatus } from './sprint'
-import type { SprintConfig } from './sprint'
+import {
+  getSprintForDate,
+  getSprintBoundaries,
+  aggregateSprintHours,
+  sprintExportStatus,
+  resolveSprintConfig,
+} from './sprint'
 import {
   getSprintBadgeState,
   shouldNotifyToday,
@@ -15,16 +20,6 @@ import {
 import type { SprintReminderData, SprintBadgeState } from './sprintExportReminder'
 
 const LOOKBACK = 6
-
-export function resolveSprintConfig(
-  config: { sprintStartDate: string | null; sprintLengthDays: number } | undefined,
-  today: string,
-): SprintConfig {
-  return {
-    startDate: config?.sprintStartDate ?? `${today.slice(0, 4)}-01-01`,
-    lengthDays: config?.sprintLengthDays ?? 14,
-  }
-}
 
 /** Undefined until config, entries and export records have loaded. */
 export function useSprintExportReminder(): SprintBadgeState | undefined {
@@ -36,7 +31,7 @@ export function useSprintExportReminder(): SprintBadgeState | undefined {
     queryFn: () => configRepo.get(),
   })
 
-  const sprintConfig = resolveSprintConfig(config, today)
+  const sprintConfig = resolveSprintConfig(config)
   const currentIndex = getSprintForDate(today, sprintConfig).index
   const indices = Array.from({ length: LOOKBACK + 1 }, (_, i) => currentIndex - i).filter((i) => i >= 0)
 

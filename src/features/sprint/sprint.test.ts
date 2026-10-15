@@ -8,6 +8,8 @@ import {
   sprintDayProgress,
   roundHours,
   roundHoursPerCategory,
+  resolveSprintConfig,
+  DEFAULT_SPRINT_ANCHOR,
 } from './sprint'
 import type { DatedTimeEntry } from '../../infra/repositories/types'
 
@@ -196,5 +198,27 @@ describe('sprintExportStatus', () => {
     expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-10-07T18:30:00' }, sprint)).toBe(
       'exported',
     )
+  })
+})
+
+describe('resolveSprintConfig', () => {
+  it('uses the configured start date and length', () => {
+    expect(resolveSprintConfig({ sprintStartDate: '2025-03-03', sprintLengthDays: 7 })).toEqual({
+      startDate: '2025-03-03',
+      lengthDays: 7,
+    })
+  })
+
+  it('falls back to the fixed anchor so sprint numbers do not reset each year', () => {
+    const resolved = resolveSprintConfig({ sprintStartDate: null, sprintLengthDays: 14 })
+    expect(resolved.startDate).toBe(DEFAULT_SPRINT_ANCHOR)
+    expect(DEFAULT_SPRINT_ANCHOR).toBe('2026-01-01')
+    expect(getSprintForDate('2026-12-30', resolved).index).toBe(25)
+    expect(getSprintForDate('2027-01-02', resolved).index).toBe(26)
+    expect(getSprintForDate('2027-01-15', resolved).index).toBe(27)
+  })
+
+  it('uses defaults while the config is still loading', () => {
+    expect(resolveSprintConfig(undefined)).toEqual({ startDate: DEFAULT_SPRINT_ANCHOR, lengthDays: 14 })
   })
 })

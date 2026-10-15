@@ -6,6 +6,7 @@ import {
   aggregateSprintHours,
   roundHoursPerCategory,
   sprintExportStatus,
+  resolveSprintConfig,
 } from './sprint'
 import type { SprintConfig, Sprint } from './sprint'
 import { SprintConfigPanel } from './SprintConfigPanel'
@@ -27,13 +28,8 @@ interface SprintState {
 }
 
 function resolveSprintState(config: AppConfig | undefined, sprintIndex: number | null, today: string): SprintState {
-  const startDate = config?.sprintStartDate ?? `${new Date(today).getUTCFullYear()}-01-01`
-  const sprintConfig: SprintConfig = {
-    startDate,
-    lengthDays: config?.sprintLengthDays ?? DEFAULT_APP_CONFIG.sprintLengthDays,
-  }
-  const currentIndex = getSprintForDate(today, sprintConfig).index
-  const activeIndex = sprintIndex !== null ? sprintIndex : currentIndex
+  const sprintConfig = resolveSprintConfig(config)
+  const activeIndex = sprintIndex !== null ? sprintIndex : getSprintForDate(today, sprintConfig).index
   return { sprintConfig, sprint: getSprintBoundaries(activeIndex, sprintConfig) }
 }
 

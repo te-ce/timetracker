@@ -1,4 +1,5 @@
 import type { DatedTimeEntry, SprintExport } from '../../infra/repositories/types'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 export interface SprintConfig {
   startDate: string
@@ -12,6 +13,19 @@ export interface Sprint {
 }
 
 export type ExportStatus = 'pending' | 'exported'
+
+// Fixed (not "Jan 1 of the current year") so sprint numbering does not reset every year
+// for users who never configured a start date.
+export const DEFAULT_SPRINT_ANCHOR = '2026-01-01'
+
+export function resolveSprintConfig(
+  config: { sprintStartDate: string | null; sprintLengthDays: number } | undefined,
+): SprintConfig {
+  return {
+    startDate: config?.sprintStartDate ?? DEFAULT_SPRINT_ANCHOR,
+    lengthDays: config?.sprintLengthDays ?? DEFAULT_APP_CONFIG.sprintLengthDays,
+  }
+}
 
 // Exports are keyed by sprint index, so changing the sprint start/length leaves old records
 // pointing at different sprints. A record only counts when it was made for these exact
