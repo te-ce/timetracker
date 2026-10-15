@@ -37,7 +37,6 @@ Also contains the **SetupWizard** shown on first launch to choose sync mode.
 | `WindowBehaviorSettings.tsx`     | Electron window hide-on-close behavior                                 |
 | `ClearDataSettings.tsx`          | Destructive data reset (via the shared `ConfirmDialog`)                |
 | `excelMapping.ts`                | ExcelMapping derivation helpers                                        |
-| `useCategoryMutations.ts`        | Mutations for category config changes                                  |
 | `useDayTypeOverrideMutations.ts` | Mutations for per-day status (day type override + half-day leave)      |
 | `index.ts`                       | Public API barrel                                                      |
 
