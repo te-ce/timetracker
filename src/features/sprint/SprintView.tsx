@@ -6,6 +6,7 @@ import {
   aggregateSprintHours,
   roundHoursPerCategory,
   sprintExportStatus,
+  resolveSprintConfig,
 } from './sprint'
 import type { SprintConfig, Sprint } from './sprint'
 import { SprintConfigPanel } from './SprintConfigPanel'
@@ -16,9 +17,10 @@ import { getAllCategories } from '../../shared/categories'
 import { useAuthStore } from '../../shared/authStore'
 import { QUERY_KEYS, invalidateConfig, invalidateSprintExport } from '../../shared/queryKeys'
 import { createWorkbookService, isExportReady } from '../excel/workbookFactory'
+import { exportBlockedReason, buildUnmappedItems } from './sprintExportState'
 import { toLocalIso } from '../../shared/dateUtils'
 import { buildArchiveSheetName } from './sprintSheetName'
-import { DEFAULT_APP_CONFIG, resolveAppConfig } from '../../shared/appConfigDefaults'
+import { resolveAppConfig } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
 interface SprintState {
@@ -27,17 +29,16 @@ interface SprintState {
 }
 
 function resolveSprintState(config: AppConfig | undefined, sprintIndex: number | null, today: string): SprintState {
-  const startDate = config?.sprintStartDate ?? `${new Date(today).getUTCFullYear()}-01-01`
-  const sprintConfig: SprintConfig = {
-    startDate,
-    lengthDays: config?.sprintLengthDays ?? DEFAULT_APP_CONFIG.sprintLengthDays,
-  }
-  const currentIndex = getSprintForDate(today, sprintConfig).index
-  const activeIndex = sprintIndex !== null ? sprintIndex : currentIndex
+  const sprintConfig = resolveSprintConfig(config)
+  const activeIndex = sprintIndex !== null ? sprintIndex : getSprintForDate(today, sprintConfig).index
   return { sprintConfig, sprint: getSprintBoundaries(activeIndex, sprintConfig) }
 }
 
-export function SprintView() {
+interface Props {
+  createService?: typeof createWorkbookService
+}
+
+export function SprintView({ createService = createWorkbookService }: Props) {
   const { configRepo, monthRepo, sprintExportRepo } = useRepositories()
   const queryClient = useQueryClient()
   const [sprintIndex, setSprintIndex] = useState<number | null>(null)
@@ -51,21 +52,16 @@ export function SprintView() {
 
   const { sprintConfig, sprint } = resolveSprintState(config, sprintIndex, today)
   const activeIndex = sprint.index
+  const { weekdayHours, sprintRoundingStep, sprintRoundingMode } = resolveAppConfig(config)
 
-  const { data: entries = [] } = useQuery({
-    queryKey: QUERY_KEYS.sprintEntries(activeIndex, sprintConfig.startDate, sprintConfig.lengthDays),
-    queryFn: () =>
-      monthRepo.findEntriesByDateRange(
-        sprint.start,
-        sprint.end,
-        config?.weekdayHours ?? DEFAULT_APP_CONFIG.weekdayHours,
-      ),
+  const { data: entries, status: entriesStatus } = useQuery({
+    queryKey: QUERY_KEYS.sprintEntries(activeIndex, sprintConfig.startDate, sprintConfig.lengthDays, weekdayHours),
+    queryFn: () => monthRepo.findEntriesByDateRange(sprint.start, sprint.end, weekdayHours),
     enabled: !!config,
   })
 
-  const { sprintRoundingStep, sprintRoundingMode } = resolveAppConfig(config)
   const hoursPerCategory = roundHoursPerCategory(
-    aggregateSprintHours(entries, sprint),
+    aggregateSprintHours(entries ?? [], sprint),
     sprintRoundingStep,
     sprintRoundingMode,
   )
@@ -83,6 +79,8 @@ export function SprintView() {
         sprintIndex: activeIndex,
         status: 'exported',
         exportedAt: toLocalIso(new Date()),
+        sprintStart: sprint.start,
+        sprintEnd: sprint.end,
       }),
     onSuccess: () => invalidateSprintExport(queryClient, activeIndex),
   })
@@ -91,8 +89,9 @@ export function SprintView() {
 
   async function handleExport(overwrite: boolean): Promise<void> {
     if (!config) return
+    if (entries === undefined) throw new Error('Sprint hours are not loaded yet.')
     if (!config.targetSheet) throw new Error('No target sheet selected.')
-    const service = createWorkbookService(config, isAuthenticated)
+    const service = createService(config, isAuthenticated)
     const mapping = config.categoryMapping ?? {}
     await service.writeSprintData(config.targetSheet, mapping, hoursPerCategory)
     if (config.archiveSprintSheet) {
@@ -128,6 +127,9 @@ export function SprintView() {
         }}
         exportStatus={config ? exportStatus : undefined}
         exportReady={config ? isExportReady(config, isAuthenticated) : undefined}
+        exportBlockedReason={exportBlockedReason(entriesStatus)}
+        exportKey={`${sprint.index}:${sprint.start}:${sprint.end}`}
+        unmappedHours={buildUnmappedItems(config, hoursPerCategory)}
         onExport={config ? handleExport : undefined}
       />
     </div>

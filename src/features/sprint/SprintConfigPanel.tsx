@@ -3,11 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
 import type { AppConfig } from '../../infra/repositories/configSchema'
-import { useSprintExportAction } from './useSprintExportAction'
+import { SprintExportControls } from './SprintExportControls'
+import type { UnmappedHoursItem } from './UnmappedHoursBanner'
 import type { ExportStatus, SprintRoundingMode } from './sprint'
 
 function isSprintRoundingMode(value: string): value is SprintRoundingMode {
   return value === 'nearest' || value === 'up' || value === 'down'
+}
+
+function parseSprintLength(value: string): number | null {
+  const n = Number(value)
+  return value.trim() !== '' && Number.isInteger(n) && n >= 1 ? n : null
 }
 
 const ROUNDING_STEPS = [0, 0.1, 0.25, 0.5, 1]
@@ -35,9 +41,21 @@ interface Props {
   exportStatus?: ExportStatus | undefined
   exportReady?: boolean | undefined
   onExport?: ((overwrite: boolean) => Promise<void>) | undefined
+  exportBlockedReason?: string | undefined
+  exportKey?: string | undefined
+  unmappedHours?: UnmappedHoursItem[] | undefined
 }
 
-export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, exportReady, onExport }: Props) {
+export function SprintConfigPanel({
+  repository,
+  onConfigChanged,
+  exportStatus,
+  exportReady,
+  onExport,
+  exportBlockedReason,
+  exportKey,
+  unmappedHours,
+}: Props) {
   const queryClient = useQueryClient()
   const [startDate, setStartDate] = useState('')
   const [lengthDays, setLengthDays] = useState('')
@@ -60,13 +78,15 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
     }
   }, [config])
 
+  const parsedLength = parseSprintLength(lengthDays)
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (!config) return
+      if (!config || parsedLength === null) return
       await repository.save({
         ...config,
         sprintStartDate: startDate || null,
-        sprintLengthDays: parseInt(lengthDays) || config.sprintLengthDays,
+        sprintLengthDays: parsedLength,
         sprintRoundingStep: roundingStep,
         sprintRoundingMode: roundingMode,
       })
@@ -77,7 +97,9 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
     },
   })
 
-  const { exporting, exportError, needsOverwriteConfirm, handleExport } = useSprintExportAction(onExport)
+  function requestSave() {
+    if (parsedLength !== null) saveMutation.mutate()
+  }
 
   const isDirty = isDraftDirty({ startDate, lengthDays, roundingStep, roundingMode }, config)
 
@@ -92,7 +114,7 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') saveMutation.mutate()
+            if (e.key === 'Enter') requestSave()
           }}
           className="border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
         />
@@ -108,11 +130,16 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
           value={lengthDays}
           onChange={(e) => setLengthDays(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') saveMutation.mutate()
+            if (e.key === 'Enter') requestSave()
           }}
           className="w-10 border-0 border-b border-gray-300 bg-transparent px-0 py-1 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-0 dark:border-gray-600 dark:text-gray-100"
         />
         <span className="text-gray-400 dark:text-gray-500">days</span>
+        {config && parsedLength === null && (
+          <span role="alert" className="text-xs text-red-600">
+            Enter a whole number of at least 1
+          </span>
+        )}
       </label>
 
       <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -148,8 +175,8 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
       {isDirty && (
         <button
           type="button"
-          onClick={() => saveMutation.mutate()}
-          disabled={saveMutation.isPending}
+          onClick={requestSave}
+          disabled={saveMutation.isPending || parsedLength === null}
           className="text-sm font-medium text-indigo-600 hover:underline disabled:opacity-50 dark:text-indigo-400"
         >
           Save
@@ -157,30 +184,14 @@ export function SprintConfigPanel({ repository, onConfigChanged, exportStatus, e
       )}
 
       {onExport && (
-        <div className="ml-auto flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-            <span
-              className={`h-2 w-2 rounded-full ${exportStatus === 'exported' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-            />
-            {exportStatus === 'exported' ? 'Exported' : 'Pending'}
-          </span>
-          {exportError && (
-            <p role="alert" className="text-xs text-red-600">
-              {exportError}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => void handleExport()}
-            disabled={exporting}
-            className="rounded-full bg-gray-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white"
-            data-tooltip={
-              !exportReady ? 'Configure SharePoint URL, sheet, and category mapping in Settings first' : undefined
-            }
-          >
-            {exporting ? 'Exporting…' : needsOverwriteConfirm ? 'Export and overwrite' : 'Export'}
-          </button>
-        </div>
+        <SprintExportControls
+          key={exportKey}
+          exportStatus={exportStatus}
+          exportReady={exportReady}
+          blockedReason={exportBlockedReason}
+          unmappedHours={unmappedHours ?? []}
+          onExport={onExport}
+        />
       )}
     </div>
   )

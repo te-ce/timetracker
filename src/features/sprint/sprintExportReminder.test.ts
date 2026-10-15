@@ -44,7 +44,7 @@ describe('getSprintsNeedingExport', () => {
   })
 
   it('returns multiple qualifying sprints sorted by index', () => {
-    // today is in sprint 2 (2026-01-29..2026-02-11), last day of sprint 1 = 2026-01-28
+    // 2026-01-28 is the last day of sprint index 1 (01-15..01-28), so both index 0 (ended 01-14) and index 1 are due
     const sprints = getSprintsNeedingExport('2026-01-28', config, [
       { index: 1, totalHours: 35, exportStatus: 'pending' },
       { index: 0, totalHours: 40, exportStatus: 'pending' },

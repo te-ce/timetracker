@@ -103,6 +103,17 @@ describe('SprintConfigPanel', () => {
     })
   })
 
+  it.each(['0', '-3', '2.5', ''])('rejects sprint length %j and does not save', async (value) => {
+    const { repo, onConfigChanged } = setup({ sprintLengthDays: 14 })
+    await screen.findByDisplayValue('14')
+    fireEvent.change(screen.getByLabelText(/length/i), { target: { value } })
+    expect(await screen.findByRole('alert')).toHaveTextContent(/whole number/i)
+    expect(screen.getByRole('button', { name: /save/i })).toBeDisabled()
+    fireEvent.keyDown(screen.getByLabelText(/length/i), { key: 'Enter' })
+    await waitFor(() => expect(onConfigChanged).not.toHaveBeenCalled())
+    expect((await repo.get()).sprintLengthDays).toBe(14)
+  })
+
   it('saves when Enter is pressed in the length input', async () => {
     const { repo } = setup({ sprintLengthDays: 14 })
     await screen.findByDisplayValue('14')

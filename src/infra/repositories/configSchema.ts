@@ -112,6 +112,8 @@ const sprintExportSchema = z
     sprintIndex: z.number(),
     status: z.enum(['pending', 'exported']),
     exportedAt: z.string().nullable(),
+    sprintStart: z.string().optional(),
+    sprintEnd: z.string().optional(),
   })
   .passthrough()
 

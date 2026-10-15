@@ -47,6 +47,20 @@ describe('isExportReady (cloud mode)', () => {
     ).toBe(false)
   })
 
+  it('returns false when every mapping value is blank', () => {
+    expect(
+      isExportReady(
+        {
+          ...BASE_CONFIG,
+          sharepointUrl: 'https://sp.example.com',
+          targetSheet: 'Sheet1',
+          categoryMapping: { CAT: '' },
+        },
+        true,
+      ),
+    ).toBe(false)
+  })
+
   it('returns true when all required fields are present and authenticated', () => {
     expect(
       isExportReady(

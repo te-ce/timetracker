@@ -48,6 +48,15 @@ describe('computeSprintGroups', () => {
     expect(result[1]!.label).toBe('Sprint 2')
   })
 
+  it('merges rows before the first sprint into one "Before sprint 1" group', () => {
+    const rows = [makeRow('2025-11-20'), makeRow('2025-12-20'), makeRow('2026-01-01')]
+    const result = computeSprintGroups(rows, '2026-01-01', 14)
+    expect(result.map((g) => [g.label, g.rows.length])).toEqual([
+      ['Before sprint 1', 2],
+      ['Sprint 1', 1],
+    ])
+  })
+
   it('handles empty rows', () => {
     const result = computeSprintGroups([], '2026-01-01', 14)
     expect(result).toHaveLength(0)

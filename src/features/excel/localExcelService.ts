@@ -1,8 +1,22 @@
 import ExcelJS from 'exceljs'
 import { SheetExistsError } from './excelService'
-import type { ExcelRow } from './excelService'
-import { buildWritePlan, buildArchiveRows } from './exportPlan'
+import type { LocatedExcelRow } from './excelService'
+import { buildWritePlan, buildArchiveRows, taskIdFromCell } from './exportPlan'
 import { loadHandle, loadExcelHandle, verifyPermission } from '../../infra/storage/folder-handle-store'
+
+function readTaskId(cell: ExcelJS.Cell): string | null {
+  const value = cell.value
+  if (typeof value === 'string' || typeof value === 'number') return taskIdFromCell(value)
+  if (value !== null && typeof value === 'object') return taskIdFromCell(cell.text)
+  return null
+}
+
+function readText(cell: ExcelJS.Cell): string {
+  const value = cell.value
+  if (typeof value === 'string') return value.trim()
+  if (value !== null && typeof value === 'object') return cell.text.trim()
+  return ''
+}
 
 async function getDir(): Promise<FileSystemDirectoryHandle> {
   const handle = (await loadExcelHandle()) ?? (await loadHandle())
@@ -30,7 +44,7 @@ export async function listLocalSheets(filename: string): Promise<string[]> {
   return wb.worksheets.map((ws) => ws.name)
 }
 
-export async function listLocalRows(filename: string, sheet: string): Promise<ExcelRow[]> {
+export async function listLocalRows(filename: string, sheet: string): Promise<LocatedExcelRow[]> {
   const dir = await getDir()
   const fileHandle = await dir.getFileHandle(filename)
   const file = await fileHandle.getFile()
@@ -38,17 +52,10 @@ export async function listLocalRows(filename: string, sheet: string): Promise<Ex
   await wb.xlsx.load(await file.arrayBuffer())
   const ws = wb.getWorksheet(sheet)
   if (!ws) return []
-  const rows: ExcelRow[] = []
-  ws.eachRow((row) => {
-    const col1 = row.getCell(1).value
-    const col3 = row.getCell(3).value
-    const taskId = typeof col1 === 'string' ? col1.trim() : null
-    if (taskId) {
-      rows.push({
-        taskId,
-        description: typeof col3 === 'string' ? col3.trim() : '',
-      })
-    }
+  const rows: LocatedExcelRow[] = []
+  ws.eachRow((row, rowNumber) => {
+    const taskId = readTaskId(row.getCell(1))
+    if (taskId) rows.push({ taskId, description: readText(row.getCell(3)), rowNumber })
   })
   return rows
 }
@@ -69,10 +76,8 @@ export async function writeLocalSprintData(
 
   const rows: { taskId: string; rowNumber: number }[] = []
   ws.eachRow((row, rowNumber) => {
-    const col1 = row.getCell(1).value
-    if (typeof col1 === 'string' && col1.trim()) {
-      rows.push({ taskId: col1.trim(), rowNumber })
-    }
+    const taskId = readTaskId(row.getCell(1))
+    if (taskId) rows.push({ taskId, rowNumber })
   })
 
   const plan = buildWritePlan(rows, mapping, hoursPerCategory)

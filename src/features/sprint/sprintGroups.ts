@@ -6,6 +6,10 @@ export interface SprintGroup {
   rows: MonthTableRow[]
 }
 
+function sprintGroupLabel(index: number): string {
+  return index < 0 ? 'Before sprint 1' : `Sprint ${index + 1}`
+}
+
 export function computeSprintGroups(
   rows: MonthTableRow[],
   sprintStartDate: string | null,
@@ -21,11 +25,11 @@ export function computeSprintGroups(
   let currentSprintIdx: number | null = null
 
   for (const row of rows) {
-    const sprintIdx = getSprintForDate(row.date, config).index
+    const sprintIdx = Math.max(getSprintForDate(row.date, config).index, -1)
 
     if (currentSprintIdx === null || sprintIdx !== currentSprintIdx) {
       if (currentRows.length > 0) {
-        groups.push({ label: `Sprint ${(currentSprintIdx ?? 0) + 1}`, rows: currentRows })
+        groups.push({ label: sprintGroupLabel(currentSprintIdx ?? 0), rows: currentRows })
       }
       currentRows = [row]
       currentSprintIdx = sprintIdx
@@ -35,7 +39,7 @@ export function computeSprintGroups(
   }
 
   if (currentRows.length > 0) {
-    groups.push({ label: `Sprint ${(currentSprintIdx ?? 0) + 1}`, rows: currentRows })
+    groups.push({ label: sprintGroupLabel(currentSprintIdx ?? 0), rows: currentRows })
   }
 
   return groups

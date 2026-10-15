@@ -8,6 +8,8 @@ import {
   sprintDayProgress,
   roundHours,
   roundHoursPerCategory,
+  resolveSprintConfig,
+  DEFAULT_SPRINT_ANCHOR,
 } from './sprint'
 import type { DatedTimeEntry } from '../../infra/repositories/types'
 
@@ -142,13 +144,81 @@ describe('sprintExportStatus', () => {
     expect(sprintExportStatus(null, sprint)).toBe('pending')
   })
 
-  it('is exported when exported on or after the sprint start', () => {
+  it('is exported when exported on the last day of the sprint', () => {
     expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-10-07' }, sprint)).toBe(
       'exported',
     )
   })
 
+  it('is exported when exported after the sprint ended', () => {
+    expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-10-20' }, sprint)).toBe(
+      'exported',
+    )
+  })
+
+  it('stays pending when exported mid-sprint', () => {
+    expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-09-30' }, sprint)).toBe('pending')
+  })
+
   it('ignores a stale record exported before the sprint began', () => {
     expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-08-06' }, sprint)).toBe('pending')
+  })
+
+  it('is pending when the record is not marked exported', () => {
+    expect(sprintExportStatus({ sprintIndex: 2, status: 'pending', exportedAt: '2026-10-08' }, sprint)).toBe('pending')
+  })
+
+  it('is pending when exportedAt is missing', () => {
+    expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: null }, sprint)).toBe('pending')
+  })
+
+  it('is exported when stored boundaries match the current sprint', () => {
+    const record = {
+      sprintIndex: 2,
+      status: 'exported' as const,
+      exportedAt: '2026-10-08',
+      sprintStart: '2026-09-17',
+      sprintEnd: '2026-10-07',
+    }
+    expect(sprintExportStatus(record, sprint)).toBe('exported')
+  })
+
+  it('is pending when the sprint boundaries changed after the export', () => {
+    const record = {
+      sprintIndex: 2,
+      status: 'exported' as const,
+      exportedAt: '2026-10-08',
+      sprintStart: '2026-09-10',
+      sprintEnd: '2026-09-30',
+    }
+    expect(sprintExportStatus(record, sprint)).toBe('pending')
+  })
+
+  it('ignores the time part of exportedAt timestamps', () => {
+    expect(sprintExportStatus({ sprintIndex: 2, status: 'exported', exportedAt: '2026-10-07T18:30:00' }, sprint)).toBe(
+      'exported',
+    )
+  })
+})
+
+describe('resolveSprintConfig', () => {
+  it('uses the configured start date and length', () => {
+    expect(resolveSprintConfig({ sprintStartDate: '2025-03-03', sprintLengthDays: 7 })).toEqual({
+      startDate: '2025-03-03',
+      lengthDays: 7,
+    })
+  })
+
+  it('falls back to the fixed anchor so sprint numbers do not reset each year', () => {
+    const resolved = resolveSprintConfig({ sprintStartDate: null, sprintLengthDays: 14 })
+    expect(resolved.startDate).toBe(DEFAULT_SPRINT_ANCHOR)
+    expect(DEFAULT_SPRINT_ANCHOR).toBe('2026-01-01')
+    expect(getSprintForDate('2026-12-30', resolved).index).toBe(25)
+    expect(getSprintForDate('2027-01-02', resolved).index).toBe(26)
+    expect(getSprintForDate('2027-01-15', resolved).index).toBe(27)
+  })
+
+  it('uses defaults while the config is still loading', () => {
+    expect(resolveSprintConfig(undefined)).toEqual({ startDate: DEFAULT_SPRINT_ANCHOR, lengthDays: 14 })
   })
 })

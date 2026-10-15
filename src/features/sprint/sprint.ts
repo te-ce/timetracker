@@ -1,4 +1,5 @@
 import type { DatedTimeEntry, SprintExport } from '../../infra/repositories/types'
+import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
 export interface SprintConfig {
   startDate: string
@@ -13,11 +14,28 @@ export interface Sprint {
 
 export type ExportStatus = 'pending' | 'exported'
 
-// Exports are keyed by sprint index, so changing the sprint start/length leaves old
-// records pointing at different sprints. One made before the sprint began is stale.
+// Fixed (not "Jan 1 of the current year") so sprint numbering does not reset every year
+// for users who never configured a start date.
+export const DEFAULT_SPRINT_ANCHOR = '2026-01-01'
+
+export function resolveSprintConfig(
+  config: { sprintStartDate: string | null; sprintLengthDays: number } | undefined,
+): SprintConfig {
+  return {
+    startDate: config?.sprintStartDate ?? DEFAULT_SPRINT_ANCHOR,
+    lengthDays: config?.sprintLengthDays ?? DEFAULT_APP_CONFIG.sprintLengthDays,
+  }
+}
+
+// Exports are keyed by sprint index, so changing the sprint start/length leaves old records
+// pointing at different sprints. A record only counts when it was made for these exact
+// boundaries (records from before boundaries were stored are trusted by date alone) and on or
+// after the sprint's last day, so a mid-sprint export does not suppress the end-of-sprint reminder.
 export function sprintExportStatus(sprintExport: SprintExport | null | undefined, sprint: Sprint): ExportStatus {
   if (sprintExport?.status !== 'exported') return 'pending'
-  if (sprintExport.exportedAt !== null && sprintExport.exportedAt < sprint.start) return 'pending'
+  if (sprintExport.sprintStart !== undefined && sprintExport.sprintStart !== sprint.start) return 'pending'
+  if (sprintExport.sprintEnd !== undefined && sprintExport.sprintEnd !== sprint.end) return 'pending'
+  if (sprintExport.exportedAt === null || sprintExport.exportedAt.slice(0, 10) < sprint.end) return 'pending'
   return 'exported'
 }
 

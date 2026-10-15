@@ -4,8 +4,13 @@ import { useRepositories } from '../../infra/repositories/repositories-context'
 import { QUERY_KEYS } from '../../shared/queryKeys'
 import { toLocalIso } from '../../shared/dateUtils'
 import { resolveAppConfig } from '../../shared/appConfigDefaults'
-import { getSprintForDate, getSprintBoundaries, aggregateSprintHours, sprintExportStatus } from './sprint'
-import type { SprintConfig } from './sprint'
+import {
+  getSprintForDate,
+  getSprintBoundaries,
+  aggregateSprintHours,
+  sprintExportStatus,
+  resolveSprintConfig,
+} from './sprint'
 import {
   getSprintBadgeState,
   shouldNotifyToday,
@@ -16,17 +21,10 @@ import type { SprintReminderData, SprintBadgeState } from './sprintExportReminde
 
 const LOOKBACK = 6
 
-export function resolveSprintConfig(
-  config: { sprintStartDate: string | null; sprintLengthDays: number } | undefined,
-  today: string,
-): SprintConfig {
-  return {
-    startDate: config?.sprintStartDate ?? `${today.slice(0, 4)}-01-01`,
-    lengthDays: config?.sprintLengthDays ?? 14,
-  }
-}
-
-/** Undefined until config, entries and export records have loaded. */
+/**
+ * Undefined until config, entries and export records have loaded. A failed export-record read
+ * counts as "unknown" (so the sprint is still reminded about) instead of blocking the badge forever.
+ */
 export function useSprintExportReminder(): SprintBadgeState | undefined {
   const { configRepo, monthRepo, sprintExportRepo } = useRepositories()
   const today = toLocalIso(new Date())
@@ -36,16 +34,23 @@ export function useSprintExportReminder(): SprintBadgeState | undefined {
     queryFn: () => configRepo.get(),
   })
 
-  const sprintConfig = resolveSprintConfig(config, today)
+  const sprintConfig = resolveSprintConfig(config)
   const currentIndex = getSprintForDate(today, sprintConfig).index
   const indices = Array.from({ length: LOOKBACK + 1 }, (_, i) => currentIndex - i).filter((i) => i >= 0)
 
   const oldestIndex = indices[indices.length - 1] ?? currentIndex
   const oldestStart = getSprintBoundaries(oldestIndex, sprintConfig).start
 
+  const { weekdayHours } = resolveAppConfig(config)
   const { data: entries } = useQuery({
-    queryKey: ['sprintReminderEntries', oldestStart, today, sprintConfig.startDate, sprintConfig.lengthDays],
-    queryFn: () => monthRepo.findEntriesByDateRange(oldestStart, today, resolveAppConfig(config).weekdayHours),
+    queryKey: QUERY_KEYS.sprintReminderEntries(
+      oldestStart,
+      today,
+      sprintConfig.startDate,
+      sprintConfig.lengthDays,
+      weekdayHours,
+    ),
+    queryFn: () => monthRepo.findEntriesByDateRange(oldestStart, today, weekdayHours),
     enabled: !!config,
   })
 
@@ -60,10 +65,12 @@ export function useSprintExportReminder(): SprintBadgeState | undefined {
   const reminderData: SprintReminderData[] = indices.map((index, i) => {
     const sprint = getSprintBoundaries(index, sprintConfig)
     const totalHours = Object.values(aggregateSprintHours(entries ?? [], sprint)).reduce((a, b) => a + b, 0)
-    return { index, totalHours, exportStatus: sprintExportStatus(exportQueries[i]?.data, sprint) }
+    const exportQuery = exportQueries[i]
+    const exportStatus = exportQuery?.isError ? null : sprintExportStatus(exportQuery?.data, sprint)
+    return { index, totalHours, exportStatus }
   })
 
-  const loaded = !!config && entries !== undefined && exportQueries.every((q) => q.isSuccess)
+  const loaded = !!config && entries !== undefined && exportQueries.every((q) => q.isSuccess || q.isError)
   const badgeState = loaded ? getSprintBadgeState(today, sprintConfig, reminderData) : undefined
   const pendingKey = badgeState?.kind === 'export' ? badgeState.sprints.map((s) => s.index).join(',') : ''
 

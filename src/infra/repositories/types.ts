@@ -130,6 +130,8 @@ export interface SprintExport {
   sprintIndex: number
   status: 'pending' | 'exported'
   exportedAt: string | null
+  sprintStart?: string | undefined
+  sprintEnd?: string | undefined
 }
 
 export interface SprintExportRepository {
