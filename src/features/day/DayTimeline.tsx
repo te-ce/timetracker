@@ -15,6 +15,7 @@ import { useWorkPeriodMutations } from './useWorkPeriodMutations'
 import { TrackingBar } from './TrackingBar'
 import { DayTotalsPanel } from './DayTotalsPanel'
 import { applyOverlapFix } from './overlapRepair'
+import { withPeriodTimes } from './periodTimes'
 import { hasLiveActivity } from '../../shared/dayBalance'
 import type { DayBalance } from '../../shared/dayBalance'
 import { nowHHMM } from '../../shared/worktime'
@@ -185,7 +186,7 @@ export function DayTimeline(props: DayTimelineProps) {
               onStartEditingTimes={(periodId) => setEditingTimesFor(periodId)}
               onStopEditingTimes={() => setEditingTimesFor(null)}
               onSaveTimes={(period, start, end) =>
-                mutations.saveWithAbsorbed.mutate({ date, window: { ...period, start, end }, absorbed: [] })
+                mutations.saveWithAbsorbed.mutate({ date, window: withPeriodTimes(period, start, end), absorbed: [] })
               }
               onChangeCategory={(periodId, category) =>
                 mutations.setPeriodCategory.mutate({ date, periodId, category })

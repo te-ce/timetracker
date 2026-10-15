@@ -26,6 +26,7 @@ See [CONTEXT.md](../../../CONTEXT.md) for full glossary. Short version:
 | `daySegments.ts`            | `deriveSegments()` (the Segment chain) and `derivePeriodWarnings()` (overlap / overbooked)  |
 | `overlapRepair.ts`          | `findSubtaskOverlaps()`, `suggestOverlapFixes()`, `applyOverlapFix()` — pure overlap repair |
 | `OverlapRepairBar.tsx`      | One-click fixes under the later of two clashing subtasks                                    |
+| `periodTimes.ts`            | `withPeriodTimes()` — new period times; an end also stops a live subtask there              |
 | `dayBreaks.ts`              | `findBreaks()` — time between WorkPeriods                                                   |
 | `dayStreamModel.ts`         | `buildDayStream()`, `deriveDayStats()`, `findActiveTracking()`                              |
 | `SubtaskForm.tsx`           | Log an untracked subtask: duration, category, note                                          |

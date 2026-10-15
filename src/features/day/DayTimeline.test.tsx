@@ -332,6 +332,23 @@ describe('DayTimeline', () => {
     expect((await getWindows(repo))[0]?.end).toBeNull()
   })
 
+  it('closes a live subtask at the new end when the period end is set by editing', async () => {
+    // Given work running since 09:00 with a live Review subtask since 10:00
+    const { repo } = setup([
+      period('a', '09:00', null, 'Work', [{ id: 's1', category: 'Review', hours: 0, startedAt: '10:00' }]),
+    ])
+
+    // When the user sets the period end to 11:00 by editing its times
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+    fireEvent.change(screen.getByLabelText(/work period 1 end/i), { target: { value: '11:00' } })
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    // Then the subtask stops there too instead of running on forever
+    await vi.waitFor(async () => {
+      expect((await getWindows(repo))[0]?.subtasks[0]).toMatchObject({ stoppedAt: '11:00', hours: 1 })
+    })
+  })
+
   it('stops tracking when the end is set to a time still in the future', async () => {
     // Given work running since 09:00
     const { repo } = setup([period('a', '09:00', null, 'Work')])

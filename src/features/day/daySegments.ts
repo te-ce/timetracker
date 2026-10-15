@@ -81,35 +81,46 @@ function pushMainSegment(
   return true
 }
 
-/** Places each started subtask on the timeline, filling the gaps before it with main stretches. */
+function clampTime(time: string, from: string, to: string): string {
+  if (parseMinutes(time) < parseMinutes(from)) return from
+  if (parseMinutes(time) > parseMinutes(to)) return to
+  return time
+}
+
+/**
+ * Places each started subtask on the timeline, filling the gaps before it with
+ * main stretches. A subtask only counts the time inside its period: a live one
+ * runs to the period's end, and one stored past either edge is clamped to it.
+ */
 function placeStartedSubtasks(
   segments: DaySegment[],
   period: WorkPeriod,
   started: (WorkPeriodSubtask & { startedAt: string })[],
   live: WorkPeriodSubtask | undefined,
-  now: string,
+  periodEnd: string,
 ): { cursor: string; mainIndex: number } {
   let cursor = period.start
   let mainIndex = 0
   for (const subtask of started) {
-    const stoppedAt = subtask.stoppedAt ?? now
-    if (parseMinutes(subtask.startedAt) > parseMinutes(cursor)) {
-      if (pushMainSegment(segments, period, mainIndex, cursor, subtask.startedAt, false)) mainIndex++
+    const from = clampTime(subtask.startedAt, period.start, periodEnd)
+    const to = clampTime(subtask.stoppedAt ?? periodEnd, from, periodEnd)
+    if (parseMinutes(from) > parseMinutes(cursor)) {
+      if (pushMainSegment(segments, period, mainIndex, cursor, from, false)) mainIndex++
     }
     segments.push({
       id: subtask.id,
       periodId: period.id,
       category: subtask.category,
       start: subtask.startedAt,
-      end: subtask.stoppedAt ?? null,
-      hours: elapsedHours(subtask.startedAt, stoppedAt),
+      end: subtask === live ? null : (subtask.stoppedAt ?? to),
+      hours: elapsedHours(from, to),
       kind: 'subtask',
       live: subtask === live,
       placed: true,
       subtask,
       note: subtask.note,
     })
-    if (parseMinutes(stoppedAt) > parseMinutes(cursor)) cursor = stoppedAt
+    if (parseMinutes(to) > parseMinutes(cursor)) cursor = to
   }
   return { cursor, mainIndex }
 }
@@ -145,9 +156,9 @@ export function deriveSegments(period: WorkPeriod, now: string, { isToday = true
   if (periodEnd === null) return []
   const segments: DaySegment[] = []
 
-  const live = period.subtasks.find(isLiveSubtask)
+  const live = running ? period.subtasks.find(isLiveSubtask) : undefined
   const started = sortedStartedSubtasks(period)
-  const { cursor, mainIndex } = placeStartedSubtasks(segments, period, started, live, now)
+  const { cursor, mainIndex } = placeStartedSubtasks(segments, period, started, live, periodEnd)
 
   if (parseMinutes(periodEnd) > parseMinutes(cursor)) {
     pushMainSegment(segments, period, mainIndex, cursor, periodEnd, running && !live)
