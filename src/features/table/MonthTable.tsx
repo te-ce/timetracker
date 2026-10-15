@@ -15,6 +15,7 @@ import type { MonthView } from '../../shared/useMonthView'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
 import { formatHoursCompact } from '../../shared/formatHours'
 import { Tooltip } from '../../shared/Tooltip'
+import { isValidCustomCategoryName } from '../../shared/categories'
 import { resolveAutoCategory } from '../../shared/autoCategory'
 import { useMonthGridMutations } from './useMonthGridMutations'
 import { useDragReorder } from '../../shared/reorder'
@@ -206,7 +207,7 @@ export function MonthGrid({
   function commitRename(oldName: string) {
     const newName = editValue.trim()
     setEditingCat(null)
-    if (newName && newName !== oldName) {
+    if (newName && newName !== oldName && isValidCustomCategoryName(newName) && !allCategories.includes(newName)) {
       onCategoryRename?.(oldName, newName)
     }
   }
@@ -261,7 +262,7 @@ export function MonthGrid({
                   categoryDescriptions={categoryDescriptions}
                   preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
                   onCategoryReorder={onCategoryReorder}
-                  onCategoryRename={onCategoryRename}
+                  onCategoryRename={isValidCustomCategoryName(cat) ? onCategoryRename : undefined}
                   onAutoCategoryChange={onAutoCategoryChange}
                   dragHandlers={colDragHandlers}
                   onEditValueChange={setEditValue}

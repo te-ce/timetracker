@@ -48,12 +48,18 @@ function foldIntoMonthData(opts: SetupOptions): MonthData {
   return monthData
 }
 
-function makeView(year: number, month: number, monthData: MonthData = {}, autoCategory = '_COREMEDIA') {
+function makeView(
+  year: number,
+  month: number,
+  monthData: MonthData = {},
+  autoCategory = '_COREMEDIA',
+  customCategories: string[] = [],
+) {
   return buildMonthView({
     year,
     month,
     monthData,
-    config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, autoCategory }),
+    config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, autoCategory, customCategories }),
     todayIso: toLocalIso(new Date()),
     now: nowHHMM(),
   })
@@ -260,7 +266,11 @@ describe('MonthGrid', () => {
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
       render(
         <QueryClientProvider client={queryClient}>
-          <MonthGrid view={makeView(2026, 5)} repository={repo} onCategoryRename={onRename} />
+          <MonthGrid
+            view={makeView(2026, 5, {}, '_COREMEDIA', ['Alpha', 'Beta'])}
+            repository={repo}
+            onCategoryRename={onRename}
+          />
         </QueryClientProvider>,
       )
       return { repo }
@@ -269,40 +279,70 @@ describe('MonthGrid', () => {
     it('double-clicking a column header shows an edit input', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
-      expect(screen.getByDisplayValue('_SUPPORT')).toBeInTheDocument()
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      expect(screen.getByDisplayValue('Alpha')).toBeInTheDocument()
     })
 
     it('pressing Enter commits the rename', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
-      const input = screen.getByDisplayValue('_SUPPORT')
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
       await userEvent.clear(input)
-      await userEvent.type(input, 'Support{Enter}')
-      expect(onRename).toHaveBeenCalledWith('_SUPPORT', 'Support')
+      await userEvent.type(input, 'Gamma{Enter}')
+      expect(onRename).toHaveBeenCalledWith('Alpha', 'Gamma')
     })
 
     it('pressing Escape cancels without calling onCategoryRename', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
       await userEvent.keyboard('{Escape}')
       expect(onRename).not.toHaveBeenCalled()
-      expect(screen.queryByDisplayValue('_SUPPORT')).not.toBeInTheDocument()
+      expect(screen.queryByDisplayValue('Alpha')).not.toBeInTheDocument()
     })
 
     it('does not call onCategoryRename when name is unchanged', async () => {
       const onRename = vi.fn<(oldName: string, newName: string) => void>()
       setupWithRename(onRename)
-      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
-      await userEvent.dblClick(within(header).getByText('SUPPORT'))
-      const input = screen.getByDisplayValue('_SUPPORT')
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
       await userEvent.click(input)
       await userEvent.tab()
+      expect(onRename).not.toHaveBeenCalled()
+    })
+
+    it('does not offer rename on system categories', async () => {
+      const onRename = vi.fn<(oldName: string, newName: string) => void>()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: 'SUPPORT' })
+      await userEvent.dblClick(within(header).getByText('SUPPORT'))
+      expect(screen.queryByDisplayValue('_SUPPORT')).not.toBeInTheDocument()
+    })
+
+    it('rejects a rename to an existing category name', async () => {
+      const onRename = vi.fn<(oldName: string, newName: string) => void>()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
+      await userEvent.clear(input)
+      await userEvent.type(input, 'Beta{Enter}')
+      expect(onRename).not.toHaveBeenCalled()
+    })
+
+    it('rejects an underscore-prefixed new name', async () => {
+      const onRename = vi.fn<(oldName: string, newName: string) => void>()
+      setupWithRename(onRename)
+      const header = await screen.findByRole('columnheader', { name: 'Alpha' })
+      await userEvent.dblClick(within(header).getByText('Alpha'))
+      const input = screen.getByDisplayValue('Alpha')
+      await userEvent.clear(input)
+      await userEvent.type(input, '_X{Enter}')
       expect(onRename).not.toHaveBeenCalled()
     })
   })
