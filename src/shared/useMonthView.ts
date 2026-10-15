@@ -155,7 +155,7 @@ export function useMonthView(year: number, month: number) {
   const monthData = monthQuery.data ?? {}
 
   const carryOverQuery = useQuery({
-    queryKey: QUERY_KEYS.overtimeCarryOver(year, month),
+    queryKey: QUERY_KEYS.overtimeCarryOver(year, month, config.weekdayHours),
     queryFn: () => loadOvertimeCarryOverBeforeMonth(monthRepo, year, month, config.weekdayHours),
     enabled: !isConfigPending,
   })

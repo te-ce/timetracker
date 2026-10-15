@@ -10,6 +10,7 @@ import { InMemorySprintExportRepository } from '../../infra/repositories/in-memo
 import { InMemoryTrashRepository } from '../../infra/repositories/in-memory/trash-repository'
 import type { AppConfig, ConfigRepository, WorkPeriod } from '../../infra/repositories/types'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
+import { invalidateConfig } from '../../shared/queryKeys'
 import { useDayQuery } from './useDayQuery'
 
 /** Resolves `get()` after a delay, to simulate the real cloud config repository still loading. */
@@ -41,8 +42,11 @@ function period(id: string, start: string, end: string, category = '_COREMEDIA')
   return { id, start, end, category, subtasks: [] }
 }
 
-function makeWrapper(monthRepo: InMemoryMonthRepository, configRepo: ConfigRepository) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+function makeWrapper(
+  monthRepo: InMemoryMonthRepository,
+  configRepo: ConfigRepository,
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
   const repos = {
     monthRepo,
     configRepo,
@@ -223,6 +227,23 @@ describe('useDayQuery', () => {
 
       await waitFor(() => expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(6))
     })
+  })
+
+  it('recomputes carry-over when the weekday schedule changes', async () => {
+    const monthRepo = new InMemoryMonthRepository({
+      '2026-04': { '2026-04-01': { windows: [period('p1', '08:00', '18:00')] } },
+    })
+    const configRepo = new InMemoryConfigRepository()
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { result } = renderHook(() => useDayQuery('2026-05-01'), {
+      wrapper: makeWrapper(monthRepo, configRepo, queryClient),
+    })
+    await waitFor(() => expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(2))
+
+    await configRepo.save({ ...DEFAULT_APP_CONFIG, weekdayHours: [0, 8, 8, 4, 8, 8, 0] })
+    invalidateConfig(queryClient)
+
+    await waitFor(() => expect(result.current.overtimeToDate.priorOvertime).toBeCloseTo(6))
   })
 
   describe('isOvertimeReady', () => {
