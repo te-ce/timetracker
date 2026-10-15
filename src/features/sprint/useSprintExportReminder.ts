@@ -21,7 +21,10 @@ import type { SprintReminderData, SprintBadgeState } from './sprintExportReminde
 
 const LOOKBACK = 6
 
-/** Undefined until config, entries and export records have loaded. */
+/**
+ * Undefined until config, entries and export records have loaded. A failed export-record read
+ * counts as "unknown" (so the sprint is still reminded about) instead of blocking the badge forever.
+ */
 export function useSprintExportReminder(): SprintBadgeState | undefined {
   const { configRepo, monthRepo, sprintExportRepo } = useRepositories()
   const today = toLocalIso(new Date())
@@ -62,10 +65,12 @@ export function useSprintExportReminder(): SprintBadgeState | undefined {
   const reminderData: SprintReminderData[] = indices.map((index, i) => {
     const sprint = getSprintBoundaries(index, sprintConfig)
     const totalHours = Object.values(aggregateSprintHours(entries ?? [], sprint)).reduce((a, b) => a + b, 0)
-    return { index, totalHours, exportStatus: sprintExportStatus(exportQueries[i]?.data, sprint) }
+    const exportQuery = exportQueries[i]
+    const exportStatus = exportQuery?.isError ? null : sprintExportStatus(exportQuery?.data, sprint)
+    return { index, totalHours, exportStatus }
   })
 
-  const loaded = !!config && entries !== undefined && exportQueries.every((q) => q.isSuccess)
+  const loaded = !!config && entries !== undefined && exportQueries.every((q) => q.isSuccess || q.isError)
   const badgeState = loaded ? getSprintBadgeState(today, sprintConfig, reminderData) : undefined
   const pendingKey = badgeState?.kind === 'export' ? badgeState.sprints.map((s) => s.index).join(',') : ''
 
