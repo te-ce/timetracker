@@ -23,10 +23,47 @@ export interface PlannedWrite {
   hours: number
 }
 
+function roundForSheet(hours: number): number {
+  return Math.round(hours * 100) / 100
+}
+
+/** Task IDs only; blank mapping values ('— not mapped —') count as unmapped. */
+function sumHoursPerTask(
+  mapping: Record<string, string>,
+  hoursPerCategory: Record<string, number>,
+): Map<string, number> {
+  const perTask = new Map<string, number>()
+  for (const [category, rawTaskId] of Object.entries(mapping)) {
+    const taskId = rawTaskId.trim()
+    if (taskId === '') continue
+    perTask.set(taskId, (perTask.get(taskId) ?? 0) + (hoursPerCategory[category] ?? 0))
+  }
+  return perTask
+}
+
+export function hasMappedCategory(mapping: Record<string, string> | undefined): boolean {
+  return Object.values(mapping ?? {}).some((taskId) => taskId.trim() !== '')
+}
+
+export interface UnmappedHours {
+  category: string
+  hours: number
+}
+
+/** Categories that have hours in the sprint but no Task ID, so their hours would not be exported. */
+export function findUnmappedHours(
+  mapping: Record<string, string>,
+  hoursPerCategory: Record<string, number>,
+): UnmappedHours[] {
+  return Object.entries(hoursPerCategory)
+    .filter(([category, hours]) => hours > 0 && (mapping[category] ?? '').trim() === '')
+    .map(([category, hours]) => ({ category, hours }))
+}
+
 /**
- * For each category in `mapping`, finds the row whose Task ID matches and pairs
- * it with that category's hours. Categories with no matching row, or rows with
- * no mapped category, are skipped.
+ * For each Task ID in `mapping`, finds the matching row and pairs it with the
+ * summed hours of all categories mapped to that Task ID. Task IDs with no
+ * matching row, blank mappings, and rows with no mapped category are skipped.
  */
 export function buildWritePlan(
   rows: TaskRow[],
@@ -35,18 +72,18 @@ export function buildWritePlan(
 ): PlannedWrite[] {
   const taskIdToRow = new Map(rows.map((r) => [r.taskId, r.rowNumber]))
   const plan: PlannedWrite[] = []
-  for (const [category, taskId] of Object.entries(mapping)) {
+  for (const [taskId, hours] of sumHoursPerTask(mapping, hoursPerCategory)) {
     const rowNumber = taskIdToRow.get(taskId)
     if (rowNumber === undefined) continue
-    plan.push({ rowNumber, hours: hoursPerCategory[category] ?? 0 })
+    plan.push({ rowNumber, hours: roundForSheet(hours) })
   }
   return plan
 }
 
-/** Builds the [taskId, hours] rows written to a freshly created archive sheet. */
+/** Builds the [taskId, hours] rows written to a freshly created archive sheet, one per Task ID. */
 export function buildArchiveRows(
   mapping: Record<string, string>,
   hoursPerCategory: Record<string, number>,
 ): [string, number][] {
-  return Object.entries(mapping).map(([category, taskId]) => [taskId, hoursPerCategory[category] ?? 0])
+  return [...sumHoursPerTask(mapping, hoursPerCategory)].map(([taskId, hours]) => [taskId, roundForSheet(hours)])
 }

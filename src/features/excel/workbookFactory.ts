@@ -1,6 +1,7 @@
 import { GraphApiWorkbookService, LocalFolderWorkbookService } from './workbookService'
 import { getAccessToken } from '../../infra/auth/msalInstance'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
+import { hasMappedCategory } from './exportPlan'
 import type { AppConfig } from '../../infra/repositories/types'
 import type { WorkbookService } from './workbookService'
 
@@ -45,6 +46,5 @@ export function buildWorkbookService(config: AppConfig | undefined, isAuthentica
 export function isExportReady(config: AppConfig | undefined, isAuthenticated: boolean): boolean {
   const source = resolveWorkbookSource(config, isAuthenticated)
   if (!source.ready) return false
-  const hasMapping = Object.keys(config?.categoryMapping ?? {}).length > 0
-  return !!config?.targetSheet && hasMapping
+  return !!config?.targetSheet && hasMappedCategory(config.categoryMapping)
 }
