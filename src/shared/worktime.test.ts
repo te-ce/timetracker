@@ -12,6 +12,7 @@ import {
   elapsedHours,
   elapsedHoursSince,
   addHoursToTime,
+  parseDurationInput,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
@@ -301,5 +302,37 @@ describe('addHoursToTime', () => {
 
   it('returns the same time when adding zero hours', () => {
     expect(addHoursToTime('14:15', 0)).toBe('14:15')
+  })
+})
+
+describe('parseDurationInput', () => {
+  it('parses decimal hours with a dot', () => {
+    expect(parseDurationInput('1.5')).toBe(1.5)
+  })
+
+  it('parses decimal hours with a comma', () => {
+    expect(parseDurationInput('1,5')).toBe(1.5)
+  })
+
+  it('parses H:MM', () => {
+    expect(parseDurationInput('1:30')).toBe(1.5)
+  })
+
+  it('rejects minutes of 60 or more', () => {
+    expect(parseDurationInput('1:60')).toBeNull()
+    expect(parseDurationInput('1:99')).toBeNull()
+  })
+
+  it('rejects trailing garbage', () => {
+    expect(parseDurationInput('1.5h')).toBeNull()
+    expect(parseDurationInput('2abc')).toBeNull()
+    expect(parseDurationInput('1.2.3')).toBeNull()
+  })
+
+  it('rejects zero, empty and non-numeric input', () => {
+    expect(parseDurationInput('0')).toBeNull()
+    expect(parseDurationInput('0:00')).toBeNull()
+    expect(parseDurationInput('')).toBeNull()
+    expect(parseDurationInput('abc')).toBeNull()
   })
 })

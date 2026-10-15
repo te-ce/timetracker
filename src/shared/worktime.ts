@@ -59,15 +59,13 @@ export function elapsedHoursSince(since: string, at: Date): number {
 
 export function parseDurationInput(raw: string): number | null {
   const trimmed = raw.trim()
-  const hhmmMatch = /^(\d{1,2}):(\d{2})$/.exec(trimmed)
-  if (hhmmMatch) {
-    const h = parseInt(hhmmMatch[1] ?? '0')
-    const m = parseInt(hhmmMatch[2] ?? '0')
-    return h + m / 60
-  }
-  const num = parseFloat(trimmed)
-  if (!isNaN(num) && num > 0) return num
-  return null
+  const hhmmMatch = /^(\d{1,2}):([0-5]\d)$/.exec(trimmed)
+  const hours = hhmmMatch
+    ? Number(hhmmMatch[1]) + Number(hhmmMatch[2]) / 60
+    : /^(\d+([.,]\d*)?|[.,]\d+)$/.test(trimmed)
+      ? Number(trimmed.replace(',', '.'))
+      : NaN
+  return hours > 0 ? hours : null
 }
 
 /**
