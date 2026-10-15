@@ -54,6 +54,15 @@ describe('deriveDayStats', () => {
     expect(stats.categoryTotals).toEqual([{ category: '_COREMEDIA', hours: 1 }])
   })
 
+  it('counts a WorkPeriod left open on a past day as zero and as not running', () => {
+    const windows = [period('08:00', '09:00'), period('10:00', null)]
+
+    const stats = deriveDayStats(windows, '15:00', { isToday: false })
+
+    expect(stats).toMatchObject({ worked: 1, runningSince: undefined, lastStop: '09:00' })
+    expect(stats.categoryTotals).toEqual([{ category: '_COREMEDIA', hours: 1 }])
+  })
+
   it('counts the stretch before an open WorkPeriod as a break and reports what is running', () => {
     // Given work in the morning and an open WorkPeriod since 13:30
     const windows = [period('08:00', '09:30'), period('13:30', null)]
@@ -119,6 +128,10 @@ describe('findActiveTracking', () => {
 
     // Then the later one is the session being tracked
     expect(active?.since).toBe('13:00')
+  })
+
+  it('reports nothing running on a past day, even with a WorkPeriod left open', () => {
+    expect(findActiveTracking([period('09:00', null)], '15:00', { isToday: false })).toBeUndefined()
   })
 
   it('reports nothing when every WorkPeriod is closed', () => {

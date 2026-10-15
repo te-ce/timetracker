@@ -109,7 +109,7 @@ export function deriveDayBalance(input: DayBalanceInput): DayBalance {
     isPlannedStopMode,
     plannedStopTime,
     countdownHours,
-    liveWindowStart: findOpenPeriod(windows)?.start ?? null,
+    liveWindowStart: isToday ? (findOpenPeriod(windows)?.start ?? null) : null,
     hasPlannedStop: !!plannedStopPeriod,
   }
 }

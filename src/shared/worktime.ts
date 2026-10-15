@@ -29,6 +29,16 @@ export function elapsedHours(start: string, end: string): number {
   return Math.max(0, parseMinutes(end) - parseMinutes(start)) / 60
 }
 
+/**
+ * Why a finished day's WorkPeriods can't be measured, or null. Such a period
+ * counts 0 hours until the user fixes it, and the day needs review.
+ */
+export function periodReviewReason(windows: WorkPeriod[]): string | null {
+  if (windows.some((w) => w.end === null)) return 'Work period never stopped'
+  if (windows.some((w) => w.end !== null && !endsAfterStart(w.start, w.end))) return 'Work period ends before it starts'
+  return null
+}
+
 /** A WorkPeriod or subtask range is only valid when it ends strictly after it starts. */
 export function endsAfterStart(start: string, end: string): boolean {
   return parseMinutes(end) > parseMinutes(start)

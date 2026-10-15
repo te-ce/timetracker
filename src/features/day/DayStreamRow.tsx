@@ -69,6 +69,7 @@ export function DayStreamRow({
         ordinal={item.ordinal}
         duration={item.duration}
         running={active?.period.id === item.period.id}
+        isToday={dayOptions.isToday !== false}
         categories={categories}
         categoryDescriptions={categoryDescriptions}
         preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}

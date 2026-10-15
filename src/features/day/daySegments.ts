@@ -47,7 +47,8 @@ export interface SegmentOptions {
 function isPeriodRunning(period: WorkPeriod, now: string, isToday: boolean): boolean {
   // A Planned-Stop WorkPeriod (end still in the future) is running just like an
   // open one: it only accrues up to now, but keeps showing its declared end.
-  return period.end === null || (isToday && isPlannedStop(period, now))
+  // Nothing runs on another day: an open period there was never stopped.
+  return isToday && (period.end === null || isPlannedStop(period, now))
 }
 
 function sortedStartedSubtasks(period: WorkPeriod): (WorkPeriodSubtask & { startedAt: string })[] {
@@ -139,7 +140,9 @@ function placeRetroSubtasks(segments: DaySegment[], period: WorkPeriod): void {
 
 export function deriveSegments(period: WorkPeriod, now: string, { isToday = true }: SegmentOptions = {}): DaySegment[] {
   const running = isPeriodRunning(period, now, isToday)
-  const periodEnd = (running ? now : period.end) ?? now
+  const periodEnd = running ? now : period.end
+  // Never stopped on a day that is over: it counts 0 until its end is filled in.
+  if (periodEnd === null) return []
   const segments: DaySegment[] = []
 
   const live = period.subtasks.find(isLiveSubtask)

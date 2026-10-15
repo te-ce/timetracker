@@ -37,6 +37,17 @@ describe('deriveSegments', () => {
     expect(segments).toEqual([])
   })
 
+  it('lays out no clock time for a WorkPeriod left open on a past day', () => {
+    // Given a past day whose period was never stopped, with a subtask still live
+    const p = period('09:00', null, [{ id: 's1', category: 'Review', hours: 0, startedAt: '10:00' }])
+
+    // When it is derived today at 15:00
+    const segments = deriveSegments(p, '15:00', { isToday: false })
+
+    // Then it lays out nothing — it counts 0 until its end is filled in, and today's clock is not borrowed
+    expect(segments).toEqual([])
+  })
+
   it('splits the main stretch around a timed subtask', () => {
     // Given a three-hour WorkPeriod interrupted by a half-hour subtask
     const p = period('10:00', '13:00', [

@@ -598,6 +598,19 @@ describe('DayTimeline', () => {
     expect(screen.queryByRole('button', { name: /start tracking/i })).not.toBeInTheDocument()
   })
 
+  it('never offers live tracking for a past day with a forgotten stop', async () => {
+    // Given a past day whose work period was never stopped
+    setup([period('a', '09:00', null, 'Work')], true, PAST_DATE)
+
+    // Then there is nothing to stop — writing today's clock into that day would be wrong
+    expect(await screen.findByRole('button', { name: /add work period/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /stop work/i })).not.toBeInTheDocument()
+    // And the period asks for its end instead of claiming to run until now
+    expect(screen.getByRole('button', { name: /edit times of work period 1/i })).toHaveTextContent(
+      '09:00 → not stopped',
+    )
+  })
+
   it('refuses to log a past work period whose end is not after its start', async () => {
     // Given an empty past day
     const { repo } = setup([], true, PAST_DATE)

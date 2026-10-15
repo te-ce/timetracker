@@ -93,8 +93,23 @@ describe('deriveMonthDayCores', () => {
     expect(days[1]!.targetHours).toBe(2)
   })
 
-  it('caps a past day open WorkPeriod at 23:59 rather than counting zero duration', () => {
-    const monthData: MonthData = { '2026-05-18': { windows: [openWin('a', '09:00')] } }
+  it('counts a past day open WorkPeriod as zero and flags the day for review', () => {
+    const monthData: MonthData = { '2026-05-18': { windows: [win('w', '07:00', '08:00'), openWin('a', '09:00')] } }
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-19',
+      todayNow: '15:00',
+    })
+    expect(days[17]!.workedHours).toBe(1)
+    expect(days[17]!.categoryHours).toEqual({ _COREMEDIA: 1 })
+    expect(days[17]!.reviewReason).toMatch(/never stopped/i)
+  })
+
+  it('flags a past day holding a period that ends before it starts', () => {
+    const monthData: MonthData = { '2026-05-18': { windows: [win('a', '22:00', '02:00')] } }
     const { days } = deriveMonthDayCores({
       year: 2026,
       month: 5,
@@ -102,7 +117,22 @@ describe('deriveMonthDayCores', () => {
       weekdayHours: [0, 8, 8, 8, 8, 8, 0],
       today: '2026-05-19',
     })
-    expect(days[17]!.workedHours).toBeGreaterThan(14)
+    expect(days[17]!.workedHours).toBe(0)
+    expect(days[17]!.reviewReason).toMatch(/ends before it starts/i)
+  })
+
+  it('does not flag today for an open WorkPeriod — it is simply running', () => {
+    const monthData: MonthData = { '2026-05-19': { windows: [openWin('a', '09:00')] } }
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData,
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-19',
+      todayNow: '10:00',
+    })
+    expect(days[18]!.workedHours).toBe(1)
+    expect(days[18]!.reviewReason).toBeUndefined()
   })
 
   it('computes uncategorizedHours from windows carrying the uncategorized sentinel', () => {

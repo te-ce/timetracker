@@ -1,7 +1,7 @@
 import type { Day, MonthData } from '../infra/repositories/types'
 import type { DayType } from '../features/day/dayType'
 import { classifyDayType } from '../features/day/dayType'
-import { calculateWorkedHours, calculateProjectedWorkedHours } from './worktime'
+import { calculateWorkedHours, calculateProjectedWorkedHours, periodReviewReason } from './worktime'
 import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from './periodCategories'
 import { toLocalIso } from './dateUtils'
 import { effectiveTargetHours, type WeekdayHours } from './weekdayHours'
@@ -17,6 +17,8 @@ export interface MonthDayCore {
   entryTotal: number
   uncategorizedHours: number
   halfDayLeave?: LeaveType
+  /** Why a past day's WorkPeriods can't be measured; such periods count 0 until fixed. */
+  reviewReason?: string
 }
 
 export interface DeriveMonthDaysInput {
@@ -36,11 +38,10 @@ export interface MonthDayCoreResult {
   projectedWorkedHoursToday: number | undefined
 }
 
+// Only today has a clock to run against. A WorkPeriod left open on any other
+// day counts 0 and flags the day for review instead of borrowing today's time.
 function resolveNow(iso: string, today: string, todayNow: string | undefined): string | undefined {
-  if (iso === today) return todayNow
-  // Past days with an unclosed WorkPeriod are capped at end-of-day rather than
-  // contributing zero duration for the open period.
-  return iso < today ? '23:59' : undefined
+  return iso === today ? todayNow : undefined
 }
 
 function resolveDayType(
@@ -68,6 +69,7 @@ function splitCategoryTotals(categoryHours: Record<string, number>): {
 
 function deriveDayCore(
   iso: string,
+  today: string,
   date: Date,
   dayData: Day | undefined,
   weekdayHours: WeekdayHours,
@@ -81,6 +83,7 @@ function deriveDayCore(
   const { entryTotal, uncategorizedHours } = splitCategoryTotals(categoryHours)
   const dayType = resolveDayType(dayData, date, dayTypes, iso)
   const targetHours = DAY_OFF_TYPES.has(dayType) ? 0 : effectiveTargetHours(date, weekdayHours, halfDayLeave)
+  const reviewReason = iso < today ? periodReviewReason(windows) : null
 
   return {
     date: iso,
@@ -91,6 +94,7 @@ function deriveDayCore(
     entryTotal,
     uncategorizedHours,
     ...(halfDayLeave !== undefined ? { halfDayLeave } : {}),
+    ...(reviewReason !== null ? { reviewReason } : {}),
   }
 }
 
@@ -110,7 +114,7 @@ export function deriveMonthDayCores(input: DeriveMonthDaysInput): MonthDayCoreRe
     const date = new Date(year, month - 1, d)
     const iso = toLocalIso(date)
     const now = resolveNow(iso, today, todayNow)
-    const core = deriveDayCore(iso, date, monthData[iso], weekdayHours, now, dayTypes)
+    const core = deriveDayCore(iso, today, date, monthData[iso], weekdayHours, now, dayTypes)
     days.push(core)
     if (iso === today) {
       projectedWorkedHoursToday =

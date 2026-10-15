@@ -68,6 +68,13 @@ describe('deriveDayBalance worked split', () => {
     expect(b.projectedWorked).toBe(0)
   })
 
+  it('counts a period left open on a past day as zero and not live', () => {
+    const b = derive({ windows: [period('08:00', '10:00'), period('11:00', null)], now: '15:00', isToday: false })
+    expect(b.worked).toBeCloseTo(2)
+    expect(b.liveElapsed).toBe(0)
+    expect(b.liveWindowStart).toBeNull()
+  })
+
   it('tolerates a tick landing just before a period start', () => {
     const b = derive({ windows: [period('12:03', null)], now: '12:00' })
     expect(b.liveElapsed).toBe(0)

@@ -121,6 +121,14 @@ describe('calculateCategoryHours', () => {
     expect(result['_RELEASE']).toBeUndefined()
   })
 
+  it('books nothing for an open period without a clock, subtasks included', () => {
+    const w = {
+      ...period('a', '09:00', '10:00', '_RELEASE', [{ id: 's1', category: '_COREMEDIA', hours: 0.5 }]),
+      end: null,
+    }
+    expect(calculateCategoryHours([w])).toEqual({})
+  })
+
   it('ignores remainder when it is at or below the 0.001 threshold', () => {
     const w = period('a', '09:00', '10:00', '_RELEASE', [{ id: 's1', category: '_COREMEDIA', hours: 0.9999 }])
     const result = calculateCategoryHours([w])

@@ -8,6 +8,8 @@ export interface ClassifyDayInput {
   manualTotal: number
   isoDate: string
   today: string
+  /** Set when a past day holds a WorkPeriod that can't be measured (never stopped, or ends before it starts). */
+  reviewReason?: string | undefined
 }
 
 export interface DayClassification {
@@ -33,6 +35,17 @@ function balanceReason(workedHours: number, manualTotal: number): string {
     return `${workedHours.toFixed(1)} h worked, ${manualTotal.toFixed(1)} h booked (${over.toFixed(1)} h over)`
   }
   return `${workedHours.toFixed(1)} h worked`
+}
+
+function classifyUnmeasurableDay(
+  reviewReason: string | undefined,
+  isoDate: string,
+  today: string,
+): DayClassification | null {
+  if (reviewReason && isoDate < today) {
+    return { status: 'needs-review', displayStatus: 'needs-review', reason: reviewReason }
+  }
+  return null
 }
 
 function classifyLeaveDay(dayType: DayType): DayClassification | null {
@@ -69,7 +82,11 @@ export function classifyDay({
   manualTotal,
   isoDate,
   today,
+  reviewReason,
 }: ClassifyDayInput): DayClassification {
+  const reviewResult = classifyUnmeasurableDay(reviewReason, isoDate, today)
+  if (reviewResult) return reviewResult
+
   const leaveResult = classifyLeaveDay(dayType)
   if (leaveResult) return leaveResult
 

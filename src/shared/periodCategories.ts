@@ -41,6 +41,8 @@ export function remainderHours(duration: number, subtaskedHours: number): number
 export function calculateCategoryHours(windows: WorkPeriod[], now?: string): Record<string, number> {
   const result: Record<string, number> = {}
   for (const w of windows) {
+    // An open period without a clock (another day) was never stopped: it counts 0, subtasks included.
+    if (w.end === null && now === undefined) continue
     const duration = calculateWorkedHours([w], now)
     const subtaskedHours = w.subtasks.reduce((sum, s) => sum + s.hours, 0)
     const remainder = remainderHours(duration, subtaskedHours)

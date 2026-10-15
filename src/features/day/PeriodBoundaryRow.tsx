@@ -13,6 +13,8 @@ interface PeriodBoundaryRowProps {
   ordinal: number
   duration: number
   running: boolean
+  /** On another day an open WorkPeriod was never stopped, so it doesn't run "until now". */
+  isToday: boolean
   categories: string[]
   categoryDescriptions?: Record<string, string> | undefined
   preferCategoryDescriptionAsPrimary?: boolean | undefined
@@ -39,6 +41,7 @@ export function PeriodBoundaryRow({
   ordinal,
   duration,
   running,
+  isToday,
   categories,
   categoryDescriptions,
   preferCategoryDescriptionAsPrimary,
@@ -53,7 +56,8 @@ export function PeriodBoundaryRow({
   const [start, setStart] = useState(period.start)
   const [end, setEnd] = useState(period.end ?? '')
   const [seenEditing, setSeenEditing] = useState(editing)
-  const label = `work period ${ordinal}, ${period.start} to ${period.end ?? 'now'}`
+  const endText = period.end ?? (isToday ? 'now' : 'not stopped')
+  const label = `work period ${ordinal}, ${period.start} to ${endText}`
   const isDirty = isPeriodTimesDirty(start, end, period)
   const { pendingCancel, handleBlur, handleFocus, cancelToken } = useBlurWarning(isDirty)
 
@@ -91,7 +95,7 @@ export function PeriodBoundaryRow({
 
   return (
     <li
-      aria-label={`Work period ${ordinal}, ${period.start} to ${period.end ?? 'now'}`}
+      aria-label={`Work period ${ordinal}, ${period.start} to ${endText}`}
       className="flex flex-wrap items-center gap-3 pb-0.5 pt-3 text-xs"
     >
       {editing ? (
@@ -110,7 +114,13 @@ export function PeriodBoundaryRow({
           onKeyDown={handleKeyDown}
         />
       ) : (
-        <PeriodTimeButton period={period} running={running} label={label} onStartEditing={onStartEditing} />
+        <PeriodTimeButton
+          period={period}
+          running={running}
+          endText={endText}
+          label={label}
+          onStartEditing={onStartEditing}
+        />
       )}
       <span className="font-mono tabular-nums text-gray-500 dark:text-gray-400">
         {formatHours(duration, timeFormat)}

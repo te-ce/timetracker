@@ -20,6 +20,18 @@ A WorkPeriod (and a timed subtask) lies within one day and ends strictly after i
 - Inputs reject `end <= start` with a message: the period time editor, "Log work" on a past day, and the tracking bar's hand-picked stop/subtask time.
 - Work past midnight is two periods: one ending at 23:59 and one on the next day starting 00:00.
 
+### A WorkPeriod left open on a day that is over
+
+A forgotten Stop leaves `end: null` on a past day. It used to be capped at 23:59 in the month view, run "until now" with today's clock in the day view, and keep the live tracking bar — whose Stop then wrote today's time into the past day.
+
+One rule now applies everywhere: only today has a clock. On any other day an open WorkPeriod
+
+- counts 0 worked hours, subtasks included (`monthDayCore`, `dayBalance`, `daySegments`, `periodCategories`);
+- is not live: no tracking bar, no running-since (`findActiveTracking` takes `isToday`), its end reads "?";
+- flags the day `needs-review` ("Work period never stopped") so it shows in the month's attention list. A stored period ending before it starts is flagged the same way.
+
+The user fixes it by entering the real end time.
+
 ## Consequences
 
 - ✅ WorkedHours, segment/category totals and the day balance agree for every stored period.

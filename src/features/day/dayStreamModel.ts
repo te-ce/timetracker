@@ -17,11 +17,17 @@ export interface ActiveTracking {
 }
 
 export interface DayOptions {
-  /** A Planned-Stop WorkPeriod's projected segment only renders on today's day (ADR 0009). */
+  /** Live tracking and Planned-Stop segments only exist on today's day (ADR 0009, 0013). */
   isToday?: boolean
 }
 
-export function findActiveTracking(windows: WorkPeriod[], now: string): ActiveTracking | undefined {
+export function findActiveTracking(
+  windows: WorkPeriod[],
+  now: string,
+  { isToday = true }: DayOptions = {},
+): ActiveTracking | undefined {
+  // A WorkPeriod left open on another day was never stopped; nothing is tracked there.
+  if (!isToday) return undefined
   const ordered = orderedPeriods(windows)
   // Per ADR 0006 the latest open WorkPeriod is the current session. A
   // Planned-Stop WorkPeriod (ADR 0009) is not: it already has a declared
@@ -135,7 +141,7 @@ export function deriveDayStats(windows: WorkPeriod[], now: string, options: DayO
   const breaks = findBreaks(windows)
   const breakHours = breaks.reduce((sum, b) => sum + b.hours, 0)
   const worked = calculateWorkedHours(windows, options.isToday === false ? undefined : now)
-  const active = findActiveTracking(windows, now)
+  const active = findActiveTracking(windows, now, options)
 
   return {
     worked,

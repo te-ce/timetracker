@@ -50,6 +50,7 @@ function toDaySummary(core: MonthDayCore, today: string): DaySummary {
     manualTotal: core.entryTotal,
     isoDate: core.date,
     today,
+    reviewReason: core.reviewReason,
   })
 
   const categoryBreakdown = Object.fromEntries(
