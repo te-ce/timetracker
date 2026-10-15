@@ -22,6 +22,6 @@ main.tsx
 
 `bootstrapConfig.ts` reads and writes `localStorage` directly — `BootstrapConfig` must be available before MSAL is initialized, so it cannot live in `AppConfig` (which itself requires MSAL to load from OneDrive).
 
-`msalInstance.ts` exports `msalInstance` (the MSAL `PublicClientApplication`, or `null` in local/offline mode) and `getAccessToken()`, which acquires a token silently and falls back to redirect. Scopes: `User.Read`, `Files.ReadWrite.All`.
+`msalInstance.ts` exports `msalInstance` (the MSAL `PublicClientApplication`, or `null` in local/offline mode) and `getAccessToken()`, which acquires a token silently. When that needs user interaction it sets `signInRequired` in `useSyncStatus` (shown in the header) and rejects; `signInAgain()` (from a click) runs `acquireTokenPopup`. Token cache: `localStorage`. Scopes: `User.Read`, `Files.ReadWrite.All` (needed for SharePoint Excel export, see ADR 0005).
 
 `infra/repositories/shared.ts` reads the same flags to select the correct `StorageAdapter`.
