@@ -28,6 +28,7 @@ export function classifyRow(row: MonthTableRow, today: string) {
     manualTotal,
     isoDate: row.date,
     today,
+    reviewReason: row.reviewReason,
   })
 }
 
