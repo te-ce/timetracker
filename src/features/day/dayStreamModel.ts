@@ -17,11 +17,17 @@ export interface ActiveTracking {
 }
 
 export interface DayOptions {
-  /** A Planned-Stop WorkPeriod's projected segment only renders on today's day (ADR 0009). */
+  /** Live tracking and Planned-Stop segments only exist on today's day (ADR 0009, 0014). */
   isToday?: boolean
 }
 
-export function findActiveTracking(windows: WorkPeriod[], now: string): ActiveTracking | undefined {
+export function findActiveTracking(
+  windows: WorkPeriod[],
+  now: string,
+  { isToday = true }: DayOptions = {},
+): ActiveTracking | undefined {
+  // A WorkPeriod left open on another day was never stopped; nothing is tracked there.
+  if (!isToday) return undefined
   const ordered = orderedPeriods(windows)
   // Per ADR 0006 the latest open WorkPeriod is the current session. A
   // Planned-Stop WorkPeriod (ADR 0009) is not: it already has a declared
@@ -36,7 +42,7 @@ export function findActiveTracking(windows: WorkPeriod[], now: string): ActiveTr
     subtask,
     category: subtask?.category ?? period.category,
     since,
-    elapsed: elapsedHours(since, now, { raceToleranceMinutes: 5 }),
+    elapsed: elapsedHours(since, now),
   }
 }
 
@@ -51,10 +57,16 @@ export type DayStreamItem =
 
 export function buildDayStream(windows: WorkPeriod[], now: string, options: DayOptions = {}): DayStreamItem[] {
   const ordered = orderedPeriods(windows)
-  const breaksByStart = new Map(findBreaks(windows).map((b) => [b.start, b]))
+  const breaksByEnd = new Map(findBreaks(windows).map((b) => [b.end, b]))
   const items: DayStreamItem[] = []
 
   ordered.forEach((period, index) => {
+    // Several periods may start where a break ends; the break shows once, before the first.
+    const breakBefore = breaksByEnd.get(period.start)
+    if (breakBefore) {
+      items.push({ type: 'break', key: `break:${breakBefore.start}`, break: breakBefore })
+      breaksByEnd.delete(period.start)
+    }
     items.push({
       type: 'period',
       key: `period:${period.id}`,
@@ -74,9 +86,6 @@ export function buildDayStream(windows: WorkPeriod[], now: string, options: DayO
         last: segmentIndex === segments.length - 1,
       })
     })
-
-    const nextBreak = period.end ? breaksByStart.get(period.end) : undefined
-    if (nextBreak) items.push({ type: 'break', key: `break:${nextBreak.start}`, break: nextBreak })
   })
 
   return items
@@ -120,12 +129,19 @@ export function orderedPeriods(windows: WorkPeriod[]): WorkPeriod[] {
   return windows.toSorted((a, b) => parseMinutes(a.start) - parseMinutes(b.start))
 }
 
+function latestEnd(windows: WorkPeriod[]): string | undefined {
+  return windows
+    .map((w) => w.end)
+    .filter((end): end is string => end !== null)
+    .toSorted((a, b) => parseMinutes(b) - parseMinutes(a))[0]
+}
+
 export function deriveDayStats(windows: WorkPeriod[], now: string, options: DayOptions = {}): DayStats {
   const ordered = orderedPeriods(windows)
   const breaks = findBreaks(windows)
   const breakHours = breaks.reduce((sum, b) => sum + b.hours, 0)
   const worked = calculateWorkedHours(windows, options.isToday === false ? undefined : now)
-  const active = findActiveTracking(windows, now)
+  const active = findActiveTracking(windows, now, options)
 
   return {
     worked,
@@ -133,7 +149,7 @@ export function deriveDayStats(windows: WorkPeriod[], now: string, options: DayO
     breakCount: breaks.length,
     atDesk: worked + breakHours,
     firstStart: ordered[0]?.start,
-    lastStop: active ? undefined : (ordered.at(-1)?.end ?? undefined),
+    lastStop: active ? undefined : latestEnd(windows),
     runningSince: active?.since,
     categoryTotals: categoryTotalsFromSegments(windows, now, options),
   }

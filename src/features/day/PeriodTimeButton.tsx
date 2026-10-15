@@ -3,11 +3,13 @@ import type { WorkPeriod } from '../../infra/repositories/types'
 export interface PeriodTimeButtonProps {
   period: WorkPeriod
   running: boolean
+  /** The end as shown: the stored time, "now" while it can still run, or "not stopped" once its day is over. */
+  endText: string
   label: string
   onStartEditing: () => void
 }
 
-export function PeriodTimeButton({ period, running, label, onStartEditing }: PeriodTimeButtonProps) {
+export function PeriodTimeButton({ period, running, endText, label, onStartEditing }: PeriodTimeButtonProps) {
   return (
     <button
       type="button"
@@ -17,7 +19,7 @@ export function PeriodTimeButton({ period, running, label, onStartEditing }: Per
         running ? 'text-emerald-700 dark:text-emerald-300' : 'text-gray-700 dark:text-gray-200'
       }`}
     >
-      {period.start} → {period.end ?? 'now'}
+      {period.start} → {endText}
     </button>
   )
 }

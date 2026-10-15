@@ -192,12 +192,12 @@ describe('buildAllTimeStats', () => {
     expect(result.daysWorkedOffSchedule).toBe(1)
   })
 
-  it('caps an unclosed period on a past day at end of day rather than dropping it', () => {
+  it('counts an unclosed period on a past day as zero — its stop was forgotten (ADR 0014)', () => {
     const result = stats(
       months({ ym: '2026-07', data: { '2026-07-01': { windows: [period('08:00', null)] } } }),
       '2026-07-10',
     )
-    expect(result.totalHours).toBeGreaterThan(15)
+    expect(result.totalHours).toBe(0)
     expect(result.longestPeriod).toBeNull()
   })
 })

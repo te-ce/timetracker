@@ -75,6 +75,50 @@ describe('TrackingBar', () => {
     expect(onStop).toHaveBeenCalledWith('10:30')
   })
 
+  it('stops tracking at now when the time field was cleared', () => {
+    const onStop = vi.fn()
+    render(
+      <TrackingBar
+        active={active}
+        now="10:30"
+        categories={['Work']}
+        defaultCategory="Work"
+        isToday
+        onStart={() => {}}
+        onAddPeriod={() => {}}
+        onStop={onStop}
+        onStartSubtask={() => {}}
+        onStopSubtask={() => {}}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '10:00' } })
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: /stop work/i }))
+    expect(onStop).toHaveBeenCalledWith('10:30')
+  })
+
+  it('refuses to start a subtask before the work period started', () => {
+    const onStartSubtask = vi.fn()
+    render(
+      <TrackingBar
+        active={active}
+        now="10:30"
+        categories={['Work']}
+        defaultCategory="Work"
+        isToday
+        onStart={() => {}}
+        onAddPeriod={() => {}}
+        onStop={() => {}}
+        onStartSubtask={onStartSubtask}
+        onStopSubtask={() => {}}
+      />,
+    )
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '07:30' } })
+    expect(screen.getByRole('button', { name: /start subtask/i })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: /start subtask/i }))
+    expect(onStartSubtask).not.toHaveBeenCalled()
+  })
+
   it('stops tracking at an overridden time', () => {
     const onStop = vi.fn()
     render(

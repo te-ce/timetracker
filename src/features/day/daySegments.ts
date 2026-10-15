@@ -47,7 +47,8 @@ export interface SegmentOptions {
 function isPeriodRunning(period: WorkPeriod, now: string, isToday: boolean): boolean {
   // A Planned-Stop WorkPeriod (end still in the future) is running just like an
   // open one: it only accrues up to now, but keeps showing its declared end.
-  return period.end === null || (isToday && isPlannedStop(period, now))
+  // Nothing runs on another day: an open period there was never stopped.
+  return isToday && (period.end === null || isPlannedStop(period, now))
 }
 
 function sortedStartedSubtasks(period: WorkPeriod): (WorkPeriodSubtask & { startedAt: string })[] {
@@ -64,7 +65,7 @@ function pushMainSegment(
   end: string,
   live: boolean,
 ): boolean {
-  const hours = elapsedHours(start, end, { raceToleranceMinutes: 5 })
+  const hours = elapsedHours(start, end)
   if (hours <= 0) return false
   segments.push({
     id: `${period.id}:main:${mainIndex}`,
@@ -80,35 +81,46 @@ function pushMainSegment(
   return true
 }
 
-/** Places each started subtask on the timeline, filling the gaps before it with main stretches. */
+function clampTime(time: string, from: string, to: string): string {
+  if (parseMinutes(time) < parseMinutes(from)) return from
+  if (parseMinutes(time) > parseMinutes(to)) return to
+  return time
+}
+
+/**
+ * Places each started subtask on the timeline, filling the gaps before it with
+ * main stretches. A subtask only counts the time inside its period: a live one
+ * runs to the period's end, and one stored past either edge is clamped to it.
+ */
 function placeStartedSubtasks(
   segments: DaySegment[],
   period: WorkPeriod,
   started: (WorkPeriodSubtask & { startedAt: string })[],
   live: WorkPeriodSubtask | undefined,
-  now: string,
+  periodEnd: string,
 ): { cursor: string; mainIndex: number } {
   let cursor = period.start
   let mainIndex = 0
   for (const subtask of started) {
-    const stoppedAt = subtask.stoppedAt ?? now
-    if (parseMinutes(subtask.startedAt) > parseMinutes(cursor)) {
-      if (pushMainSegment(segments, period, mainIndex, cursor, subtask.startedAt, false)) mainIndex++
+    const from = clampTime(subtask.startedAt, period.start, periodEnd)
+    const to = clampTime(subtask.stoppedAt ?? periodEnd, from, periodEnd)
+    if (parseMinutes(from) > parseMinutes(cursor)) {
+      if (pushMainSegment(segments, period, mainIndex, cursor, from, false)) mainIndex++
     }
     segments.push({
       id: subtask.id,
       periodId: period.id,
       category: subtask.category,
       start: subtask.startedAt,
-      end: subtask.stoppedAt ?? null,
-      hours: elapsedHours(subtask.startedAt, stoppedAt, { raceToleranceMinutes: 5 }),
+      end: subtask === live ? null : (subtask.stoppedAt ?? to),
+      hours: elapsedHours(from, to),
       kind: 'subtask',
       live: subtask === live,
       placed: true,
       subtask,
       note: subtask.note,
     })
-    if (parseMinutes(stoppedAt) > parseMinutes(cursor)) cursor = stoppedAt
+    if (parseMinutes(to) > parseMinutes(cursor)) cursor = to
   }
   return { cursor, mainIndex }
 }
@@ -139,12 +151,14 @@ function placeRetroSubtasks(segments: DaySegment[], period: WorkPeriod): void {
 
 export function deriveSegments(period: WorkPeriod, now: string, { isToday = true }: SegmentOptions = {}): DaySegment[] {
   const running = isPeriodRunning(period, now, isToday)
-  const periodEnd = (running ? now : period.end) ?? now
+  const periodEnd = running ? now : period.end
+  // Never stopped on a day that is over: it counts 0 until its end is filled in.
+  if (periodEnd === null) return []
   const segments: DaySegment[] = []
 
-  const live = period.subtasks.find(isLiveSubtask)
+  const live = running ? period.subtasks.find(isLiveSubtask) : undefined
   const started = sortedStartedSubtasks(period)
-  const { cursor, mainIndex } = placeStartedSubtasks(segments, period, started, live, now)
+  const { cursor, mainIndex } = placeStartedSubtasks(segments, period, started, live, periodEnd)
 
   if (parseMinutes(periodEnd) > parseMinutes(cursor)) {
     pushMainSegment(segments, period, mainIndex, cursor, periodEnd, running && !live)
@@ -175,7 +189,7 @@ export function derivePeriodWarnings(
 
   const running = period.end === null || (isToday && isPlannedStop(period, now))
   const subtasked = period.subtasks.reduce((sum, s) => sum + s.hours, 0)
-  const duration = elapsedHours(period.start, period.end ?? now, { raceToleranceMinutes: 5 })
+  const duration = elapsedHours(period.start, period.end ?? now)
   const overbookedBy = !running && subtasked > duration + 0.001 ? subtasked - duration : 0
 
   return { overlappingSubtaskIds: [...overlapping], overbookedBy }

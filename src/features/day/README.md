@@ -26,6 +26,7 @@ See [CONTEXT.md](../../../CONTEXT.md) for full glossary. Short version:
 | `daySegments.ts`            | `deriveSegments()` (the Segment chain) and `derivePeriodWarnings()` (overlap / overbooked)  |
 | `overlapRepair.ts`          | `findSubtaskOverlaps()`, `suggestOverlapFixes()`, `applyOverlapFix()` — pure overlap repair |
 | `OverlapRepairBar.tsx`      | One-click fixes under the later of two clashing subtasks                                    |
+| `periodTimes.ts`            | `withPeriodTimes()` — new period times; an end also stops a live subtask there              |
 | `dayBreaks.ts`              | `findBreaks()` — time between WorkPeriods                                                   |
 | `dayStreamModel.ts`         | `buildDayStream()`, `deriveDayStats()`, `findActiveTracking()`                              |
 | `SubtaskForm.tsx`           | Log an untracked subtask: duration, category, note                                          |
@@ -35,6 +36,7 @@ See [CONTEXT.md](../../../CONTEXT.md) for full glossary. Short version:
 | `DayNoteEditor.tsx`         | Free-text note field for the day                                                            |
 | `DotPopoverPanel.tsx`       | Popover showing day status dot details                                                      |
 | `NotePopoverPanel.tsx`      | Popover showing the day note inline from MonthView                                          |
+| `InvalidRangeHint.tsx`      | Inline reason a time range is refused (end not after start)                                 |
 | `IncompleteBanner.tsx`      | Warning banner when uncategorized hours > 0.01 h                                            |
 | `dayContext.ts`             | Derives `WorkedHours`, category breakdown, and balance state from raw WorkPeriods           |
 | `dayType.ts`                | `classifyDay()`, `isDayTypeOverride()` type guard, DayType helpers                          |

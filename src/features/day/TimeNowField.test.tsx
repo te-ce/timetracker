@@ -16,6 +16,13 @@ describe('TimeNowField', () => {
     expect(onChange).toHaveBeenCalledWith(null)
   })
 
+  it('treats a cleared input as back to now, never an empty time', () => {
+    const onChange = vi.fn()
+    render(<TimeNowField now="09:00" value="10:15" onChange={onChange} ariaLabel="Start time" />)
+    fireEvent.change(screen.getByLabelText('Start time'), { target: { value: '' } })
+    expect(onChange).toHaveBeenCalledWith(null)
+  })
+
   it('calls onConfirm when Enter is pressed', () => {
     const onConfirm = vi.fn()
     render(<TimeNowField now="09:00" value="10:15" onChange={() => {}} ariaLabel="Start time" onConfirm={onConfirm} />)

@@ -1,4 +1,5 @@
 import { BlurCancelHint } from './BlurCancelHint'
+import { InvalidRangeHint } from './InvalidRangeHint'
 
 export interface PeriodEditFieldsProps {
   ordinal: number
@@ -6,6 +7,7 @@ export interface PeriodEditFieldsProps {
   setStart: (v: string) => void
   end: string
   setEnd: (v: string) => void
+  invalidRange: boolean
   pendingCancel: boolean
   handleBlur: (e: React.FocusEvent) => void
   handleFocus: () => void
@@ -20,6 +22,7 @@ export function PeriodEditFields({
   setStart,
   end,
   setEnd,
+  invalidRange,
   pendingCancel,
   handleBlur,
   handleFocus,
@@ -50,12 +53,18 @@ export function PeriodEditFields({
         onKeyDown={onKeyDown}
         className="rounded border px-1.5 py-0.5 font-mono text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100"
       />
-      <button type="button" onClick={onSave} className="ml-1 font-medium text-indigo-600 dark:text-indigo-400">
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={invalidRange}
+        className="ml-1 font-medium text-indigo-600 disabled:opacity-40 dark:text-indigo-400"
+      >
         Save
       </button>
       <button type="button" onClick={onCancel} className="ml-1 text-gray-500 dark:text-gray-400">
         Cancel
       </button>
+      {invalidRange && <InvalidRangeHint>End must be after start</InvalidRangeHint>}
     </span>
   )
 }

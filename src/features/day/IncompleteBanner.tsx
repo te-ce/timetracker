@@ -1,10 +1,12 @@
+import { parseLocalDate } from '../../shared/dateUtils'
+
 interface Props {
   incompleteDates: string[]
   onNavigate: (date: string) => void
 }
 
 function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  return parseLocalDate(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
 export function IncompleteBanner({ incompleteDates, onNavigate }: Props) {
@@ -24,7 +26,7 @@ export function IncompleteBanner({ incompleteDates, onNavigate }: Props) {
             <button
               type="button"
               onClick={() => onNavigate(date)}
-              aria-label={`Go to ${new Date(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}
+              aria-label={`Go to ${parseLocalDate(date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}`}
               className="rounded border border-amber-200 dark:border-amber-700 bg-white dark:bg-gray-800 px-2 py-0.5 text-xs hover:bg-amber-100 dark:hover:bg-amber-900/40"
             >
               {formatShortDate(date)}

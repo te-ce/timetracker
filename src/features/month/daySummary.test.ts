@@ -145,17 +145,20 @@ describe('buildMonthSummaries', () => {
   })
 
   describe('overnight/next-day scenarios', () => {
-    it('past day with only an open period counts worked hours (capped at 23:59)', () => {
+    it('past day with only an open period counts zero and needs review', () => {
       const monthData: MonthData = {
         '2026-05-18': { windows: [openWin('a', '09:00')] },
       }
-      // today is the day AFTER the open period — app ran overnight
-      const result = buildMonthSummaries(2026, 5, { monthData, today: '2026-05-19' })
-      // 09:00 → 23:59 = 14h59m
-      expect(result.workedHoursPerDay[17]).toBeGreaterThan(14)
+      // today is the day AFTER the open period — Stop was forgotten
+      const result = buildMonthSummaries(2026, 5, { monthData, today: '2026-05-19', todayNow: '10:00' })
+      expect(result.workedHoursPerDay[17]).toBe(0)
+      expect(result.days[17]).toMatchObject({
+        displayStatus: 'needs-review',
+        statusReason: 'Work period never stopped',
+      })
     })
 
-    it('past day with a closed period is unaffected by the capping logic', () => {
+    it('past day with a closed period is unaffected', () => {
       const monthData: MonthData = {
         '2026-05-18': { windows: [win('a', '09:00', '17:00')] },
       }
@@ -163,15 +166,15 @@ describe('buildMonthSummaries', () => {
       expect(result.workedHoursPerDay[17]).toBe(8)
     })
 
-    it('past day with both a closed period and an open period counts both', () => {
+    it('past day with both a closed period and an open period counts only the closed one', () => {
       const monthData: MonthData = {
         '2026-05-18': {
           windows: [win('a', '09:00', '12:00'), openWin('b', '13:00')],
         },
       }
       const result = buildMonthSummaries(2026, 5, { monthData, today: '2026-05-19' })
-      // 09:00→12:00 = 3h, 13:00→23:59 = 10h59m, total > 13h
-      expect(result.workedHoursPerDay[17]).toBeGreaterThan(13)
+      expect(result.workedHoursPerDay[17]).toBe(3)
+      expect(result.days[17]?.displayStatus).toBe('needs-review')
     })
   })
 })

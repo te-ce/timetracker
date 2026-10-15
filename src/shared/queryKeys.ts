@@ -50,7 +50,8 @@ export const QUERY_KEYS = {
 
   allMonthsData: ['allMonthsData'] as const,
 
-  overtimeCarryOver: (year: number, month: number) => ['overtimeCarryOver', year, month] as const,
+  overtimeCarryOver: (year: number, month: number, weekdayHours: WeekdayHours) =>
+    ['overtimeCarryOver', year, month, weekdayHours] as const,
   overtimeCarryOverAll: ['overtimeCarryOver'] as const,
 
   holidays: (state: string, year: number) => ['holidays', state, year] as const,

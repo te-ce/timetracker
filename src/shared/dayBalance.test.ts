@@ -55,6 +55,26 @@ describe('deriveDayBalance worked split', () => {
     expect(b.worked).toBeCloseTo(3)
   })
 
+  it('credits nothing to a planned period that has not started yet', () => {
+    const b = derive({ windows: [period('08:00', '10:00'), period('15:00', '17:00')], now: '10:30' })
+    expect(b.closedWorked).toBeCloseTo(2)
+    expect(b.liveElapsed).toBe(0)
+    expect(b.worked).toBeCloseTo(2)
+  })
+
+  it('credits nothing to a period stored with its end before its start', () => {
+    const b = derive({ windows: [period('22:00', '02:00')], now: '23:00' })
+    expect(b.worked).toBe(0)
+    expect(b.projectedWorked).toBe(0)
+  })
+
+  it('counts a period left open on a past day as zero and not live', () => {
+    const b = derive({ windows: [period('08:00', '10:00'), period('11:00', null)], now: '15:00', isToday: false })
+    expect(b.worked).toBeCloseTo(2)
+    expect(b.liveElapsed).toBe(0)
+    expect(b.liveWindowStart).toBeNull()
+  })
+
   it('tolerates a tick landing just before a period start', () => {
     const b = derive({ windows: [period('12:03', null)], now: '12:00' })
     expect(b.liveElapsed).toBe(0)
@@ -85,11 +105,6 @@ describe('deriveDayBalance projection', () => {
     const now = '12:00'
     const b = derive({ windows, now })
     expect(b.projectedWorked).toBe(calculateProjectedWorkedHours(windows, now))
-  })
-
-  it('projectedRemaining subtracts carry-over and projected hours from the target', () => {
-    const b = derive({ windows: [period('09:00', '15:00')], priorOvertime: 1 })
-    expect(b.projectedRemaining).toBeCloseTo(1)
   })
 
   it('does not project a past day, even when a period end is later than the current wall-clock time', () => {

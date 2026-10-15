@@ -2,6 +2,7 @@ export type DayType = 'WorkDay' | 'Weekend' | 'PublicHoliday' | 'Vacation' | 'Si
 
 import type { DayTypeOverride } from '../../infra/repositories/types'
 import { DAY_TYPE_OVERRIDES } from '../../infra/repositories/types'
+import { toLocalIso } from '../../shared/dateUtils'
 
 export function isDayTypeOverride(v: string): v is DayTypeOverride {
   return DAY_TYPE_OVERRIDES.some((o) => o === v)
@@ -11,7 +12,7 @@ export function classifyDayType(date: Date, holidayDates?: Set<string>): DayType
   const dow = date.getDay()
   if (dow === 0 || dow === 6) return 'Weekend'
   if (holidayDates) {
-    const iso = date.toISOString().slice(0, 10)
+    const iso = toLocalIso(date)
     if (holidayDates.has(iso)) return 'PublicHoliday'
   }
   return 'WorkDay'

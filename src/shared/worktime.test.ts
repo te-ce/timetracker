@@ -12,6 +12,7 @@ import {
   elapsedHours,
   elapsedHoursSince,
   addHoursToTime,
+  parseDurationInput,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
 
@@ -28,24 +29,16 @@ describe('elapsedHours', () => {
     expect(elapsedHours('09:00', '10:30')).toBe(1.5)
   })
 
-  it('wraps past midnight when end is before start', () => {
-    expect(elapsedHours('23:00', '01:00')).toBe(2)
+  it('is 0 when end is before start — a WorkPeriod never crosses midnight', () => {
+    expect(elapsedHours('23:00', '01:00')).toBe(0)
   })
 
   it('returns 0 when start equals end', () => {
     expect(elapsedHours('09:00', '09:00')).toBe(0)
   })
 
-  it('without race tolerance, a small negative diff wraps to nearly 24h', () => {
-    expect(elapsedHours('09:03', '09:00')).toBeCloseTo(23.95, 5)
-  })
-
-  it('with race tolerance, a small negative diff within the window clamps to 0', () => {
-    expect(elapsedHours('09:03', '09:00', { raceToleranceMinutes: 5 })).toBe(0)
-  })
-
-  it('with race tolerance, a negative diff beyond the window still wraps', () => {
-    expect(elapsedHours('09:10', '09:00', { raceToleranceMinutes: 5 })).toBeCloseTo(23.833, 3)
+  it('is 0 when a minute tick lands just before start', () => {
+    expect(elapsedHours('09:03', '09:00')).toBe(0)
   })
 })
 
@@ -77,8 +70,12 @@ describe('calculateWorkedHours', () => {
     expect(calculateWorkedHours([makeWindow('10:00', '13:00')], '08:19')).toBe(0)
   })
 
-  it('still accrues a period that is under way past midnight', () => {
-    expect(calculateWorkedHours([makeWindow('22:00', '02:00')], '00:30')).toBe(2.5)
+  it('accrues a planned-stop period only up to now', () => {
+    expect(calculateWorkedHours([makeWindow('22:00', '23:30')], '22:45')).toBe(0.75)
+  })
+
+  it('credits nothing to a period stored with its end before its start', () => {
+    expect(calculateWorkedHours([makeWindow('22:00', '02:00')], '23:00')).toBe(0)
   })
 
   it('returns the duration in decimal hours for a single WorkPeriod', () => {
@@ -94,8 +91,8 @@ describe('calculateWorkedHours', () => {
     expect(calculateWorkedHours([makeWindow('09:00', '09:30')])).toBe(0.5)
   })
 
-  it('handles a WorkPeriod that spans midnight', () => {
-    expect(calculateWorkedHours([makeWindow('23:00', '01:00')])).toBe(2)
+  it('counts a closed WorkPeriod ending at 23:59 up to that minute', () => {
+    expect(calculateWorkedHours([makeWindow('23:00', '23:59')])).toBeCloseTo(59 / 60)
   })
 
   it('skips an open WorkPeriod (null end) when no now is provided', () => {
@@ -142,8 +139,8 @@ describe('calcSubtaskHours', () => {
     expect(calcSubtaskHours('09:00', '09:00')).toBe(0)
   })
 
-  it('handles midnight crossing (23:00 → 01:00 = 2h)', () => {
-    expect(calcSubtaskHours('23:00', '01:00')).toBe(2)
+  it('is 0 when the stop is before the start', () => {
+    expect(calcSubtaskHours('23:00', '01:00')).toBe(0)
   })
 })
 
@@ -225,6 +222,12 @@ describe('findPlannedStopPeriod', () => {
     const planned = makeWindow('09:00', '17:00')
     expect(findPlannedStopPeriod([makeWindow('07:00', '08:00'), planned], '15:00')).toBe(planned)
   })
+
+  it('picks the earliest planned stop by time, not by array order', () => {
+    const later = { ...makeWindow('18:00', '19:00'), id: 'later' }
+    const current = { ...makeWindow('13:00', '17:00'), id: 'current' }
+    expect(findPlannedStopPeriod([later, current], '15:00')).toBe(current)
+  })
 })
 
 describe('calculateProjectedWorkedHours', () => {
@@ -244,6 +247,10 @@ describe('calculateProjectedWorkedHours', () => {
   it('uses now for an open period (no planned stop)', () => {
     // Period started 09:00, now 15:00 → projected live = 6h
     expect(calculateProjectedWorkedHours([makeWindow('09:00', null)], '15:00')).toBe(6)
+  })
+
+  it('tolerates a tick landing just before an open period start', () => {
+    expect(calculateProjectedWorkedHours([makeWindow('12:03', null)], '12:00')).toBe(0)
   })
 
   it('sums closed period plus full planned duration', () => {
@@ -301,5 +308,37 @@ describe('addHoursToTime', () => {
 
   it('returns the same time when adding zero hours', () => {
     expect(addHoursToTime('14:15', 0)).toBe('14:15')
+  })
+})
+
+describe('parseDurationInput', () => {
+  it('parses decimal hours with a dot', () => {
+    expect(parseDurationInput('1.5')).toBe(1.5)
+  })
+
+  it('parses decimal hours with a comma', () => {
+    expect(parseDurationInput('1,5')).toBe(1.5)
+  })
+
+  it('parses H:MM', () => {
+    expect(parseDurationInput('1:30')).toBe(1.5)
+  })
+
+  it('rejects minutes of 60 or more', () => {
+    expect(parseDurationInput('1:60')).toBeNull()
+    expect(parseDurationInput('1:99')).toBeNull()
+  })
+
+  it('rejects trailing garbage', () => {
+    expect(parseDurationInput('1.5h')).toBeNull()
+    expect(parseDurationInput('2abc')).toBeNull()
+    expect(parseDurationInput('1.2.3')).toBeNull()
+  })
+
+  it('rejects zero, empty and non-numeric input', () => {
+    expect(parseDurationInput('0')).toBeNull()
+    expect(parseDurationInput('0:00')).toBeNull()
+    expect(parseDurationInput('')).toBeNull()
+    expect(parseDurationInput('abc')).toBeNull()
   })
 })

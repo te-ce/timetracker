@@ -20,27 +20,28 @@ export function nowHHMM(): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export interface ElapsedHoursOptions {
-  /**
-   * Tolerate `now` landing up to this many minutes before `start` — treated as
-   * zero rather than wrapped to (almost) 24h. Covers the race between a
-   * minute-tick and the moment a live period/subtask is created.
-   */
-  raceToleranceMinutes?: number
+/**
+ * Minutes between `start` and `end` (both "HH:MM"), in hours. A WorkPeriod
+ * never crosses midnight, so an `end` at or before `start` is 0 — that also
+ * absorbs a minute tick landing just before a freshly created period.
+ */
+export function elapsedHours(start: string, end: string): number {
+  return Math.max(0, parseMinutes(end) - parseMinutes(start)) / 60
 }
 
 /**
- * Minutes between `start` and `end` (both "HH:MM"), in hours, wrapping past
- * midnight when `end` is earlier than `start`.
+ * Why a finished day's WorkPeriods can't be measured, or null. Such a period
+ * counts 0 hours until the user fixes it, and the day needs review.
  */
-export function elapsedHours(start: string, end: string, options: ElapsedHoursOptions = {}): number {
-  const raceToleranceMinutes = options.raceToleranceMinutes ?? 0
-  const startMins = parseMinutes(start)
-  const endMins = parseMinutes(end)
-  const diff = endMins - startMins
-  if (diff < 0 && diff > -raceToleranceMinutes) return 0
-  const adjusted = diff < 0 ? diff + 24 * 60 : diff
-  return adjusted / 60
+export function periodReviewReason(windows: WorkPeriod[]): string | null {
+  if (windows.some((w) => w.end === null)) return 'Work period never stopped'
+  if (windows.some((w) => w.end !== null && !endsAfterStart(w.start, w.end))) return 'Work period ends before it starts'
+  return null
+}
+
+/** A WorkPeriod or subtask range is only valid when it ends strictly after it starts. */
+export function endsAfterStart(start: string, end: string): boolean {
+  return parseMinutes(end) > parseMinutes(start)
 }
 
 /**
@@ -59,15 +60,13 @@ export function elapsedHoursSince(since: string, at: Date): number {
 
 export function parseDurationInput(raw: string): number | null {
   const trimmed = raw.trim()
-  const hhmmMatch = /^(\d{1,2}):(\d{2})$/.exec(trimmed)
-  if (hhmmMatch) {
-    const h = parseInt(hhmmMatch[1] ?? '0')
-    const m = parseInt(hhmmMatch[2] ?? '0')
-    return h + m / 60
-  }
-  const num = parseFloat(trimmed)
-  if (!isNaN(num) && num > 0) return num
-  return null
+  const hhmmMatch = /^(\d{1,2}):([0-5]\d)$/.exec(trimmed)
+  const hours = hhmmMatch
+    ? Number(hhmmMatch[1]) + Number(hhmmMatch[2]) / 60
+    : /^(\d+([.,]\d*)?|[.,]\d+)$/.test(trimmed)
+      ? Number(trimmed.replace(',', '.'))
+      : NaN
+  return hours > 0 ? hours : null
 }
 
 /**
@@ -80,10 +79,12 @@ export function isPlannedStop(period: WorkPeriod, nowHHMM: string): boolean {
 }
 
 /**
- * Returns the first WorkPeriod whose end is a future time (Planned-Stop WorkPeriod).
+ * Returns the earliest-starting WorkPeriod whose end is a future time (Planned-Stop WorkPeriod).
  */
 export function findPlannedStopPeriod(windows: WorkPeriod[], nowHHMM: string): WorkPeriod | undefined {
-  return windows.find((w) => isPlannedStop(w, nowHHMM))
+  return windows
+    .filter((w) => isPlannedStop(w, nowHHMM))
+    .toSorted((a, b) => parseMinutes(a.start) - parseMinutes(b.start))[0]
 }
 
 /**
@@ -106,29 +107,13 @@ export function calculateProjectedWorkedHours(windows: WorkPeriod[], nowHHMM: st
   return windows.reduce((total, w) => total + elapsedHours(w.start, w.end ?? nowHHMM), 0)
 }
 
-/**
- * True when the period is planned for later in the day and hasn't begun yet.
- * A period whose end is before its start runs past midnight, so its wrap is
- * real and it counts as under way — only same-day periods can be "not yet".
- */
-function hasNotStartedYet(period: WorkPeriod, now: string): boolean {
-  if (period.end === null) return false
-  if (parseMinutes(period.end) < parseMinutes(period.start)) return false
-  return parseMinutes(now) < parseMinutes(period.start)
-}
-
 export function calculateWorkedHours(windows: WorkPeriod[], now?: string): number {
   return windows.reduce((total, w) => {
     // When now is provided, treat a future end as live (accrue up to now).
-    if (now !== undefined && w.end !== null && parseMinutes(w.end) > parseMinutes(now)) {
-      // Except while it is still to come: the elapsed wrap would otherwise
-      // credit a period planned for later today with almost a full day.
-      if (hasNotStartedYet(w, now)) return total
-      return total + elapsedHours(w.start, now, { raceToleranceMinutes: 5 })
-    }
-    const endTime = w.end ?? now
+    const isFutureEnd = now !== undefined && w.end !== null && parseMinutes(w.end) > parseMinutes(now)
+    const endTime = isFutureEnd ? now : (w.end ?? now)
     if (endTime === undefined) return total
-    return total + elapsedHours(w.start, endTime, { raceToleranceMinutes: 5 })
+    return total + elapsedHours(w.start, endTime)
   }, 0)
 }
 

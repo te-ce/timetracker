@@ -7,13 +7,15 @@ Shape: `{ id, start, end: string | null, category: string, subtasks: WorkPeriodS
 `start` and `end` are local ISO time strings (e.g. `"09:00"`).  
 A day may have multiple WorkPeriods stored in `Day.windows`.  
 **WorkedHours** for a day = Σ duration of all WorkPeriods that day.
+A WorkPeriod never crosses midnight: `end` must be after `start` (ADR 0014).
 
 ### Open WorkPeriod
 
 A WorkPeriod with `end: null`. Represents an in-progress work session with no declared stop point.  
 Contributes a **live duration** (`now − start`) to WorkedHours, updated on a 1-minute tick.  
 Excluded from duration calculations when `now` is unavailable.  
-At most one open WorkPeriod per day is expected; if multiple exist, the one with the **latest start** is treated as the current session.
+At most one open WorkPeriod per day is expected; if multiple exist, the one with the **latest start** is treated as the current session.  
+Only today's open WorkPeriod is live. One left open on a past day (forgotten Stop) counts 0 hours and flags the day as needs-review until its end is entered (ADR 0014).
 
 ### Planned-Stop WorkPeriod
 

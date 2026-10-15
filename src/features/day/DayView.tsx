@@ -3,7 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useRepositories } from '../../infra/repositories/repositories-context'
 import { DayTimeline } from './DayTimeline'
 import { DayTypePicker } from './DayTypePicker'
-import { toLocalIso } from '../../shared/dateUtils'
+import { parseLocalDate, toLocalIso } from '../../shared/dateUtils'
 import { nowHHMM } from '../../shared/worktime'
 import { deriveDayBalance, hasLiveActivity } from '../../shared/dayBalance'
 import { useClock } from '../../shared/useClock'
@@ -65,12 +65,12 @@ export function DayView() {
   })
 
   function prevDay() {
-    const d = new Date(selectedDate)
+    const d = parseLocalDate(selectedDate)
     d.setDate(d.getDate() - 1)
     setSelectedDate(toLocalIso(d))
   }
   function nextDay() {
-    const d = new Date(selectedDate)
+    const d = parseLocalDate(selectedDate)
     d.setDate(d.getDate() + 1)
     setSelectedDate(toLocalIso(d))
   }

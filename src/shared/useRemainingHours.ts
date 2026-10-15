@@ -50,7 +50,6 @@ export function useRemainingHours() {
   return {
     balance,
     remaining: balance.remaining,
-    projectedRemaining: balance.projectedRemaining,
     isPlannedStopMode: balance.isPlannedStopMode,
     plannedStopTime: balance.plannedStopTime,
     sollstunden: balance.sollstunden,

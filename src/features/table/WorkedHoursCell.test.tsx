@@ -135,12 +135,12 @@ describe('WorkedHoursCell', () => {
     })
   })
 
-  it('displays an open work period as still running', async () => {
+  it('displays a work period left open on a past day as never stopped, not as running', async () => {
     setup([makeWindow('w1', '09:00', null)], 0)
     await userEvent.click(screen.getByTestId('worked-hours'))
 
-    expect(await screen.findByRole('listitem', { name: /work period 1, 09:00 to now/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /stop work/i })).toBeInTheDocument()
+    expect(await screen.findByRole('listitem', { name: /work period 1, 09:00 to not stopped/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /stop work/i })).not.toBeInTheDocument()
   })
 
   describe('subtasks', () => {

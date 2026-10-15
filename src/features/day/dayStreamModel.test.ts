@@ -31,6 +31,38 @@ describe('deriveDayStats', () => {
     })
   })
 
+  it('reports the latest end as the last stop, not the end of the last-starting period', () => {
+    // Given a long period and a short one nested inside it
+    const windows = [period('08:00', '17:00'), period('10:00', '11:00')]
+
+    // When
+    const stats = deriveDayStats(windows, '18:00')
+
+    // Then
+    expect(stats.lastStop).toBe('17:00')
+  })
+
+  it('counts a period stored with its end before its start as zero, in worked and in categories alike', () => {
+    // Given a period that would cross midnight — not a supported WorkPeriod
+    const windows = [period('08:00', '09:00'), period('22:00', '02:00')]
+
+    // When it is 23:00 on that day
+    const stats = deriveDayStats(windows, '23:00')
+
+    // Then it adds nothing anywhere, so worked and category totals agree
+    expect(stats.worked).toBe(1)
+    expect(stats.categoryTotals).toEqual([{ category: '_COREMEDIA', hours: 1 }])
+  })
+
+  it('counts a WorkPeriod left open on a past day as zero and as not running', () => {
+    const windows = [period('08:00', '09:00'), period('10:00', null)]
+
+    const stats = deriveDayStats(windows, '15:00', { isToday: false })
+
+    expect(stats).toMatchObject({ worked: 1, runningSince: undefined, lastStop: '09:00' })
+    expect(stats.categoryTotals).toEqual([{ category: '_COREMEDIA', hours: 1 }])
+  })
+
   it('counts the stretch before an open WorkPeriod as a break and reports what is running', () => {
     // Given work in the morning and an open WorkPeriod since 13:30
     const windows = [period('08:00', '09:30'), period('13:30', null)]
@@ -98,6 +130,10 @@ describe('findActiveTracking', () => {
     expect(active?.since).toBe('13:00')
   })
 
+  it('reports nothing running on a past day, even with a WorkPeriod left open', () => {
+    expect(findActiveTracking([period('09:00', null)], '15:00', { isToday: false })).toBeUndefined()
+  })
+
   it('reports nothing when every WorkPeriod is closed', () => {
     expect(findActiveTracking([period('08:00', '09:30')], '10:00')).toBeUndefined()
   })
@@ -124,6 +160,22 @@ describe('buildDayStream', () => {
       { type: 'segment', segment: { kind: 'subtask', category: 'Review' } },
       { type: 'segment', segment: { kind: 'main', start: '11:30', end: '13:00' } },
     ])
+  })
+
+  it('emits one break with a unique key when two periods share an end', () => {
+    // Given two periods both ending at 12:00, then a break until 13:00
+    const windows = [period('09:00', '12:00'), period('10:00', '12:00'), period('13:00', '14:00')]
+
+    // When
+    const items = buildDayStream(windows, '15:00')
+    const keys = items.map((item) => item.key)
+
+    // Then the break shows once, right before the period it leads into
+    expect(new Set(keys).size).toBe(keys.length)
+    const breaks = items.filter((item) => item.type === 'break')
+    expect(breaks).toHaveLength(1)
+    const breakIndex = items.findIndex((item) => item.type === 'break')
+    expect(items[breakIndex + 1]).toMatchObject({ type: 'period', period: { start: '13:00' } })
   })
 
   it('marks the last segment of a WorkPeriod so the stream can hang per-period actions off it', () => {

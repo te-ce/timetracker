@@ -11,7 +11,7 @@ import { SprintExportBadge } from './features/sprint/SprintExportBadge'
 import { usePrefetchCurrentMonth } from './shared/usePrefetchCurrentMonth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { KeyboardShortcutLegend } from './shared/KeyboardShortcutLegend'
-import { toLocalIso } from './shared/dateUtils'
+import { parseLocalDate, toLocalIso } from './shared/dateUtils'
 import { defaultHotkeyConfig, matchesShortcut } from './shared/hotkeyConfig'
 import { QUERY_KEYS, invalidateConfig, invalidateMonthByYearMonth } from './shared/queryKeys'
 import { useRepositories } from './infra/repositories/repositories-context'
@@ -150,7 +150,7 @@ function App() {
 
       function navigateDayOffset(loc: typeof router.state.location, delta: number) {
         const current = isDaySearch(loc.search) ? loc.search.date : toLocalIso(new Date())
-        const d = new Date(current)
+        const d = parseLocalDate(current)
         d.setDate(d.getDate() + delta)
         void navigate({ to: '/', search: { date: toLocalIso(d) } })
       }

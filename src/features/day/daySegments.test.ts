@@ -37,6 +37,42 @@ describe('deriveSegments', () => {
     expect(segments).toEqual([])
   })
 
+  it('lays out no clock time for a WorkPeriod left open on a past day', () => {
+    // Given a past day whose period was never stopped, with a subtask still live
+    const p = period('09:00', null, [{ id: 's1', category: 'Review', hours: 0, startedAt: '10:00' }])
+
+    // When it is derived today at 15:00
+    const segments = deriveSegments(p, '15:00', { isToday: false })
+
+    // Then it lays out nothing — it counts 0 until its end is filled in, and today's clock is not borrowed
+    expect(segments).toEqual([])
+  })
+
+  it('clamps a subtask that runs past its period to the period end', () => {
+    // Given a 09–12 period whose subtask was stored as 11–13
+    const p = period('09:00', '12:00', [
+      { id: 's1', category: 'Review', hours: 2, startedAt: '11:00', stoppedAt: '13:00' },
+    ])
+
+    // When
+    const segments = deriveSegments(p, '15:00')
+
+    // Then only the hour inside the period counts, so the stretches add up to the period
+    expect(segments.find((s) => s.kind === 'subtask')?.hours).toBe(1)
+    expect(segments.reduce((sum, s) => sum + s.hours, 0)).toBe(3)
+  })
+
+  it('stops a live subtask at the period end once the period has ended', () => {
+    // Given a period ended at 12:00 whose subtask was never stopped
+    const p = period('09:00', '12:00', [{ id: 's1', category: 'Review', hours: 0, startedAt: '11:00' }])
+
+    // When it is 15:00
+    const segments = deriveSegments(p, '15:00')
+
+    // Then the subtask counts up to 12:00, not to now
+    expect(segments.find((s) => s.kind === 'subtask')).toMatchObject({ hours: 1, live: false })
+  })
+
   it('splits the main stretch around a timed subtask', () => {
     // Given a three-hour WorkPeriod interrupted by a half-hour subtask
     const p = period('10:00', '13:00', [

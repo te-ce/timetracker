@@ -36,6 +36,20 @@ describe('classifyDay', () => {
     expect(classify({ dayType: 'Weekend', isoDate: '2026-05-17' }).leaveType).toBeUndefined()
   })
 
+  it('returns needs-review with the given reason for a past day whose periods cannot be measured', () => {
+    const result = classify({ workedHours: 0, manualTotal: 0, reviewReason: 'Work period never stopped' })
+    expect(result).toMatchObject({
+      status: 'needs-review',
+      displayStatus: 'needs-review',
+      reason: 'Work period never stopped',
+    })
+  })
+
+  it('flags an unmeasurable period on a weekend too', () => {
+    const result = classify({ dayType: 'Weekend', isoDate: '2026-05-17', reviewReason: 'Work period never stopped' })
+    expect(result.displayStatus).toBe('needs-review')
+  })
+
   it('returns complete for past work days with hours', () => {
     expect(classify({ workedHours: 8, manualTotal: 8 }).status).toBe('complete')
   })

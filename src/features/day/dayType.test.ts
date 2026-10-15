@@ -2,11 +2,12 @@
 import { describe, it, expect } from 'vitest'
 import { classifyDayType, isWorkPeriodExpected } from './dayType'
 import type { DayType } from './dayType'
+import { parseLocalDate } from '../../shared/dateUtils'
 
 // 2024-01-13 = Saturday, 2024-01-14 = Sunday, 2024-01-15 = Monday
-const SAT = new Date('2024-01-13')
-const SUN = new Date('2024-01-14')
-const MON = new Date('2024-01-15')
+const SAT = parseLocalDate('2024-01-13')
+const SUN = parseLocalDate('2024-01-14')
+const MON = parseLocalDate('2024-01-15')
 
 describe('classifyDayType', () => {
   it('classifies Saturday as Weekend', () => {

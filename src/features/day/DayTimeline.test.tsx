@@ -303,6 +303,52 @@ describe('DayTimeline', () => {
     })
   })
 
+  it('refuses a work period end at or before its start', async () => {
+    // Given a finished work period
+    const { repo } = setup([period('a', '08:00', '09:30', 'Work')])
+
+    // When the user sets the end before the start
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+    fireEvent.change(screen.getByLabelText(/work period 1 end/i), { target: { value: '07:00' } })
+
+    // Then saving is refused with a reason, also via Enter, and nothing is stored
+    expect(screen.getByRole('alert')).toHaveTextContent(/end must be after start/i)
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
+    fireEvent.keyDown(screen.getByLabelText(/work period 1 end/i), { key: 'Enter' })
+    expect((await getWindows(repo))[0]).toMatchObject({ start: '08:00', end: '09:30' })
+  })
+
+  it('refuses to stop work at a time before the work started', async () => {
+    // Given work running since 09:00
+    const { repo } = setup([period('a', '09:00', null, 'Work')])
+
+    // When the user picks a stop time before that
+    fireEvent.change(await screen.findByLabelText('Time'), { target: { value: '08:00' } })
+
+    // Then stopping is refused with a reason and the period stays open
+    expect(screen.getByRole('alert')).toHaveTextContent(/after 09:00/i)
+    expect(screen.getByRole('button', { name: /stop work/i })).toBeDisabled()
+    fireEvent.keyDown(screen.getByLabelText('Time'), { key: 'Enter' })
+    expect((await getWindows(repo))[0]?.end).toBeNull()
+  })
+
+  it('closes a live subtask at the new end when the period end is set by editing', async () => {
+    // Given work running since 09:00 with a live Review subtask since 10:00
+    const { repo } = setup([
+      period('a', '09:00', null, 'Work', [{ id: 's1', category: 'Review', hours: 0, startedAt: '10:00' }]),
+    ])
+
+    // When the user sets the period end to 11:00 by editing its times
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 1/i }))
+    fireEvent.change(screen.getByLabelText(/work period 1 end/i), { target: { value: '11:00' } })
+    await userEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    // Then the subtask stops there too instead of running on forever
+    await vi.waitFor(async () => {
+      expect((await getWindows(repo))[0]?.subtasks[0]).toMatchObject({ stoppedAt: '11:00', hours: 1 })
+    })
+  })
+
   it('stops tracking when the end is set to a time still in the future', async () => {
     // Given work running since 09:00
     const { repo } = setup([period('a', '09:00', null, 'Work')])
@@ -567,6 +613,34 @@ describe('DayTimeline', () => {
 
     // And live tracking is not offered for a day that is over
     expect(screen.queryByRole('button', { name: /start tracking/i })).not.toBeInTheDocument()
+  })
+
+  it('never offers live tracking for a past day with a forgotten stop', async () => {
+    // Given a past day whose work period was never stopped
+    setup([period('a', '09:00', null, 'Work')], true, PAST_DATE)
+
+    // Then there is nothing to stop — writing today's clock into that day would be wrong
+    expect(await screen.findByRole('button', { name: /add work period/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /stop work/i })).not.toBeInTheDocument()
+    // And the period asks for its end instead of claiming to run until now
+    expect(screen.getByRole('button', { name: /edit times of work period 1/i })).toHaveTextContent(
+      '09:00 → not stopped',
+    )
+  })
+
+  it('refuses to log a past work period whose end is not after its start', async () => {
+    // Given an empty past day
+    const { repo } = setup([], true, PAST_DATE)
+
+    // When the user enters an end before the start
+    fireEvent.change(await screen.findByLabelText(/new work period start/i), { target: { value: '17:00' } })
+    fireEvent.change(screen.getByLabelText(/new work period end/i), { target: { value: '09:00' } })
+
+    // Then adding is refused with a reason
+    expect(screen.getByRole('alert')).toHaveTextContent(/end must be after start/i)
+    expect(screen.getByRole('button', { name: /add work period/i })).toBeDisabled()
+    fireEvent.keyDown(screen.getByLabelText(/new work period end/i), { key: 'Enter' })
+    expect(await getWindows(repo, PAST_DATE)).toEqual([])
   })
 
   it('deletes a work period only after confirmation', async () => {

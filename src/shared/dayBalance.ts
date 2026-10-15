@@ -35,8 +35,6 @@ export interface DayBalance {
   projectedWorked: number
   requiredToday: number
   remaining: number
-  /** Remaining at the planned stop, rather than at `now`. */
-  projectedRemaining: number
   /** Wall-clock time `remaining` hits zero, projected forward from `now`. Null once reached or on a day that isn't today. */
   etaTime: string | null
   isPlannedStopMode: boolean
@@ -61,9 +59,9 @@ function splitWorked(
   let liveElapsed = 0
   for (const w of windows) {
     if (isToday && (w.end === null || isPlannedStop(w, now))) {
-      liveElapsed += elapsedHours(w.start, now, { raceToleranceMinutes: 5 })
+      liveElapsed += elapsedHours(w.start, now)
     } else if (w.end !== null) {
-      closedWorked += elapsedHours(w.start, w.end, { raceToleranceMinutes: 5 })
+      closedWorked += elapsedHours(w.start, w.end)
     }
   }
   return { closedWorked, liveElapsed }
@@ -107,12 +105,11 @@ export function deriveDayBalance(input: DayBalanceInput): DayBalance {
     projectedWorked,
     requiredToday,
     remaining,
-    projectedRemaining: sollstunden - priorOvertime - projectedWorked,
     etaTime: isToday && remaining > 0 ? addHoursToTime(now, remaining) : null,
     isPlannedStopMode,
     plannedStopTime,
     countdownHours,
-    liveWindowStart: findOpenPeriod(windows)?.start ?? null,
+    liveWindowStart: isToday ? (findOpenPeriod(windows)?.start ?? null) : null,
     hasPlannedStop: !!plannedStopPeriod,
   }
 }
