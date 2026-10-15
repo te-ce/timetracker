@@ -253,6 +253,10 @@ describe('calculateProjectedWorkedHours', () => {
     expect(calculateProjectedWorkedHours([makeWindow('09:00', null)], '15:00')).toBe(6)
   })
 
+  it('tolerates a tick landing just before an open period start', () => {
+    expect(calculateProjectedWorkedHours([makeWindow('12:03', null)], '12:00')).toBe(0)
+  })
+
   it('sums closed period plus full planned duration', () => {
     // Closed: 09:00–12:00 = 3h, planned: 13:00–17:00 = 4h → 7h
     const windows = [makeWindow('09:00', '12:00'), makeWindow('13:00', '17:00')]

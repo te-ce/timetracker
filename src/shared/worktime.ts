@@ -103,7 +103,7 @@ export function findActivePeriod(windows: WorkPeriod[], nowHHMM: string): WorkPe
  * Closed past periods contribute their fixed duration.
  */
 export function calculateProjectedWorkedHours(windows: WorkPeriod[], nowHHMM: string): number {
-  return windows.reduce((total, w) => total + elapsedHours(w.start, w.end ?? nowHHMM), 0)
+  return windows.reduce((total, w) => total + elapsedHours(w.start, w.end ?? nowHHMM, { raceToleranceMinutes: 5 }), 0)
 }
 
 /**
