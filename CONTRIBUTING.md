@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js v20 or later
+- Node.js v22.13 or later (required by pnpm 11)
 - pnpm (`corepack enable` picks up the pinned version)
 - For E2E tests: `pnpm exec playwright install --with-deps chromium` (one-time)
 
