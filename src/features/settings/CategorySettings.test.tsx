@@ -6,17 +6,6 @@ import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockResolvedValue('token'),
-  msalInstance: {},
-  graphScopes: [],
-}))
-
-vi.mock('../../infra/auth/bootstrapConfig', () => ({
-  isLocalFolderMode: vi.fn().mockReturnValue(false),
-  clearBootstrapConfig: vi.fn(),
-}))
-
 import { useAuthStore } from '../../shared/authStore'
 import { GraphApiWorkbookService } from '../excel/workbookService'
 

@@ -7,15 +7,7 @@ import type { AppConfig } from '../../infra/repositories/types'
 import { useAuthStore } from '../../shared/authStore'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 
-vi.mock('../excel/excelService', () => ({
-  listSheets: vi.fn(),
-}))
-
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockResolvedValue('fake-token'),
-}))
-
-import { listSheets } from '../excel/excelService'
+import { GraphApiWorkbookService } from '../excel/workbookService'
 
 const defaultConfig: AppConfig = DEFAULT_APP_CONFIG
 
@@ -32,7 +24,7 @@ function setup(config: Partial<AppConfig> = {}) {
 
 beforeEach(() => {
   useAuthStore.setState({ isAuthenticated: false })
-  vi.mocked(listSheets).mockReset()
+  vi.restoreAllMocks()
 })
 
 describe('SheetSelector', () => {
@@ -55,7 +47,7 @@ describe('SheetSelector', () => {
   })
 
   it('loads and displays sheet options when authenticated', async () => {
-    vi.mocked(listSheets).mockResolvedValue(['Sprint 1', 'Sprint 2'])
+    vi.spyOn(GraphApiWorkbookService.prototype, 'listSheets').mockResolvedValue(['Sprint 1', 'Sprint 2'])
     useAuthStore.setState({ isAuthenticated: true })
     setup({ sharepointUrl: 'https://example.sharepoint.com/file.xlsx' })
 
@@ -66,7 +58,7 @@ describe('SheetSelector', () => {
   })
 
   it('saves selected sheet to the repository', async () => {
-    vi.mocked(listSheets).mockResolvedValue(['Sprint 1', 'Sprint 2'])
+    vi.spyOn(GraphApiWorkbookService.prototype, 'listSheets').mockResolvedValue(['Sprint 1', 'Sprint 2'])
     useAuthStore.setState({ isAuthenticated: true })
     const { repo } = setup({ sharepointUrl: 'https://example.sharepoint.com/file.xlsx' })
 
@@ -81,7 +73,7 @@ describe('SheetSelector', () => {
   })
 
   it('shows load error when listSheets rejects', async () => {
-    vi.mocked(listSheets).mockRejectedValue(new Error('Network error'))
+    vi.spyOn(GraphApiWorkbookService.prototype, 'listSheets').mockRejectedValue(new Error('Network error'))
     useAuthStore.setState({ isAuthenticated: true })
     setup({ sharepointUrl: 'https://example.sharepoint.com/file.xlsx' })
 
