@@ -191,4 +191,8 @@ describe('buildFunFacts omissions', () => {
     }
     expect(textOf(data, 'no-break-days')).toContain('2.00h average day')
   })
+
+  it('singularises the day count of the biggest month', () => {
+    expect(textOf({ '2026-07-06': WEEK['2026-07-06'] ?? { windows: [] } }, 'busiest-month')).toContain('over 1 day.')
+  })
 })

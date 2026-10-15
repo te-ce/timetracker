@@ -474,4 +474,26 @@ describe('buildAllTimeStats milestones', () => {
       expect(result.sickDays).toBe(1)
     })
   })
+
+  describe('busiest weekday', () => {
+    it('picks by average hours, needing at least two occurrences when possible', () => {
+      const data: MonthData = {
+        '2026-07-06': { windows: [period('08:00', '16:00')] },
+        '2026-07-13': { windows: [period('08:00', '16:00')] },
+        '2026-07-07': { windows: [period('06:00', '18:00')] },
+        '2026-07-08': { windows: [period('08:00', '12:00')] },
+        '2026-07-15': { windows: [period('08:00', '12:00'), period('13:00', '22:00')] },
+      }
+      const result = stats(months({ ym: '2026-07', data }))
+      expect(result.busiestWeekday?.label).toBe('Wednesday')
+    })
+
+    it('falls back to single occurrences when no weekday repeats', () => {
+      const data: MonthData = {
+        '2026-07-06': { windows: [period('08:00', '16:00')] },
+        '2026-07-07': { windows: [period('06:00', '18:00')] },
+      }
+      expect(stats(months({ ym: '2026-07', data })).busiestWeekday?.label).toBe('Tuesday')
+    })
+  })
 })

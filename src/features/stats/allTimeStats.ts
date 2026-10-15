@@ -654,6 +654,14 @@ function busiestOf<T extends { hours: number }>(items: T[]): T | null {
   return [...items].sort((a, b) => b.hours - a.hours)[0] ?? null
 }
 
+/** Highest average weekday; weekdays seen only once are skipped unless nothing repeats. */
+function heaviestWeekdayOf(weekdays: WeekdayStat[]): WeekdayStat | null {
+  const seen = weekdays.filter((w) => w.trackedDays > 0)
+  const repeated = seen.filter((w) => w.trackedDays >= 2)
+  const pool = repeated.length > 0 ? repeated : seen
+  return [...pool].sort((a, b) => b.avgHours - a.avgHours)[0] ?? null
+}
+
 /** Office vs. remote split across tracked days, and the office share as a percent. */
 function computeLocationStats(tracked: DayFacts[]): { officeDays: number; remoteDays: number; officePercent: number } {
   const officeDays = tracked.filter((d) => d.location === 'Office').length
@@ -691,7 +699,7 @@ export function buildAllTimeStats(input: AllTimeStatsInput): AllTimeStats {
   const tracked = days.filter((d) => d.hours > 0)
 
   const weekdays = buildWeekdayStats(tracked)
-  const busiestWeekday = busiestOf(weekdays.filter((w) => w.trackedDays > 0))
+  const busiestWeekday = heaviestWeekdayOf(weekdays)
   const months = buildMonthStats(days)
   const busiestMonth = busiestOf(months)
 

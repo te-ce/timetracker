@@ -224,7 +224,7 @@ function overviewFacts(stats: AllTimeStats, format: TimeFormat): FunFact[] {
     facts.push({
       id: 'busiest-month',
       icon: '🏆',
-      text: `Biggest month so far: ${stats.busiestMonth.label} with ${formatHours(stats.busiestMonth.hours, format)} over ${stats.busiestMonth.trackedDays} days.`,
+      text: `Biggest month so far: ${stats.busiestMonth.label} with ${formatHours(stats.busiestMonth.hours, format)} over ${stats.busiestMonth.trackedDays} ${plural(stats.busiestMonth.trackedDays, 'day')}.`,
     })
   }
 
