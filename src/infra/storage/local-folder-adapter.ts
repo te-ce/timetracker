@@ -41,10 +41,9 @@ export class LocalFolderStorageAdapter implements StorageAdapter {
       return data as T
     } catch (e) {
       if (e instanceof DOMException && e.name === 'NotFoundError') return null
-      if (e instanceof SyntaxError) {
-        console.warn(`[LocalFolderStorageAdapter] Failed to parse JSON for key "${key}", discarding`)
-        return null
-      }
+      // Corrupt files must not read as empty: the caller would write a fresh
+      // file over them and the data would be gone for good.
+      if (e instanceof SyntaxError) throw new Error(`Corrupt JSON in ${this.toFilename(key)}`, { cause: e })
       throw e
     }
   }

@@ -17,9 +17,9 @@ export class LocalStorageAdapter implements StorageAdapter {
     try {
       const data: unknown = JSON.parse(raw)
       return Promise.resolve(data as T)
-    } catch {
-      console.warn(`[LocalStorageAdapter] Failed to parse JSON for key "${this.prefix + key}", discarding`)
-      return Promise.resolve(null)
+    } catch (e) {
+      // Corrupt data must not read as empty, or the next write replaces it.
+      return Promise.reject(new Error(`Corrupt JSON in localStorage key ${this.prefix + key}`, { cause: e }))
     }
   }
 

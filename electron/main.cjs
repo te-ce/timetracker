@@ -12,6 +12,7 @@ const {
 } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const { readJsonFile, writeJsonFileAtomic, deleteFile, localFolderFile } = require('./json-files.cjs')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
@@ -66,42 +67,20 @@ function saveWindowState() {
 // ── Electron storage (userData JSON files) ────────────────────────────────────
 
 function storagePath(key) {
-  const filePath = path.join(app.getPath('userData'), 'storage', key)
-  const dir = path.dirname(filePath)
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  return filePath
+  return path.join(app.getPath('userData'), 'storage', key)
 }
 
-ipcMain.handle('storage:get', (_, key) => {
-  try {
-    const raw = fs.readFileSync(storagePath(key), 'utf8')
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
-})
+ipcMain.handle('storage:get', (_, key) => readJsonFile(storagePath(key)))
 
 ipcMain.handle('storage:put', (_, key, data) => {
-  fs.writeFileSync(storagePath(key), JSON.stringify(data))
+  writeJsonFileAtomic(storagePath(key), JSON.stringify(data))
 })
 
 ipcMain.handle('storage:delete', (_, key) => {
-  try {
-    fs.unlinkSync(storagePath(key))
-  } catch {
-    /* non-critical: file may not exist */
-  }
+  deleteFile(storagePath(key))
 })
 
 // ── Local folder storage (Node fs, no browser permission/gesture needed) ─────
-
-function localFolderPath(basePath, key) {
-  const filename = key.endsWith('.json') ? key : `${key}.json`
-  const filePath = path.join(basePath, filename)
-  const dir = path.dirname(filePath)
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-  return filePath
-}
 
 ipcMain.handle('localfolder:pickFolder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory', 'createDirectory'] })
@@ -109,25 +88,14 @@ ipcMain.handle('localfolder:pickFolder', async () => {
   return result.filePaths[0]
 })
 
-ipcMain.handle('localfolder:get', (_, basePath, key) => {
-  try {
-    const raw = fs.readFileSync(localFolderPath(basePath, key), 'utf8')
-    return JSON.parse(raw)
-  } catch {
-    return null
-  }
-})
+ipcMain.handle('localfolder:get', (_, basePath, key) => readJsonFile(localFolderFile(basePath, key)))
 
 ipcMain.handle('localfolder:put', (_, basePath, key, data) => {
-  fs.writeFileSync(localFolderPath(basePath, key), JSON.stringify(data, null, 2))
+  writeJsonFileAtomic(localFolderFile(basePath, key), JSON.stringify(data, null, 2))
 })
 
 ipcMain.handle('localfolder:delete', (_, basePath, key) => {
-  try {
-    fs.unlinkSync(localFolderPath(basePath, key))
-  } catch {
-    /* non-critical: file may not exist */
-  }
+  deleteFile(localFolderFile(basePath, key))
 })
 
 // ── Tray helpers ──────────────────────────────────────────────────────────────
