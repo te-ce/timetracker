@@ -29,6 +29,10 @@ class DelayedConfigRepository implements ConfigRepository {
     this.config = structuredClone(config)
     return Promise.resolve()
   }
+  update(patch: (current: AppConfig) => Partial<AppConfig>): Promise<void> {
+    this.config = { ...this.config, ...patch(structuredClone(this.config)) }
+    return Promise.resolve()
+  }
 }
 
 vi.mock('../../infra/auth/msalInstance', () => ({

@@ -163,6 +163,11 @@ export class JsonValueStore<T> {
     return structuredClone(this.cache)
   }
 
+  /** Applies `mutation` to the latest stored value in one serialized, conflict-retried write. Must return a new object. */
+  async mutate(mutation: (current: T) => T): Promise<T> {
+    return this.writer.write((current) => structuredClone(mutation(current)))
+  }
+
   async set(value: T): Promise<void> {
     const copy = structuredClone(value)
     await this.writer.write(() => copy)

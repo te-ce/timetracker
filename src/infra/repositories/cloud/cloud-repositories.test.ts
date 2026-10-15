@@ -5,7 +5,8 @@ import { InMemoryStorageAdapter } from '../../storage/in-memory-adapter'
 import { CloudConfigRepository } from './config-repository'
 import { CloudSprintExportRepository } from './sprint-export-repository'
 import { CloudMonthRepository } from './month-repository'
-import { DEFAULT_WEEKDAY_HOURS } from '../../../shared/weekdayHours'
+import { DEFAULT_APP_CONFIG } from '../../../shared/appConfigDefaults'
+import { DEFAULT_WEEKDAY_HOURS, type WeekdayHours } from '../../../shared/weekdayHours'
 
 function adapterWithValue(key: string, value: unknown): StorageAdapter {
   return {
@@ -19,6 +20,23 @@ function adapterWithValue(key: string, value: unknown): StorageAdapter {
 }
 
 describe('CloudConfigRepository', () => {
+  it('update applies concurrent patches of different fields to the latest stored config', async () => {
+    const repo = new CloudConfigRepository(new InMemoryStorageAdapter())
+    await Promise.all([
+      repo.update((c) => {
+        const weekdayHours: WeekdayHours = [...c.weekdayHours]
+        weekdayHours[1] = 7
+        return { weekdayHours }
+      }),
+      repo.update(() => ({ autoCategory: 'Dev' })),
+      repo.update((c) => ({ sprintLengthDays: c.sprintLengthDays + 1 })),
+    ])
+    const config = await repo.get()
+    expect(config.weekdayHours[1]).toBe(7)
+    expect(config.autoCategory).toBe('Dev')
+    expect(config.sprintLengthDays).toBe(DEFAULT_APP_CONFIG.sprintLengthDays + 1)
+  })
+
   it('returns defaults when no data stored', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudConfigRepository(adapter)

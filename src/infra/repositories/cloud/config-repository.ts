@@ -26,6 +26,10 @@ export class CloudConfigRepository implements ConfigRepository {
     await this.store.set(config)
   }
 
+  async update(patch: (current: AppConfig) => Partial<AppConfig>): Promise<void> {
+    await this.store.mutate((current) => ({ ...current, ...patch(current) }))
+  }
+
   clearCache(): void {
     this.store.clearCache()
   }

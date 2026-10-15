@@ -124,6 +124,10 @@ export type StartupView = (typeof STARTUP_VIEWS)[number]
 export interface ConfigRepository {
   get(): Promise<import('./configSchema').AppConfig>
   save(config: import('./configSchema').AppConfig): Promise<void>
+  /** Applies the returned fields on top of the LATEST stored config, serialized with other writes. Callers send only the fields they change. */
+  update(
+    patch: (current: import('./configSchema').AppConfig) => Partial<import('./configSchema').AppConfig>,
+  ): Promise<void>
 }
 
 export interface SprintExport {
