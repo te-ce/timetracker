@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { InteractionRequiredAuthError, type AccountInfo, type AuthenticationResult } from '@azure/msal-browser'
 import { useSyncStatus } from '../storage/sync-status'
 
-vi.mock('./bootstrapConfig', () => ({
-  readBootstrapConfig: () => ({ clientId: 'test-client-id', tenantId: 'test-tenant-id' }),
-}))
-
-import * as msalModule from './msalInstance'
+localStorage.setItem(
+  'msal-bootstrap-config',
+  JSON.stringify({ clientId: 'test-client-id', tenantId: 'test-tenant-id' }),
+)
+const msalModule = await import('./msalInstance')
+localStorage.removeItem('msal-bootstrap-config')
 
 function makeAuthResult(accessToken: string, account: AccountInfo): AuthenticationResult {
   return {

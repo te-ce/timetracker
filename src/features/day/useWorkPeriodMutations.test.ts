@@ -8,11 +8,6 @@ import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/mont
 import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
 import { useUndoStore } from '../../shared/undoStore'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 function makeWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: queryClient }, children)

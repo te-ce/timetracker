@@ -3,10 +3,15 @@ import { loadHandle, verifyPermission } from './folder-handle-store'
 
 export class LocalFolderStorageAdapter implements StorageAdapter {
   private handle: FileSystemDirectoryHandle | null = null
+  private readonly loadDirectory: () => Promise<FileSystemDirectoryHandle | null>
+
+  constructor(loadDirectory: () => Promise<FileSystemDirectoryHandle | null> = loadHandle) {
+    this.loadDirectory = loadDirectory
+  }
 
   private async getDir(): Promise<FileSystemDirectoryHandle> {
     if (this.handle) return this.handle
-    const stored = await loadHandle()
+    const stored = await this.loadDirectory()
     if (!stored) throw new Error('No local folder configured.')
     const ok = await verifyPermission(stored)
     if (!ok) throw new Error('Read/write permission denied for local folder.')

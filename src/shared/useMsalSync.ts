@@ -9,7 +9,7 @@ import { resetAllRepositories } from '../infra/repositories/shared'
  * When the user signs in, clears all repository caches and invalidates
  * all React Query queries so data is re-fetched from OneDrive.
  */
-export function useMsalSync() {
+export function useMsalSync(resetRepositories: () => void = resetAllRepositories) {
   const { accounts } = useMsal()
   const queryClient = useQueryClient()
   const setIsAuthenticated = useAuthStore((s) => s.setIsAuthenticated)
@@ -21,16 +21,16 @@ export function useMsalSync() {
 
     if (authenticated && prevAuthRef.current === false) {
       // User just signed in — bust caches so next reads come from OneDrive
-      resetAllRepositories()
+      resetRepositories()
       void queryClient.invalidateQueries()
     }
 
     if (!authenticated && prevAuthRef.current === true) {
       // User signed out — clear cached OneDrive data
-      resetAllRepositories()
+      resetRepositories()
       void queryClient.invalidateQueries()
     }
 
     prevAuthRef.current = authenticated
-  }, [accounts, setIsAuthenticated, queryClient])
+  }, [accounts, setIsAuthenticated, queryClient, resetRepositories])
 }

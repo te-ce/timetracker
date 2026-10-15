@@ -18,6 +18,8 @@ function readText(cell: ExcelJS.Cell): string {
   return ''
 }
 
+type DirectoryProvider = () => Promise<FileSystemDirectoryHandle>
+
 async function getDir(): Promise<FileSystemDirectoryHandle> {
   const handle = (await loadExcelHandle()) ?? (await loadHandle())
   if (!handle) throw new Error('No local folder configured.')
@@ -26,8 +28,8 @@ async function getDir(): Promise<FileSystemDirectoryHandle> {
   return handle
 }
 
-export async function listLocalXlsxFiles(): Promise<string[]> {
-  const dir = await getDir()
+export async function listLocalXlsxFiles(getDirectory: DirectoryProvider = getDir): Promise<string[]> {
+  const dir = await getDirectory()
   const files: string[] = []
   for await (const [name] of dir.entries()) {
     if (name.endsWith('.xlsx')) files.push(name)
@@ -35,8 +37,8 @@ export async function listLocalXlsxFiles(): Promise<string[]> {
   return files.sort()
 }
 
-export async function listLocalSheets(filename: string): Promise<string[]> {
-  const dir = await getDir()
+export async function listLocalSheets(filename: string, getDirectory: DirectoryProvider = getDir): Promise<string[]> {
+  const dir = await getDirectory()
   const fileHandle = await dir.getFileHandle(filename)
   const file = await fileHandle.getFile()
   const wb = new ExcelJS.Workbook()
@@ -44,8 +46,12 @@ export async function listLocalSheets(filename: string): Promise<string[]> {
   return wb.worksheets.map((ws) => ws.name)
 }
 
-export async function listLocalRows(filename: string, sheet: string): Promise<LocatedExcelRow[]> {
-  const dir = await getDir()
+export async function listLocalRows(
+  filename: string,
+  sheet: string,
+  getDirectory: DirectoryProvider = getDir,
+): Promise<LocatedExcelRow[]> {
+  const dir = await getDirectory()
   const fileHandle = await dir.getFileHandle(filename)
   const file = await fileHandle.getFile()
   const wb = new ExcelJS.Workbook()
@@ -65,8 +71,9 @@ export async function writeLocalSprintData(
   sheet: string,
   mapping: Record<string, string>,
   hoursPerCategory: Record<string, number>,
+  getDirectory: DirectoryProvider = getDir,
 ): Promise<void> {
-  const dir = await getDir()
+  const dir = await getDirectory()
   const fileHandle = await dir.getFileHandle(filename)
   const file = await fileHandle.getFile()
   const wb = new ExcelJS.Workbook()
@@ -103,8 +110,9 @@ export async function archiveLocalSprintData(
   mapping: Record<string, string>,
   hoursPerCategory: Record<string, number>,
   overwrite: boolean,
+  getDirectory: DirectoryProvider = getDir,
 ): Promise<void> {
-  const dir = await getDir()
+  const dir = await getDirectory()
   const fileHandle = await dir.getFileHandle(filename)
   const file = await fileHandle.getFile()
   const wb = new ExcelJS.Workbook()

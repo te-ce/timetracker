@@ -9,11 +9,6 @@ import { InMemoryMonthRepository } from '../../infra/repositories/in-memory/mont
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
-vi.mock('../../infra/auth/msalInstance', () => ({
-  getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
-  msalInstance: null,
-}))
-
 function makeWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
     return createElement(QueryClientProvider, { client: queryClient }, children)

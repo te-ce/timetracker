@@ -6,29 +6,25 @@ import { InMemoryConfigRepository } from '../../infra/repositories/in-memory'
 import { DEFAULT_APP_CONFIG } from '../../shared/appConfigDefaults'
 import type { AppConfig } from '../../infra/repositories/types'
 
-vi.mock('../excel/localExcelService', () => ({
-  listLocalXlsxFiles: vi.fn(),
-  listLocalSheets: vi.fn(),
-}))
-
-import { listLocalXlsxFiles, listLocalSheets } from '../excel/localExcelService'
+import { LocalFolderWorkbookService } from '../excel/workbookService'
+import { resetFolderHandleDb } from '../../test/folderHandle'
 
 const defaultConfig = DEFAULT_APP_CONFIG
 
-function setup(config: Partial<AppConfig> = {}) {
+function setup(config: Partial<AppConfig> = {}, scanFiles?: () => Promise<string[]>) {
   const repo = new InMemoryConfigRepository({ ...defaultConfig, ...config })
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
     <QueryClientProvider client={qc}>
-      <LocalExcelSettings repository={repo} />
+      <LocalExcelSettings repository={repo} {...(scanFiles && { scanFiles })} />
     </QueryClientProvider>,
   )
   return { repo }
 }
 
 beforeEach(() => {
-  vi.mocked(listLocalXlsxFiles).mockReset()
-  vi.mocked(listLocalSheets).mockReset()
+  vi.restoreAllMocks()
+  resetFolderHandleDb()
 })
 
 describe('LocalExcelSettings', () => {
@@ -39,8 +35,8 @@ describe('LocalExcelSettings', () => {
   })
 
   it('shows file dropdown after scanning', async () => {
-    vi.mocked(listLocalXlsxFiles).mockResolvedValue(['report.xlsx', 'timesheet.xlsx'])
-    setup()
+    const scanFiles = () => Promise.resolve(['report.xlsx', 'timesheet.xlsx'])
+    setup({}, scanFiles)
 
     await userEvent.click(await screen.findByRole('button', { name: /scan folder/i }))
 
@@ -50,9 +46,9 @@ describe('LocalExcelSettings', () => {
   })
 
   it('saves chosen file and loads its sheets', async () => {
-    vi.mocked(listLocalXlsxFiles).mockResolvedValue(['report.xlsx'])
-    vi.mocked(listLocalSheets).mockResolvedValue(['Sheet1', 'Sheet2'])
-    const { repo } = setup()
+    const scanFiles = () => Promise.resolve(['report.xlsx'])
+    vi.spyOn(LocalFolderWorkbookService.prototype, 'listSheets').mockResolvedValue(['Sheet1', 'Sheet2'])
+    const { repo } = setup({}, scanFiles)
 
     await userEvent.click(await screen.findByRole('button', { name: /scan folder/i }))
     const fileSelect = await screen.findByLabelText('Excel workbook file')
@@ -67,9 +63,9 @@ describe('LocalExcelSettings', () => {
   })
 
   it('saves selected sheet to repository', async () => {
-    vi.mocked(listLocalXlsxFiles).mockResolvedValue(['report.xlsx'])
-    vi.mocked(listLocalSheets).mockResolvedValue(['Sheet1', 'Sheet2'])
-    const { repo } = setup()
+    const scanFiles = () => Promise.resolve(['report.xlsx'])
+    vi.spyOn(LocalFolderWorkbookService.prototype, 'listSheets').mockResolvedValue(['Sheet1', 'Sheet2'])
+    const { repo } = setup({}, scanFiles)
 
     await userEvent.click(await screen.findByRole('button', { name: /scan folder/i }))
     const fileSelect = await screen.findByLabelText('Excel workbook file')
@@ -85,16 +81,15 @@ describe('LocalExcelSettings', () => {
   })
 
   it('shows error when scan fails', async () => {
-    vi.mocked(listLocalXlsxFiles).mockRejectedValue(new Error('No folder configured'))
     setup()
 
     await userEvent.click(await screen.findByRole('button', { name: /scan folder/i }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('No folder configured')
+    expect(await screen.findByRole('alert')).toHaveTextContent('No local folder configured')
   })
 
   it('shows existing file and load-sheets button when file already configured', async () => {
-    vi.mocked(listLocalSheets).mockResolvedValue(['Sprint'])
+    vi.spyOn(LocalFolderWorkbookService.prototype, 'listSheets').mockResolvedValue(['Sprint'])
     setup({ localExcelFile: 'timesheet.xlsx' })
 
     expect(await screen.findByText(/✓ timesheet.xlsx/)).toBeInTheDocument()

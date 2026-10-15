@@ -1,7 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
-
-vi.mock('../../infra/auth/msalInstance', () => ({ getAccessToken: vi.fn() }))
-vi.mock('../../infra/auth/bootstrapConfig', () => ({ isLocalFolderMode: vi.fn().mockReturnValue(false) }))
+import { describe, it, expect } from 'vitest'
 
 import { createWorkbookService, buildWorkbookService, isExportReady } from './workbookFactory'
 import { GraphApiWorkbookService } from './workbookService'

@@ -9,9 +9,10 @@ import { FileSelector } from './FileSelector'
 
 interface Props {
   repository: ConfigRepository
+  scanFiles?: () => Promise<string[]>
 }
 
-export function LocalExcelSettings({ repository }: Props) {
+export function LocalExcelSettings({ repository, scanFiles = listLocalXlsxFiles }: Props) {
   const queryClient = useQueryClient()
   const { data: config } = useQuery({ queryKey: QUERY_KEYS.config, queryFn: () => repository.get() })
 
@@ -43,7 +44,7 @@ export function LocalExcelSettings({ repository }: Props) {
     setLoadError(null)
     setLoading(true)
     try {
-      const files = await listLocalXlsxFiles()
+      const files = await scanFiles()
       setXlsxFiles(files)
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : 'Failed to scan folder')

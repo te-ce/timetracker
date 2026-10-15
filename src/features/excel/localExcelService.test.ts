@@ -1,101 +1,13 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import ExcelJS from 'exceljs'
+import { IDBFactory } from 'fake-indexeddb'
 
-vi.mock('../../infra/storage/folder-handle-store', () => ({
-  loadHandle: vi.fn().mockResolvedValue(null),
-  loadExcelHandle: vi.fn(),
-  verifyPermission: vi.fn().mockResolvedValue(true),
-  saveHandle: vi.fn(),
-}))
-
-// ── ExcelJS mock ─────────────────────────────────────────────────────────────
-// vi.mock factories are hoisted; any shared state they close over must be
-// created with vi.hoisted so it exists before the factory runs.
-// We also avoid arrow-function constructors (not newable in strict mode).
-
-interface MockCell {
-  value: string | number | { text?: string; richText?: { text: string }[]; hyperlink?: string } | null
-  text: string
-}
-interface MockRow {
-  getCell(n: number): MockCell
-}
-type EachRowCallback = (row: MockRow, rowNumber: number) => void
-
-const mockState = vi.hoisted(() => {
-  const rows: MockRow[] = []
-  const writtenCells: Map<string, number | null> = new Map()
-  const removedSheetIds: number[] = []
-  const addedSheetNames: string[] = []
-  let sheetName = 'Sheet1'
-  let writeBufferResult: unknown = new Uint8Array([0])
-  return {
-    rows,
-    writtenCells,
-    removedSheetIds,
-    addedSheetNames,
-    get sheetName() {
-      return sheetName
-    },
-    set sheetName(v: string) {
-      sheetName = v
-    },
-    get writeBufferResult() {
-      return writeBufferResult
-    },
-    set writeBufferResult(v: unknown) {
-      writeBufferResult = v
-    },
-  }
+// The default directory provider reads the real folder-handle-store, which uses the global indexedDB.
+beforeEach(() => {
+  globalThis.indexedDB = new IDBFactory()
 })
 
-vi.mock('exceljs', () => {
-  class MockWorkbook {
-    xlsx = {
-      load: vi.fn().mockResolvedValue(undefined),
-      writeBuffer: vi.fn().mockImplementation(() => Promise.resolve(mockState.writeBufferResult)),
-    }
-    get worksheets() {
-      return [{ name: mockState.sheetName }]
-    }
-    getWorksheet(name: string) {
-      if (name !== mockState.sheetName) return undefined
-      const state = mockState
-      return {
-        id: 1,
-        name: mockState.sheetName,
-        eachRow(cb: EachRowCallback) {
-          state.rows.forEach((row, idx) => cb(row, idx + 1))
-        },
-        getRow(rowNumber: number) {
-          return {
-            getCell(col: number) {
-              const key = `${rowNumber}:${col}`
-              return {
-                get value() {
-                  return state.writtenCells.get(key) ?? null
-                },
-                set value(v: number | null) {
-                  state.writtenCells.set(key, v)
-                },
-              }
-            },
-          }
-        },
-      }
-    }
-    removeWorksheet(id: number) {
-      mockState.removedSheetIds.push(id)
-    }
-    addWorksheet(name: string) {
-      mockState.addedSheetNames.push(name)
-      return { addRow: vi.fn() }
-    }
-  }
-  return { default: { Workbook: MockWorkbook } }
-})
-
-import { loadExcelHandle } from '../../infra/storage/folder-handle-store'
 import {
   listLocalXlsxFiles,
   listLocalSheets,
@@ -105,81 +17,81 @@ import {
 } from './localExcelService'
 import { SheetExistsError } from './excelService'
 
-function makeRow(
-  col1: MockCell['value'],
-  col2: string | null,
-  col3: string | null,
-  col1Text = typeof col1 === 'string' || typeof col1 === 'number' ? String(col1) : '',
-): MockRow {
-  return {
-    getCell(n: number): MockCell {
-      const values = [null, col1, col2, col3]
-      const value = values[n] ?? null
-      return { value, text: n === 1 ? col1Text : typeof value === 'string' ? value : '' }
-    },
+type CellValue = ExcelJS.CellValue
+type SheetSpec = { name: string; rows: CellValue[][] }
+
+async function buildXlsx(sheets: SheetSpec[]): Promise<Uint8Array> {
+  const wb = new ExcelJS.Workbook()
+  for (const { name, rows } of sheets) {
+    const ws = wb.addWorksheet(name)
+    for (const row of rows) ws.addRow(row)
   }
+  const out: unknown = await wb.xlsx.writeBuffer()
+  if (out instanceof Uint8Array) return out.slice()
+  throw new Error('unexpected writeBuffer result')
 }
 
-function makeDirWithEntries(names: string[]): FileSystemDirectoryHandle {
-  return {
-    entries() {
-      return (function* () {
-        for (const name of names) yield [name, {}] as [string, object]
-      })()
-    },
-  } as unknown as FileSystemDirectoryHandle
+async function readXlsx(bytes: Uint8Array): Promise<ExcelJS.Workbook> {
+  const wb = new ExcelJS.Workbook()
+  await wb.xlsx.load(bytes.slice().buffer)
+  return wb
 }
 
-function makeReadonlyFileHandle(): FileSystemFileHandle {
-  return {
-    getFile: () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) }),
-  } as unknown as FileSystemFileHandle
+interface InMemoryFile {
+  handle: FileSystemFileHandle
+  bytes: () => Uint8Array
+  writes: () => number
 }
 
-function makeWritableFileHandle(): { handle: FileSystemFileHandle; didWrite: () => boolean } {
-  let wrote = false
-  const handle: FileSystemFileHandle = {
-    getFile: () => Promise.resolve({ arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)) }),
+function makeFile(initial: Uint8Array): InMemoryFile {
+  let content = initial
+  let writes = 0
+  const handle = {
+    getFile: () => Promise.resolve({ arrayBuffer: () => Promise.resolve(content.slice().buffer) }),
     createWritable: () =>
       Promise.resolve({
-        write: () => {
-          wrote = true
+        write: (data: ArrayBuffer | Uint8Array) => {
+          content = data instanceof Uint8Array ? data.slice() : new Uint8Array(data)
+          writes++
           return Promise.resolve()
         },
         close: () => Promise.resolve(),
       }),
   } as unknown as FileSystemFileHandle
-  return { handle, didWrite: () => wrote }
+  return { handle, bytes: () => content, writes: () => writes }
 }
 
-function makeDirWithFile(filename: string, fileHandle: FileSystemFileHandle): FileSystemDirectoryHandle {
-  return {
+function makeDir(files: Record<string, FileSystemFileHandle>): () => Promise<FileSystemDirectoryHandle> {
+  const dir = {
+    entries() {
+      return (function* () {
+        for (const [name, handle] of Object.entries(files)) yield [name, handle] as [string, FileSystemFileHandle]
+      })()
+    },
     getFileHandle: (name: string) => {
-      if (name === filename) return Promise.resolve(fileHandle)
-      return Promise.reject(new DOMException('Not found', 'NotFoundError'))
+      const found = files[name]
+      return found ? Promise.resolve(found) : Promise.reject(new DOMException('Not found', 'NotFoundError'))
     },
   } as unknown as FileSystemDirectoryHandle
+  return () => Promise.resolve(dir)
 }
 
-beforeEach(() => {
-  vi.mocked(loadExcelHandle).mockResolvedValue(null)
-  mockState.rows.length = 0
-  mockState.sheetName = 'Sheet1'
-  mockState.writtenCells.clear()
-  mockState.removedSheetIds.length = 0
-  mockState.addedSheetNames.length = 0
-  mockState.writeBufferResult = new Uint8Array([0])
-})
+async function setup(sheets: SheetSpec[], filename = 'sprint.xlsx') {
+  const file = makeFile(await buildXlsx(sheets))
+  return { file, dir: makeDir({ [filename]: file.handle }) }
+}
 
 describe('listLocalXlsxFiles', () => {
+  const stub = {} as unknown as FileSystemFileHandle
+
   it('returns only .xlsx files sorted alphabetically', async () => {
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithEntries(['b.xlsx', 'a.xlsx', 'readme.txt', 'c.xlsx']))
-    expect(await listLocalXlsxFiles()).toEqual(['a.xlsx', 'b.xlsx', 'c.xlsx'])
+    const dir = makeDir({ 'b.xlsx': stub, 'a.xlsx': stub, 'readme.txt': stub, 'c.xlsx': stub })
+    expect(await listLocalXlsxFiles(dir)).toEqual(['a.xlsx', 'b.xlsx', 'c.xlsx'])
   })
 
   it('returns empty list when no xlsx files exist', async () => {
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithEntries(['readme.txt', 'data.csv']))
-    expect(await listLocalXlsxFiles()).toEqual([])
+    const dir = makeDir({ 'readme.txt': stub, 'data.csv': stub })
+    expect(await listLocalXlsxFiles(dir)).toEqual([])
   })
 
   it('throws when no folder is configured', async () => {
@@ -189,199 +101,217 @@ describe('listLocalXlsxFiles', () => {
 
 describe('listLocalRows', () => {
   it('reads taskId from col1 and description from col3', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, 'Fix login bug'), makeRow('TASK-2', null, 'Update dashboard'))
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
-
-    const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
-    expect(rows).toEqual([
+    const { dir } = await setup([
+      {
+        name: 'Sheet1',
+        rows: [
+          ['TASK-1', null, 'Fix login bug'],
+          ['TASK-2', null, 'Update dashboard'],
+        ],
+      },
+    ])
+    expect(await listLocalRows('sprint.xlsx', 'Sheet1', dir)).toEqual([
       { taskId: 'TASK-1', description: 'Fix login bug', rowNumber: 1 },
       { taskId: 'TASK-2', description: 'Update dashboard', rowNumber: 2 },
     ])
   })
 
   it('skips rows with no taskId in col1', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, 'Valid'), makeRow(null, null, 'No taskId'), makeRow('', null, 'Empty'))
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
-
-    const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
+    const { dir } = await setup([
+      {
+        name: 'Sheet1',
+        rows: [
+          ['TASK-1', null, 'Valid'],
+          [null, null, 'No taskId'],
+          ['', null, 'Empty'],
+        ],
+      },
+    ])
+    const rows = await listLocalRows('sprint.xlsx', 'Sheet1', dir)
     expect(rows).toHaveLength(1)
     expect(rows[0]?.taskId).toBe('TASK-1')
   })
 
   it('accepts numeric task IDs and keeps real row numbers', async () => {
-    mockState.rows.push(makeRow(null, null, null), makeRow(4711, null, 'Numeric'))
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
-
-    const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
-    expect(rows).toEqual([{ taskId: '4711', description: 'Numeric', rowNumber: 2 }])
+    const { dir } = await setup([
+      {
+        name: 'Sheet1',
+        rows: [
+          [null, null, null],
+          [4711, null, 'Numeric'],
+        ],
+      },
+    ])
+    expect(await listLocalRows('sprint.xlsx', 'Sheet1', dir)).toEqual([
+      { taskId: '4711', description: 'Numeric', rowNumber: 2 },
+    ])
   })
 
   it('reads rich-text and hyperlink cells through cell.text', async () => {
-    mockState.rows.push(
-      makeRow({ richText: [{ text: 'TASK' }, { text: '-1' }] }, null, null, 'TASK-1'),
-      makeRow({ text: 'TASK-2', hyperlink: 'https://x.example/2' }, null, null, ' TASK-2 '),
-    )
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
-
-    const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
+    const { dir } = await setup([
+      {
+        name: 'Sheet1',
+        rows: [
+          [{ richText: [{ text: 'TASK' }, { text: '-1' }] }, null, null],
+          [{ text: ' TASK-2 ', hyperlink: 'https://x.example/2' }, null, null],
+        ],
+      },
+    ])
+    const rows = await listLocalRows('sprint.xlsx', 'Sheet1', dir)
     expect(rows.map((r) => r.taskId)).toEqual(['TASK-1', 'TASK-2'])
   })
 
   it('returns empty array when sheet does not exist', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, 'row'))
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
-
-    const rows = await listLocalRows('sprint.xlsx', 'WrongSheet')
-    expect(rows).toEqual([])
+    const { dir } = await setup([{ name: 'Sheet1', rows: [['TASK-1', null, 'row']] }])
+    expect(await listLocalRows('sprint.xlsx', 'WrongSheet', dir)).toEqual([])
   })
 
   it('trims whitespace from taskId and description', async () => {
-    mockState.rows.push(makeRow('  TASK-1  ', null, '  Some task  '))
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', makeReadonlyFileHandle()))
-
-    const rows = await listLocalRows('sprint.xlsx', 'Sheet1')
+    const { dir } = await setup([{ name: 'Sheet1', rows: [['  TASK-1  ', null, '  Some task  ']] }])
+    const rows = await listLocalRows('sprint.xlsx', 'Sheet1', dir)
     expect(rows[0]).toEqual({ taskId: 'TASK-1', description: 'Some task', rowNumber: 1 })
   })
 })
 
 describe('writeLocalSprintData', () => {
-  it('writes hours to the correct row in the sheet', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, 'Fix bug'), makeRow('TASK-2', null, 'Feature'))
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+  async function hoursColumn(file: InMemoryFile, sheet = 'Sheet1'): Promise<(CellValue | undefined)[]> {
+    const ws = (await readXlsx(file.bytes())).getWorksheet(sheet)
+    const out: (CellValue | undefined)[] = []
+    ws?.eachRow({ includeEmpty: true }, (row) => {
+      const v = row.getCell(2).value
+      out.push(v === null ? undefined : v)
+    })
+    return out
+  }
 
+  it('writes hours to the correct row in the sheet', async () => {
+    const { file, dir } = await setup([
+      {
+        name: 'Sheet1',
+        rows: [
+          ['TASK-1', null, 'Fix bug'],
+          ['TASK-2', null, 'Feature'],
+        ],
+      },
+    ])
     await writeLocalSprintData(
       'sprint.xlsx',
       'Sheet1',
       { _COREMEDIA: 'TASK-1', _SUPPORT: 'TASK-2' },
       { _COREMEDIA: 12, _SUPPORT: 3 },
+      dir,
     )
-
-    expect(mockState.writtenCells.get('1:2')).toBe(12)
-    expect(mockState.writtenCells.get('2:2')).toBe(3)
+    expect(await hoursColumn(file)).toEqual([12, 3])
   })
 
   it('writes to numeric task ID rows', async () => {
-    mockState.rows.push(makeRow(4711, null, 'n'))
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
-    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _A: '4711' }, { _A: 2 })
-    expect(mockState.writtenCells.get('1:2')).toBe(2)
+    const { file, dir } = await setup([{ name: 'Sheet1', rows: [[4711, null, 'n']] }])
+    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _A: '4711' }, { _A: 2 }, dir)
+    expect(await hoursColumn(file)).toEqual([2])
   })
 
   it('writes 0 for categories not in hoursPerCategory', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, 'Fix bug'))
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
-
-    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _COREMEDIA: 'TASK-1' }, {})
-
-    expect(mockState.writtenCells.get('1:2')).toBe(0)
+    const { file, dir } = await setup([{ name: 'Sheet1', rows: [['TASK-1', null, 'Fix bug']] }])
+    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _COREMEDIA: 'TASK-1' }, {}, dir)
+    expect(await hoursColumn(file)).toEqual([0])
   })
 
   it('skips categories whose taskId is not found in the sheet', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, 'Fix bug'))
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
-
+    const { file, dir } = await setup([{ name: 'Sheet1', rows: [['TASK-1', null, 'Fix bug']] }])
     await expect(
-      writeLocalSprintData('sprint.xlsx', 'Sheet1', { _MISSING: 'TASK-99' }, { _MISSING: 5 }),
+      writeLocalSprintData('sprint.xlsx', 'Sheet1', { _MISSING: 'TASK-99' }, { _MISSING: 5 }, dir),
     ).resolves.toBeUndefined()
-    expect(mockState.writtenCells.size).toBe(0)
+    expect(await hoursColumn(file)).toEqual([undefined])
   })
 
   it('writes the workbook to the file handle', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, 'Fix bug'))
-    const { handle, didWrite } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
-
-    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _COREMEDIA: 'TASK-1' }, { _COREMEDIA: 4 })
-
-    expect(didWrite()).toBe(true)
+    const { file, dir } = await setup([{ name: 'Sheet1', rows: [['TASK-1', null, 'Fix bug']] }])
+    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _COREMEDIA: 'TASK-1' }, { _COREMEDIA: 4 }, dir)
+    expect(file.writes()).toBe(1)
   })
 
   it('throws when sheet not found', async () => {
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
-
-    await expect(writeLocalSprintData('sprint.xlsx', 'WrongSheet', {}, {})).rejects.toThrow('"WrongSheet" not found')
+    const { dir } = await setup([{ name: 'Sheet1', rows: [] }])
+    await expect(writeLocalSprintData('sprint.xlsx', 'WrongSheet', {}, {}, dir)).rejects.toThrow(
+      '"WrongSheet" not found',
+    )
   })
 
   it('skips rows where col1 is null when building the row map', async () => {
-    mockState.rows.push(makeRow(null, null, null), makeRow('TASK-1', null, null))
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
-
+    const { file, dir } = await setup([
+      {
+        name: 'Sheet1',
+        rows: [
+          [null, null, null],
+          ['TASK-1', null, null],
+        ],
+      },
+    ])
     await expect(
-      writeLocalSprintData('sprint.xlsx', 'Sheet1', { _CAT: 'TASK-1' }, { _CAT: 5 }),
+      writeLocalSprintData('sprint.xlsx', 'Sheet1', { _CAT: 'TASK-1' }, { _CAT: 5 }, dir),
     ).resolves.toBeUndefined()
-    expect(mockState.writtenCells.get('2:2')).toBe(5)
+    expect(await hoursColumn(file)).toEqual([undefined, 5])
   })
 
   it('trims whitespace from col1 when building task ID row map', async () => {
-    mockState.rows.push(makeRow('  TASK-1  ', null, null))
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
-
-    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _CAT: 'TASK-1' }, { _CAT: 7 })
-    expect(mockState.writtenCells.get('1:2')).toBe(7)
+    const { file, dir } = await setup([{ name: 'Sheet1', rows: [['  TASK-1  ', null, null]] }])
+    await writeLocalSprintData('sprint.xlsx', 'Sheet1', { _CAT: 'TASK-1' }, { _CAT: 7 }, dir)
+    expect(await hoursColumn(file)).toEqual([7])
   })
 
   it('throws when writeBuffer returns an unexpected type', async () => {
-    mockState.rows.push(makeRow('TASK-1', null, null))
-    mockState.writeBufferResult = 'not-a-buffer'
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+    const { dir } = await setup([{ name: 'Sheet1', rows: [['TASK-1', null, null]] }])
+    const xlsxPrototype = Object.getPrototypeOf(new ExcelJS.Workbook().xlsx) as ExcelJS.Xlsx
+    vi.spyOn(xlsxPrototype, 'writeBuffer').mockResolvedValueOnce('not-a-buffer' as never)
 
-    await expect(writeLocalSprintData('sprint.xlsx', 'Sheet1', {}, {})).rejects.toThrow(
+    await expect(writeLocalSprintData('sprint.xlsx', 'Sheet1', {}, {}, dir)).rejects.toThrow(
       'writeBuffer returned unexpected type',
     )
   })
 })
 
 describe('archiveLocalSprintData', () => {
-  it('throws SheetExistsError when the sheet exists and overwrite is false', async () => {
-    mockState.sheetName = 'Sprint 3'
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+  const rowsOf = async (file: InMemoryFile, sheet: string) => {
+    const out: CellValue[][] = []
+    ;(await readXlsx(file.bytes())).getWorksheet(sheet)?.eachRow((row) => {
+      out.push([row.getCell(1).value, row.getCell(2).value])
+    })
+    return out
+  }
+  const namesOf = async (file: InMemoryFile) => (await readXlsx(file.bytes())).worksheets.map((w) => w.name)
 
+  it('throws SheetExistsError when the sheet exists and overwrite is false', async () => {
+    const { file, dir } = await setup([{ name: 'Sprint 3', rows: [['OLD', 1]] }])
     await expect(
-      archiveLocalSprintData('sprint.xlsx', 'Sprint 3', { _CAT: 'TASK-1' }, { _CAT: 5 }, false),
+      archiveLocalSprintData('sprint.xlsx', 'Sprint 3', { _CAT: 'TASK-1' }, { _CAT: 5 }, false, dir),
     ).rejects.toBeInstanceOf(SheetExistsError)
-    expect(mockState.removedSheetIds).toEqual([])
+    expect(file.writes()).toBe(0)
+    expect(await rowsOf(file, 'Sprint 3')).toEqual([['OLD', 1]])
   })
 
   it('removes the existing sheet then re-adds it when overwrite is true', async () => {
-    mockState.sheetName = 'Sprint 3'
-    const { handle, didWrite } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+    const { file, dir } = await setup([{ name: 'Sprint 3', rows: [['OLD', 1]] }])
+    await archiveLocalSprintData('sprint.xlsx', 'Sprint 3', { _CAT: 'TASK-1' }, { _CAT: 5 }, true, dir)
 
-    await archiveLocalSprintData('sprint.xlsx', 'Sprint 3', { _CAT: 'TASK-1' }, { _CAT: 5 }, true)
-
-    expect(mockState.removedSheetIds).toEqual([1])
-    expect(mockState.addedSheetNames).toEqual(['Sprint 3'])
-    expect(didWrite()).toBe(true)
+    expect(file.writes()).toBe(1)
+    expect(await namesOf(file)).toEqual(['Sprint 3'])
+    expect(await rowsOf(file, 'Sprint 3')).toEqual([['TASK-1', 5]])
   })
 
   it('adds a new sheet without removing when it does not exist', async () => {
-    mockState.sheetName = 'Sheet1'
-    const { handle } = makeWritableFileHandle()
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('sprint.xlsx', handle))
+    const { file, dir } = await setup([{ name: 'Sheet1', rows: [['KEEP', 1]] }])
+    await archiveLocalSprintData('sprint.xlsx', 'Sprint 9', { _CAT: 'TASK-1' }, { _CAT: 5 }, false, dir)
 
-    await archiveLocalSprintData('sprint.xlsx', 'Sprint 9', { _CAT: 'TASK-1' }, { _CAT: 5 }, false)
-
-    expect(mockState.removedSheetIds).toEqual([])
-    expect(mockState.addedSheetNames).toEqual(['Sprint 9'])
+    expect(await namesOf(file)).toEqual(['Sheet1', 'Sprint 9'])
+    expect(await rowsOf(file, 'Sheet1')).toEqual([['KEEP', 1]])
+    expect(await rowsOf(file, 'Sprint 9')).toEqual([['TASK-1', 5]])
   })
 })
 
 describe('listLocalSheets', () => {
   it('returns worksheet names from the workbook', async () => {
-    mockState.sheetName = 'Sprint 42'
-    vi.mocked(loadExcelHandle).mockResolvedValue(makeDirWithFile('report.xlsx', makeReadonlyFileHandle()))
-
-    const sheets = await listLocalSheets('report.xlsx')
-    expect(sheets).toEqual(['Sprint 42'])
+    const { dir } = await setup([{ name: 'Sprint 42', rows: [] }], 'report.xlsx')
+    expect(await listLocalSheets('report.xlsx', dir)).toEqual(['Sprint 42'])
   })
 
   it('throws when no folder is configured', async () => {
