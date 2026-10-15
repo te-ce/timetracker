@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useTodayIso } from './useTodayIso'
 import { useDayQuery } from '../features/day/useDayQuery'
+import type { DayQueryResult } from '../features/day/useDayQuery'
 import { formatHours } from './formatHours'
 import { nowHHMM } from './worktime'
 import { deriveDayBalance, hasLiveActivity } from './dayBalance'
@@ -19,10 +20,25 @@ function buildSummary(sollstunden: number, priorOvertime: number, workedHours: n
   return `${formatHours(sollstunden, 'decimal')} target, ${formatHours(Math.abs(priorOvertime), 'decimal')} ${overtimeLabel} carry-over, ${formatHours(workedHours, 'decimal')} worked today — ${remainingLabel}`
 }
 
+type RemainingHoursQuery = Pick<
+  DayQueryResult,
+  | 'config'
+  | 'sollstunden'
+  | 'overtimeToDate'
+  | 'windows'
+  | 'officeDays'
+  | 'totalWorkDays'
+  | 'officePercent'
+  | 'isOvertimeReady'
+>
+
 export function useRemainingHours() {
-  const todayIso = useTodayIso()
+  return useRemainingHoursFor(useDayQuery(useTodayIso()))
+}
+
+export function useRemainingHoursFor(query: RemainingHoursQuery) {
   const { config, sollstunden, overtimeToDate, windows, officeDays, totalWorkDays, officePercent, isOvertimeReady } =
-    useDayQuery(todayIso)
+    query
 
   // Detection uses a fresh read rather than the ticked value so a just-closed
   // period (whose `end` equals the current minute) isn't mistaken for a

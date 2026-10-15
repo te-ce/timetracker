@@ -4,17 +4,14 @@ import type { DayQueryResult } from '../features/day/useDayQuery'
 import type { OvertimeToDate } from '../features/month'
 import { DEFAULT_APP_CONFIG, resolveAppConfig } from './appConfigDefaults'
 
-vi.mock('../features/day/useDayQuery', () => ({
-  useDayQuery: vi.fn(),
-}))
-
-vi.mock('./timeFormatStore', () => ({
-  useTimeFormatStore: vi.fn(() => ({ format: 'decimal', toggleFormat: vi.fn() })),
-}))
-
-import { useDayQuery } from '../features/day/useDayQuery'
 import { useTimeFormatStore } from './timeFormatStore'
-import { useRemainingHours, buildReceipt } from './useRemainingHours'
+import { useRemainingHoursFor, buildReceipt } from './useRemainingHours'
+
+let currentQuery: DayQueryResult
+
+function renderRemaining() {
+  return renderHook(() => useRemainingHoursFor(currentQuery))
+}
 
 function makeOvertimeToDate(priorOvertime = 0): OvertimeToDate {
   return { value: priorOvertime, workedToday: 0, priorOvertime }
@@ -30,7 +27,7 @@ function closedWindows(hours: number) {
 }
 
 function stubDayQuery(overrides: Partial<DayQueryResult>): void {
-  vi.mocked(useDayQuery).mockReturnValue({
+  currentQuery = {
     config: resolveAppConfig(DEFAULT_APP_CONFIG),
     workLocation: null,
     autoCategoryOverride: null,
@@ -53,7 +50,7 @@ function stubDayQuery(overrides: Partial<DayQueryResult>): void {
     isOvertimeReady: true,
     ...overrides,
     windows: overrides.windows ?? closedWindows(overrides.workedHours ?? 0),
-  })
+  }
 }
 
 beforeEach(() => {
@@ -62,6 +59,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  useTimeFormatStore.setState({ format: 'decimal' })
   vi.useRealTimers()
   document.title = 'Timetracker'
 })
@@ -70,31 +68,31 @@ describe('useRemainingHours', () => {
   describe('remaining calculation', () => {
     it('returns sollstunden minus workedHours when no priorOvertime', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(5)
     })
 
     it('subtracts priorOvertime from remaining', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3, overtimeToDate: makeOvertimeToDate(1) })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(4)
     })
 
     it('returns negative remaining when overtime (no clamping)', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 9 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(-1)
     })
 
     it('returns 0 remaining when exactly at sollstunden', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 8 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBe(0)
     })
 
     it('negative priorOvertime (undertime carry-over) increases remaining', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3, overtimeToDate: makeOvertimeToDate(-1) })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(6)
     })
   })
@@ -102,7 +100,7 @@ describe('useRemainingHours', () => {
   describe('summary string', () => {
     it('returns summary with target, carry-over and worked', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3, overtimeToDate: makeOvertimeToDate(1) })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.summary).toMatch(/8/)
       expect(result.current.summary).toMatch(/overtime carry-over/)
       expect(result.current.summary).toMatch(/worked today/)
@@ -111,13 +109,13 @@ describe('useRemainingHours', () => {
 
     it('shows overtime today when remaining is negative', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 10 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.summary).toMatch(/overtime today/)
     })
 
     it('shows Done when remaining is 0', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 8 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.summary).toMatch(/Done/)
     })
   })
@@ -125,19 +123,19 @@ describe('useRemainingHours', () => {
   describe('office stats pass-through', () => {
     it('returns officeDays from the query', () => {
       stubDayQuery({ officeDays: 12 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.officeDays).toBe(12)
     })
 
     it('returns totalWorkDays from the query', () => {
       stubDayQuery({ totalWorkDays: 20 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.totalWorkDays).toBe(20)
     })
 
     it('returns officePercent from the query', () => {
       stubDayQuery({ officePercent: 65 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.officePercent).toBe(65)
     })
   })
@@ -145,19 +143,19 @@ describe('useRemainingHours', () => {
   describe('pass-through values', () => {
     it('returns sollstunden from the query', () => {
       stubDayQuery({ sollstunden: 6 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.sollstunden).toBe(6)
     })
 
     it('returns workedHours from the query', () => {
       stubDayQuery({ workedHours: 4.5 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.workedHours).toBeCloseTo(4.5)
     })
 
     it('returns priorOvertime from overtimeToDate', () => {
       stubDayQuery({ overtimeToDate: makeOvertimeToDate(2.5) })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.priorOvertime).toBeCloseTo(2.5)
     })
   })
@@ -165,25 +163,25 @@ describe('useRemainingHours', () => {
   describe('document.title side effect', () => {
     it('sets title with remaining hours in decimal format when work remains', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 5 })
-      renderHook(() => useRemainingHours())
+      renderRemaining()
       expect(document.title).toBe('(3.00h left) Timetracker')
     })
 
     it('sets title to plain "Timetracker" when goal is reached', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 8 })
-      renderHook(() => useRemainingHours())
+      renderRemaining()
       expect(document.title).toBe('Timetracker')
     })
 
     it('sets title to plain "Timetracker" when overtime', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 9 })
-      renderHook(() => useRemainingHours())
+      renderRemaining()
       expect(document.title).toBe('Timetracker')
     })
 
     it('updates title when remaining changes', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 5 })
-      const { rerender } = renderHook(() => useRemainingHours())
+      const { rerender } = renderRemaining()
       expect(document.title).toBe('(3.00h left) Timetracker')
 
       stubDayQuery({ sollstunden: 8, workedHours: 8 })
@@ -194,11 +192,11 @@ describe('useRemainingHours', () => {
     })
 
     it('sets title in HH:MM format when hhmm format is active', () => {
-      vi.mocked(useTimeFormatStore).mockReturnValue({ format: 'hhmm', toggleFormat: vi.fn() })
+      useTimeFormatStore.setState({ format: 'hhmm' })
       stubDayQuery({ sollstunden: 8, workedHours: 5 })
-      renderHook(() => useRemainingHours())
+      renderRemaining()
       expect(document.title).toBe('(3:00 left) Timetracker')
-      vi.mocked(useTimeFormatStore).mockReturnValue({ format: 'decimal', toggleFormat: vi.fn() })
+      useTimeFormatStore.setState({ format: 'decimal' })
     })
   })
 
@@ -212,7 +210,7 @@ describe('useRemainingHours', () => {
           { id: '1', start: '11:30', end: null, category: 'Work', subtasks: [] },
         ],
       })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(4.5)
     })
 
@@ -229,13 +227,13 @@ describe('useRemainingHours', () => {
         workedHours: 5, // 5h live elapsed already in workedHours (from calculateWorkedHours with now)
         windows: [{ id: '1', start: fiveHoursAgoHHMM, end: null, category: 'Work', subtasks: [] }],
       })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(3) // 8 − 5, not 8 − 5 − 5
     })
 
     it('remaining excludes live tracking when no open window', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(5)
     })
 
@@ -244,7 +242,7 @@ describe('useRemainingHours', () => {
       // Mount with no live activity; currentNow initialises to "08:31"
       vi.setSystemTime(new Date('2026-06-03T08:31:00'))
       stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
-      const { result, rerender } = renderHook(() => useRemainingHours())
+      const { result, rerender } = renderRemaining()
       expect(result.current.liveElapsed).toBe(0)
 
       // Advance wall-clock 30 minutes WITHOUT ticking the interval (no live period → no interval)
@@ -356,7 +354,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
       const ps = makePlannedStopWindow(-120, 60)
       const fullDuration = 3 // 2h worked + 1h remaining = 3h total
       stubDayQuery({ sollstunden: 8, workedHours: fullDuration, windows: [ps] })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(1)
     })
 
@@ -365,28 +363,28 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
       // Countdown should still show 1h
       const ps = makePlannedStopWindow(-540, 60)
       stubDayQuery({ sollstunden: 8, workedHours: 10, windows: [ps] })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(1)
     })
 
     it('sets isPlannedStopMode to true when planned stop is active', () => {
       const ps = makePlannedStopWindow(-60, 60)
       stubDayQuery({ sollstunden: 8, workedHours: 2, windows: [ps] })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.isPlannedStopMode).toBe(true)
     })
 
     it('exposes plannedStopTime as the end HH:MM string', () => {
       const ps = makePlannedStopWindow(-60, 60)
       stubDayQuery({ sollstunden: 8, workedHours: 2, windows: [ps] })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.plannedStopTime).toBe(ps.end)
     })
 
     it('sets tab title to countdown when planned stop is active', () => {
       const ps = makePlannedStopWindow(-120, 60)
       stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [ps] })
-      renderHook(() => useRemainingHours())
+      renderRemaining()
       expect(document.title).toMatch(/left.*Timetracker/)
     })
   })
@@ -403,7 +401,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
         windows: [ps],
         config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' }),
       })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(5)
     })
 
@@ -415,7 +413,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
         windows: [ps],
         config: resolveAppConfig({ ...DEFAULT_APP_CONFIG, remainingTimeReference: 'target-hours' }),
       })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.isPlannedStopMode).toBe(false)
     })
   })
@@ -423,19 +421,19 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
   describe('no planned stop', () => {
     it('isPlannedStopMode is false when no period has a future end', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.isPlannedStopMode).toBe(false)
     })
 
     it('plannedStopTime is null when no planned stop', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3, windows: [] })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.plannedStopTime).toBeNull()
     })
 
     it('remaining uses target-based formula when no planned stop', () => {
       stubDayQuery({ sollstunden: 8, workedHours: 3 })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       expect(result.current.remaining).toBeCloseTo(5)
     })
 
@@ -445,7 +443,7 @@ describe('useRemainingHours — Planned-Stop WorkPeriod', () => {
       // to 59 seconds. The fix uses nowHHMMFn() directly for detection.
       const justClosed = makePlannedStopWindow(-60, 0) // end is exactly now (offset = 0 min)
       stubDayQuery({ sollstunden: 8, workedHours: 1, windows: [justClosed] })
-      const { result } = renderHook(() => useRemainingHours())
+      const { result } = renderRemaining()
       // end == now is NOT in the future, so isPlannedStopMode must be false
       expect(result.current.isPlannedStopMode).toBe(false)
     })
