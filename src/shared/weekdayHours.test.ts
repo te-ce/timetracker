@@ -1,15 +1,16 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import { effectiveTargetHours, targetHoursForDate, type WeekdayHours } from './weekdayHours'
+import { parseLocalDate } from './dateUtils'
 
 // 2024-01-15 = Monday, 2024-01-16 = Tuesday, ..., 2024-01-20 = Saturday, 2024-01-21 = Sunday
-const MON = new Date('2024-01-15')
-const TUE = new Date('2024-01-16')
-const WED = new Date('2024-01-17')
-const THU = new Date('2024-01-18')
-const FRI = new Date('2024-01-19')
-const SAT = new Date('2024-01-20')
-const SUN = new Date('2024-01-21')
+const MON = parseLocalDate('2024-01-15')
+const TUE = parseLocalDate('2024-01-16')
+const WED = parseLocalDate('2024-01-17')
+const THU = parseLocalDate('2024-01-18')
+const FRI = parseLocalDate('2024-01-19')
+const SAT = parseLocalDate('2024-01-20')
+const SUN = parseLocalDate('2024-01-21')
 
 const STANDARD: WeekdayHours = [0, 8, 8, 8, 8, 8, 0] // Sun=0, Mon-Fri=8, Sat=0
 

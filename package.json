@@ -10,6 +10,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint --type-aware src/",
     "test": "vitest run",
+    "test:tz": "TZ=America/Los_Angeles vitest run",
     "test:coverage": "vitest run --coverage",
     "test:mutation": "stryker run",
     "knip": "knip",

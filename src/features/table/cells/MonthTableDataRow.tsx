@@ -1,5 +1,6 @@
 import type React from 'react'
 import type { MonthData, MonthRepository, WorkLocation } from '../../../infra/repositories/types'
+import { parseLocalDate } from '../../../shared/dateUtils'
 import { STATUS_DOT } from '../../../shared/statusColors'
 import type { TimeFormat } from '../../../shared/timeFormatStore'
 import type { NotePopoverState } from '../../day/NotePopoverPanel'
@@ -76,7 +77,7 @@ export function MonthTableDataRow({
   const classified = classifyRow(row, todayIso)
   const { displayStatus } = classified
   const dim = isDimRow(row)
-  const dayLabel = new Date(row.date).toLocaleDateString('en-GB', { weekday: 'short' })
+  const dayLabel = parseLocalDate(row.date).toLocaleDateString('en-GB', { weekday: 'short' })
   const rowDelta = dayDelta(row.workedHours, row.targetHours, row.accumulatedOvertime)
   const daySummaryData = buildDaySummaryData(row, classified, categoryDescriptions, preferCategoryDescriptionAsPrimary)
   const note = dayNotes.get(row.date)

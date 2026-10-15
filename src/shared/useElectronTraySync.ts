@@ -5,7 +5,7 @@ import { QUERY_KEYS, invalidateMonth, invalidateConfig } from './queryKeys'
 import { useRepositories } from '../infra/repositories/repositories-context'
 import { getAllCategories } from './categories'
 import { useTodayIso } from './useTodayIso'
-import { toLocalIso } from './dateUtils'
+import { parseLocalDate, toLocalIso } from './dateUtils'
 import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
@@ -20,7 +20,7 @@ function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string):
   const parts = period.start.split(':').map(Number)
   const h = parts[0] ?? 0
   const m = parts[1] ?? 0
-  const d = new Date(todayIso)
+  const d = parseLocalDate(todayIso)
   d.setHours(h, m, 0, 0)
   return d.toISOString()
 }
