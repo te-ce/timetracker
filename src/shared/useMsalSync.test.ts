@@ -6,21 +6,12 @@ import type { ReactNode } from 'react'
 import { InteractionStatus, Logger, stubbedPublicClientApplication } from '@azure/msal-browser'
 import type { AccountInfo } from '@azure/msal-browser'
 
-vi.mock('@azure/msal-react', () => ({
-  useMsal: vi.fn(),
-}))
-
-vi.mock('../infra/repositories/shared', () => ({
-  resetAllRepositories: vi.fn(),
-}))
-
-import { useMsal } from '@azure/msal-react'
-import { resetAllRepositories } from '../infra/repositories/shared'
+import { MsalContext } from '@azure/msal-react'
+import type { IMsalContext } from '@azure/msal-react'
 import { useMsalSync } from './useMsalSync'
 import { useAuthStore } from './authStore'
 
-const mockUseMsal = vi.mocked(useMsal)
-const mockResetAllRepositories = vi.mocked(resetAllRepositories)
+const mockResetAllRepositories = vi.fn()
 
 const logger = new Logger({})
 
@@ -31,6 +22,8 @@ const noAccounts = {
   inProgress: InteractionStatus.None,
   logger,
 }
+
+let currentMsal: IMsalContext = noAccounts
 
 function makeAccount(homeAccountId: string): AccountInfo {
   return {
@@ -44,7 +37,11 @@ function makeAccount(homeAccountId: string): AccountInfo {
 
 function makeWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children)
+    return createElement(
+      MsalContext.Provider,
+      { value: currentMsal },
+      createElement(QueryClientProvider, { client: queryClient }, children),
+    )
   }
 }
 
@@ -55,21 +52,21 @@ beforeEach(() => {
 
 describe('useMsalSync', () => {
   it('sets isAuthenticated to false when no accounts are present', () => {
-    mockUseMsal.mockReturnValue(noAccounts)
+    currentMsal = noAccounts
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
+    renderHook(() => useMsalSync(mockResetAllRepositories), { wrapper: makeWrapper(queryClient) })
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
   })
 
   it('sets isAuthenticated to true when an account is present', () => {
-    mockUseMsal.mockReturnValue({
+    currentMsal = {
       accounts: [makeAccount('user1')],
       instance: stubbedPublicClientApplication,
       inProgress: InteractionStatus.None,
       logger,
-    })
+    }
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
+    renderHook(() => useMsalSync(mockResetAllRepositories), { wrapper: makeWrapper(queryClient) })
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })
 
@@ -78,15 +75,15 @@ describe('useMsalSync', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     queryClient.invalidateQueries = invalidateQueries
 
-    mockUseMsal.mockReturnValue(noAccounts)
-    const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
+    currentMsal = noAccounts
+    const { rerender } = renderHook(() => useMsalSync(mockResetAllRepositories), { wrapper: makeWrapper(queryClient) })
 
-    mockUseMsal.mockReturnValue({
+    currentMsal = {
       accounts: [makeAccount('user1')],
       instance: stubbedPublicClientApplication,
       inProgress: InteractionStatus.None,
       logger,
-    })
+    }
     act(() => {
       rerender()
     })
@@ -100,18 +97,18 @@ describe('useMsalSync', () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     queryClient.invalidateQueries = invalidateQueries
 
-    mockUseMsal.mockReturnValue({
+    currentMsal = {
       accounts: [makeAccount('user1')],
       instance: stubbedPublicClientApplication,
       inProgress: InteractionStatus.None,
       logger,
-    })
-    const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
+    }
+    const { rerender } = renderHook(() => useMsalSync(mockResetAllRepositories), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
     invalidateQueries.mockClear()
 
-    mockUseMsal.mockReturnValue(noAccounts)
+    currentMsal = noAccounts
     act(() => {
       rerender()
     })
@@ -121,9 +118,9 @@ describe('useMsalSync', () => {
   })
 
   it('does not reset repositories when auth state stays false', () => {
-    mockUseMsal.mockReturnValue(noAccounts)
+    currentMsal = noAccounts
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
+    const { rerender } = renderHook(() => useMsalSync(mockResetAllRepositories), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
 
@@ -136,14 +133,14 @@ describe('useMsalSync', () => {
 
   it('does not reset repositories when auth state stays true', () => {
     const account = makeAccount('user1')
-    mockUseMsal.mockReturnValue({
+    currentMsal = {
       accounts: [account],
       instance: stubbedPublicClientApplication,
       inProgress: InteractionStatus.None,
       logger,
-    })
+    }
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { rerender } = renderHook(() => useMsalSync(), { wrapper: makeWrapper(queryClient) })
+    const { rerender } = renderHook(() => useMsalSync(mockResetAllRepositories), { wrapper: makeWrapper(queryClient) })
 
     mockResetAllRepositories.mockClear()
 
