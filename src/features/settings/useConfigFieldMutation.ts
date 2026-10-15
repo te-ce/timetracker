@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { AppConfig, ConfigRepository } from '../../infra/repositories/types'
-import { requireConfig } from '../../shared/appConfigDefaults'
 
 /** Reads AppConfig and mutates one field, invalidating the config query on save. */
 export function useConfigFieldMutation<T>(
   repository: ConfigRepository,
-  applyChange: (config: AppConfig, value: T) => AppConfig,
+  applyChange: (config: AppConfig, value: T) => Partial<AppConfig>,
 ) {
   const queryClient = useQueryClient()
 
@@ -16,7 +15,7 @@ export function useConfigFieldMutation<T>(
   })
 
   const mutation = useMutation({
-    mutationFn: (value: T) => repository.save(applyChange(requireConfig(config), value)),
+    mutationFn: (value: T) => repository.update((latest) => applyChange(latest, value)),
     onSuccess: () => invalidateConfig(queryClient),
   })
 

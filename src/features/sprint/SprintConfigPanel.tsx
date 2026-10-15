@@ -83,13 +83,12 @@ export function SprintConfigPanel({
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!config || parsedLength === null) return
-      await repository.save({
-        ...config,
+      await repository.update(() => ({
         sprintStartDate: startDate || null,
         sprintLengthDays: parsedLength,
         sprintRoundingStep: roundingStep,
         sprintRoundingMode: roundingMode,
-      })
+      }))
     },
     onSuccess: () => {
       invalidateConfig(queryClient)

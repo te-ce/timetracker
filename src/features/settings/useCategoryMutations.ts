@@ -1,23 +1,18 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { AppConfig, ConfigRepository, MonthRepository } from '../../infra/repositories/types'
+import type { ConfigRepository, MonthRepository } from '../../infra/repositories/types'
 import { renameCategoryAcrossAllMonths } from '../table/categoryMutations'
 import { invalidateConfig, invalidateMonthAll } from '../../shared/queryKeys'
-import { requireConfig } from '../../shared/appConfigDefaults'
 
-export function useCategoryMutations(
-  config: AppConfig | undefined,
-  configRepo: ConfigRepository,
-  monthRepo: MonthRepository,
-) {
+export function useCategoryMutations(configRepo: ConfigRepository, monthRepo: MonthRepository) {
   const queryClient = useQueryClient()
 
   const setAutoCategory = useMutation({
-    mutationFn: (cat: string | null) => configRepo.save({ ...requireConfig(config), autoCategory: cat }),
+    mutationFn: (cat: string | null) => configRepo.update(() => ({ autoCategory: cat })),
     onSuccess: () => invalidateConfig(queryClient),
   })
 
   const reorderCategories = useMutation({
-    mutationFn: (categoryOrder: string[]) => configRepo.save({ ...requireConfig(config), categoryOrder }),
+    mutationFn: (categoryOrder: string[]) => configRepo.update(() => ({ categoryOrder })),
     onSuccess: () => invalidateConfig(queryClient),
   })
 
@@ -31,16 +26,14 @@ export function useCategoryMutations(
   })
 
   const setCategoryDescription = useMutation({
-    mutationFn: ({ category, description }: { category: string; description: string }) => {
-      const current = config?.categoryDescriptions ?? {}
-      const updated = description
-        ? { ...current, [category]: description }
-        : Object.fromEntries(Object.entries(current).filter(([k]) => k !== category))
-      return configRepo.save({
-        ...requireConfig(config),
-        categoryDescriptions: updated,
-      })
-    },
+    mutationFn: ({ category, description }: { category: string; description: string }) =>
+      configRepo.update((latest) => {
+        const current = latest.categoryDescriptions ?? {}
+        const categoryDescriptions = description
+          ? { ...current, [category]: description }
+          : Object.fromEntries(Object.entries(current).filter(([k]) => k !== category))
+        return { categoryDescriptions }
+      }),
     onSuccess: () => invalidateConfig(queryClient),
   })
 

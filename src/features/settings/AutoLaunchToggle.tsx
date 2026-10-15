@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
-import { requireConfig } from '../../shared/appConfigDefaults'
 import { Switch } from './Switch'
 
 /**
@@ -30,7 +29,7 @@ export function AutoLaunchToggle({ repository }: { repository: ConfigRepository 
   const mutation = useMutation({
     mutationFn: async (checked: boolean) => {
       await window.electronAPI?.autolaunch.set(checked)
-      await repository.save({ ...requireConfig(config), launchAtLogin: checked })
+      await repository.update(() => ({ launchAtLogin: checked }))
     },
     onSuccess: () => invalidateConfig(queryClient),
     onSettled: () => void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.autoLaunch }),

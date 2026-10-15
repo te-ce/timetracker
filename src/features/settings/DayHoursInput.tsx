@@ -2,6 +2,11 @@ import { useState } from 'react'
 
 export function DayHoursInput({ dayIndex, hours, onSave }: DayInputProps) {
   const [localValue, setLocalValue] = useState(String(hours))
+  const [seenHours, setSeenHours] = useState(hours)
+  if (hours !== seenHours) {
+    setSeenHours(hours)
+    setLocalValue(String(hours))
+  }
   const label = DAY_LABELS[dayIndex] ?? String(dayIndex)
   const shortLabel = DAY_LABELS_SHORT[dayIndex] ?? String(dayIndex)
   const inputId = `weekday-hours-${dayIndex}`

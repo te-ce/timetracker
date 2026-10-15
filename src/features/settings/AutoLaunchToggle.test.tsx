@@ -44,10 +44,10 @@ describe('AutoLaunchToggle', () => {
         calls.push('os-set')
       }),
     })
-    const originalSave = repo.save.bind(repo)
-    repo.save = vi.fn().mockImplementation(async (config) => {
+    const originalUpdate = repo.update.bind(repo)
+    repo.update = vi.fn().mockImplementation(async (patch) => {
       calls.push('config-save')
-      return originalSave(config)
+      return originalUpdate(patch)
     })
 
     render(<AutoLaunchToggle repository={repo} />, { wrapper })

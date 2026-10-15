@@ -9,7 +9,6 @@ import { useDragReorder } from '../../shared/reorder'
 import { autoMatchCategories } from './excelMapping'
 import { useAuthStore } from '../../shared/authStore'
 import { isLocalFolderMode } from '../../infra/auth/bootstrapConfig'
-import { requireConfig } from '../../shared/appConfigDefaults'
 import { CategoryMappingSaveRow } from './CategoryMappingSaveRow'
 import { CategorySettingsRow } from './CategorySettingsRow'
 import { UnmappedCategoryRowsSection } from './UnmappedCategoryRowsSection'
@@ -95,7 +94,7 @@ export function CategorySettings({ repository }: Props) {
       categoryOrder?: string[]
       categoryDescriptions?: Record<string, string>
       categoryImportOrder?: string[]
-    }) => repository.save({ ...requireConfig(config), ...updates }),
+    }) => repository.update(() => updates),
     onSuccess: () => invalidateConfig(queryClient),
   })
 
@@ -109,15 +108,18 @@ export function CategorySettings({ repository }: Props) {
       newCustomCategories: string[]
       importOrder?: string[] | undefined
     }) => {
-      const current = await repository.get()
-      const existingCustomCategoriesSet = new Set(current.customCategories)
-      const mergedCustom = [
-        ...current.customCategories,
-        ...newCustomCategories.filter((c) => !existingCustomCategoriesSet.has(c)),
-      ]
-      const update: typeof current = { ...current, categoryMapping: mapping, customCategories: mergedCustom }
-      if (importOrder) update.categoryImportOrder = importOrder
-      await repository.save(update)
+      await repository.update((current) => {
+        const existingCustomCategoriesSet = new Set(current.customCategories)
+        const mergedCustom = [
+          ...current.customCategories,
+          ...newCustomCategories.filter((c) => !existingCustomCategoriesSet.has(c)),
+        ]
+        return {
+          categoryMapping: mapping,
+          customCategories: mergedCustom,
+          ...(importOrder ? { categoryImportOrder: importOrder } : {}),
+        }
+      })
     },
     onSuccess: () => {
       setLocalMapping(null)

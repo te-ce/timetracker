@@ -33,12 +33,29 @@ function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
 }
 
 describe('useCategoryMutations', () => {
+  it('keeps both fields when two mutations fire before the config is refetched', async () => {
+    const configRepo = new InMemoryConfigRepository(makeConfig({ customCategories: ['Work'] }))
+    const { result } = renderHook(() => useCategoryMutations(configRepo, new InMemoryMonthRepository()), {
+      wrapper: makeWrapper(makeQC()),
+    })
+
+    await act(async () => {
+      result.current.setAutoCategory.mutate('Work')
+      result.current.reorderCategories.mutate(['Work'])
+      await flush()
+    })
+
+    const saved = await configRepo.get()
+    expect(saved.autoCategory).toBe('Work')
+    expect(saved.categoryOrder).toEqual(['Work'])
+  })
+
   describe('setAutoCategory', () => {
     it('saves config with the new autoCategory value', async () => {
       const config = makeConfig({ customCategories: ['Work'] })
       const configRepo = new InMemoryConfigRepository(config)
       const monthRepo = new InMemoryMonthRepository()
-      const { result } = renderHook(() => useCategoryMutations(config, configRepo, monthRepo), {
+      const { result } = renderHook(() => useCategoryMutations(configRepo, monthRepo), {
         wrapper: makeWrapper(makeQC()),
       })
 
@@ -54,7 +71,7 @@ describe('useCategoryMutations', () => {
       const config = makeConfig({ autoCategory: 'Work' })
       const configRepo = new InMemoryConfigRepository(config)
       const monthRepo = new InMemoryMonthRepository()
-      const { result } = renderHook(() => useCategoryMutations(config, configRepo, monthRepo), {
+      const { result } = renderHook(() => useCategoryMutations(configRepo, monthRepo), {
         wrapper: makeWrapper(makeQC()),
       })
 
@@ -72,7 +89,7 @@ describe('useCategoryMutations', () => {
       const config = makeConfig({ customCategories: ['A', 'B', 'C'] })
       const configRepo = new InMemoryConfigRepository(config)
       const monthRepo = new InMemoryMonthRepository()
-      const { result } = renderHook(() => useCategoryMutations(config, configRepo, monthRepo), {
+      const { result } = renderHook(() => useCategoryMutations(configRepo, monthRepo), {
         wrapper: makeWrapper(makeQC()),
       })
 
@@ -90,7 +107,7 @@ describe('useCategoryMutations', () => {
       const config = makeConfig({ customCategories: ['Design', 'Dev'] })
       const configRepo = new InMemoryConfigRepository(config)
       const monthRepo = new InMemoryMonthRepository()
-      const { result } = renderHook(() => useCategoryMutations(config, configRepo, monthRepo), {
+      const { result } = renderHook(() => useCategoryMutations(configRepo, monthRepo), {
         wrapper: makeWrapper(makeQC()),
       })
 
@@ -109,7 +126,7 @@ describe('useCategoryMutations', () => {
       const config = makeConfig({ customCategories: ['Work'] })
       const configRepo = new InMemoryConfigRepository(config)
       const monthRepo = new InMemoryMonthRepository()
-      const { result } = renderHook(() => useCategoryMutations(config, configRepo, monthRepo), {
+      const { result } = renderHook(() => useCategoryMutations(configRepo, monthRepo), {
         wrapper: makeWrapper(makeQC()),
       })
 
@@ -128,7 +145,7 @@ describe('useCategoryMutations', () => {
       })
       const configRepo = new InMemoryConfigRepository(config)
       const monthRepo = new InMemoryMonthRepository()
-      const { result } = renderHook(() => useCategoryMutations(config, configRepo, monthRepo), {
+      const { result } = renderHook(() => useCategoryMutations(configRepo, monthRepo), {
         wrapper: makeWrapper(makeQC()),
       })
 

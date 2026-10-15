@@ -46,7 +46,7 @@ export async function renameCategoryAcrossAllMonths(
   const cfg = await configRepo.get()
   if (!isValidCustomCategoryName(oldName) || !isValidCustomCategoryName(newName)) return
   if (getAllCategories(cfg.customCategories).includes(newName)) return
-  await configRepo.save(renameInConfig(cfg, oldName, newName))
+  await configRepo.update((latest) => renameInConfig(latest, oldName, newName))
   const allMonths = await monthRepo.getAllMonths()
   const monthsData = await Promise.all(
     allMonths.map((ym) => monthRepo.getMonth(parseInt(ym.slice(0, 4)), parseInt(ym.slice(5, 7)))),

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { AppConfig, ConfigRepository } from '../../infra/repositories/types'
-import { requireConfig } from '../../shared/appConfigDefaults'
 import { Switch } from './Switch'
 
 export interface SettingToggleProps {
@@ -9,7 +8,7 @@ export interface SettingToggleProps {
   label: string
   description: string
   isChecked: (config: AppConfig) => boolean
-  applyChange: (config: AppConfig, checked: boolean) => AppConfig
+  applyChange: (config: AppConfig, checked: boolean) => Partial<AppConfig>
   onAfterSave?: (checked: boolean) => Promise<void> | void
 }
 
@@ -30,7 +29,7 @@ export function SettingToggle({
 
   const mutation = useMutation({
     mutationFn: async (checked: boolean) => {
-      await repository.save(applyChange(requireConfig(config), checked))
+      await repository.update((latest) => applyChange(latest, checked))
       await onAfterSave?.(checked)
     },
     onSuccess: () => invalidateConfig(queryClient),
