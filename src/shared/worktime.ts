@@ -111,7 +111,7 @@ export function calculateProjectedWorkedHours(windows: WorkPeriod[], nowHHMM: st
  * A period whose end is before its start runs past midnight, so its wrap is
  * real and it counts as under way — only same-day periods can be "not yet".
  */
-function hasNotStartedYet(period: WorkPeriod, now: string): boolean {
+export function hasNotStartedYet(period: WorkPeriod, now: string): boolean {
   if (period.end === null) return false
   if (parseMinutes(period.end) < parseMinutes(period.start)) return false
   return parseMinutes(now) < parseMinutes(period.start)

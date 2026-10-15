@@ -55,6 +55,13 @@ describe('deriveDayBalance worked split', () => {
     expect(b.worked).toBeCloseTo(3)
   })
 
+  it('credits nothing to a planned period that has not started yet', () => {
+    const b = derive({ windows: [period('08:00', '10:00'), period('15:00', '17:00')], now: '10:30' })
+    expect(b.closedWorked).toBeCloseTo(2)
+    expect(b.liveElapsed).toBe(0)
+    expect(b.worked).toBeCloseTo(2)
+  })
+
   it('tolerates a tick landing just before a period start', () => {
     const b = derive({ windows: [period('12:03', null)], now: '12:00' })
     expect(b.liveElapsed).toBe(0)
