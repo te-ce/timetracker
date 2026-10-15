@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { LocalFolderStorageAdapter } from './local-folder-adapter'
 
 // In-memory File System Access API mock
@@ -76,36 +76,27 @@ function makeMemoryFs() {
   return { root: makeDirectoryHandle(''), files }
 }
 
-vi.mock('./folder-handle-store', () => ({
-  loadHandle: vi.fn(),
-  verifyPermission: vi.fn().mockResolvedValue(true),
-  saveHandle: vi.fn(),
-}))
-
-import { loadHandle } from './folder-handle-store'
-
 describe('LocalFolderStorageAdapter', () => {
   let fs: ReturnType<typeof makeMemoryFs>
 
   beforeEach(() => {
     fs = makeMemoryFs()
-    vi.mocked(loadHandle).mockResolvedValue(fs.root)
   })
 
   describe('flat keys (no slash, no extension)', () => {
     it('returns null for unknown key', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       expect(await adapter.get('config')).toBeNull()
     })
 
     it('stores and retrieves a value', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       await adapter.put('config', { theme: 'dark' })
       expect(await adapter.get('config')).toEqual({ theme: 'dark' })
     })
 
     it('deletes a stored value', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       await adapter.put('config', { theme: 'dark' })
       await adapter.delete('config')
       expect(await adapter.get('config')).toBeNull()
@@ -114,26 +105,26 @@ describe('LocalFolderStorageAdapter', () => {
 
   describe('nested keys with subdirectory (months/YYYY-MM.json)', () => {
     it('returns null for unknown nested key', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       expect(await adapter.get('months/2026-06.json')).toBeNull()
     })
 
     it('stores and retrieves a value under a nested key', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       const data = { '2026-06-01': { windows: [] } }
       await adapter.put('months/2026-06.json', data)
       expect(await adapter.get('months/2026-06.json')).toEqual(data)
     })
 
     it('deletes a nested key', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       await adapter.put('months/2026-06.json', { x: 1 })
       await adapter.delete('months/2026-06.json')
       expect(await adapter.get('months/2026-06.json')).toBeNull()
     })
 
     it('does not double-append .json to keys that already end in .json', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       await adapter.put('months/2026-06.json', { stored: true })
       // Should be stored as months/2026-06.json, not months/2026-06.json.json
       expect(fs.files.has('months/2026-06.json')).toBe(true)
@@ -141,7 +132,7 @@ describe('LocalFolderStorageAdapter', () => {
     })
 
     it('stores index file without double extension', async () => {
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       await adapter.put('months-index.json', { '2026-06': true })
       expect(fs.files.has('months-index.json')).toBe(true)
       expect(fs.files.has('months-index.json.json')).toBe(false)
@@ -151,7 +142,7 @@ describe('LocalFolderStorageAdapter', () => {
   describe('corrupt JSON handling', () => {
     it('throws instead of reporting a corrupt file as empty, so it is never overwritten', async () => {
       fs.files.set('corrupt.json', '{not valid json')
-      const adapter = new LocalFolderStorageAdapter()
+      const adapter = new LocalFolderStorageAdapter(() => Promise.resolve(fs.root))
       await expect(adapter.get('corrupt')).rejects.toThrow('corrupt.json')
       expect(fs.files.get('corrupt.json')).toBe('{not valid json')
     })
