@@ -74,22 +74,27 @@ export const appConfigSchema = appConfigFields
     return { ...raw, weekdayHours: raw.weekdayHours ?? fallback }
   })
 
-const workPeriodSubtaskSchema = z.object({
-  id: z.string(),
-  category: z.string(),
-  hours: z.number(),
-  startedAt: z.string().optional(),
-  stoppedAt: z.string().optional(),
-  note: z.string().optional(),
-})
+// passthrough: fields added by a newer build must survive a write-back from an older one.
+const workPeriodSubtaskSchema = z
+  .object({
+    id: z.string(),
+    category: z.string(),
+    hours: z.number(),
+    startedAt: z.string().optional(),
+    stoppedAt: z.string().optional(),
+    note: z.string().optional(),
+  })
+  .passthrough()
 
-const workPeriodSchema = z.object({
-  id: z.string(),
-  start: z.string(),
-  end: z.string().nullable(),
-  category: z.string(),
-  subtasks: z.array(workPeriodSubtaskSchema),
-})
+const workPeriodSchema = z
+  .object({
+    id: z.string(),
+    start: z.string(),
+    end: z.string().nullable(),
+    category: z.string(),
+    subtasks: z.array(workPeriodSubtaskSchema),
+  })
+  .passthrough()
 
 export const daySchema = z
   .object({
@@ -102,11 +107,13 @@ export const daySchema = z
   })
   .passthrough()
 
-const sprintExportSchema = z.object({
-  sprintIndex: z.number(),
-  status: z.enum(['pending', 'exported']),
-  exportedAt: z.string().nullable(),
-})
+const sprintExportSchema = z
+  .object({
+    sprintIndex: z.number(),
+    status: z.enum(['pending', 'exported']),
+    exportedAt: z.string().nullable(),
+  })
+  .passthrough()
 
 export function validateDay(v: unknown): Day | null {
   const r = daySchema.safeParse(v)

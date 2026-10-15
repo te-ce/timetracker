@@ -51,6 +51,9 @@ export class JsonCollectionStore<T> {
   private key: string
   private validate: Validator<T>
   private cache: T[] | null = null
+  // Items this build cannot validate (e.g. written by a newer build): hidden
+  // from callers but written back unchanged so they are never deleted.
+  private invalid: unknown[] = []
   private writer: KeyWriter<T[]>
 
   constructor(adapter: StorageAdapter, key: string, validate: Validator<T>) {
@@ -60,7 +63,7 @@ export class JsonCollectionStore<T> {
     this.writer = new KeyWriter(
       () => this.getAll(),
       async (items) => {
-        await this.adapter.put(this.key, items)
+        await this.adapter.put(this.key, [...items, ...this.invalid])
         this.cache = items
       },
       () => this.clearCache(),
@@ -76,14 +79,17 @@ export class JsonCollectionStore<T> {
       return this.cache
     }
     const valid: T[] = []
+    const invalid: unknown[] = []
     for (const item of raw) {
       const result = this.validate(item)
       if (result !== null) {
         valid.push(result)
       } else {
-        console.warn(`[JsonCollectionStore] ${this.key}: invalid item dropped`, item)
+        invalid.push(item)
+        console.warn(`[JsonCollectionStore] ${this.key}: invalid item skipped (kept in file)`, item)
       }
     }
+    this.invalid = invalid
     this.cache = valid
     return this.cache
   }
@@ -172,6 +178,9 @@ export class JsonRecordStore<V> {
   private key: string
   private validate: Validator<V>
   private cache: Record<string, V> | null = null
+  // Records this build cannot validate: hidden from callers but written back
+  // unchanged (unless a valid record replaces them) so they are never deleted.
+  private invalid: Record<string, unknown> = {}
   private writer: KeyWriter<Record<string, V>>
 
   constructor(adapter: StorageAdapter, key: string, validate: Validator<V>) {
@@ -181,7 +190,7 @@ export class JsonRecordStore<V> {
     this.writer = new KeyWriter(
       () => this.getAll(),
       async (records) => {
-        await this.adapter.put(this.key, records)
+        await this.adapter.put(this.key, { ...this.invalid, ...records })
         this.cache = records
       },
       () => this.clearCache(),
@@ -197,14 +206,17 @@ export class JsonRecordStore<V> {
       return this.cache
     }
     const validated: Record<string, V> = {}
+    const invalid: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(raw)) {
       const result = this.validate(v)
       if (result !== null) {
         validated[k] = result
       } else {
-        console.warn(`[JsonRecordStore] ${this.key}: invalid record for key "${k}" dropped`, v)
+        invalid[k] = v
+        console.warn(`[JsonRecordStore] ${this.key}: invalid record for key "${k}" skipped (kept in file)`, v)
       }
     }
+    this.invalid = invalid
     this.cache = validated
     return this.cache
   }

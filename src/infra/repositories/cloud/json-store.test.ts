@@ -184,7 +184,7 @@ describe('JsonCollectionStore with validator', () => {
     ])
   })
 
-  it('drops invalid items and warns', async () => {
+  it('hides invalid items and warns', async () => {
     const adapter = createMockAdapter()
     adapter.data['items.json'] = [
       { id: 'a', value: 1 },
@@ -198,7 +198,7 @@ describe('JsonCollectionStore with validator', () => {
       { id: 'a', value: 1 },
       { id: 'c', value: 3 },
     ])
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid item dropped'), expect.anything())
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('invalid item skipped'), expect.anything())
     warnSpy.mockRestore()
   })
 
@@ -221,14 +221,14 @@ describe('JsonRecordStore with validator', () => {
     expect(await store.getAll()).toEqual({ a: 'hello', b: 'world' })
   })
 
-  it('drops invalid record entries and warns', async () => {
+  it('hides invalid record entries and warns', async () => {
     const adapter = createMockAdapter()
     adapter.data['records.json'] = { a: 'hello', b: 42, c: 'valid' }
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const store = new JsonRecordStore<string>(adapter, 'records.json', isString)
     expect(await store.getAll()).toEqual({ a: 'hello', c: 'valid' })
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('invalid record for key "b" dropped'),
+      expect.stringContaining('invalid record for key "b" skipped'),
       expect.anything(),
     )
     warnSpy.mockRestore()
@@ -377,5 +377,45 @@ describe('JsonValueStore write failures', () => {
     adapter.failNextPut = true
     await expect(store.set('new')).rejects.toThrow('network')
     expect(await store.get()).toBe('default')
+  })
+})
+
+describe('invalid entries survive a write-back', () => {
+  it('JsonRecordStore keeps invalid raw records in the file when writing other records', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['records.json'] = { a: 'ok', b: { written: 'by a newer build' } }
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = new JsonRecordStore<string>(adapter, 'records.json', isString)
+    expect(await store.getAll()).toEqual({ a: 'ok' })
+    await store.set('c', 'new')
+    expect(adapter.data['records.json']).toEqual({ a: 'ok', b: { written: 'by a newer build' }, c: 'new' })
+    warnSpy.mockRestore()
+  })
+
+  it('JsonRecordStore lets a valid write replace an invalid record with the same key', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['records.json'] = { b: 42 }
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = new JsonRecordStore<string>(adapter, 'records.json', isString)
+    await store.set('b', 'fixed')
+    expect(adapter.data['records.json']).toEqual({ b: 'fixed' })
+    warnSpy.mockRestore()
+  })
+
+  it('JsonCollectionStore keeps invalid raw items in the file when writing other items', async () => {
+    const adapter = createMockAdapter()
+    adapter.data['items.json'] = [
+      { id: 'a', value: 1 },
+      { id: 'bad', value: 'not-a-number' },
+    ]
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const store = new JsonCollectionStore<Item>(adapter, 'items.json', isItem)
+    await store.upsert({ id: 'c', value: 3 }, (i) => i.id)
+    expect(adapter.data['items.json']).toEqual([
+      { id: 'a', value: 1 },
+      { id: 'c', value: 3 },
+      { id: 'bad', value: 'not-a-number' },
+    ])
+    warnSpy.mockRestore()
   })
 })

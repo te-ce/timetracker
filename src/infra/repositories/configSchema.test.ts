@@ -139,3 +139,21 @@ describe('validateDay dayTypeOverride', () => {
     expect(validateDay({ windows: [], dayTypeOverride: 'Holiday' })).toBeNull()
   })
 })
+
+describe('validateDay forward compatibility', () => {
+  it('keeps unknown fields on periods and subtasks written by a newer build', () => {
+    const day = {
+      windows: [
+        {
+          id: 'w1',
+          start: '09:00',
+          end: '10:00',
+          category: '_COREMEDIA',
+          futureField: 'keep me',
+          subtasks: [{ id: 's1', category: '_SUPPORT', hours: 1, futureSubtaskField: 42 }],
+        },
+      ],
+    }
+    expect(validateDay(day)).toEqual(day)
+  })
+})
