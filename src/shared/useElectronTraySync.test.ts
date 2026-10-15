@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 import { handleStartSubtask, handleStopSubtask, handleStopAll, handleStartWorkPeriod } from './useElectronTraySync'
 import type { WorkPeriod } from '../infra/repositories/types'
 import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
+import preloadSource from '../../electron/preload.cjs?raw'
 
 vi.mock('../infra/auth/msalInstance', () => ({
   getAccessToken: vi.fn().mockRejectedValue(new Error('Not authenticated')),
@@ -189,47 +190,63 @@ describe('handleStartWorkPeriod', () => {
 
 // ─── Hook integration tests ────────────────────────────────────────────────
 
-function makeElectronAPI() {
+type IpcListener = (event: unknown, ...args: unknown[]) => void
+
+// Runs the real electron/preload.cjs against a fake ipcRenderer, so the tests
+// exercise the actual on/off wiring rather than a hand-written stand-in.
+async function makeElectronAPI() {
+  const listeners = new Map<string, IpcListener[]>()
+  const sent: Array<{ channel: string; data: unknown }> = []
+  const ipcRenderer = {
+    on: (channel: string, listener: IpcListener) => {
+      listeners.set(channel, [...(listeners.get(channel) ?? []), listener])
+    },
+    removeListener: (channel: string, listener: IpcListener) => {
+      const current = listeners.get(channel) ?? []
+      const index = current.indexOf(listener)
+      if (index >= 0)
+        listeners.set(
+          channel,
+          current.filter((_, i) => i !== index),
+        )
+    },
+    send: (channel: string, data: unknown) => {
+      sent.push({ channel, data })
+    },
+    invoke: () => Promise.resolve(null),
+  }
+  let exposed: unknown
+  const electron = {
+    contextBridge: {
+      exposeInMainWorld: (_key: string, api: unknown) => {
+        exposed = api
+      },
+    },
+    ipcRenderer,
+  }
+  const moduleUrl = `data:text/javascript,${encodeURIComponent(`export default (require) => {${preloadSource}}`)}`
+  const preload: { default: (require: () => unknown) => void } = await import(/* @vite-ignore */ moduleUrl)
+  preload.default(() => electron)
   return {
-    autolaunch: { get: vi.fn().mockResolvedValue(false), set: vi.fn().mockResolvedValue(undefined) },
-    tray: {
-      sync: vi.fn(),
-      onStartSubtask: vi.fn(),
-      offStartSubtask: vi.fn(),
-      onStopSubtask: vi.fn(),
-      offStopSubtask: vi.fn(),
-      onTick: vi.fn(),
-      offTick: vi.fn(),
-      onStopAll: vi.fn(),
-      offStopAll: vi.fn(),
-      onStartWorkPeriod: vi.fn(),
-      offStartWorkPeriod: vi.fn(),
-      onTogglePresentingMode: vi.fn(),
-      offTogglePresentingMode: vi.fn(),
+    api: exposed as NonNullable<Window['electronAPI']>,
+    emit: (channel: string, ...args: unknown[]) => {
+      for (const listener of listeners.get(channel) ?? []) listener({}, ...args)
     },
-    hotkey: {
-      onToggle: vi.fn(),
-      offToggle: vi.fn(),
-      onTogglePresenting: vi.fn(),
-      offTogglePresenting: vi.fn(),
-      setGlobal: vi.fn().mockResolvedValue(undefined),
-      setPresenting: vi.fn().mockResolvedValue(undefined),
-    },
-    storage: {
-      get: vi.fn().mockResolvedValue(null),
-      put: vi.fn().mockResolvedValue(undefined),
-      delete: vi.fn().mockResolvedValue(undefined),
-    },
-    localFolder: {
-      pickFolder: vi.fn().mockResolvedValue(null),
-      get: vi.fn().mockResolvedValue(null),
-      put: vi.fn().mockResolvedValue(undefined),
-      delete: vi.fn().mockResolvedValue(undefined),
-    },
-    notify: { goalReached: vi.fn(), sprintExportDue: vi.fn() },
-    window: { onShow: vi.fn(), offShow: vi.fn(), show: vi.fn() },
+    listenerCount: (channel: string) => listeners.get(channel)?.length ?? 0,
+    traySyncCount: () => sent.filter((m) => m.channel === 'tray:sync').length,
   }
 }
+
+const TRAY_CHANNELS = [
+  'tray:startSubtask',
+  'tray:stopSubtask',
+  'tray:stopAll',
+  'tray:startWorkPeriod',
+  'tray:tick',
+  'tray:togglePresentingMode',
+  'hotkey:toggle',
+  'hotkey:togglePresenting',
+]
 
 function makeWrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
@@ -249,65 +266,47 @@ describe('useElectronTraySync hook', () => {
     renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
   })
 
-  it('registers and cleans up tray listeners when electronAPI is present', async () => {
-    const api = makeElectronAPI()
-    window.electronAPI = api
+  it('removes every tray and hotkey listener it registered when unmounted', async () => {
+    const ipc = await makeElectronAPI()
+    window.electronAPI = ipc.api
     const { useElectronTraySync } = await import('./useElectronTraySync')
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const { unmount } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
-    expect(api.tray.onStartSubtask).toHaveBeenCalledOnce()
-    expect(api.tray.onStopSubtask).toHaveBeenCalledOnce()
-    expect(api.tray.onStopAll).toHaveBeenCalledOnce()
-    expect(api.tray.onStartWorkPeriod).toHaveBeenCalledOnce()
+    for (const channel of TRAY_CHANNELS) expect(ipc.listenerCount(channel)).toBe(1)
     unmount()
-    expect(api.tray.offStartSubtask).toHaveBeenCalledOnce()
-    expect(api.tray.offStopSubtask).toHaveBeenCalledOnce()
-    expect(api.tray.offStopAll).toHaveBeenCalledOnce()
-    expect(api.tray.offStartWorkPeriod).toHaveBeenCalledOnce()
+    for (const channel of TRAY_CHANNELS) expect(ipc.listenerCount(channel)).toBe(0)
   })
 
-  it('registers and cleans up hotkey.onToggle listener', async () => {
-    const api = makeElectronAPI()
-    window.electronAPI = api
+  it('keeps exactly one listener per channel across re-renders', async () => {
+    const ipc = await makeElectronAPI()
+    window.electronAPI = ipc.api
     const { useElectronTraySync } = await import('./useElectronTraySync')
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { unmount } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
-    expect(api.hotkey.onToggle).toHaveBeenCalledOnce()
-    unmount()
-    expect(api.hotkey.offToggle).toHaveBeenCalledOnce()
-  })
-
-  it('registers and cleans up presenting-mode toggle listeners from both tray and hotkey', async () => {
-    const api = makeElectronAPI()
-    window.electronAPI = api
-    const { useElectronTraySync } = await import('./useElectronTraySync')
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    const { unmount } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
-    expect(api.tray.onTogglePresentingMode).toHaveBeenCalledOnce()
-    expect(api.hotkey.onTogglePresenting).toHaveBeenCalledOnce()
-    unmount()
-    expect(api.tray.offTogglePresentingMode).toHaveBeenCalledOnce()
-    expect(api.hotkey.offTogglePresenting).toHaveBeenCalledOnce()
+    const { rerender } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
+    await vi.waitFor(() => expect(ipc.traySyncCount()).toBeGreaterThan(0))
+    for (let i = 0; i < 5; i++) {
+      ipc.emit('tray:tick')
+      rerender()
+    }
+    for (const channel of TRAY_CHANNELS) expect(ipc.listenerCount(channel)).toBe(1)
   })
 
   it('flips the showWorkedHoursInTray config setting when the tray or hotkey event fires', async () => {
-    const api = makeElectronAPI()
-    window.electronAPI = api
+    const ipc = await makeElectronAPI()
+    window.electronAPI = ipc.api
     const { useElectronTraySync } = await import('./useElectronTraySync')
     const { configRepo } = await import('../infra/repositories/shared')
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
-    await vi.waitFor(() => expect(api.tray.sync).toHaveBeenCalled())
+    await vi.waitFor(() => expect(ipc.traySyncCount()).toBeGreaterThan(0))
 
-    const callsBeforeToggle = api.tray.onTogglePresentingMode.mock.calls.length
-    const trayListener = api.tray.onTogglePresentingMode.mock.calls.at(-1)?.[0]
-    trayListener()
+    ipc.emit('tray:togglePresentingMode')
     await vi.waitFor(async () => expect((await configRepo.get()).showWorkedHoursInTray).toBe(false))
-    await vi.waitFor(() => expect(api.tray.onTogglePresentingMode.mock.calls.length).toBeGreaterThan(callsBeforeToggle))
+    await vi.waitFor(() => expect(ipc.listenerCount('tray:togglePresentingMode')).toBe(1))
 
-    const hotkeyListener = api.hotkey.onTogglePresenting.mock.calls.at(-1)?.[0]
-    hotkeyListener()
+    ipc.emit('hotkey:togglePresenting')
     await vi.waitFor(async () => expect((await configRepo.get()).showWorkedHoursInTray).not.toBe(false))
+    expect(ipc.listenerCount('hotkey:togglePresenting')).toBe(1)
   })
 })
 
@@ -320,8 +319,8 @@ describe('useElectronTraySync — day rollover while the window stays hidden', (
   it('starts a work period from the tray on the current day, not the day the app was last opened', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 9, 1, 17, 0))
-    const api = makeElectronAPI()
-    window.electronAPI = api
+    const ipc = await makeElectronAPI()
+    window.electronAPI = ipc.api
     const { useElectronTraySync } = await import('./useElectronTraySync')
     const { monthRepo } = await import('../infra/repositories/shared')
     const openWorkPeriod = vi.spyOn(monthRepo, 'openWorkPeriod')
@@ -329,8 +328,7 @@ describe('useElectronTraySync — day rollover while the window stays hidden', (
     renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
 
     vi.setSystemTime(new Date(2026, 9, 2, 8, 30))
-    const startListener = api.tray.onStartWorkPeriod.mock.calls.at(-1)?.[0]
-    startListener('_COREMEDIA')
+    ipc.emit('tray:startWorkPeriod', '_COREMEDIA')
 
     await vi.waitFor(() => expect(openWorkPeriod).toHaveBeenCalledWith('2026-10-02', '_COREMEDIA', '08:30'))
   })
