@@ -42,6 +42,18 @@ describe('deriveDayStats', () => {
     expect(stats.lastStop).toBe('17:00')
   })
 
+  it('counts a period stored with its end before its start as zero, in worked and in categories alike', () => {
+    // Given a period that would cross midnight — not a supported WorkPeriod
+    const windows = [period('08:00', '09:00'), period('22:00', '02:00')]
+
+    // When it is 23:00 on that day
+    const stats = deriveDayStats(windows, '23:00')
+
+    // Then it adds nothing anywhere, so worked and category totals agree
+    expect(stats.worked).toBe(1)
+    expect(stats.categoryTotals).toEqual([{ category: '_COREMEDIA', hours: 1 }])
+  })
+
   it('counts the stretch before an open WorkPeriod as a break and reports what is running', () => {
     // Given work in the morning and an open WorkPeriod since 13:30
     const windows = [period('08:00', '09:30'), period('13:30', null)]

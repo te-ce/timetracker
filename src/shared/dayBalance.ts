@@ -7,7 +7,6 @@ import {
   elapsedHours,
   findOpenPeriod,
   findPlannedStopPeriod,
-  hasNotStartedYet,
   isPlannedStop,
 } from './worktime'
 
@@ -59,11 +58,10 @@ function splitWorked(
   let closedWorked = 0
   let liveElapsed = 0
   for (const w of windows) {
-    if (isToday && hasNotStartedYet(w, now)) continue
     if (isToday && (w.end === null || isPlannedStop(w, now))) {
-      liveElapsed += elapsedHours(w.start, now, { raceToleranceMinutes: 5 })
+      liveElapsed += elapsedHours(w.start, now)
     } else if (w.end !== null) {
-      closedWorked += elapsedHours(w.start, w.end, { raceToleranceMinutes: 5 })
+      closedWorked += elapsedHours(w.start, w.end)
     }
   }
   return { closedWorked, liveElapsed }

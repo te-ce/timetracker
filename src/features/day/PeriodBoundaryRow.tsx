@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useState } from 'react'
 import type { WorkPeriod } from '../../infra/repositories/types'
 import { formatHours } from '../../shared/formatHours'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
+import { endsAfterStart } from '../../shared/worktime'
 import { CategoryPicker } from './CategoryPicker'
 import { useBlurWarning } from './workPeriodShared'
 import { PeriodTimeButton } from './PeriodTimeButton'
@@ -75,7 +76,10 @@ export function PeriodBoundaryRow({
     }
   }
 
+  const invalidRange = end !== '' && !endsAfterStart(start, end)
+
   function save() {
+    if (invalidRange) return
     onSaveTimes(start, end || null)
     onStopEditing()
   }
@@ -97,6 +101,7 @@ export function PeriodBoundaryRow({
           setStart={setStart}
           end={end}
           setEnd={setEnd}
+          invalidRange={invalidRange}
           pendingCancel={pendingCancel}
           handleBlur={handleBlur}
           handleFocus={handleFocus}

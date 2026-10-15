@@ -64,7 +64,7 @@ function pushMainSegment(
   end: string,
   live: boolean,
 ): boolean {
-  const hours = elapsedHours(start, end, { raceToleranceMinutes: 5 })
+  const hours = elapsedHours(start, end)
   if (hours <= 0) return false
   segments.push({
     id: `${period.id}:main:${mainIndex}`,
@@ -101,7 +101,7 @@ function placeStartedSubtasks(
       category: subtask.category,
       start: subtask.startedAt,
       end: subtask.stoppedAt ?? null,
-      hours: elapsedHours(subtask.startedAt, stoppedAt, { raceToleranceMinutes: 5 }),
+      hours: elapsedHours(subtask.startedAt, stoppedAt),
       kind: 'subtask',
       live: subtask === live,
       placed: true,
@@ -175,7 +175,7 @@ export function derivePeriodWarnings(
 
   const running = period.end === null || (isToday && isPlannedStop(period, now))
   const subtasked = period.subtasks.reduce((sum, s) => sum + s.hours, 0)
-  const duration = elapsedHours(period.start, period.end ?? now, { raceToleranceMinutes: 5 })
+  const duration = elapsedHours(period.start, period.end ?? now)
   const overbookedBy = !running && subtasked > duration + 0.001 ? subtasked - duration : 0
 
   return { overlappingSubtaskIds: [...overlapping], overbookedBy }

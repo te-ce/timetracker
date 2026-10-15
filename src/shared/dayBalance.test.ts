@@ -62,6 +62,12 @@ describe('deriveDayBalance worked split', () => {
     expect(b.worked).toBeCloseTo(2)
   })
 
+  it('credits nothing to a period stored with its end before its start', () => {
+    const b = derive({ windows: [period('22:00', '02:00')], now: '23:00' })
+    expect(b.worked).toBe(0)
+    expect(b.projectedWorked).toBe(0)
+  })
+
   it('tolerates a tick landing just before a period start', () => {
     const b = derive({ windows: [period('12:03', null)], now: '12:00' })
     expect(b.liveElapsed).toBe(0)

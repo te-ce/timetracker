@@ -7,6 +7,7 @@ Shape: `{ id, start, end: string | null, category: string, subtasks: WorkPeriodS
 `start` and `end` are local ISO time strings (e.g. `"09:00"`).  
 A day may have multiple WorkPeriods stored in `Day.windows`.  
 **WorkedHours** for a day = Σ duration of all WorkPeriods that day.
+A WorkPeriod never crosses midnight: `end` must be after `start` (ADR 0013).
 
 ### Open WorkPeriod
 

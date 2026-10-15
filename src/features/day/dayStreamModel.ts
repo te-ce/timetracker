@@ -36,7 +36,7 @@ export function findActiveTracking(windows: WorkPeriod[], now: string): ActiveTr
     subtask,
     category: subtask?.category ?? period.category,
     since,
-    elapsed: elapsedHours(since, now, { raceToleranceMinutes: 5 }),
+    elapsed: elapsedHours(since, now),
   }
 }
 

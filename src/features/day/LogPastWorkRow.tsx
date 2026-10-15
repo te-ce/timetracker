@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { endsAfterStart } from '../../shared/worktime'
 import { CategoryPicker } from './CategoryPicker'
+import { InvalidRangeHint } from './InvalidRangeHint'
 
 export interface LogPastWorkRowProps {
   categories: string[]
@@ -26,7 +28,8 @@ export function LogPastWorkRow({
     setCategory(defaultCategory)
   }
 
-  const canAdd = Boolean(newStart && newEnd)
+  const invalidRange = Boolean(newStart && newEnd) && !endsAfterStart(newStart, newEnd)
+  const canAdd = Boolean(newStart && newEnd) && !invalidRange
   const addPeriod = () => {
     if (!canAdd) return
     onAddPeriod(newStart, newEnd, category)
@@ -63,6 +66,7 @@ export function LogPastWorkRow({
         categoryDescriptions={categoryDescriptions}
         preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       />
+      {invalidRange && <InvalidRangeHint>End must be after start</InvalidRangeHint>}
       <button
         type="button"
         disabled={!canAdd}

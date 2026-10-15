@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useTimeFormatStore } from '../../shared/timeFormatStore'
+import { endsAfterStart, parseMinutes } from '../../shared/worktime'
 import { CategoryPicker } from './CategoryPicker'
 import { categoryDisplay } from './categoryLabel'
 import type { ActiveTracking } from './dayStreamModel'
 import { LiveElapsed } from './LiveElapsed'
+import { InvalidRangeHint } from './InvalidRangeHint'
 import { TimeNowField } from './TimeNowField'
 
 export interface ActiveTrackingRowProps {
@@ -15,6 +17,18 @@ export interface ActiveTrackingRowProps {
   onStop: (stopTime: string) => void
   onStartSubtask: (category: string, startTime: string) => void
   onStopSubtask: (stopTime: string) => void
+}
+
+/** Only a hand-picked time can be wrong; stopping at now within the start minute is a valid zero-length period. */
+function customTimeProblems(
+  active: ActiveTracking,
+  customTime: string | null,
+): { stopTooEarly: boolean; startTooEarly: boolean } {
+  if (customTime === null) return { stopTooEarly: false, startTooEarly: false }
+  return {
+    stopTooEarly: !endsAfterStart(active.since, customTime),
+    startTooEarly: parseMinutes(customTime) < parseMinutes(active.period.start),
+  }
 }
 
 export function ActiveTrackingRow({
@@ -37,6 +51,8 @@ export function ActiveTrackingRow({
     setSubtaskCategory(active.period.category)
   }
 
+  const { stopTooEarly, startTooEarly } = customTimeProblems(active, customTime)
+
   const startSubtask = () => {
     onStartSubtask(subtaskCategory, customTime ?? now)
     setCustomTime(null)
@@ -48,6 +64,7 @@ export function ActiveTrackingRow({
   }
 
   const stopWork = () => {
+    if (stopTooEarly) return
     onStop(customTime ?? now)
     setCustomTime(null)
   }
@@ -69,11 +86,13 @@ export function ActiveTrackingRow({
       </span>
       <span className="ml-auto flex items-center gap-2">
         <TimeNowField now={now} value={customTime} onChange={setCustomTime} ariaLabel="Time" onConfirm={stopWork} />
+        {stopTooEarly && <InvalidRangeHint>Pick a time after {active.since}</InvalidRangeHint>}
         {active.subtask ? (
           <button
             type="button"
             onClick={stopSubtask}
-            className="inline-flex h-7 items-center justify-center rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
+            disabled={stopTooEarly}
+            className="inline-flex h-7 items-center justify-center disabled:opacity-40 rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
           >
             ■ Stop subtask → back to{' '}
             {
@@ -98,7 +117,8 @@ export function ActiveTrackingRow({
             <button
               type="button"
               onClick={startSubtask}
-              className="inline-flex h-7 items-center justify-center rounded-lg border border-emerald-300 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
+              disabled={startTooEarly}
+              className="inline-flex h-7 items-center justify-center disabled:opacity-40 rounded-lg border border-emerald-300 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
             >
               ▶ Start subtask
             </button>
@@ -107,7 +127,8 @@ export function ActiveTrackingRow({
         <button
           type="button"
           onClick={stopWork}
-          className="inline-flex h-7 items-center justify-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
+          disabled={stopTooEarly}
+          className="inline-flex h-7 items-center justify-center disabled:opacity-40 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
         >
           ■ Stop work
         </button>

@@ -29,24 +29,16 @@ describe('elapsedHours', () => {
     expect(elapsedHours('09:00', '10:30')).toBe(1.5)
   })
 
-  it('wraps past midnight when end is before start', () => {
-    expect(elapsedHours('23:00', '01:00')).toBe(2)
+  it('is 0 when end is before start — a WorkPeriod never crosses midnight', () => {
+    expect(elapsedHours('23:00', '01:00')).toBe(0)
   })
 
   it('returns 0 when start equals end', () => {
     expect(elapsedHours('09:00', '09:00')).toBe(0)
   })
 
-  it('without race tolerance, a small negative diff wraps to nearly 24h', () => {
-    expect(elapsedHours('09:03', '09:00')).toBeCloseTo(23.95, 5)
-  })
-
-  it('with race tolerance, a small negative diff within the window clamps to 0', () => {
-    expect(elapsedHours('09:03', '09:00', { raceToleranceMinutes: 5 })).toBe(0)
-  })
-
-  it('with race tolerance, a negative diff beyond the window still wraps', () => {
-    expect(elapsedHours('09:10', '09:00', { raceToleranceMinutes: 5 })).toBeCloseTo(23.833, 3)
+  it('is 0 when a minute tick lands just before start', () => {
+    expect(elapsedHours('09:03', '09:00')).toBe(0)
   })
 })
 
@@ -78,8 +70,12 @@ describe('calculateWorkedHours', () => {
     expect(calculateWorkedHours([makeWindow('10:00', '13:00')], '08:19')).toBe(0)
   })
 
-  it('still accrues a period that is under way past midnight', () => {
-    expect(calculateWorkedHours([makeWindow('22:00', '02:00')], '00:30')).toBe(2.5)
+  it('accrues a planned-stop period only up to now', () => {
+    expect(calculateWorkedHours([makeWindow('22:00', '23:30')], '22:45')).toBe(0.75)
+  })
+
+  it('credits nothing to a period stored with its end before its start', () => {
+    expect(calculateWorkedHours([makeWindow('22:00', '02:00')], '23:00')).toBe(0)
   })
 
   it('returns the duration in decimal hours for a single WorkPeriod', () => {
@@ -95,8 +91,8 @@ describe('calculateWorkedHours', () => {
     expect(calculateWorkedHours([makeWindow('09:00', '09:30')])).toBe(0.5)
   })
 
-  it('handles a WorkPeriod that spans midnight', () => {
-    expect(calculateWorkedHours([makeWindow('23:00', '01:00')])).toBe(2)
+  it('counts a closed WorkPeriod ending at 23:59 up to that minute', () => {
+    expect(calculateWorkedHours([makeWindow('23:00', '23:59')])).toBeCloseTo(59 / 60)
   })
 
   it('skips an open WorkPeriod (null end) when no now is provided', () => {
@@ -143,8 +139,8 @@ describe('calcSubtaskHours', () => {
     expect(calcSubtaskHours('09:00', '09:00')).toBe(0)
   })
 
-  it('handles midnight crossing (23:00 → 01:00 = 2h)', () => {
-    expect(calcSubtaskHours('23:00', '01:00')).toBe(2)
+  it('is 0 when the stop is before the start', () => {
+    expect(calcSubtaskHours('23:00', '01:00')).toBe(0)
   })
 })
 

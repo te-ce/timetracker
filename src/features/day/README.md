@@ -35,6 +35,7 @@ See [CONTEXT.md](../../../CONTEXT.md) for full glossary. Short version:
 | `DayNoteEditor.tsx`         | Free-text note field for the day                                                            |
 | `DotPopoverPanel.tsx`       | Popover showing day status dot details                                                      |
 | `NotePopoverPanel.tsx`      | Popover showing the day note inline from MonthView                                          |
+| `InvalidRangeHint.tsx`      | Inline reason a time range is refused (end not after start)                                 |
 | `IncompleteBanner.tsx`      | Warning banner when uncategorized hours > 0.01 h                                            |
 | `dayContext.ts`             | Derives `WorkedHours`, category breakdown, and balance state from raw WorkPeriods           |
 | `dayType.ts`                | `classifyDay()`, `isDayTypeOverride()` type guard, DayType helpers                          |
