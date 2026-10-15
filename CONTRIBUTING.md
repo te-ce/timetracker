@@ -35,6 +35,7 @@ pnpm electron:build   # build Electron distributable
 
 ```bash
 pnpm test             # run all tests once
+pnpm test:tz          # run all tests with TZ=America/Los_Angeles
 pnpm test:coverage    # with coverage report
 pnpm test:mutation    # Stryker mutation tests
 ```
@@ -66,7 +67,7 @@ E2E tests run against the Vite dev server (started automatically by Playwright's
 ### Before committing
 
 ```bash
-pnpm exec tsc --noEmit && pnpm exec oxlint --type-aware src/ && pnpm exec vitest run
+pnpm exec tsc -b && pnpm exec oxlint --type-aware src/ && pnpm exec vitest run
 ```
 
 All three must pass. CI enforces this.
