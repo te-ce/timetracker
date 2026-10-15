@@ -51,10 +51,16 @@ export type DayStreamItem =
 
 export function buildDayStream(windows: WorkPeriod[], now: string, options: DayOptions = {}): DayStreamItem[] {
   const ordered = orderedPeriods(windows)
-  const breaksByStart = new Map(findBreaks(windows).map((b) => [b.start, b]))
+  const breaksByEnd = new Map(findBreaks(windows).map((b) => [b.end, b]))
   const items: DayStreamItem[] = []
 
   ordered.forEach((period, index) => {
+    // Several periods may start where a break ends; the break shows once, before the first.
+    const breakBefore = breaksByEnd.get(period.start)
+    if (breakBefore) {
+      items.push({ type: 'break', key: `break:${breakBefore.start}`, break: breakBefore })
+      breaksByEnd.delete(period.start)
+    }
     items.push({
       type: 'period',
       key: `period:${period.id}`,
@@ -74,9 +80,6 @@ export function buildDayStream(windows: WorkPeriod[], now: string, options: DayO
         last: segmentIndex === segments.length - 1,
       })
     })
-
-    const nextBreak = period.end ? breaksByStart.get(period.end) : undefined
-    if (nextBreak) items.push({ type: 'break', key: `break:${nextBreak.start}`, break: nextBreak })
   })
 
   return items
@@ -120,6 +123,13 @@ export function orderedPeriods(windows: WorkPeriod[]): WorkPeriod[] {
   return windows.toSorted((a, b) => parseMinutes(a.start) - parseMinutes(b.start))
 }
 
+function latestEnd(windows: WorkPeriod[]): string | undefined {
+  return windows
+    .map((w) => w.end)
+    .filter((end): end is string => end !== null)
+    .toSorted((a, b) => parseMinutes(b) - parseMinutes(a))[0]
+}
+
 export function deriveDayStats(windows: WorkPeriod[], now: string, options: DayOptions = {}): DayStats {
   const ordered = orderedPeriods(windows)
   const breaks = findBreaks(windows)
@@ -133,7 +143,7 @@ export function deriveDayStats(windows: WorkPeriod[], now: string, options: DayO
     breakCount: breaks.length,
     atDesk: worked + breakHours,
     firstStart: ordered[0]?.start,
-    lastStop: active ? undefined : (ordered.at(-1)?.end ?? undefined),
+    lastStop: active ? undefined : latestEnd(windows),
     runningSince: active?.since,
     categoryTotals: categoryTotalsFromSegments(windows, now, options),
   }

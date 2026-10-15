@@ -31,6 +31,17 @@ describe('deriveDayStats', () => {
     })
   })
 
+  it('reports the latest end as the last stop, not the end of the last-starting period', () => {
+    // Given a long period and a short one nested inside it
+    const windows = [period('08:00', '17:00'), period('10:00', '11:00')]
+
+    // When
+    const stats = deriveDayStats(windows, '18:00')
+
+    // Then
+    expect(stats.lastStop).toBe('17:00')
+  })
+
   it('counts the stretch before an open WorkPeriod as a break and reports what is running', () => {
     // Given work in the morning and an open WorkPeriod since 13:30
     const windows = [period('08:00', '09:30'), period('13:30', null)]
@@ -124,6 +135,22 @@ describe('buildDayStream', () => {
       { type: 'segment', segment: { kind: 'subtask', category: 'Review' } },
       { type: 'segment', segment: { kind: 'main', start: '11:30', end: '13:00' } },
     ])
+  })
+
+  it('emits one break with a unique key when two periods share an end', () => {
+    // Given two periods both ending at 12:00, then a break until 13:00
+    const windows = [period('09:00', '12:00'), period('10:00', '12:00'), period('13:00', '14:00')]
+
+    // When
+    const items = buildDayStream(windows, '15:00')
+    const keys = items.map((item) => item.key)
+
+    // Then the break shows once, right before the period it leads into
+    expect(new Set(keys).size).toBe(keys.length)
+    const breaks = items.filter((item) => item.type === 'break')
+    expect(breaks).toHaveLength(1)
+    const breakIndex = items.findIndex((item) => item.type === 'break')
+    expect(items[breakIndex + 1]).toMatchObject({ type: 'period', period: { start: '13:00' } })
   })
 
   it('marks the last segment of a WorkPeriod so the stream can hang per-period actions off it', () => {
