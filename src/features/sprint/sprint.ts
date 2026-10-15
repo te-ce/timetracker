@@ -13,11 +13,15 @@ export interface Sprint {
 
 export type ExportStatus = 'pending' | 'exported'
 
-// Exports are keyed by sprint index, so changing the sprint start/length leaves old
-// records pointing at different sprints. One made before the sprint began is stale.
+// Exports are keyed by sprint index, so changing the sprint start/length leaves old records
+// pointing at different sprints. A record only counts when it was made for these exact
+// boundaries (records from before boundaries were stored are trusted by date alone) and on or
+// after the sprint's last day, so a mid-sprint export does not suppress the end-of-sprint reminder.
 export function sprintExportStatus(sprintExport: SprintExport | null | undefined, sprint: Sprint): ExportStatus {
   if (sprintExport?.status !== 'exported') return 'pending'
-  if (sprintExport.exportedAt !== null && sprintExport.exportedAt < sprint.start) return 'pending'
+  if (sprintExport.sprintStart !== undefined && sprintExport.sprintStart !== sprint.start) return 'pending'
+  if (sprintExport.sprintEnd !== undefined && sprintExport.sprintEnd !== sprint.end) return 'pending'
+  if (sprintExport.exportedAt === null || sprintExport.exportedAt.slice(0, 10) < sprint.end) return 'pending'
   return 'exported'
 }
 

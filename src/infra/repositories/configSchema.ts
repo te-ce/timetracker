@@ -106,6 +106,8 @@ const sprintExportSchema = z.object({
   sprintIndex: z.number(),
   status: z.enum(['pending', 'exported']),
   exportedAt: z.string().nullable(),
+  sprintStart: z.string().optional(),
+  sprintEnd: z.string().optional(),
 })
 
 export function validateDay(v: unknown): Day | null {

@@ -83,6 +83,8 @@ export function SprintView() {
         sprintIndex: activeIndex,
         status: 'exported',
         exportedAt: toLocalIso(new Date()),
+        sprintStart: sprint.start,
+        sprintEnd: sprint.end,
       }),
     onSuccess: () => invalidateSprintExport(queryClient, activeIndex),
   })
