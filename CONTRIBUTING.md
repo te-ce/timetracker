@@ -188,7 +188,7 @@ pnpm format  # Prettier
 
 ## Logging
 
-Everything that happens is written as JSON lines to `<userData>/logs/timetracker.log` (macOS: `~/Library/Application Support/timetracker/logs/`; rotated to `timetracker.1.log` at 5 MB). Outside Electron, entries go to the console only.
+Everything that happens is written as JSON lines to `<userData>/logs/timetracker.log` (macOS: `~/Library/Application Support/Timetracker/logs/`; rotated to `timetracker.1.log` at 5 MB). Outside Electron, entries go to the console only.
 
 - Captured automatically: every click/field change (`ui:*`), navigation, every repository and storage call with its arguments and duration (`monthRepo.*`, `storage:*`), failed queries/mutations, uncaught errors, and main-process events (tray clicks, hotkeys, IPC, window, power).
 - For anything else — especially automatic decisions the user did not trigger — call `log.info/warn/error(event, data)` from `src/shared/log.ts`, with the inputs that explain _why_. Don't use `console.*` directly.
