@@ -1,4 +1,5 @@
 import { StorageConflictError, type StorageAdapter } from './adapter'
+import { log } from '../../shared/log'
 
 const PENDING_KEY = 'sync-pending.json'
 
@@ -76,7 +77,8 @@ export class FallbackStorageAdapter implements StorageAdapter {
     let remote: T | null
     try {
       remote = await this.primary.get<T>(key)
-    } catch {
+    } catch (e) {
+      log.warn('sync: remote read failed, using local copy', { key, error: e })
       return this.fallback.get<T>(key)
     }
     await this.mirror(key, remote)
@@ -88,7 +90,7 @@ export class FallbackStorageAdapter implements StorageAdapter {
       if (remote === null) await this.fallback.delete(key)
       else await this.fallback.put(key, remote)
     } catch (e) {
-      console.warn(`[FallbackStorageAdapter] could not mirror "${key}" locally`, e)
+      log.warn('sync: could not mirror remote copy locally', { key, error: e })
     }
   }
 
@@ -96,12 +98,15 @@ export class FallbackStorageAdapter implements StorageAdapter {
     try {
       await this.upload(key, data)
     } catch (e) {
-      if (!(e instanceof StorageConflictError)) return
+      if (!(e instanceof StorageConflictError)) {
+        log.warn('sync: upload failed, write stays pending', { key, error: e })
+        return
+      }
       if (onConflict === 'throw') {
         await this.setPending(key, false)
         throw e
       }
-      console.warn(`[FallbackStorageAdapter] "${key}" changed remotely while offline; keeping the local version`)
+      log.warn('sync: changed remotely while offline, keeping the local version', { key })
       try {
         await this.primary.get(key)
         await this.upload(key, data)

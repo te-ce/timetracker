@@ -71,6 +71,7 @@ describe('dispatchGoalNotification', () => {
         delete: () => Promise.resolve(),
       },
       notify: { goalReached, sprintExportDue: vi.fn() },
+      log: { write: () => {} },
       window: { onShow: () => {}, offShow: () => {}, show: () => {} },
     }
 

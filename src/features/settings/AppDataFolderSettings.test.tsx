@@ -51,6 +51,7 @@ function makeElectronApiStub(overrides: {
       delete: () => Promise.resolve(),
     },
     notify: { goalReached: () => {}, sprintExportDue: () => {} },
+    log: { write: () => {} },
     window: { onShow: () => {}, offShow: () => {}, show: () => {} },
   }
 }

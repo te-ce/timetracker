@@ -64,6 +64,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     goalReached: () => ipcRenderer.send('notify:goalReached'),
     sprintExportDue: (body) => ipcRenderer.send('notify:sprintExportDue', body),
   },
+  log: {
+    write: (entry) => ipcRenderer.send('log:write', entry),
+  },
   window: {
     onShow: (cb) => subscribe('window:show', cb),
     offShow: (cb) => unsubscribe('window:show', cb),

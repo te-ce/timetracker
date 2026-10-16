@@ -12,16 +12,29 @@ import { CloudConfigRepository } from './cloud/config-repository'
 import { CloudSprintExportRepository } from './cloud/sprint-export-repository'
 import { CloudMonthRepository } from './cloud/month-repository'
 import { TrashRepository } from './trash-repository'
+import { logCalls } from '../../shared/logCalls'
+
+// Payloads are whole months/configs; the key says what was touched.
+const keyOnly = (args: unknown[]) => args[0]
+const logged = (adapter: StorageAdapter, name: string) => logCalls(adapter, name, keyOnly)
 
 function makeStorage(): StorageAdapter {
   if (isLocalFolderMode()) {
-    return window.electronAPI ? new ElectronLocalFolderStorageAdapter() : new LocalFolderStorageAdapter()
+    return logged(
+      window.electronAPI ? new ElectronLocalFolderStorageAdapter() : new LocalFolderStorageAdapter(),
+      'storage:localFolder',
+    )
   }
-  const offlineFallback = window.electronAPI ? new ElectronStorageAdapter() : new LocalStorageAdapter()
+  const offlineFallback = logged(
+    window.electronAPI ? new ElectronStorageAdapter() : new LocalStorageAdapter(),
+    'storage:local',
+  )
   // Without MSAL config OneDrive is unreachable; every write would sit pending forever.
   if (!msalInstance) return offlineFallback
-  return new FallbackStorageAdapter(new OneDriveStorageAdapter(getAccessToken), offlineFallback, (count) =>
-    useSyncStatus.setState({ pendingWrites: count }),
+  return new FallbackStorageAdapter(
+    logged(new OneDriveStorageAdapter(getAccessToken), 'storage:onedrive'),
+    offlineFallback,
+    (count) => useSyncStatus.setState({ pendingWrites: count }),
   )
 }
 
@@ -32,10 +45,11 @@ export function flushPendingWrites(): Promise<void> {
   return storage instanceof FallbackStorageAdapter ? storage.flush() : Promise.resolve()
 }
 
-export const configRepo = new CloudConfigRepository(storage)
-export const monthRepo = new CloudMonthRepository(storage)
-export const sprintExportRepo = new CloudSprintExportRepository(storage)
-export const trashRepo = new TrashRepository(storage, monthRepo)
+const cloudMonthRepo = new CloudMonthRepository(storage)
+export const configRepo = logCalls(new CloudConfigRepository(storage), 'configRepo')
+export const monthRepo = logCalls(cloudMonthRepo, 'monthRepo')
+export const sprintExportRepo = logCalls(new CloudSprintExportRepository(storage), 'sprintExportRepo')
+export const trashRepo = logCalls(new TrashRepository(storage, cloudMonthRepo), 'trashRepo')
 
 export function resetAllRepositories(): void {
   configRepo.clearCache()

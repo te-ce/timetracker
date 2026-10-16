@@ -186,6 +186,14 @@ pnpm format  # Prettier
   This is safe because React discards and immediately re-renders when you call a setter during render — no extra effect, no extra paint/tick, and it stays synchronous with the triggering event (an `useEffect`-based equivalent adds a render round-trip, which can be observable in tests that assert immediately after firing an event).
 - **Invoking an external callback/prop as a reaction to a state change still belongs in `useEffect`.** Calling a parent-owned function (e.g. an `onCancel`/`onDone` prop) during render violates React's "cannot update a component while rendering a different component" rule, since you don't control what that callback does. Only the derived-state-in-render trick applies to a component's _own_ setters.
 
+## Logging
+
+Everything that happens is written as JSON lines to `<userData>/logs/timetracker.log` (macOS: `~/Library/Application Support/timetracker/logs/`; rotated to `timetracker.1.log` at 5 MB). Outside Electron, entries go to the console only.
+
+- Captured automatically: every click/field change (`ui:*`), navigation, every repository and storage call with its arguments and duration (`monthRepo.*`, `storage:*`), failed queries/mutations, uncaught errors, and main-process events (tray clicks, hotkeys, IPC, window, power).
+- For anything else — especially automatic decisions the user did not trigger — call `log.info/warn/error(event, data)` from `src/shared/log.ts`, with the inputs that explain _why_. Don't use `console.*` directly.
+- Reads log at `debug`: `jq 'select(.level != "debug")' timetracker.log` hides them.
+
 ## React Query
 
 - All cache keys go through `QUERY_KEYS` in `src/shared/queryKeys.ts` — never inline `['someKey', ...]` arrays

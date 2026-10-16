@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { log } from './log'
 import type { ReactNode, ErrorInfo } from 'react'
 
 interface Props {
@@ -17,7 +18,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info.componentStack)
+    log.error('ui: render crashed', { error, componentStack: info.componentStack })
   }
 
   render() {

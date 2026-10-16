@@ -13,6 +13,38 @@ const {
 const path = require('path')
 const fs = require('fs')
 const { readJsonFile, writeJsonFileAtomic, deleteFile, localFolderFile } = require('./json-files.cjs')
+const { createLogFile } = require('./log-file.cjs')
+
+const logFile = createLogFile(path.join(app.getPath('userData'), 'logs'))
+
+function log(level, event, data) {
+  const entry = { ts: new Date().toISOString(), level, source: 'main', event }
+  if (data !== undefined) entry.data = data instanceof Error ? { message: data.message, stack: data.stack } : data
+  logFile.write(entry)
+}
+
+// Every IPC handler goes through here so each renderer request — and why it failed — lands in the log.
+function handle(channel, fn, { logArgs = (args) => args } = {}) {
+  ipcMain.handle(channel, async (_, ...args) => {
+    try {
+      const result = await fn(...args)
+      log(channel.endsWith(':get') ? 'debug' : 'info', `ipc ${channel}`, { args: logArgs(args) })
+      return result
+    } catch (e) {
+      log('error', `ipc ${channel}`, { args: logArgs(args), error: { message: e.message, stack: e.stack } })
+      throw e
+    }
+  })
+}
+
+// Storage payloads are whole months/configs — log which key, not the content.
+const storageArgs = (args) => args[0]
+const folderArgs = (args) => args.slice(0, 2)
+
+process.on('uncaughtException', (e) => log('error', 'main:uncaughtException', e))
+process.on('unhandledRejection', (e) => log('error', 'main:unhandledRejection', e))
+
+ipcMain.on('log:write', (_, entry) => logFile.write(entry))
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
@@ -70,33 +102,32 @@ function storagePath(key) {
   return path.join(app.getPath('userData'), 'storage', key)
 }
 
-ipcMain.handle('storage:get', (_, key) => readJsonFile(storagePath(key)))
+handle('storage:get', (key) => readJsonFile(storagePath(key)), { logArgs: storageArgs })
 
-ipcMain.handle('storage:put', (_, key, data) => {
-  writeJsonFileAtomic(storagePath(key), JSON.stringify(data))
+handle('storage:put', (key, data) => writeJsonFileAtomic(storagePath(key), JSON.stringify(data)), {
+  logArgs: storageArgs,
 })
 
-ipcMain.handle('storage:delete', (_, key) => {
-  deleteFile(storagePath(key))
-})
+handle('storage:delete', (key) => deleteFile(storagePath(key)), { logArgs: storageArgs })
 
 // ── Local folder storage (Node fs, no browser permission/gesture needed) ─────
 
-ipcMain.handle('localfolder:pickFolder', async () => {
+handle('localfolder:pickFolder', async () => {
   const result = await dialog.showOpenDialog(mainWindow, { properties: ['openDirectory', 'createDirectory'] })
   if (result.canceled || result.filePaths.length === 0) return null
+  log('info', 'localfolder:picked', { path: result.filePaths[0] })
   return result.filePaths[0]
 })
 
-ipcMain.handle('localfolder:get', (_, basePath, key) => readJsonFile(localFolderFile(basePath, key)))
+handle('localfolder:get', (basePath, key) => readJsonFile(localFolderFile(basePath, key)), { logArgs: folderArgs })
 
-ipcMain.handle('localfolder:put', (_, basePath, key, data) => {
-  writeJsonFileAtomic(localFolderFile(basePath, key), JSON.stringify(data, null, 2))
-})
+handle(
+  'localfolder:put',
+  (basePath, key, data) => writeJsonFileAtomic(localFolderFile(basePath, key), JSON.stringify(data, null, 2)),
+  { logArgs: folderArgs },
+)
 
-ipcMain.handle('localfolder:delete', (_, basePath, key) => {
-  deleteFile(localFolderFile(basePath, key))
-})
+handle('localfolder:delete', (basePath, key) => deleteFile(localFolderFile(basePath, key)), { logArgs: folderArgs })
 
 // ── Tray helpers ──────────────────────────────────────────────────────────────
 
@@ -227,31 +258,47 @@ function buildTrayMenu() {
       ]
     : []
 
-  return Menu.buildFromTemplate([
-    openItem,
-    { type: 'separator' },
-    ...infoItems,
-    { type: 'separator' },
-    ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
-    ...(startWorkPeriodItems.length > 0 ? [...startWorkPeriodItems, { type: 'separator' }] : []),
-    ...stopItem,
-    { type: 'separator' },
-    {
-      label: 'Display Hours',
-      type: 'checkbox',
-      checked: !presentingMode,
-      click: () => {
-        mainWindow.webContents.send('tray:togglePresentingMode')
+  return Menu.buildFromTemplate(
+    withClickLogging([
+      openItem,
+      { type: 'separator' },
+      ...infoItems,
+      { type: 'separator' },
+      ...(categoryItems.length > 0 ? [...categoryItems, { type: 'separator' }] : []),
+      ...(startWorkPeriodItems.length > 0 ? [...startWorkPeriodItems, { type: 'separator' }] : []),
+      ...stopItem,
+      { type: 'separator' },
+      {
+        label: 'Display Hours',
+        type: 'checkbox',
+        checked: !presentingMode,
+        click: () => {
+          mainWindow.webContents.send('tray:togglePresentingMode')
+        },
       },
-    },
-    {
-      label: 'Quit',
-      click: () => {
-        app.isQuitting = true
-        app.quit()
+      {
+        label: 'Quit',
+        click: () => {
+          app.isQuitting = true
+          app.quit()
+        },
       },
-    },
-  ])
+    ]),
+  )
+}
+
+function withClickLogging(items) {
+  return items.map((item) =>
+    item.click
+      ? {
+          ...item,
+          click: (...args) => {
+            log('info', 'tray:click', { label: item.label.trim(), checked: item.checked })
+            item.click(...args)
+          },
+        }
+      : item,
+  )
 }
 
 function createTray() {
@@ -284,8 +331,18 @@ function createWindow() {
 
   // Dock icon tracks window visibility: hidden while only the tray is showing.
   app.dock?.hide()
-  mainWindow.on('show', () => app.dock?.show())
-  mainWindow.on('hide', () => app.dock?.hide())
+  mainWindow.on('show', () => {
+    log('info', 'window:show')
+    app.dock?.show()
+  })
+  mainWindow.on('hide', () => {
+    log('info', 'window:hide')
+    app.dock?.hide()
+  })
+  mainWindow.webContents.on('render-process-gone', (_, details) => log('error', 'renderer:gone', details))
+  mainWindow.webContents.on('did-fail-load', (_, code, description, url) =>
+    log('error', 'renderer:didFailLoad', { code, description, url }),
+  )
 
   mainWindow.on('resize', saveWindowState)
   mainWindow.on('move', saveWindowState)
@@ -303,6 +360,7 @@ function createWindow() {
 
   mainWindow.on('close', (e) => {
     if (!app.isQuitting && loadConfig().closeToTray !== false) {
+      log('info', 'window:close → hidden to tray', { reason: 'closeToTray enabled' })
       e.preventDefault()
       mainWindow.hide()
     }
@@ -310,10 +368,12 @@ function createWindow() {
 }
 
 function registerGlobalHotkeys({ globalToggle, presentingMode }) {
+  log('info', 'hotkeys:register', { globalToggle, presentingMode })
   globalShortcut.unregisterAll()
 
   if (globalToggle) {
     globalShortcut.register(globalToggle, () => {
+      log('info', 'hotkey:globalToggle', { isTracking: trayState.isTracking })
       if (!mainWindow) return
       if (trayState.isTracking) {
         mainWindow.webContents.send('hotkey:toggle')
@@ -326,6 +386,7 @@ function registerGlobalHotkeys({ globalToggle, presentingMode }) {
 
   if (presentingMode) {
     globalShortcut.register(presentingMode, () => {
+      log('info', 'hotkey:presentingMode')
       if (!mainWindow) return
       mainWindow.webContents.send('hotkey:togglePresenting')
     })
@@ -374,11 +435,12 @@ function syncAutoLaunch() {
     const shouldEnable = config?.launchAtLogin === true
     if (shouldEnable !== isLaunchAtLoginEnabled()) setLaunchAtLogin(shouldEnable)
   } catch (err) {
-    console.error('syncAutoLaunch failed:', err)
+    log('error', 'syncAutoLaunch failed', err)
   }
 }
 
 app.whenReady().then(async () => {
+  log('info', 'app:ready', { version: app.getVersion(), platform: process.platform, logFile: logFile.file })
   createTray()
   createWindow()
 
@@ -400,24 +462,33 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  log('info', 'app:quit')
   app.isQuitting = true
   if (elapsedTimer) clearInterval(elapsedTimer)
   globalShortcut.unregisterAll()
 })
 
-ipcMain.handle('hotkey:setGlobal', (_, accelerator) => {
+handle('hotkey:setGlobal', (accelerator) => {
   registerGlobalHotkeys({ globalToggle: accelerator, presentingMode: loadPresentingModeHotkey() })
 })
 
-ipcMain.handle('hotkey:setPresenting', (_, accelerator) => {
+handle('hotkey:setPresenting', (accelerator) => {
   registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: accelerator })
 })
 
-ipcMain.handle('autolaunch:get', () => isLaunchAtLoginEnabled())
-ipcMain.handle('autolaunch:set', (_, enabled) => setLaunchAtLogin(enabled === true))
+handle('autolaunch:get', () => isLaunchAtLoginEnabled())
+handle('autolaunch:set', (enabled) => setLaunchAtLogin(enabled === true))
 
 ipcMain.on('tray:sync', (_, data) => {
   if (!tray) return
+  if (data.isTracking !== trayState.isTracking || data.autoCategory !== trayState.autoCategory) {
+    log('info', 'tray:stateChanged', {
+      isTracking: data.isTracking,
+      autoCategory: data.autoCategory,
+      activeSubtaskCategory: data.activeSubtaskCategory,
+      startedAt: data.startedAt,
+    })
+  }
   trayState = data
 
   tray.setContextMenu(buildTrayMenu())
@@ -435,8 +506,16 @@ function sendTrayTick() {
 }
 
 app.whenReady().then(() => {
-  powerMonitor.on('resume', sendTrayTick)
-  powerMonitor.on('unlock-screen', sendTrayTick)
+  powerMonitor.on('suspend', () => log('info', 'power:suspend'))
+  powerMonitor.on('lock-screen', () => log('info', 'power:lock'))
+  powerMonitor.on('resume', () => {
+    log('info', 'power:resume')
+    sendTrayTick()
+  })
+  powerMonitor.on('unlock-screen', () => {
+    log('info', 'power:unlock')
+    sendTrayTick()
+  })
 })
 
 // Test-only seam: lets an e2e test click the real "Stop All" tray menu item —
@@ -457,6 +536,7 @@ if (process.env.E2E_ELECTRON_TEST === 'true') {
 }
 
 ipcMain.on('notify:goalReached', () => {
+  log('info', 'notify:goalReached')
   if (Notification.isSupported()) {
     new Notification({
       title: 'Timetracker',
@@ -472,6 +552,7 @@ ipcMain.on('window:requestShow', () => {
 })
 
 ipcMain.on('notify:sprintExportDue', (_, body) => {
+  log('info', 'notify:sprintExportDue', { body })
   if (Notification.isSupported()) {
     new Notification({ title: 'Timetracker', body }).show()
   }

@@ -1,4 +1,5 @@
 import { StorageConflictError, type StorageAdapter } from '../../storage/adapter'
+import { log } from '../../../shared/log'
 
 type Validator<T> = (v: unknown) => T | null
 
@@ -40,6 +41,7 @@ class KeyWriter<S> {
         return next
       } catch (e) {
         if (!(e instanceof StorageConflictError) || attempt >= MAX_CONFLICT_RETRIES) throw e
+        log.warn('store: changed on another device, re-reading and re-applying', { error: e, attempt })
         this.invalidate()
       }
     }
@@ -74,7 +76,7 @@ export class JsonCollectionStore<T> {
     if (this.cache) return this.cache
     const raw: unknown = (await this.adapter.get<unknown>(this.key)) ?? []
     if (!Array.isArray(raw)) {
-      console.warn(`[JsonCollectionStore] ${this.key}: expected array, got`, typeof raw)
+      log.warn('store: expected array, using empty', { key: this.key, got: typeof raw })
       this.cache = []
       return this.cache
     }
@@ -86,7 +88,7 @@ export class JsonCollectionStore<T> {
         valid.push(result)
       } else {
         invalid.push(item)
-        console.warn(`[JsonCollectionStore] ${this.key}: invalid item skipped (kept in file)`, item)
+        log.warn('store: invalid item skipped (kept in file)', { key: this.key, item })
       }
     }
     this.invalid = invalid
@@ -153,7 +155,7 @@ export class JsonValueStore<T> {
       } else {
         const result = this.validate(raw)
         if (result === null) {
-          console.warn(`[JsonValueStore] ${this.key}: stored value failed validation, using default`, raw)
+          log.warn('store: stored value failed validation, using default', { key: this.key, raw })
           this.cache = structuredClone(this.defaultValue)
         } else {
           this.cache = result
@@ -206,7 +208,7 @@ export class JsonRecordStore<V> {
     if (this.cache) return this.cache
     const raw: unknown = (await this.adapter.get<unknown>(this.key)) ?? {}
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-      console.warn(`[JsonRecordStore] ${this.key}: expected object, got`, typeof raw)
+      log.warn('store: expected object, using empty', { key: this.key, got: typeof raw })
       this.cache = {}
       return this.cache
     }
@@ -218,7 +220,7 @@ export class JsonRecordStore<V> {
         validated[k] = result
       } else {
         invalid[k] = v
-        console.warn(`[JsonRecordStore] ${this.key}: invalid record for key "${k}" skipped (kept in file)`, v)
+        log.warn('store: invalid record skipped (kept in file)', { key: this.key, record: k, value: v })
       }
     }
     this.invalid = invalid

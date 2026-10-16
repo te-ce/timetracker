@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { log } from '../shared/log'
 import { RouterProvider } from '@tanstack/react-router'
 import { MsalProvider } from '@azure/msal-react'
 import { msalInstance } from '../infra/auth/msalInstance'
@@ -10,6 +11,12 @@ import { router } from '../routes/router.ts'
 import { MsalSync } from './MsalSync'
 
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => log.error('query failed', { queryKey: query.queryKey, error }),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, variables) => log.error('mutation failed', { variables, error }),
+  }),
   defaultOptions: {
     queries: { staleTime: 1000 * 60 },
   },

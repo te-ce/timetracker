@@ -228,8 +228,8 @@ describe('JsonRecordStore with validator', () => {
     const store = new JsonRecordStore<string>(adapter, 'records.json', isString)
     expect(await store.getAll()).toEqual({ a: 'hello', c: 'valid' })
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('invalid record for key "b" skipped'),
-      expect.anything(),
+      expect.stringContaining('invalid record skipped'),
+      expect.objectContaining({ record: 'b' }),
     )
     warnSpy.mockRestore()
   })

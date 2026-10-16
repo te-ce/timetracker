@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { log } from './log'
 import { useQueryClient } from '@tanstack/react-query'
 import { flushPendingWrites, resetAllRepositories } from '../infra/repositories/shared'
 
@@ -11,7 +12,8 @@ export function useResyncOnFocus(): void {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    const resync = () => {
+    const resync = (e: Event) => {
+      log.info('sync: resync', { trigger: e.type })
       void flushPendingWrites().then(() => {
         resetAllRepositories()
         return queryClient.invalidateQueries()

@@ -9,6 +9,7 @@ Electron main process and IPC preload bridge. Wraps the same Vite PWA in a deskt
 | `main.cjs`          | Main process — window creation, tray icon, IPC handlers, auto-launch, app lifecycle       |
 | `preload.cjs`       | Preload script — exposes a safe `window.electron` API to the renderer via `contextBridge` |
 | `json-files.cjs`    | JSON file I/O for the storage IPC handlers — atomic writes, only ENOENT reads as missing  |
+| `log-file.cjs`      | Appends JSON-line log entries to `<userData>/logs/timetracker.log`, single-file rotation  |
 | `icons/tray.png`    | Tray icon (1x)                                                                            |
 | `icons/tray@2x.png` | Tray icon (2x / Retina)                                                                   |
 

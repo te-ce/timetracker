@@ -68,6 +68,7 @@ beforeEach(() => {
     storage: storageStub,
     localFolder: makeLocalFolderStub(),
     notify: { goalReached: () => {}, sprintExportDue: () => {} },
+    log: { write: () => {} },
     window: { onShow: () => {}, offShow: () => {}, show: () => {} },
   }
 })

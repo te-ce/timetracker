@@ -164,7 +164,7 @@ describe('FallbackStorageAdapter', () => {
 
     expect(await primary.get('key')).toBe('offline edit')
     expect(adapter.pendingCount()).toBe(0)
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('changed remotely'))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('changed remotely'), expect.anything())
     warnSpy.mockRestore()
   })
 

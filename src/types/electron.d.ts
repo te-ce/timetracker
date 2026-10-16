@@ -53,6 +53,9 @@ interface Window {
       goalReached: () => void
       sprintExportDue: (body: string) => void
     }
+    log: {
+      write: (entry: import('../shared/log').LogEntry) => void
+    }
     window: {
       onShow: (cb: () => void) => void
       offShow: (cb: () => void) => void

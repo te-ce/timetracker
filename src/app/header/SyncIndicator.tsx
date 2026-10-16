@@ -1,4 +1,5 @@
 import { msalInstance, signInAgain } from '../../infra/auth/msalInstance'
+import { log } from '../../shared/log'
 import { flushPendingWrites } from '../../infra/repositories/shared'
 import { useSyncStatus } from '../../infra/storage/sync-status'
 import { useAuthStore } from '../../shared/authStore'
@@ -9,7 +10,7 @@ const BADGE = 'inline-flex items-center gap-1 rounded px-1 text-xs'
 function resumeSync() {
   signInAgain()
     .then(flushPendingWrites)
-    .catch((e: unknown) => console.warn('[SyncIndicator] sign-in failed', e))
+    .catch((e: unknown) => log.warn('auth: sign-in failed', { error: e }))
 }
 
 export function SyncIndicator() {

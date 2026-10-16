@@ -52,6 +52,7 @@ beforeEach(() => {
       delete: () => Promise.resolve(),
     },
     notify: { goalReached: () => {}, sprintExportDue: () => {} },
+    log: { write: () => {} },
     window: { onShow: () => {}, offShow: () => {}, show: () => {} },
   }
 })
