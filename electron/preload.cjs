@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   log: {
     write: (entry) => ipcRenderer.send('log:write', entry),
+    read: () => ipcRenderer.invoke('log:read'),
   },
   window: {
     onShow: (cb) => subscribe('window:show', cb),

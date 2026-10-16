@@ -50,4 +50,19 @@ describe('createLogFile', () => {
     const log = createLogFile(path.join(blocker, 'logs'))
     expect(() => log.write({ ts: 't', level: 'info', source: 'main', event: 'e' })).not.toThrow()
   })
+
+  it('reads entries from the rotated file then the current one, skipping broken lines', () => {
+    fs.writeFileSync(path.join(dir, 'timetracker.1.log'), '{"event":"old"}\n')
+    fs.writeFileSync(path.join(dir, 'timetracker.log'), '{"event":"a"}\n{"event":\n{"event":"b"}\n')
+
+    expect(
+      createLogFile(dir)
+        .read()
+        .map((e) => e.event),
+    ).toEqual(['old', 'a', 'b'])
+  })
+
+  it('reads nothing when no log exists yet', () => {
+    expect(createLogFile(path.join(dir, 'missing')).read()).toEqual([])
+  })
 })

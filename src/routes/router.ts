@@ -6,6 +6,7 @@ import { TableView } from '../features/table/TableView'
 import { SprintView } from '../features/sprint/SprintView'
 import { StatsView } from '../features/stats/StatsView'
 import { SettingsView } from '../features/settings/SettingsView'
+import { LogsView } from '../features/logs/LogsView'
 import { toLocalIso } from '../shared/dateUtils'
 import { PrototypeRouteComponent, validatePrototypeSearch } from '../prototypes/design-language/PrototypeRoute'
 
@@ -66,6 +67,12 @@ const statsRoute = createRoute({
   component: StatsView,
 })
 
+const logsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/logs',
+  component: LogsView,
+})
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
@@ -85,6 +92,7 @@ const routeTree = rootRoute.addChildren([
   tableRoute,
   sprintRoute,
   statsRoute,
+  logsRoute,
   settingsRoute,
   prototypeRoute,
 ])

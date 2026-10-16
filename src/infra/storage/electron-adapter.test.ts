@@ -52,7 +52,7 @@ beforeEach(() => {
       delete: () => Promise.resolve(),
     },
     notify: { goalReached: () => {}, sprintExportDue: () => {} },
-    log: { write: () => {} },
+    log: { write: () => {}, read: () => Promise.resolve([]) },
     window: { onShow: () => {}, offShow: () => {}, show: () => {} },
   }
 })

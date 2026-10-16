@@ -192,6 +192,7 @@ Everything that happens is written as JSON lines to `<userData>/logs/timetracker
 
 - Captured automatically: every click/field change (`ui:*`), navigation, every repository and storage call with its arguments and duration (`monthRepo.*`, `storage:*`), failed queries/mutations, uncaught errors, and main-process events (tray clicks, hotkeys, IPC, window, power).
 - For anything else — especially automatic decisions the user did not trigger — call `log.info/warn/error(event, data)` from `src/shared/log.ts`, with the inputs that explain _why_. Don't use `console.*` directly.
+- The **Logs** tab (`/logs`) shows the same entries with level/source/event/data filters, refreshing every 3 s.
 - Reads log at `debug`: `jq 'select(.level != "debug")' timetracker.log` hides them.
 
 ## React Query

@@ -45,6 +45,8 @@ process.on('uncaughtException', (e) => log('error', 'main:uncaughtException', e)
 process.on('unhandledRejection', (e) => log('error', 'main:unhandledRejection', e))
 
 ipcMain.on('log:write', (_, entry) => logFile.write(entry))
+// Not via handle(): the Logs view polls this, and logging each read would flood the log with itself.
+ipcMain.handle('log:read', () => logFile.read())
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 

@@ -55,6 +55,7 @@ interface Window {
     }
     log: {
       write: (entry: import('../shared/log').LogEntry) => void
+      read: () => Promise<import('../shared/log').LogEntry[]>
     }
     window: {
       onShow: (cb: () => void) => void

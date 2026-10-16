@@ -44,6 +44,7 @@ export function invalidateTrash(client: QueryClient): void {
 
 export const QUERY_KEYS = {
   config: ['config'] as const,
+  logs: ['logs'] as const,
 
   month: (year: number, month: number) => ['month', year, month] as const,
   monthAll: ['month'] as const,

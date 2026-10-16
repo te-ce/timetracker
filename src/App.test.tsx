@@ -44,7 +44,7 @@ function mockElectronWindowApi(): { onShow: (() => void) | undefined } {
       delete: () => Promise.resolve(),
     },
     notify: { goalReached: noop, sprintExportDue: noop },
-    log: { write: () => {} },
+    log: { write: () => {}, read: () => Promise.resolve([]) },
     window: {
       onShow: (cb: () => void) => {
         handle.onShow = cb

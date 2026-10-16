@@ -3,6 +3,7 @@ import { IconBolt } from './IconBolt'
 import { IconCalendar } from './IconCalendar'
 import { IconChart } from './IconChart'
 import { IconDay } from './IconDay'
+import { IconLogs } from './IconLogs'
 import { IconSettings } from './IconSettings'
 import { IconTable } from './IconTable'
 
@@ -12,5 +13,6 @@ export const NAV_ITEMS: { label: string; icon: React.ReactNode; to: string }[] =
   { label: 'Table', icon: <IconTable />, to: '/table' },
   { label: 'Sprint', icon: <IconBolt />, to: '/sprint' },
   { label: 'Stats', icon: <IconChart />, to: '/stats' },
+  { label: 'Logs', icon: <IconLogs />, to: '/logs' },
   { label: 'Settings', icon: <IconSettings />, to: '/settings' },
 ]

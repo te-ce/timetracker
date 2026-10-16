@@ -25,7 +25,30 @@ function createLogFile(dir, { maxBytes = 5 * 1024 * 1024 } = {}) {
     }
   }
 
-  return { write, file }
+  function readLines(f) {
+    let raw
+    try {
+      raw = fs.readFileSync(f, 'utf8')
+    } catch {
+      return []
+    }
+    return raw.split('\n').flatMap((line) => {
+      if (!line) return []
+      try {
+        return [JSON.parse(line)]
+      } catch {
+        // A crash mid-append can leave a partial last line.
+        return []
+      }
+    })
+  }
+
+  // Oldest first: rotated file, then the current one.
+  function read() {
+    return [...readLines(path.join(dir, 'timetracker.1.log')), ...readLines(file)]
+  }
+
+  return { write, read, file }
 }
 
 module.exports = { createLogFile }

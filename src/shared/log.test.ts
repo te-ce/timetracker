@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { log, type LogEntry } from './log'
+import { log, readLogs, type LogEntry } from './log'
 
 let written: LogEntry[]
 
@@ -50,5 +50,21 @@ describe('log', () => {
     log.info('route', { to: '/month' })
 
     expect(console.info).toHaveBeenCalledWith('[info] route', { to: '/month' })
+  })
+
+  it('reads back the Electron log files', async () => {
+    const stored: LogEntry[] = [{ ts: 't', level: 'info', source: 'main', event: 'app:ready' }]
+    window.electronAPI = { log: { write: () => {}, read: () => Promise.resolve(stored) } } as unknown as NonNullable<
+      typeof window.electronAPI
+    >
+
+    expect(await readLogs()).toEqual(stored)
+  })
+
+  it('without Electron, reads back what this session logged', async () => {
+    delete window.electronAPI
+    log.info('ui:click', { target: 'button "Day"' })
+
+    expect((await readLogs()).at(-1)).toMatchObject({ event: 'ui:click', data: { target: 'button "Day"' } })
   })
 })
