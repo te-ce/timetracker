@@ -67,7 +67,7 @@ let elapsedTimer = null
 
 // The renderer does all tracking work; once its window is gone there is nobody to send to.
 function sendToRenderer(channel, ...args) {
-  if (mainWindow && !mainWindow.isDestroyed()) sendToRenderer(channel, ...args)
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(channel, ...args)
 }
 
 function showWindow({ notify = false } = {}) {
