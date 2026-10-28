@@ -62,6 +62,13 @@ describe('handleStartSubtask', () => {
     )
   })
 
+  it('does not start a subtask inside a Planned-Stop period, where nothing could stop it', async () => {
+    const { repo, startLiveSubtask } = makeMockMonthRepo()
+    const windows = [makeWindow({ start: '00:00', end: '23:59' })]
+    await handleStartSubtask('_SUPPORT', repo, '2026-06-09', windows)
+    expect(startLiveSubtask).not.toHaveBeenCalled()
+  })
+
   it('does nothing when no open period exists', async () => {
     const { repo, startLiveSubtask } = makeMockMonthRepo()
     const windows = [makeWindow({ start: '00:01', end: '00:02' })]

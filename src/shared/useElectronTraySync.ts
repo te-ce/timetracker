@@ -10,7 +10,7 @@ import { useRemainingHours } from './useRemainingHours'
 import { buildTrayState } from './buildTrayState'
 import { useTimeFormatStore } from './timeFormatStore'
 import { useDayQuery } from '../features/day/useDayQuery'
-import { findActivePeriod, nowHHMM } from './worktime'
+import { findActivePeriod, findOpenPeriod, nowHHMM } from './worktime'
 import { useSprintExportReminder } from '../features/sprint/useSprintExportReminder'
 import { requestSprintEndReminder } from './sprintEndReminderStore'
 import type { MonthRepository, WorkPeriod } from '../infra/repositories/types'
@@ -39,7 +39,9 @@ export async function handleStartSubtask(
   today: string,
   windows: WorkPeriod[],
 ): Promise<void> {
-  const openPeriod = findActivePeriod(windows, nowHHMM())
+  // Only a truly open period: a subtask started inside a Planned-Stop keeps
+  // running after the planned end, where neither the day view nor the tray can stop it.
+  const openPeriod = findOpenPeriod(windows)
   if (!openPeriod) return
 
   const now = nowHHMM()
