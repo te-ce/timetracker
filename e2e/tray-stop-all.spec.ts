@@ -53,28 +53,23 @@ function stubElectronAPI(page: Page) {
       autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
       tray: {
         sync: () => {},
-        onTick: () => {},
-        offTick: () => {},
-        onStartSubtask: () => {},
-        offStartSubtask: () => {},
-        onStopSubtask: () => {},
-        offStopSubtask: () => {},
+        onTick: () => () => {},
+        onStartSubtask: () => () => {},
+        onStopSubtask: () => () => {},
         onStopAll: (cb: () => void) => {
           listeners.stopAll = cb
+          return () => {
+            if (listeners.stopAll === cb) delete listeners.stopAll
+          }
         },
-        offStopAll: () => {},
-        onStartWorkPeriod: () => {},
-        offStartWorkPeriod: () => {},
-        onTogglePresentingMode: () => {},
-        offTogglePresentingMode: () => {},
+        onStartWorkPeriod: () => () => {},
+        onTogglePresentingMode: () => () => {},
       },
       hotkey: {
-        onToggle: () => {},
-        offToggle: () => {},
-        onTogglePresenting: () => {},
-        offTogglePresenting: () => {},
-        setGlobal: () => Promise.resolve(),
-        setPresenting: () => Promise.resolve(),
+        onToggle: () => () => {},
+        onTogglePresenting: () => () => {},
+        setGlobal: () => Promise.resolve(true),
+        setPresenting: () => Promise.resolve(true),
       },
       storage: {
         get: (key: string) => {
@@ -97,7 +92,8 @@ function stubElectronAPI(page: Page) {
         delete: () => Promise.resolve(),
       },
       notify: { goalReached: () => {}, sprintExportDue: () => {} },
-      window: { onShow: () => {}, offShow: () => {}, show: () => {} },
+      log: { write: () => {}, read: () => Promise.resolve([]) },
+      window: { onShow: () => () => {}, show: () => {} },
     }
   })
 }
