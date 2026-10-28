@@ -20,6 +20,7 @@ function readItem(item: unknown): { eTag: string | null; downloadUrl: string | n
  * StorageConflictError instead of silently overwriting it (ADR 0013).
  */
 export class OneDriveStorageAdapter implements StorageAdapter {
+  readonly detectsConflicts = true
   private tokenProvider: TokenProvider
   // eTag of the version we last saw; null = we saw the file does not exist.
   private etags = new Map<string, string | null>()

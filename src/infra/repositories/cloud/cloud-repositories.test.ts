@@ -153,6 +153,33 @@ describe('CloudMonthRepository', () => {
     expect((await fresh.getMonth(2026, 5))['2026-05-15']).toMatchObject({ note: 'note', location: 'Office' })
   })
 
+  // A synced folder (OneDrive client) has no conflict detection: another device's
+  // file lands behind this device's cache.
+  it('keeps a day another device wrote to a synced folder when this device writes another day', async () => {
+    const folder = new InMemoryStorageAdapter()
+    const thisDevice = new CloudMonthRepository(folder)
+    const otherDevice = new CloudMonthRepository(folder)
+    await thisDevice.updateDay('2026-10-27', (day) => ({ ...day, note: 'mine' }))
+    await otherDevice.updateDay('2026-10-26', (day) => ({ ...day, note: 'theirs' }))
+
+    await thisDevice.updateDay('2026-10-28', (day) => ({ ...day, note: 'mine later' }))
+
+    const month = await new CloudMonthRepository(folder).getMonth(2026, 10)
+    expect(month['2026-10-26']?.note).toBe('theirs')
+  })
+
+  it('keeps a month another device added to the synced folder index', async () => {
+    const folder = new InMemoryStorageAdapter()
+    const thisDevice = new CloudMonthRepository(folder)
+    const otherDevice = new CloudMonthRepository(folder)
+    await thisDevice.updateDay('2026-10-27', (day) => ({ ...day, note: 'mine' }))
+    await otherDevice.updateDay('2026-11-02', (day) => ({ ...day, note: 'theirs' }))
+
+    await thisDevice.updateDay('2026-10-28', (day) => ({ ...day, note: 'mine later' }))
+
+    expect(await new CloudMonthRepository(folder).getAllMonths()).toEqual(['2026-10', '2026-11'])
+  })
+
   it('returns empty object for month with no data', async () => {
     const adapter = new InMemoryStorageAdapter()
     const repo = new CloudMonthRepository(adapter)

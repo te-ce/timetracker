@@ -6,6 +6,11 @@ export interface StorageAdapter {
   get<T>(key: string): Promise<T | null>
   put<T>(key: string, data: T): Promise<void>
   delete(key: string): Promise<void>
+  /**
+   * True when `put` throws StorageConflictError for a value changed since it was read.
+   * Without it (local or synced folder) the JSON stores re-read before every write.
+   */
+  readonly detectsConflicts?: boolean
 }
 
 /**

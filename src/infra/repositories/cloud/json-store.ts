@@ -16,11 +16,20 @@ class KeyWriter<S> {
   private load: () => Promise<S>
   private save: (state: S) => Promise<void>
   private invalidate: () => void
+  private freshRead: boolean
 
-  constructor(load: () => Promise<S>, save: (state: S) => Promise<void>, invalidate: () => void) {
+  constructor(
+    adapter: StorageAdapter,
+    load: () => Promise<S>,
+    save: (state: S) => Promise<void>,
+    invalidate: () => void,
+  ) {
     this.load = load
     this.save = save
     this.invalidate = invalidate
+    // A synced folder can be rewritten behind the cache by another device and nothing
+    // reports it, so mutate the file as it is now rather than the cached copy.
+    this.freshRead = !adapter.detectsConflicts
   }
 
   /** Resolves with the state that was persisted. */
@@ -36,6 +45,7 @@ class KeyWriter<S> {
   private async apply(mutation: (current: S) => S): Promise<S> {
     for (let attempt = 1; ; attempt++) {
       try {
+        if (this.freshRead) this.invalidate()
         const next = mutation(await this.load())
         await this.save(next)
         return next
@@ -63,6 +73,7 @@ export class JsonCollectionStore<T> {
     this.key = key
     this.validate = validate
     this.writer = new KeyWriter(
+      adapter,
       () => this.getAll(),
       async (items) => {
         await this.adapter.put(this.key, [...items, ...this.invalid])
@@ -138,6 +149,7 @@ export class JsonValueStore<T> {
     this.validate = validate
     this.defaultValue = defaultValue
     this.writer = new KeyWriter(
+      adapter,
       () => this.get(),
       async (value) => {
         await this.adapter.put(this.key, value)
@@ -195,6 +207,7 @@ export class JsonRecordStore<V> {
     this.key = key
     this.validate = validate
     this.writer = new KeyWriter(
+      adapter,
       () => this.getAll(),
       async (records) => {
         await this.adapter.put(this.key, { ...this.invalid, ...records })

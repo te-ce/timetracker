@@ -16,6 +16,7 @@ const PENDING_KEY = 'sync-pending.json'
  * the local version (last write wins, with a warning).
  */
 export class FallbackStorageAdapter implements StorageAdapter {
+  readonly detectsConflicts = true
   private primary: StorageAdapter
   private fallback: StorageAdapter
   private onPendingChange: (count: number) => void
