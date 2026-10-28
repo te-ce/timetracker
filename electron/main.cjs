@@ -12,7 +12,13 @@ const {
 } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const { readJsonFile, writeJsonFileAtomic, deleteFile, localFolderFile } = require('./json-files.cjs')
+const {
+  readJsonFile,
+  writeJsonFileAtomic,
+  deleteFile,
+  localFolderFile,
+  resolveConfigPath,
+} = require('./json-files.cjs')
 const { createLogFile } = require('./log-file.cjs')
 
 const logFile = createLogFile(path.join(app.getPath('userData'), 'logs'))
@@ -395,21 +401,9 @@ function registerGlobalHotkeys({ globalToggle, presentingMode }) {
   }
 }
 
-// The renderer's storage mode (default userData JSON vs. a user-chosen local folder) decides
-// where config.json actually lives. That mode itself, and the chosen folder path, are mirrored
-// into the default userData storage by the renderer (see bootstrapConfig.ts /
-// electron-local-folder-adapter.ts) specifically so the main process can resolve this without
-// ever having access to renderer localStorage.
+// See bootstrapConfig.ts / electron-local-folder-adapter.ts for the renderer side of the mirror.
 function configJsonPath() {
-  try {
-    if (JSON.parse(fs.readFileSync(storagePath('local-folder-mode'), 'utf8')) === true) {
-      const basePath = JSON.parse(fs.readFileSync(storagePath('local-folder-path'), 'utf8'))
-      if (typeof basePath === 'string' && basePath) return localFolderPath(basePath, 'config.json')
-    }
-  } catch {
-    // Flag/path not written yet (or malformed) — fall back to default storage below.
-  }
-  return storagePath('config.json')
+  return resolveConfigPath(storagePath(''))
 }
 
 function loadConfig() {

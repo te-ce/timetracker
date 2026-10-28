@@ -51,6 +51,12 @@ export function setLocalFolderMode(): void {
   void window.electronAPI?.storage.put(LOCAL_FOLDER_MODE_STORAGE_KEY, true)
 }
 
+// setLocalFolderMode only mirrors at the moment the mode is chosen; installs that chose it
+// before the mirror existed never got the file, so refresh it on every startup.
+export function mirrorLocalFolderMode(): void {
+  void window.electronAPI?.storage.put(LOCAL_FOLDER_MODE_STORAGE_KEY, isLocalFolderMode())
+}
+
 export function isSetupSkipped(): boolean {
   return localStorage.getItem(SKIPPED_KEY) === 'true'
 }

@@ -6,7 +6,7 @@ import { ElectronStorageAdapter } from '../storage/electron-adapter'
 import { ElectronLocalFolderStorageAdapter } from '../storage/electron-local-folder-adapter'
 import { getAccessToken, msalInstance } from '../auth/msalInstance'
 import { useSyncStatus } from '../storage/sync-status'
-import { isLocalFolderMode } from '../auth/bootstrapConfig'
+import { isLocalFolderMode, mirrorLocalFolderMode } from '../auth/bootstrapConfig'
 import type { StorageAdapter } from '../storage/adapter'
 import { CloudConfigRepository } from './cloud/config-repository'
 import { CloudSprintExportRepository } from './cloud/sprint-export-repository'
@@ -19,6 +19,7 @@ const keyOnly = (args: unknown[]) => args[0]
 const logged = (adapter: StorageAdapter, name: string) => logCalls(adapter, name, keyOnly)
 
 function makeStorage(): StorageAdapter {
+  mirrorLocalFolderMode()
   if (isLocalFolderMode()) {
     return logged(
       window.electronAPI ? new ElectronLocalFolderStorageAdapter() : new LocalFolderStorageAdapter(),

@@ -6,6 +6,7 @@ import {
   isSetupSkipped,
   skipSetup,
   setLocalFolderMode,
+  mirrorLocalFolderMode,
   LOCAL_FOLDER_MODE_STORAGE_KEY,
 } from './bootstrapConfig'
 
@@ -105,5 +106,17 @@ describe('skipSetup / isSetupSkipped', () => {
   it('returns true after skipSetup()', () => {
     skipSetup()
     expect(isSetupSkipped()).toBe(true)
+  })
+})
+
+describe('mirrorLocalFolderMode', () => {
+  it('re-writes the flag on startup for installs that chose local-folder mode before it was mirrored', () => {
+    localStorage.setItem('timetracker-local-folder-mode', 'true')
+    const put = vi.fn(() => Promise.resolve())
+    window.electronAPI = {
+      storage: { get: () => Promise.resolve(null), put, delete: () => Promise.resolve() },
+    } as unknown as NonNullable<typeof window.electronAPI>
+    mirrorLocalFolderMode()
+    expect(put).toHaveBeenCalledWith(LOCAL_FOLDER_MODE_STORAGE_KEY, true)
   })
 })

@@ -49,4 +49,18 @@ function localFolderFile(basePath, key) {
   return path.join(basePath, filename)
 }
 
-module.exports = { readJsonFile, writeJsonFileAtomic, deleteFile, localFolderFile }
+// The main process has no access to renderer localStorage, so the renderer
+// mirrors the storage mode into these userData files for it to read here.
+function resolveConfigPath(storageDir) {
+  try {
+    if (readJsonFile(path.join(storageDir, 'local-folder-mode')) === true) {
+      const basePath = readJsonFile(path.join(storageDir, 'local-folder-path'))
+      if (typeof basePath === 'string' && basePath) return localFolderFile(basePath, 'config.json')
+    }
+  } catch {
+    // Flag/path malformed or folder gone — fall back to default storage below.
+  }
+  return path.join(storageDir, 'config.json')
+}
+
+module.exports = { readJsonFile, writeJsonFileAtomic, deleteFile, localFolderFile, resolveConfigPath }
