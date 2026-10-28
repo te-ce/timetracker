@@ -6,6 +6,7 @@ import { router } from './routes/router'
 import { useThemeStore } from './shared/themeStore'
 import { useAuthStore } from './shared/authStore'
 import { useUndoStore } from './shared/undoStore'
+import { makeElectronAPI } from './test/fakeElectron'
 
 function noop() {}
 
@@ -15,24 +16,16 @@ function mockElectronWindowApi(): { onShow: (() => void) | undefined } {
     autolaunch: { get: () => Promise.resolve(false), set: () => Promise.resolve() },
     tray: {
       sync: noop,
-      onStartSubtask: noop,
-      offStartSubtask: noop,
-      onStopSubtask: noop,
-      offStopSubtask: noop,
-      onTick: noop,
-      offTick: noop,
-      onStopAll: noop,
-      offStopAll: noop,
-      onStartWorkPeriod: noop,
-      offStartWorkPeriod: noop,
-      onTogglePresentingMode: noop,
-      offTogglePresentingMode: noop,
+      onStartSubtask: () => noop,
+      onStopSubtask: () => noop,
+      onTick: () => noop,
+      onStopAll: () => noop,
+      onStartWorkPeriod: () => noop,
+      onTogglePresentingMode: () => noop,
     },
     hotkey: {
-      onToggle: noop,
-      offToggle: noop,
-      onTogglePresenting: noop,
-      offTogglePresenting: noop,
+      onToggle: () => noop,
+      onTogglePresenting: () => noop,
       setGlobal: () => Promise.resolve(),
       setPresenting: () => Promise.resolve(),
     },
@@ -48,8 +41,8 @@ function mockElectronWindowApi(): { onShow: (() => void) | undefined } {
     window: {
       onShow: (cb: () => void) => {
         handle.onShow = cb
+        return noop
       },
-      offShow: noop,
       show: noop,
     },
   }
@@ -256,6 +249,19 @@ describe('App', () => {
 
     await new Promise((r) => setTimeout(r, 50))
     expect((router.state.location.search as { date: string }).date).toBe('2000-01-01')
+
+    delete window.electronAPI
+  })
+
+  it('removes its window:show listener when unmounted', async () => {
+    const ipc = await makeElectronAPI()
+    window.electronAPI = ipc.api
+
+    const { unmount } = renderApp()
+    await screen.findByText('Timetracker')
+    expect(ipc.listenerCount('window:show')).toBe(1)
+    unmount()
+    expect(ipc.listenerCount('window:show')).toBe(0)
 
     delete window.electronAPI
   })

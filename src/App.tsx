@@ -115,8 +115,7 @@ function App() {
         router.history.push(`/?date=${today}`)
       }
     }
-    api.onShow(onShow)
-    return () => api.offShow(onShow)
+    return api.onShow(onShow)
   }, [router])
 
   useEffect(() => {

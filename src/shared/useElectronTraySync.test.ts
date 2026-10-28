@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { handleStartSubtask, handleStopSubtask, handleStopAll, handleStartWorkPeriod } from './useElectronTraySync'
 import type { WorkPeriod } from '../infra/repositories/types'
 import { InMemoryMonthRepository } from '../infra/repositories/in-memory/month-repository'
-import preloadSource from '../../electron/preload.cjs?raw'
+import { makeElectronAPI } from '../test/fakeElectron'
 
 function makeWindow(overrides: Partial<WorkPeriod> = {}): WorkPeriod {
   return {
@@ -184,53 +184,6 @@ describe('handleStartWorkPeriod', () => {
 })
 
 // ─── Hook integration tests ────────────────────────────────────────────────
-
-type IpcListener = (event: unknown, ...args: unknown[]) => void
-
-// Runs the real electron/preload.cjs against a fake ipcRenderer, so the tests
-// exercise the actual on/off wiring rather than a hand-written stand-in.
-async function makeElectronAPI() {
-  const listeners = new Map<string, IpcListener[]>()
-  const sent: Array<{ channel: string; data: unknown }> = []
-  const ipcRenderer = {
-    on: (channel: string, listener: IpcListener) => {
-      listeners.set(channel, [...(listeners.get(channel) ?? []), listener])
-    },
-    removeListener: (channel: string, listener: IpcListener) => {
-      const current = listeners.get(channel) ?? []
-      const index = current.indexOf(listener)
-      if (index >= 0)
-        listeners.set(
-          channel,
-          current.filter((_, i) => i !== index),
-        )
-    },
-    send: (channel: string, data: unknown) => {
-      sent.push({ channel, data })
-    },
-    invoke: () => Promise.resolve(null),
-  }
-  let exposed: unknown
-  const electron = {
-    contextBridge: {
-      exposeInMainWorld: (_key: string, api: unknown) => {
-        exposed = api
-      },
-    },
-    ipcRenderer,
-  }
-  const moduleUrl = `data:text/javascript,${encodeURIComponent(`export default (require) => {${preloadSource}}`)}`
-  const preload: { default: (require: () => unknown) => void } = await import(/* @vite-ignore */ moduleUrl)
-  preload.default(() => electron)
-  return {
-    api: exposed as NonNullable<Window['electronAPI']>,
-    emit: (channel: string, ...args: unknown[]) => {
-      for (const listener of listeners.get(channel) ?? []) listener({}, ...args)
-    },
-    listenerCount: (channel: string) => listeners.get(channel)?.length ?? 0,
-    traySyncCount: () => sent.filter((m) => m.channel === 'tray:sync').length,
-  }
-}
 
 const TRAY_CHANNELS = [
   'tray:startSubtask',

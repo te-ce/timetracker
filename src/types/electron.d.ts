@@ -17,24 +17,16 @@ interface Window {
         startedAt: string | null
         presentingMode: boolean
       }) => void
-      onStartSubtask: (cb: (category: string) => void) => void
-      offStartSubtask: (cb: (category: string) => void) => void
-      onStopSubtask: (cb: () => void) => void
-      offStopSubtask: (cb: () => void) => void
-      onTick: (cb: () => void) => void
-      offTick: (cb: () => void) => void
-      onStopAll: (cb: () => void) => void
-      offStopAll: (cb: () => void) => void
-      onStartWorkPeriod: (cb: (category: string) => void) => void
-      offStartWorkPeriod: (cb: (category: string) => void) => void
-      onTogglePresentingMode: (cb: () => void) => void
-      offTogglePresentingMode: (cb: () => void) => void
+      onStartSubtask: (cb: (category: string) => void) => () => void
+      onStopSubtask: (cb: () => void) => () => void
+      onTick: (cb: () => void) => () => void
+      onStopAll: (cb: () => void) => () => void
+      onStartWorkPeriod: (cb: (category: string) => void) => () => void
+      onTogglePresentingMode: (cb: () => void) => () => void
     }
     hotkey: {
-      onToggle: (cb: () => void) => void
-      offToggle: (cb: () => void) => void
-      onTogglePresenting: (cb: () => void) => void
-      offTogglePresenting: (cb: () => void) => void
+      onToggle: (cb: () => void) => () => void
+      onTogglePresenting: (cb: () => void) => () => void
       setGlobal: (accelerator: string | null) => Promise<void>
       setPresenting: (accelerator: string | null) => Promise<void>
     }
@@ -58,8 +50,7 @@ interface Window {
       read: () => Promise<import('../shared/log').LogEntry[]>
     }
     window: {
-      onShow: (cb: () => void) => void
-      offShow: (cb: () => void) => void
+      onShow: (cb: () => void) => () => void
       show: () => void
     }
   }

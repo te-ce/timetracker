@@ -210,15 +210,14 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
     const startWorkPeriodListener = (cat: string) => {
       void onStartWorkPeriod(cat)
     }
-    api.tray.onStartSubtask(startListener)
-    api.tray.onStopSubtask(stopListener)
-    api.tray.onStopAll(stopAllListener)
-    api.tray.onStartWorkPeriod(startWorkPeriodListener)
+    const unsubscribes = [
+      api.tray.onStartSubtask(startListener),
+      api.tray.onStopSubtask(stopListener),
+      api.tray.onStopAll(stopAllListener),
+      api.tray.onStartWorkPeriod(startWorkPeriodListener),
+    ]
     return () => {
-      api.tray.offStartSubtask(startListener)
-      api.tray.offStopSubtask(stopListener)
-      api.tray.offStopAll(stopAllListener)
-      api.tray.offStartWorkPeriod(startWorkPeriodListener)
+      for (const unsubscribe of unsubscribes) unsubscribe()
     }
   }, [onStartSubtask, onStopSubtask, onStopAll, onStartWorkPeriod])
 
@@ -227,31 +226,25 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
   useEffect(() => {
     const api = window.electronAPI
     if (!api) return
-    const listener = () => setTick((t) => t + 1)
-    api.tray.onTick(listener)
-    return () => api.tray.offTick(listener)
+    return api.tray.onTick(() => setTick((t) => t + 1))
   }, [])
 
   useEffect(() => {
     const api = window.electronAPI
     if (!api) return
-    const listener = () => {
+    return api.hotkey.onToggle(() => {
       if (isTracking) void onStopAll()
-    }
-    api.hotkey.onToggle(listener)
-    return () => {
-      api.hotkey.offToggle(listener)
-    }
+    })
   }, [isTracking, onStopAll])
 
   useEffect(() => {
     const api = window.electronAPI
     if (!api) return
-    api.tray.onTogglePresentingMode(toggleHoursDisplay)
-    api.hotkey.onTogglePresenting(toggleHoursDisplay)
+    const offTray = api.tray.onTogglePresentingMode(toggleHoursDisplay)
+    const offHotkey = api.hotkey.onTogglePresenting(toggleHoursDisplay)
     return () => {
-      api.tray.offTogglePresentingMode(toggleHoursDisplay)
-      api.hotkey.offTogglePresenting(toggleHoursDisplay)
+      offTray()
+      offHotkey()
     }
   }, [toggleHoursDisplay])
 
