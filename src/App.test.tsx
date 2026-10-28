@@ -26,8 +26,8 @@ function mockElectronWindowApi(): { onShow: (() => void) | undefined } {
     hotkey: {
       onToggle: () => noop,
       onTogglePresenting: () => noop,
-      setGlobal: () => Promise.resolve(),
-      setPresenting: () => Promise.resolve(),
+      setGlobal: () => Promise.resolve(true),
+      setPresenting: () => Promise.resolve(true),
     },
     storage: { get: () => Promise.resolve(null), put: () => Promise.resolve(), delete: () => Promise.resolve() },
     localFolder: {

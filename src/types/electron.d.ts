@@ -27,8 +27,9 @@ interface Window {
     hotkey: {
       onToggle: (cb: () => void) => () => void
       onTogglePresenting: (cb: () => void) => () => void
-      setGlobal: (accelerator: string | null) => Promise<void>
-      setPresenting: (accelerator: string | null) => Promise<void>
+      /** Resolves false when the OS refuses the accelerator (e.g. another app owns it). */
+      setGlobal: (accelerator: string | null) => Promise<boolean>
+      setPresenting: (accelerator: string | null) => Promise<boolean>
     }
     storage: {
       get: <T>(key: string) => Promise<T | null>

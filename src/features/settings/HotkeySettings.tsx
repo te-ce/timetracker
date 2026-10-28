@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS, invalidateConfig } from '../../shared/queryKeys'
 import type { ConfigRepository } from '../../infra/repositories/types'
@@ -48,6 +49,7 @@ function captureAccelerator(e: React.KeyboardEvent<HTMLInputElement>): string | 
 export function HotkeySettings({ repository }: Props) {
   const queryClient = useQueryClient()
   const isElectron = Boolean(window.electronAPI)
+  const [registerError, setRegisterError] = useState<string | null>(null)
 
   const { data: config } = useQuery({
     queryKey: QUERY_KEYS.config,
@@ -67,16 +69,22 @@ export function HotkeySettings({ repository }: Props) {
     mutation.mutate({ ...hotkeys, inApp: { ...hotkeys.inApp, [action]: value } })
   }
 
+  function reportRegistration(value: string | null, ok: boolean | undefined) {
+    setRegisterError(ok === false ? `Could not register ${value}: another app may already use it` : null)
+  }
+
   function saveGlobal(value: string | null) {
     void mutation
       .mutateAsync({ ...hotkeys, globalToggle: value })
       .then(() => window.electronAPI?.hotkey.setGlobal(value))
+      .then((ok) => reportRegistration(value, ok))
   }
 
   function savePresentingMode(value: string | null) {
     void mutation
       .mutateAsync({ ...hotkeys, presentingMode: value })
       .then(() => window.electronAPI?.hotkey.setPresenting(value))
+      .then((ok) => reportRegistration(value, ok))
   }
 
   return (
@@ -84,6 +92,11 @@ export function HotkeySettings({ repository }: Props) {
       {isElectron && (
         <div className="flex flex-col gap-3">
           <h3 className="text-sm font-semibold dark:text-gray-100">Global hotkey</h3>
+          {registerError && (
+            <p role="alert" className="text-xs text-red-600 dark:text-red-400">
+              {registerError}
+            </p>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-sm dark:text-gray-300">Toggle tracking</span>
             <div className="flex items-center gap-2">

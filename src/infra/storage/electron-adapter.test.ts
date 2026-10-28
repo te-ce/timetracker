@@ -33,8 +33,8 @@ beforeEach(() => {
     hotkey: {
       onToggle: () => () => {},
       onTogglePresenting: () => () => {},
-      setGlobal: () => Promise.resolve(),
-      setPresenting: () => Promise.resolve(),
+      setGlobal: () => Promise.resolve(true),
+      setPresenting: () => Promise.resolve(true),
     },
     storage: stub,
     localFolder: {

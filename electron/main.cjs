@@ -388,23 +388,28 @@ function createWindow() {
   })
 }
 
+// register() returns false when the OS or another app already owns the accelerator.
+function registerShortcut(name, accelerator, onPress) {
+  if (!accelerator) return true
+  const ok = globalShortcut.register(accelerator, onPress)
+  if (!ok) log('warn', 'hotkeys:registerFailed', { name, accelerator })
+  return ok
+}
+
+/** Returns, per hotkey, whether it is now active (an unset hotkey counts as fine). */
 function registerGlobalHotkeys({ globalToggle, presentingMode }) {
   log('info', 'hotkeys:register', { globalToggle, presentingMode })
   globalShortcut.unregisterAll()
-
-  if (globalToggle) {
-    globalShortcut.register(globalToggle, () => {
+  return {
+    globalToggle: registerShortcut('globalToggle', globalToggle, () => {
       log('info', 'hotkey:globalToggle', { isTracking: trayState.isTracking })
       if (trayState.isTracking) sendToRenderer('hotkey:toggle')
       else showWindow()
-    })
-  }
-
-  if (presentingMode) {
-    globalShortcut.register(presentingMode, () => {
+    }),
+    presentingMode: registerShortcut('presentingMode', presentingMode, () => {
       log('info', 'hotkey:presentingMode')
       sendToRenderer('hotkey:togglePresenting')
-    })
+    }),
   }
 }
 
@@ -468,11 +473,11 @@ app.on('before-quit', () => {
 })
 
 handle('hotkey:setGlobal', (accelerator) => {
-  registerGlobalHotkeys({ globalToggle: accelerator, presentingMode: loadPresentingModeHotkey() })
+  return registerGlobalHotkeys({ globalToggle: accelerator, presentingMode: loadPresentingModeHotkey() }).globalToggle
 })
 
 handle('hotkey:setPresenting', (accelerator) => {
-  registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: accelerator })
+  return registerGlobalHotkeys({ globalToggle: loadGlobalHotkey(), presentingMode: accelerator }).presentingMode
 })
 
 handle('autolaunch:get', () => isLaunchAtLoginEnabled())

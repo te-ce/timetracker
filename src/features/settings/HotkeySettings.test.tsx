@@ -27,8 +27,8 @@ function makeElectronApiStub(): NonNullable<typeof window.electronAPI> {
     hotkey: {
       onToggle: () => () => {},
       onTogglePresenting: () => () => {},
-      setGlobal: () => Promise.resolve(),
-      setPresenting: () => Promise.resolve(),
+      setGlobal: () => Promise.resolve(true),
+      setPresenting: () => Promise.resolve(true),
     },
     storage: {
       get: () => Promise.resolve(null),
@@ -61,7 +61,7 @@ describe('HotkeySettings', () => {
 
   it('capturing a key for the presenting-mode hotkey persists it as an accelerator and updates the live registration', async () => {
     const repo = new InMemoryConfigRepository(DEFAULT_APP_CONFIG)
-    const setPresenting = vi.fn(() => Promise.resolve())
+    const setPresenting = vi.fn(() => Promise.resolve(true))
     window.electronAPI = { ...makeElectronApiStub(), hotkey: { ...makeElectronApiStub().hotkey, setPresenting } }
     render(<HotkeySettings repository={repo} />, { wrapper })
 
@@ -99,7 +99,7 @@ describe('HotkeySettings', () => {
         ...makeElectronApiStub().hotkey,
         setPresenting: () => {
           calls.push('live-update')
-          return Promise.resolve()
+          return Promise.resolve(true)
         },
       },
     }
@@ -109,5 +109,19 @@ describe('HotkeySettings', () => {
     await userEvent.keyboard('P')
 
     expect(calls).toEqual(['persist', 'live-update'])
+  })
+
+  it('says so when the OS refuses the global hotkey, e.g. another app already uses it', async () => {
+    const repo = new InMemoryConfigRepository(DEFAULT_APP_CONFIG)
+    window.electronAPI = {
+      ...makeElectronApiStub(),
+      hotkey: { ...makeElectronApiStub().hotkey, setGlobal: () => Promise.resolve(false) },
+    }
+    render(<HotkeySettings repository={repo} />, { wrapper })
+
+    await userEvent.click(await screen.findByLabelText(/change toggle tracking shortcut/i))
+    await userEvent.keyboard('{Control>}{Shift>}T{/Shift}{/Control}')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not register/i)
   })
 })
