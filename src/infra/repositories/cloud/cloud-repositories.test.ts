@@ -153,6 +153,19 @@ describe('CloudMonthRepository', () => {
     expect((await fresh.getMonth(2026, 5))['2026-05-15']).toMatchObject({ note: 'note', location: 'Office' })
   })
 
+  it('does not bring a deleted month back when a write to it was still in flight', async () => {
+    const adapter = new SlowAdapter()
+    const repo = new CloudMonthRepository(adapter)
+    await repo.updateDay('2026-10-27', (day) => ({ ...day, note: 'first' }))
+
+    await Promise.all([
+      repo.updateDay('2026-10-28', (day) => ({ ...day, note: 'tray stop' })),
+      repo.deleteMonth(2026, 10),
+    ])
+
+    expect(await new CloudMonthRepository(adapter).getMonth(2026, 10)).toEqual({})
+  })
+
   // A synced folder (OneDrive client) has no conflict detection: another device's
   // file lands behind this device's cache.
   it('keeps a day another device wrote to a synced folder when this device writes another day', async () => {

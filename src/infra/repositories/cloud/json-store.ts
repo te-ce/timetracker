@@ -34,10 +34,12 @@ class KeyWriter<S> {
 
   /** Resolves with the state that was persisted. */
   write(mutation: (current: S) => S): Promise<S> {
-    const run = this.queue.then(
-      () => this.apply(mutation),
-      () => this.apply(mutation),
-    )
+    return this.enqueue(() => this.apply(mutation))
+  }
+
+  /** Runs `task` in turn with this key's writes, e.g. deleting the file. */
+  enqueue<R>(task: () => Promise<R>): Promise<R> {
+    const run = this.queue.then(task, task)
     this.queue = run.catch(() => undefined)
     return run
   }
@@ -243,6 +245,15 @@ export class JsonRecordStore<V> {
 
   clearCache(): void {
     this.cache = null
+  }
+
+  /** Deletes the stored file after any write to it that is already queued. */
+  deleteAll(): Promise<void> {
+    return this.writer.enqueue(async () => {
+      await this.adapter.delete(this.key)
+      this.cache = {}
+      this.invalid = {}
+    })
   }
 
   /** Applies `mutation` to the whole record in one serialized, conflict-retried write. Must return a new object. */
