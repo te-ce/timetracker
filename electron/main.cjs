@@ -56,9 +56,26 @@ ipcMain.handle('log:read', () => logFile.read())
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
+// A second launch (login item plus a click in Finder) would run two renderers
+// writing the same JSON files, and the last write would win.
+if (!app.requestSingleInstanceLock()) app.exit(0)
+app.on('second-instance', () => showWindow({ notify: true }))
+
 let mainWindow = null
 let tray = null
 let elapsedTimer = null
+
+// The renderer does all tracking work; once its window is gone there is nobody to send to.
+function sendToRenderer(channel, ...args) {
+  if (mainWindow && !mainWindow.isDestroyed()) sendToRenderer(channel, ...args)
+}
+
+function showWindow({ notify = false } = {}) {
+  if (!mainWindow || mainWindow.isDestroyed()) return
+  mainWindow.show()
+  mainWindow.focus()
+  if (notify) mainWindow.webContents.send('window:show')
+}
 let trayState = {
   receiptLines: [],
   badgeLabel: '',
@@ -213,11 +230,7 @@ function buildTrayMenu() {
 
   const openItem = {
     label: 'Open Timetracker',
-    click: () => {
-      mainWindow.show()
-      mainWindow.focus()
-      mainWindow.webContents.send('window:show')
-    },
+    click: () => showWindow({ notify: true }),
   }
 
   const infoItems = receiptLinesToMenuItems(receiptLines)
@@ -232,11 +245,11 @@ function buildTrayMenu() {
           checked: isSelected,
           click: () => {
             if (!isSelected) {
-              mainWindow.webContents.send('tray:startSubtask', cat)
+              sendToRenderer('tray:startSubtask', cat)
             } else if (hasLiveSubtask) {
-              mainWindow.webContents.send('tray:stopSubtask')
+              sendToRenderer('tray:stopSubtask')
             } else {
-              mainWindow.webContents.send('tray:stopAll')
+              sendToRenderer('tray:stopAll')
             }
           },
         }
@@ -248,7 +261,7 @@ function buildTrayMenu() {
     ? categories.map((cat) => ({
         label: categoryLabels?.[cat] ?? cat,
         click: () => {
-          mainWindow.webContents.send('tray:startWorkPeriod', cat)
+          sendToRenderer('tray:startWorkPeriod', cat)
         },
       }))
     : []
@@ -260,7 +273,7 @@ function buildTrayMenu() {
         {
           label: '⏹ Stop All',
           click: () => {
-            mainWindow.webContents.send('tray:stopAll')
+            sendToRenderer('tray:stopAll')
           },
         },
       ]
@@ -281,7 +294,7 @@ function buildTrayMenu() {
         type: 'checkbox',
         checked: !presentingMode,
         click: () => {
-          mainWindow.webContents.send('tray:togglePresentingMode')
+          sendToRenderer('tray:togglePresentingMode')
         },
       },
       {
@@ -382,21 +395,15 @@ function registerGlobalHotkeys({ globalToggle, presentingMode }) {
   if (globalToggle) {
     globalShortcut.register(globalToggle, () => {
       log('info', 'hotkey:globalToggle', { isTracking: trayState.isTracking })
-      if (!mainWindow) return
-      if (trayState.isTracking) {
-        mainWindow.webContents.send('hotkey:toggle')
-      } else {
-        mainWindow.show()
-        mainWindow.focus()
-      }
+      if (trayState.isTracking) sendToRenderer('hotkey:toggle')
+      else showWindow()
     })
   }
 
   if (presentingMode) {
     globalShortcut.register(presentingMode, () => {
       log('info', 'hotkey:presentingMode')
-      if (!mainWindow) return
-      mainWindow.webContents.send('hotkey:togglePresenting')
+      sendToRenderer('hotkey:togglePresenting')
     })
   }
 }
@@ -445,17 +452,13 @@ app.whenReady().then(async () => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
-    else {
-      mainWindow.show()
-      mainWindow.focus()
-      mainWindow.webContents.send('window:show')
-    }
+    else showWindow({ notify: true })
   })
 })
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+// Closing the window for real (closeToTray off) quits on macOS too: the tray
+// alone can't track anything without the renderer.
+app.on('window-all-closed', () => app.quit())
 
 app.on('before-quit', () => {
   log('info', 'app:quit')
@@ -498,7 +501,7 @@ ipcMain.on('tray:sync', (_, data) => {
 })
 
 function sendTrayTick() {
-  mainWindow?.webContents.send('tray:tick')
+  sendToRenderer('tray:tick')
 }
 
 app.whenReady().then(() => {
@@ -542,10 +545,7 @@ ipcMain.on('notify:goalReached', () => {
 })
 
 // Plain show: the 'window:show' event would also re-navigate to the startup view.
-ipcMain.on('window:requestShow', () => {
-  mainWindow.show()
-  mainWindow.focus()
-})
+ipcMain.on('window:requestShow', () => showWindow())
 
 ipcMain.on('notify:sprintExportDue', (_, body) => {
   log('info', 'notify:sprintExportDue', { body })
