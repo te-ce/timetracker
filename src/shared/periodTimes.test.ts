@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { WorkPeriod } from '../../infra/repositories/types'
+import type { WorkPeriod } from '../infra/repositories/types'
 import { withPeriodTimes } from './periodTimes'
 
 const running: WorkPeriod = {

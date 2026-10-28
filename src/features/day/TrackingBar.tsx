@@ -13,6 +13,10 @@ interface TrackingBarProps {
   /** False for a day that is over: live tracking gives way to writing the period down. */
   isToday: boolean
   onStart: (category: string, startTime: string) => void
+  /** Why a start at this time can't be saved, or null. */
+  checkStart: (startTime: string) => string | null
+  /** Why a logged start–end can't be saved, or null. */
+  checkRange: (start: string, end: string) => string | null
   onAddPeriod: (start: string, end: string, category: string) => void
   onStop: (stopTime: string) => void
   onStartSubtask: (category: string, startTime: string) => void
@@ -28,6 +32,8 @@ export function TrackingBar({
   preferCategoryDescriptionAsPrimary,
   isToday,
   onStart,
+  checkStart,
+  checkRange,
   onAddPeriod,
   onStop,
   onStartSubtask,
@@ -55,6 +61,7 @@ export function TrackingBar({
         defaultCategory={defaultCategory}
         categoryDescriptions={categoryDescriptions}
         preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
+        checkRange={checkRange}
         onAddPeriod={onAddPeriod}
       />
     )
@@ -67,6 +74,7 @@ export function TrackingBar({
       defaultCategory={defaultCategory}
       categoryDescriptions={categoryDescriptions}
       preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
+      checkStart={checkStart}
       onStart={onStart}
     />
   )

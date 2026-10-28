@@ -22,12 +22,19 @@ interface PeriodBoundaryRowProps {
   onStartEditing: () => void
   onStopEditing: () => void
   onSaveTimes: (start: string, end: string | null) => void
+  /** Why these times can't be saved (e.g. overlap with another period), or null. */
+  checkTimes: (start: string, end: string | null) => string | null
   onChangeCategory: (category: string) => void
   onDelete: () => void
 }
 
 function isPeriodTimesDirty(start: string, end: string, period: WorkPeriod): boolean {
   return start !== period.start || (end || null) !== period.end
+}
+
+function timesError(start: string, end: string, checkTimes: PeriodBoundaryRowProps['checkTimes']): string | null {
+  if (end !== '' && !endsAfterStart(start, end)) return 'End must be after start'
+  return checkTimes(start, end || null)
 }
 
 function periodLabelSuffix(ordinal: number, running: boolean): string {
@@ -49,6 +56,7 @@ export function PeriodBoundaryRow({
   onStartEditing,
   onStopEditing,
   onSaveTimes,
+  checkTimes,
   onChangeCategory,
   onDelete,
 }: PeriodBoundaryRowProps) {
@@ -80,10 +88,10 @@ export function PeriodBoundaryRow({
     }
   }
 
-  const invalidRange = end !== '' && !endsAfterStart(start, end)
+  const rangeError = editing ? timesError(start, end, checkTimes) : null
 
   function save() {
-    if (invalidRange) return
+    if (rangeError) return
     onSaveTimes(start, end || null)
     onStopEditing()
   }
@@ -105,7 +113,7 @@ export function PeriodBoundaryRow({
           setStart={setStart}
           end={end}
           setEnd={setEnd}
-          invalidRange={invalidRange}
+          rangeError={rangeError}
           pendingCancel={pendingCancel}
           handleBlur={handleBlur}
           handleFocus={handleFocus}

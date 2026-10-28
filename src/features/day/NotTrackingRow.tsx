@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CategoryPicker } from './CategoryPicker'
 import { TimeNowField } from './TimeNowField'
+import { InvalidRangeHint } from './InvalidRangeHint'
 
 export interface NotTrackingRowProps {
   now: string
@@ -8,6 +9,7 @@ export interface NotTrackingRowProps {
   defaultCategory: string
   categoryDescriptions?: Record<string, string> | undefined
   preferCategoryDescriptionAsPrimary?: boolean | undefined
+  checkStart: (startTime: string) => string | null
   onStart: (category: string, startTime: string) => void
 }
 
@@ -17,6 +19,7 @@ export function NotTrackingRow({
   defaultCategory,
   categoryDescriptions,
   preferCategoryDescriptionAsPrimary,
+  checkStart,
   onStart,
 }: NotTrackingRowProps) {
   const [category, setCategory] = useState(defaultCategory)
@@ -28,7 +31,9 @@ export function NotTrackingRow({
     setCategory(defaultCategory)
   }
 
+  const problem = checkStart(customStart ?? now)
   const start = () => {
+    if (problem) return
     onStart(category, customStart ?? now)
     setCustomStart(null)
   }
@@ -56,11 +61,13 @@ export function NotTrackingRow({
         <button
           type="button"
           onClick={start}
-          className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+          disabled={problem !== null}
+          className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-40 dark:bg-emerald-500 dark:hover:bg-emerald-400"
         >
           ▶ Start tracking
         </button>
       </span>
+      {problem && <InvalidRangeHint>{problem}</InvalidRangeHint>}
     </div>
   )
 }

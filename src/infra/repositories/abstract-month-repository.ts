@@ -22,6 +22,7 @@ import {
   stopPeriod as doStopPeriod,
 } from './day-updaters'
 import { mergeAdjacentInto } from './work-period-merge'
+import { endPlannedStopsAt } from '../../shared/periodOverlap'
 
 export function isDayEmpty(day: Day): boolean {
   return (
@@ -144,14 +145,13 @@ export abstract class AbstractMonthRepository implements MonthRepository {
   async openWorkPeriod(date: string, category: string, now: string): Promise<void> {
     // The check must run inside the updater: only there does it see the result
     // of a racing start that is still being written.
-    await this.updateDay(date, (day) =>
-      hasOpenPeriod(day.windows)
-        ? day
-        : {
-            ...day,
-            windows: [...day.windows, { id: crypto.randomUUID(), start: now, end: null, category, subtasks: [] }],
-          },
-    )
+    await this.updateDay(date, (day) => {
+      if (hasOpenPeriod(day.windows)) return day
+      const windows = endPlannedStopsAt(day.windows, now, now)
+      const incoming: WorkPeriod = { id: crypto.randomUUID(), start: now, end: null, category, subtasks: [] }
+      const { merged, absorbed } = mergeAdjacentInto(windows, incoming)
+      return { ...day, windows: [...windows.filter((w) => !absorbed.includes(w.id)), merged] }
+    })
   }
 
   async closeOpenWorkPeriod(date: string, category: string, now: string): Promise<void> {

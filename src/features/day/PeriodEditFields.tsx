@@ -7,7 +7,7 @@ export interface PeriodEditFieldsProps {
   setStart: (v: string) => void
   end: string
   setEnd: (v: string) => void
-  invalidRange: boolean
+  rangeError: string | null
   pendingCancel: boolean
   handleBlur: (e: React.FocusEvent) => void
   handleFocus: () => void
@@ -22,7 +22,7 @@ export function PeriodEditFields({
   setStart,
   end,
   setEnd,
-  invalidRange,
+  rangeError,
   pendingCancel,
   handleBlur,
   handleFocus,
@@ -56,7 +56,7 @@ export function PeriodEditFields({
       <button
         type="button"
         onClick={onSave}
-        disabled={invalidRange}
+        disabled={rangeError !== null}
         className="ml-1 font-medium text-indigo-600 disabled:opacity-40 dark:text-indigo-400"
       >
         Save
@@ -64,7 +64,7 @@ export function PeriodEditFields({
       <button type="button" onClick={onCancel} className="ml-1 text-gray-500 dark:text-gray-400">
         Cancel
       </button>
-      {invalidRange && <InvalidRangeHint>End must be after start</InvalidRangeHint>}
+      {rangeError && <InvalidRangeHint>{rangeError}</InvalidRangeHint>}
     </span>
   )
 }

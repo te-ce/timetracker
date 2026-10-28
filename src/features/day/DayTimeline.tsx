@@ -15,7 +15,8 @@ import { useWorkPeriodMutations } from './useWorkPeriodMutations'
 import { TrackingBar } from './TrackingBar'
 import { DayTotalsPanel } from './DayTotalsPanel'
 import { applyOverlapFix } from './overlapRepair'
-import { withPeriodTimes } from './periodTimes'
+import { withPeriodTimes } from '../../shared/periodTimes'
+import { endPlannedStopsAt, rangeConflict, startConflict } from '../../shared/periodOverlap'
 import { hasLiveActivity } from '../../shared/dayBalance'
 import type { DayBalance } from '../../shared/dayBalance'
 import { nowHHMM } from '../../shared/worktime'
@@ -108,7 +109,9 @@ export function DayTimeline(props: DayTimelineProps) {
   }
 
   function startTracking(category: string, startTime: string) {
-    addPeriod(startTime, null, category)
+    const incoming: WorkPeriod = { id: crypto.randomUUID(), start: startTime, end: null, category, subtasks: [] }
+    const { merged, absorbed } = mergeAdjacentInto(endPlannedStopsAt(windows, startTime, now), incoming)
+    mutations.saveWithAbsorbed.mutate({ date, window: merged, absorbed })
   }
 
   /** Filling a break means the work never actually stopped, so it continues the earlier category. */
@@ -146,6 +149,8 @@ export function DayTimeline(props: DayTimelineProps) {
         preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
         isToday={dayOptions.isToday}
         onStart={startTracking}
+        checkStart={(startTime) => startConflict(windows, startTime, now)}
+        checkRange={(start, end) => rangeConflict(windows, start, end)}
         onAddPeriod={(start, end, category) => addPeriod(start, end, category)}
         onStop={stopTracking}
         onStartSubtask={(category, startTime) => {
@@ -185,6 +190,7 @@ export function DayTimeline(props: DayTimelineProps) {
               editingTimesFor={editingTimesFor}
               onStartEditingTimes={(periodId) => setEditingTimesFor(periodId)}
               onStopEditingTimes={() => setEditingTimesFor(null)}
+              checkTimes={(period, start, end) => rangeConflict(windows, start, end, period.id)}
               onSaveTimes={(period, start, end) =>
                 mutations.saveWithAbsorbed.mutate({ date, window: withPeriodTimes(period, start, end), absorbed: [] })
               }

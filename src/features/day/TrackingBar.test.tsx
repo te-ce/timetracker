@@ -22,6 +22,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={onStart}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={() => {}}
         onStartSubtask={() => {}}
         onStopSubtask={() => {}}
@@ -43,6 +45,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={onStart}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={() => {}}
         onStartSubtask={() => {}}
         onStopSubtask={() => {}}
@@ -65,6 +69,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={() => {}}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={onStop}
         onStartSubtask={() => {}}
         onStopSubtask={() => {}}
@@ -86,6 +92,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={() => {}}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={onStop}
         onStartSubtask={() => {}}
         onStopSubtask={() => {}}
@@ -108,6 +116,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={() => {}}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={() => {}}
         onStartSubtask={onStartSubtask}
         onStopSubtask={() => {}}
@@ -130,6 +140,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={() => {}}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={onStop}
         onStartSubtask={() => {}}
         onStopSubtask={() => {}}
@@ -151,6 +163,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={() => {}}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={() => {}}
         onStartSubtask={onStartSubtask}
         onStopSubtask={() => {}}
@@ -176,6 +190,8 @@ describe('TrackingBar', () => {
         isToday
         onStart={() => {}}
         onAddPeriod={() => {}}
+        checkStart={() => null}
+        checkRange={() => null}
         onStop={() => {}}
         onStartSubtask={() => {}}
         onStopSubtask={onStopSubtask}

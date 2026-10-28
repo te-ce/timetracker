@@ -159,6 +159,59 @@ describe('DayTimeline', () => {
     })
   })
 
+  it('ends a counting-down Planned-Stop where new tracking starts, so the two never count twice', async () => {
+    // Given work planned to stop at 23:00 (a Planned-Stop still counting down at 18:30)
+    const { repo } = setup([period('a', '09:00', '23:00', 'Work')])
+
+    // When the user starts tracking now
+    await userEvent.click(await screen.findByRole('button', { name: /start tracking/i }))
+
+    // Then one open WorkPeriod covers the day instead of two overlapping ones
+    await vi.waitFor(async () => {
+      expect(await getWindows(repo)).toMatchObject([{ start: '09:00', end: null }])
+    })
+  })
+
+  it('refuses to start tracking at a time already covered by a work period', async () => {
+    // Given work from 09:00 to 12:00
+    const { repo } = setup([period('a', '09:00', '12:00', 'Work')])
+
+    // When the user picks a start inside it
+    fireEvent.change(await screen.findByLabelText(/^start time$/i), { target: { value: '11:00' } })
+
+    // Then starting is refused with a reason
+    expect(screen.getByRole('alert')).toHaveTextContent(/overlaps 09:00–12:00/i)
+    expect(screen.getByRole('button', { name: /start tracking/i })).toBeDisabled()
+    expect(await getWindows(repo)).toHaveLength(1)
+  })
+
+  it('refuses to start tracking in the future', async () => {
+    // Given nothing tracked yet at 18:30
+    const { repo } = setup()
+
+    // When the user picks a start later than now
+    fireEvent.change(await screen.findByLabelText(/^start time$/i), { target: { value: '19:00' } })
+
+    // Then starting is refused with a reason
+    expect(screen.getByRole('alert')).toHaveTextContent(/future/i)
+    expect(screen.getByRole('button', { name: /start tracking/i })).toBeDisabled()
+    expect(await getWindows(repo)).toEqual([])
+  })
+
+  it('refuses to move a work period onto another one', async () => {
+    // Given two work periods
+    const { repo } = setup([period('a', '08:00', '09:30', 'Work'), period('b', '10:00', '11:00', 'Work')])
+
+    // When the user moves the second one's start into the first
+    await userEvent.click(await screen.findByRole('button', { name: /edit times of work period 2/i }))
+    fireEvent.change(screen.getByLabelText(/work period 2 start/i), { target: { value: '09:00' } })
+
+    // Then saving is refused with a reason
+    expect(screen.getByRole('alert')).toHaveTextContent(/overlaps 08:00–09:30/i)
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
+    expect((await getWindows(repo))[1]).toMatchObject({ start: '10:00' })
+  })
+
   it('stops the running work period with one click and offers no second start', async () => {
     // Given a work period that is running
     const { repo } = setup([period('a', '09:00', null, 'Work')])
@@ -636,6 +689,20 @@ describe('DayTimeline', () => {
     expect(screen.getByRole('button', { name: /add work period/i })).toBeDisabled()
     fireEvent.keyDown(screen.getByLabelText(/new work period end/i), { key: 'Enter' })
     expect(await getWindows(repo, PAST_DATE)).toEqual([])
+  })
+
+  it('refuses to log a past work period that overlaps one already logged', async () => {
+    // Given a past day with work from 09:00 to 12:00
+    const { repo } = setup([period('a', '09:00', '12:00', 'Work')], true, PAST_DATE)
+
+    // When the user logs 11:00–13:00
+    fireEvent.change(await screen.findByLabelText(/new work period start/i), { target: { value: '11:00' } })
+    fireEvent.change(screen.getByLabelText(/new work period end/i), { target: { value: '13:00' } })
+
+    // Then adding is refused with a reason
+    expect(screen.getByRole('alert')).toHaveTextContent(/overlaps 09:00–12:00/i)
+    expect(screen.getByRole('button', { name: /add work period/i })).toBeDisabled()
+    expect(await getWindows(repo, PAST_DATE)).toHaveLength(1)
   })
 
   it('deletes a work period only after confirmation', async () => {

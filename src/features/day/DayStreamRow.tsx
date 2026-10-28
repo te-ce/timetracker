@@ -26,6 +26,7 @@ export interface DayStreamRowProps {
   onStartEditingTimes: (periodId: string) => void
   onStopEditingTimes: () => void
   onSaveTimes: (period: WorkPeriod, start: string, end: string | null) => void
+  checkTimes: (period: WorkPeriod, start: string, end: string | null) => string | null
   onChangeCategory: (periodId: string, category: string) => void
   onDeletePeriod: (period: WorkPeriod) => void
   onDeleteSubtask: (periodId: string, subtask: WorkPeriodSubtask) => void
@@ -52,6 +53,7 @@ export function DayStreamRow({
   onStartEditingTimes,
   onStopEditingTimes,
   onSaveTimes,
+  checkTimes,
   onChangeCategory,
   onDeletePeriod,
   onDeleteSubtask,
@@ -77,6 +79,7 @@ export function DayStreamRow({
         onStartEditing={() => onStartEditingTimes(item.period.id)}
         onStopEditing={onStopEditingTimes}
         onSaveTimes={(start, end) => onSaveTimes(item.period, start, end)}
+        checkTimes={(start, end) => checkTimes(item.period, start, end)}
         onChangeCategory={(category) => onChangeCategory(item.period.id, category)}
         onDelete={() => onDeletePeriod(item.period)}
       />

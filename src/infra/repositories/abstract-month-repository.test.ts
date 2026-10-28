@@ -229,6 +229,14 @@ describe.each(ADAPTERS)('%s (AbstractMonthRepository contract)', (_, makeRepo) =
       expect(data['2026-06-07']?.windows).toHaveLength(1)
     })
 
+    it('ends a counting-down Planned-Stop at the start instead of overlapping it', async () => {
+      const repo = makeRepo()
+      await seedDay(repo, '2026-06-07', makePeriod({ id: 'p1', start: '09:00', end: '17:00' }))
+      await repo.openWorkPeriod('2026-06-07', '_COREMEDIA', '12:00')
+      const windows = (await repo.getMonth(2026, 6))['2026-06-07']?.windows ?? []
+      expect(windows).toMatchObject([{ start: '09:00', end: null }])
+    })
+
     it('opens only one period when two starts race (double click, tray + UI)', async () => {
       const repo = makeRepo()
       await Promise.all([

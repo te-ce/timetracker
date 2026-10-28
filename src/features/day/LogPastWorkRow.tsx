@@ -8,6 +8,7 @@ export interface LogPastWorkRowProps {
   defaultCategory: string
   categoryDescriptions?: Record<string, string> | undefined
   preferCategoryDescriptionAsPrimary?: boolean | undefined
+  checkRange: (start: string, end: string) => string | null
   onAddPeriod: (start: string, end: string, category: string) => void
 }
 
@@ -16,6 +17,7 @@ export function LogPastWorkRow({
   defaultCategory,
   categoryDescriptions,
   preferCategoryDescriptionAsPrimary,
+  checkRange,
   onAddPeriod,
 }: LogPastWorkRowProps) {
   const [category, setCategory] = useState(defaultCategory)
@@ -28,8 +30,13 @@ export function LogPastWorkRow({
     setCategory(defaultCategory)
   }
 
-  const invalidRange = Boolean(newStart && newEnd) && !endsAfterStart(newStart, newEnd)
-  const canAdd = Boolean(newStart && newEnd) && !invalidRange
+  const complete = Boolean(newStart && newEnd)
+  const problem = !complete
+    ? null
+    : endsAfterStart(newStart, newEnd)
+      ? checkRange(newStart, newEnd)
+      : 'End must be after start'
+  const canAdd = complete && problem === null
   const addPeriod = () => {
     if (!canAdd) return
     onAddPeriod(newStart, newEnd, category)
@@ -66,7 +73,7 @@ export function LogPastWorkRow({
         categoryDescriptions={categoryDescriptions}
         preferCategoryDescriptionAsPrimary={preferCategoryDescriptionAsPrimary}
       />
-      {invalidRange && <InvalidRangeHint>End must be after start</InvalidRangeHint>}
+      {problem && <InvalidRangeHint>{problem}</InvalidRangeHint>}
       <button
         type="button"
         disabled={!canAdd}

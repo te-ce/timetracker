@@ -1,6 +1,5 @@
-import type { WorkPeriod } from '../../infra/repositories/types'
-import { calcSubtaskHours } from '../../shared/worktime'
-import { isLiveSubtask } from './workPeriodShared'
+import type { WorkPeriod } from '../infra/repositories/types'
+import { calcSubtaskHours } from './worktime'
 
 /** New times for a WorkPeriod. Giving it an end also stops a live subtask there, so none is left running on its own. */
 export function withPeriodTimes(period: WorkPeriod, start: string, end: string | null): WorkPeriod {
@@ -10,7 +9,7 @@ export function withPeriodTimes(period: WorkPeriod, start: string, end: string |
     start,
     end,
     subtasks: period.subtasks.map((s) =>
-      isLiveSubtask(s) ? { ...s, stoppedAt: end, hours: calcSubtaskHours(s.startedAt, end) } : s,
+      s.startedAt && !s.stoppedAt ? { ...s, stoppedAt: end, hours: calcSubtaskHours(s.startedAt, end) } : s,
     ),
   }
 }
