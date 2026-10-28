@@ -228,6 +228,16 @@ describe.each(ADAPTERS)('%s (AbstractMonthRepository contract)', (_, makeRepo) =
       const data = await repo.getMonth(2026, 6)
       expect(data['2026-06-07']?.windows).toHaveLength(1)
     })
+
+    it('opens only one period when two starts race (double click, tray + UI)', async () => {
+      const repo = makeRepo()
+      await Promise.all([
+        repo.openWorkPeriod('2026-06-07', '_COREMEDIA', '09:00'),
+        repo.openWorkPeriod('2026-06-07', '_COREMEDIA', '09:00'),
+      ])
+      const data = await repo.getMonth(2026, 6)
+      expect(data['2026-06-07']?.windows).toHaveLength(1)
+    })
   })
 
   describe('restoreMonth', () => {

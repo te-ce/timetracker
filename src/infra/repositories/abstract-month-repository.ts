@@ -142,14 +142,16 @@ export abstract class AbstractMonthRepository implements MonthRepository {
   }
 
   async openWorkPeriod(date: string, category: string, now: string): Promise<void> {
-    const year = parseInt(date.slice(0, 4))
-    const month = parseInt(date.slice(5, 7))
-    const monthData = await this.getMonth(year, month)
-    if (hasOpenPeriod(monthData[date]?.windows ?? [])) return
-    await this.updateDay(date, (day) => ({
-      ...day,
-      windows: [...day.windows, { id: crypto.randomUUID(), start: now, end: null, category, subtasks: [] }],
-    }))
+    // The check must run inside the updater: only there does it see the result
+    // of a racing start that is still being written.
+    await this.updateDay(date, (day) =>
+      hasOpenPeriod(day.windows)
+        ? day
+        : {
+            ...day,
+            windows: [...day.windows, { id: crypto.randomUUID(), start: now, end: null, category, subtasks: [] }],
+          },
+    )
   }
 
   async closeOpenWorkPeriod(date: string, category: string, now: string): Promise<void> {
