@@ -3,7 +3,8 @@ import { defineConfig } from '@playwright/test'
 // Separate from the root playwright.config.ts (browser e2e): this suite drives
 // the real Electron app and its native tray menu, so it needs a display
 // (Xvfb in headless CI) and manages its own dev server / user-data dirs
-// per test rather than Playwright's webServer/baseURL.
+// per test rather than Playwright's webServer/baseURL. Electron has no true
+// headless mode; with E2E_ELECTRON_TEST set, main never shows the window.
 export default defineConfig({
   testDir: '.',
   fullyParallel: false,

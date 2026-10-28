@@ -55,6 +55,7 @@ ipcMain.on('log:write', (_, entry) => logFile.write(entry))
 ipcMain.handle('log:read', () => logFile.read())
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
+const isE2E = process.env.E2E_ELECTRON_TEST === 'true'
 
 // A second launch (login item plus a click in Finder) would run two renderers
 // writing the same JSON files, and the last write would win.
@@ -370,13 +371,14 @@ function createWindow() {
 
   if (isDev) {
     mainWindow.loadURL('http://timetracker.localhost:5173')
-    mainWindow.webContents.openDevTools()
+    if (!isE2E) mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
   mainWindow.once('ready-to-show', () => {
-    if (!loadConfig().startMinimized) mainWindow.show()
+    // E2E runs drive the hidden window over CDP; Electron has no true headless mode.
+    if (!isE2E && !loadConfig().startMinimized) mainWindow.show()
   })
 
   mainWindow.on('close', (e) => {
@@ -525,7 +527,7 @@ app.whenReady().then(() => {
 // Test-only seam: lets an e2e test click the real "Stop All" tray menu item —
 // built by the same buildTrayMenu() the live tray uses — since Playwright has
 // no way to drive a native OS tray menu directly.
-if (process.env.E2E_ELECTRON_TEST === 'true') {
+if (isE2E) {
   global.__e2eClickTrayStopAll = () => {
     const item = buildTrayMenu().items.find((i) => i.label === '⏹ Stop All')
     if (!item) throw new Error('Stop All tray item not present (is a period being tracked?)')
