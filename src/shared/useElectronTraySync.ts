@@ -25,6 +25,14 @@ function openPeriodToISOStart(period: WorkPeriod | undefined, todayIso: string):
   return d.toISOString()
 }
 
+// Tray actions resolve the day at click time and read it from the repository:
+// the hook's render-time todayIso and windows can still be yesterday's after sleep.
+async function readToday(monthRepo: MonthRepository): Promise<{ today: string; windows: WorkPeriod[] }> {
+  const today = toLocalIso(new Date())
+  const month = await monthRepo.getMonth(Number(today.slice(0, 4)), Number(today.slice(5, 7)))
+  return { today, windows: month[today]?.windows ?? [] }
+}
+
 // Resolves the day at click time: todayIso from useTodayIso can lag behind
 // midnight while the window stays hidden (its timer doesn't run during sleep).
 export async function handleStartWorkPeriod(category: string, monthRepo: MonthRepository): Promise<string> {
@@ -169,21 +177,22 @@ export function useElectronTraySync(): { isTracking: boolean; isOvertime: boolea
 
   const onStartSubtask = useCallback(
     async (category: string) => {
-      await handleStartSubtask(category, monthRepo, todayIso, windows)
-      invalidateMonth(queryClient, todayIso)
+      const { today, windows } = await readToday(monthRepo)
+      await handleStartSubtask(category, monthRepo, today, windows)
+      invalidateMonth(queryClient, today)
     },
-    [monthRepo, todayIso, windows, queryClient],
+    [monthRepo, queryClient],
   )
 
   const onStopSubtask = useCallback(async () => {
-    await handleStopSubtask(monthRepo, todayIso, windows)
-    invalidateMonth(queryClient, todayIso)
-  }, [monthRepo, todayIso, windows, queryClient])
+    const { today, windows } = await readToday(monthRepo)
+    await handleStopSubtask(monthRepo, today, windows)
+    invalidateMonth(queryClient, today)
+  }, [monthRepo, queryClient])
 
   const onStopAll = useCallback(async () => {
-    const today = toLocalIso(new Date())
-    const month = await monthRepo.getMonth(Number(today.slice(0, 4)), Number(today.slice(5, 7)))
-    await handleStopAll(monthRepo, today, month[today]?.windows ?? [])
+    const { today, windows } = await readToday(monthRepo)
+    await handleStopAll(monthRepo, today, windows)
     invalidateMonth(queryClient, today)
     invalidateMonth(queryClient, todayIso)
     requestSprintEndReminder()

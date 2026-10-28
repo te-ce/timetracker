@@ -287,4 +287,24 @@ describe('useElectronTraySync — day rollover while the window stays hidden', (
 
     await vi.waitFor(() => expect(openWorkPeriod).toHaveBeenCalledWith('2026-10-02', '_COREMEDIA', '08:30'))
   })
+
+  it('starts a tray subtask on the current day, not in a period left open the day before', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 10, 1, 17, 0))
+    const ipc = await makeElectronAPI()
+    window.electronAPI = ipc.api
+    const { useElectronTraySync } = await import('./useElectronTraySync')
+    const { monthRepo } = await import('../infra/repositories/shared')
+    await monthRepo.openWorkPeriod('2026-11-01', '_COREMEDIA', '09:00')
+    const startLiveSubtask = vi.spyOn(monthRepo, 'startLiveSubtask')
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { result } = renderHook(() => useElectronTraySync(), { wrapper: makeWrapper(queryClient) })
+    await vi.waitFor(() => expect(result.current.isTracking).toBe(true))
+
+    vi.setSystemTime(new Date(2026, 10, 2, 8, 30))
+    ipc.emit('tray:startSubtask', '_SUPPORT')
+
+    await new Promise((r) => setTimeout(r, 50))
+    expect(startLiveSubtask).not.toHaveBeenCalled()
+  })
 })
