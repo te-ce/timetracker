@@ -12,7 +12,7 @@ import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { invalidateConfig, invalidateMonthAll, invalidateMonthByYearMonth } from '../../shared/queryKeys'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
-import { useUndoStore } from '../../shared/undoStore'
+import { useDeleteMonth } from '../../shared/useDeleteMonth'
 import { useUndoableDayMutation } from '../day/useWorkPeriodMutations'
 
 function saveCategoryOrder(configRepo: ConfigRepository, categoryOrder: string[]): Promise<void> {
@@ -69,31 +69,7 @@ export function TableView() {
     year: 'numeric',
   })
 
-  const resetMonthMutation = useMutation({
-    mutationFn: async () => {
-      const snapshot = await monthRepo.getMonth(year, month)
-      const trashId = await trashRepo.moveMonthToTrash(year, month, snapshot)
-      await monthRepo.deleteMonth(year, month)
-      return { snapshot, trashId }
-    },
-    onSuccess: ({ snapshot, trashId }) => {
-      invalidateMonthByYearMonth(queryClient, year, month)
-      let currentTrashId = trashId
-      useUndoStore.getState().push({
-        description: `Delete ${monthLabel}`,
-        undo: async () => {
-          await monthRepo.restoreMonth(year, month, snapshot)
-          await trashRepo.purge(currentTrashId)
-          invalidateMonthByYearMonth(queryClient, year, month)
-        },
-        redo: async () => {
-          currentTrashId = await trashRepo.moveMonthToTrash(year, month, snapshot)
-          await monthRepo.deleteMonth(year, month)
-          invalidateMonthByYearMonth(queryClient, year, month)
-        },
-      })
-    },
-  })
+  const resetMonthMutation = useDeleteMonth(year, month, monthLabel)
 
   const clearDayMutation = useUndoableDayMutation(monthRepo, 'Clear day', async ({ date }: { date: string }) => {
     const dayYear = parseInt(date.slice(0, 4), 10)

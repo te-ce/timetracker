@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { MonthNav } from './MonthNav'
 import { MonthCalendar } from './MonthCalendar'
 import { MonthProgressMeter } from './MonthProgressMeter'
@@ -9,16 +8,13 @@ import { StatusLegend } from './StatusLegend'
 import { ConfirmDialog } from '../../shared/ConfirmDialog'
 import { useMonthView } from '../../shared/useMonthView'
 import { officeStats } from '../../shared/officeStats'
-import { useRepositories } from '../../infra/repositories/repositories-context'
-import { invalidateMonthByYearMonth } from '../../shared/queryKeys'
-import { useUndoStore } from '../../shared/undoStore'
+import { useDeleteMonth } from '../../shared/useDeleteMonth'
 import type { DayStatus } from '../../shared/dayStatus'
 import type { DisplayStatus } from '../../shared/statusColors'
 import type { DaySummaryData } from '../../shared/DaySummaryBody'
 import type { WorkLocation } from '../../infra/repositories/types'
 
 export function MonthView() {
-  const { monthRepo, trashRepo } = useRepositories()
   const navigate = useNavigate()
   const { year, month } = useSearch({ from: '/month' })
 
@@ -30,36 +26,11 @@ export function MonthView() {
     void navigate({ to: '/month', search: { year: y, month: m + 1 } })
   }
 
-  const queryClient = useQueryClient()
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const monthLabel = new Date(year, month - 1).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
 
-  const resetMonthMutation = useMutation({
-    mutationFn: async () => {
-      const snapshot = await monthRepo.getMonth(year, month)
-      const trashId = await trashRepo.moveMonthToTrash(year, month, snapshot)
-      await monthRepo.deleteMonth(year, month)
-      return { snapshot, trashId }
-    },
-    onSuccess: ({ snapshot, trashId }) => {
-      invalidateMonthByYearMonth(queryClient, year, month)
-      let currentTrashId = trashId
-      useUndoStore.getState().push({
-        description: `Delete ${monthLabel}`,
-        undo: async () => {
-          await monthRepo.restoreMonth(year, month, snapshot)
-          await trashRepo.purge(currentTrashId)
-          invalidateMonthByYearMonth(queryClient, year, month)
-        },
-        redo: async () => {
-          currentTrashId = await trashRepo.moveMonthToTrash(year, month, snapshot)
-          await monthRepo.deleteMonth(year, month)
-          invalidateMonthByYearMonth(queryClient, year, month)
-        },
-      })
-    },
-  })
+  const resetMonthMutation = useDeleteMonth(year, month, monthLabel)
 
   const { config, summaries, overview, workLocations, dayNotes, todayBalance, isOvertimeReady } = useMonthView(
     year,
