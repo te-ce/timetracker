@@ -12,7 +12,9 @@ export function resolveSubtaskEdit(
 ): { subtask: WorkPeriodSubtask; valid: boolean } {
   if (submode === 'timed') {
     if (!end) {
-      if (!start) return { subtask: sl, valid: false }
+      // An empty end is only valid for a subtask that is still live. Nothing resumes
+      // a stopped one, and it would keep its old hours on top of the live time.
+      if (!start || sl.stoppedAt) return { subtask: sl, valid: false }
       return { subtask: { ...sl, category, startedAt: start, stoppedAt: undefined, note }, valid: true }
     }
     const h = calcSubtaskHours(start, end)
