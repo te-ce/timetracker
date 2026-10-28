@@ -110,7 +110,10 @@ describe('OneDriveStorageAdapter', () => {
     it('sends PUT request with JSON body', async () => {
       const adapter = new OneDriveStorageAdapter(makeToken('tok'))
       await adapter.put('config', { theme: 'dark' })
-      expect(graph.calls[0]).toMatchObject({ url: `${APPROOT}/config:/content`, method: 'PUT' })
+      expect(graph.calls[0]).toMatchObject({
+        url: `${APPROOT}/config:/content?@microsoft.graph.conflictBehavior=fail`,
+        method: 'PUT',
+      })
       expect(graph.calls[0]?.headers['Authorization']).toBe('Bearer tok')
       expect(graph.files.get('config')?.body).toBe(JSON.stringify({ theme: 'dark' }))
     })
@@ -143,6 +146,17 @@ describe('OneDriveStorageAdapter', () => {
       expect(await adapter.get('k')).toBe('other device')
       await adapter.put('k', 'merged')
       expect(graph.files.get('k')?.body).toBe('"merged"')
+    })
+
+    it('does not overwrite an existing file whose version it never read (e.g. the read failed)', async () => {
+      graph.write('k', 'whole month')
+      const adapter = new OneDriveStorageAdapter(makeToken())
+      graph.failWith = 500
+      await expect(adapter.get('k')).rejects.toThrow()
+      graph.failWith = null
+
+      await expect(adapter.put('k', 'one day')).rejects.toBeInstanceOf(StorageConflictError)
+      expect(graph.files.get('k')?.body).toBe('"whole month"')
     })
 
     it('throws StorageConflictError when a file seen as missing was created elsewhere', async () => {

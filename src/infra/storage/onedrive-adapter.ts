@@ -51,8 +51,9 @@ export class OneDriveStorageAdapter implements StorageAdapter {
     const known = this.etags.get(key)
     const headers: Record<string, string> = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
     if (known) headers['If-Match'] = known
-    // Known-absent file: fail (409) rather than overwrite one another device just created.
-    const query = known === null ? '?@microsoft.graph.conflictBehavior=fail' : ''
+    // No known version (seen as missing, or never read successfully): fail (409) rather
+    // than overwrite a file we have not seen. The store then re-reads and re-applies.
+    const query = known ? '' : '?@microsoft.graph.conflictBehavior=fail'
     const res = await fetch(`${APPROOT}/${key}:/content${query}`, {
       method: 'PUT',
       headers,

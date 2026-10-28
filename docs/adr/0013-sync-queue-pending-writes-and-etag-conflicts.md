@@ -26,7 +26,7 @@ ADR 0005 promised write-through caching with ETag conflict detection. The code d
 ### 2. eTag / If-Match in `OneDriveStorageAdapter`
 
 - `get` reads the item metadata (`eTag`, `@microsoft.graph.downloadUrl`) and then downloads the content. The number of requests is the same as before, because `/content` answered with a 302 to the same download URL.
-- `put` / `delete` send `If-Match: <last seen eTag>`. A file that was seen as missing is created with `@microsoft.graph.conflictBehavior=fail`.
+- `put` / `delete` send `If-Match: <last seen eTag>`. A `put` without a known eTag (the file was seen as missing, or its read failed) uses `@microsoft.graph.conflictBehavior=fail`, so it never overwrites a file this device has not read.
 - A 412 or 409 response throws `StorageConflictError`.
 
 ### 3. Serialized, conflict-retried writes in the JSON stores
