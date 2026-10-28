@@ -380,6 +380,21 @@ describe('DayTimeline', () => {
     expect((await getWindows(repo))[0]?.end).toBeNull()
   })
 
+  it('refuses to stop a subtask at a time still in the future', async () => {
+    // Given work since 09:00 with a live Review subtask since 10:00, at 18:30
+    const { repo } = setup([
+      period('a', '09:00', null, 'Work', [{ id: 's1', category: 'Review', hours: 0, startedAt: '10:00' }]),
+    ])
+
+    // When the user picks a later stop time for the subtask
+    fireEvent.change(await screen.findByLabelText('Time'), { target: { value: '20:00' } })
+
+    // Then stopping the subtask is refused: its hours would exceed the time worked
+    expect(screen.getByRole('alert')).toHaveTextContent(/future/i)
+    expect(screen.getByRole('button', { name: /stop subtask/i })).toBeDisabled()
+    expect((await getWindows(repo))[0]?.subtasks[0]?.stoppedAt).toBeUndefined()
+  })
+
   it('closes a live subtask at the new end when the period end is set by editing', async () => {
     // Given work running since 09:00 with a live Review subtask since 10:00
     const { repo } = setup([

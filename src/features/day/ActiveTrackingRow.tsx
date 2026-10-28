@@ -19,15 +19,34 @@ export interface ActiveTrackingRowProps {
   onStopSubtask: (stopTime: string) => void
 }
 
-/** Only a hand-picked time can be wrong; stopping at now within the start minute is a valid zero-length period. */
-function customTimeProblems(
-  active: ActiveTracking,
-  customTime: string | null,
-): { stopTooEarly: boolean; startTooEarly: boolean } {
-  if (customTime === null) return { stopTooEarly: false, startTooEarly: false }
+interface CustomTimeProblems {
+  stopWorkBlocked: boolean
+  startSubtaskBlocked: boolean
+  stopSubtaskBlocked: boolean
+  hint: string | null
+}
+
+/**
+ * Only a hand-picked time can be wrong; stopping at now within the start minute is a valid zero-length period.
+ * Work may stop in the future (a Planned-Stop), a subtask may not: its hours would exceed the time worked.
+ */
+function customTimeProblems(active: ActiveTracking, customTime: string | null, now: string): CustomTimeProblems {
+  if (customTime === null) {
+    return { stopWorkBlocked: false, startSubtaskBlocked: false, stopSubtaskBlocked: false, hint: null }
+  }
+  const stopTooEarly = !endsAfterStart(active.since, customTime)
+  const inFuture = parseMinutes(customTime) > parseMinutes(now)
+  const startTooEarly = parseMinutes(customTime) < parseMinutes(active.period.start)
+  const hint = stopTooEarly
+    ? `Pick a time after ${active.since}`
+    : inFuture && active.subtask
+      ? "A subtask can't stop in the future"
+      : null
   return {
-    stopTooEarly: !endsAfterStart(active.since, customTime),
-    startTooEarly: parseMinutes(customTime) < parseMinutes(active.period.start),
+    stopWorkBlocked: stopTooEarly,
+    startSubtaskBlocked: startTooEarly || inFuture,
+    stopSubtaskBlocked: stopTooEarly || inFuture,
+    hint,
   }
 }
 
@@ -51,20 +70,22 @@ export function ActiveTrackingRow({
     setSubtaskCategory(active.period.category)
   }
 
-  const { stopTooEarly, startTooEarly } = customTimeProblems(active, customTime)
+  const problems = customTimeProblems(active, customTime, now)
 
   const startSubtask = () => {
+    if (problems.startSubtaskBlocked) return
     onStartSubtask(subtaskCategory, customTime ?? now)
     setCustomTime(null)
   }
 
   const stopSubtask = () => {
+    if (problems.stopSubtaskBlocked) return
     onStopSubtask(customTime ?? now)
     setCustomTime(null)
   }
 
   const stopWork = () => {
-    if (stopTooEarly) return
+    if (problems.stopWorkBlocked) return
     onStop(customTime ?? now)
     setCustomTime(null)
   }
@@ -86,12 +107,12 @@ export function ActiveTrackingRow({
       </span>
       <span className="ml-auto flex items-center gap-2">
         <TimeNowField now={now} value={customTime} onChange={setCustomTime} ariaLabel="Time" onConfirm={stopWork} />
-        {stopTooEarly && <InvalidRangeHint>Pick a time after {active.since}</InvalidRangeHint>}
+        {problems.hint && <InvalidRangeHint>{problems.hint}</InvalidRangeHint>}
         {active.subtask ? (
           <button
             type="button"
             onClick={stopSubtask}
-            disabled={stopTooEarly}
+            disabled={problems.stopSubtaskBlocked}
             className="inline-flex h-7 items-center justify-center disabled:opacity-40 rounded-lg border border-amber-300 px-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/40"
           >
             ■ Stop subtask → back to{' '}
@@ -117,7 +138,7 @@ export function ActiveTrackingRow({
             <button
               type="button"
               onClick={startSubtask}
-              disabled={startTooEarly}
+              disabled={problems.startSubtaskBlocked}
               className="inline-flex h-7 items-center justify-center disabled:opacity-40 rounded-lg border border-emerald-300 px-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-900/40"
             >
               ▶ Start subtask
@@ -127,7 +148,7 @@ export function ActiveTrackingRow({
         <button
           type="button"
           onClick={stopWork}
-          disabled={stopTooEarly}
+          disabled={problems.stopWorkBlocked}
           className="inline-flex h-7 items-center justify-center disabled:opacity-40 rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"
         >
           ■ Stop work
