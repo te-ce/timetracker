@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { WorkPeriod, WorkPeriodSubtask, MonthRepository, Day } from '../../infra/repositories/types'
 import { invalidateMonth } from '../../shared/queryKeys'
 import { useUndoStore } from '../../shared/undoStore'
+import { revertDayChange } from './revertDayChange'
 
 async function snapshotDay(repository: MonthRepository, date: string): Promise<Day> {
   const year = parseInt(date.slice(0, 4), 10)
@@ -11,7 +12,7 @@ async function snapshotDay(repository: MonthRepository, date: string): Promise<D
 }
 
 // Factory for mutations that (a) touch a single day and (b) should be
-// undoable by restoring the pre-mutation day snapshot. `redo` is always "run
+// undoable by reverting only what the mutation changed (see revertDayChange). `redo` is always "run
 // mutationFn again with the same variables", so it doesn't need to be passed
 // separately — this is what collapses near-identical useMutation blocks down
 // to one shape plus a description/mutationFn pair. Exported so features
@@ -24,13 +25,16 @@ export function useUndoableDayMutation<Vars extends { date: string }>(
 ) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn,
-    onMutate: async ({ date }: Vars) => ({ prev: await snapshotDay(repository, date) }),
-    onSuccess: (_, vars, { prev }) => {
+    mutationFn: async (vars: Vars) => {
+      const before = await snapshotDay(repository, vars.date)
+      await mutationFn(vars)
+      return { before, after: await snapshotDay(repository, vars.date) }
+    },
+    onSuccess: ({ before, after }, vars) => {
       useUndoStore.getState().push({
         description,
         undo: async () => {
-          await repository.updateDay(vars.date, () => prev)
+          await repository.updateDay(vars.date, (current) => revertDayChange(current, before, after))
           invalidateMonth(queryClient, vars.date)
         },
         redo: async () => {

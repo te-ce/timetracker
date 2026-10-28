@@ -87,6 +87,47 @@ describe('useWorkPeriodMutations', () => {
       expect(data[date]?.windows ?? []).toHaveLength(0)
     })
 
+    it('undo keeps changes made to other periods after the undone action', async () => {
+      const repo = makeRepo([period('a', '09:00', '10:00')])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.save.mutate({ date, window: period('a', '09:00', '11:00') })
+        await flush()
+      })
+      // e.g. the tray opens a period while the edit sits on the undo stack
+      await repo.openWorkPeriod(date, 'X', '12:00')
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const windows = (await repo.getMonth(2026, 5))[date]?.windows ?? []
+      expect(windows.map((w) => [w.start, w.end])).toEqual([
+        ['09:00', '10:00'],
+        ['12:00', null],
+      ])
+    })
+
+    it('undo keeps day fields changed after the undone action', async () => {
+      const repo = makeRepo([period('a', '09:00', '10:00')])
+      const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
+
+      await act(async () => {
+        result.current.remove.mutate({ date, id: 'a' })
+        await flush()
+      })
+      await repo.updateDay(date, (d) => ({ ...d, note: 'later' }))
+
+      await act(async () => {
+        await useUndoStore.getState().undo()
+      })
+
+      const day = (await repo.getMonth(2026, 5))[date]
+      expect(day?.windows).toHaveLength(1)
+      expect(day?.note).toBe('later')
+    })
+
     it('save undo then redo re-applies the saved period', async () => {
       const repo = makeRepo()
       const { result } = renderHook(() => useWorkPeriodMutations(repo), { wrapper: makeWrapper(makeQC()) })
