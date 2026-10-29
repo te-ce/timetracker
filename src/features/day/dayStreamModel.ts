@@ -1,5 +1,6 @@
 import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
-import { calculateWorkedHours, elapsedHours, parseMinutes } from '../../shared/worktime'
+import { calculateWorkedHours, elapsedHours, isBreakSubtask, parseMinutes } from '../../shared/worktime'
+import { BREAK_CATEGORY } from '../../infra/repositories/types'
 import { findBreaks, type DayBreak } from './dayBreaks'
 import { deriveSegments, type DaySegment } from './daySegments'
 import { isLiveSubtask } from './workPeriodShared'
@@ -116,6 +117,7 @@ function categoryTotalsFromSegments(windows: WorkPeriod[], now: string, options:
   const totals = new Map<string, number>()
   for (const period of windows) {
     for (const segment of deriveSegments(period, now, options)) {
+      if (segment.category === BREAK_CATEGORY) continue
       totals.set(segment.category, (totals.get(segment.category) ?? 0) + segment.hours)
     }
   }
@@ -139,14 +141,15 @@ function latestEnd(windows: WorkPeriod[]): string | undefined {
 export function deriveDayStats(windows: WorkPeriod[], now: string, options: DayOptions = {}): DayStats {
   const ordered = orderedPeriods(windows)
   const breaks = findBreaks(windows)
-  const breakHours = breaks.reduce((sum, b) => sum + b.hours, 0)
+  const loggedBreaks = windows.flatMap((w) => w.subtasks.filter(isBreakSubtask))
+  const breakHours = breaks.reduce((sum, b) => sum + b.hours, 0) + loggedBreaks.reduce((sum, s) => sum + s.hours, 0)
   const worked = calculateWorkedHours(windows, options.isToday === false ? undefined : now)
   const active = findActiveTracking(windows, now, options)
 
   return {
     worked,
     breakHours,
-    breakCount: breaks.length,
+    breakCount: breaks.length + loggedBreaks.length,
     atDesk: worked + breakHours,
     firstStart: ordered[0]?.start,
     lastStop: active ? undefined : latestEnd(windows),

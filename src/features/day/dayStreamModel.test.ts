@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { WorkPeriod, WorkPeriodSubtask } from '../../infra/repositories/types'
+import { BREAK_CATEGORY } from '../../infra/repositories/types'
 import { buildDayStream, deriveDayStats, findActiveTracking } from './dayStreamModel'
 
 function period(
@@ -29,6 +30,21 @@ describe('deriveDayStats', () => {
       lastStop: '13:00',
       runningSince: undefined,
     })
+  })
+
+  it('counts logged break subtasks as breaks, not worked time or a category', () => {
+    // Given a gap break and a half-hour break logged inside the second period
+    const windows = [
+      period('08:00', '09:30'),
+      period('10:00', '13:00', [{ id: 'b', category: BREAK_CATEGORY, hours: 0.5 }]),
+    ]
+
+    // When
+    const stats = deriveDayStats(windows, '14:00')
+
+    // Then
+    expect(stats).toMatchObject({ worked: 4, breakHours: 1, breakCount: 2, atDesk: 5 })
+    expect(stats.categoryTotals).toEqual([{ category: '_COREMEDIA', hours: 4 }])
   })
 
   it('reports the latest end as the last stop, not the end of the last-starting period', () => {
