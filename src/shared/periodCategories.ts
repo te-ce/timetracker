@@ -1,6 +1,6 @@
 import type { Day, DayTypeOverride, MonthData, WorkPeriod } from '../infra/repositories/types'
 import { UNCATEGORIZED_CATEGORY } from '../infra/repositories/types'
-import { calculateWorkedHours } from './worktime'
+import { bookedSubtaskHours, calculateWorkedHours, isBreakSubtask } from './worktime'
 import { targetHoursForDate, type WeekdayHours } from './weekdayHours'
 
 export { UNCATEGORIZED_CATEGORY }
@@ -44,9 +44,9 @@ export function calculateCategoryHours(windows: WorkPeriod[], now?: string): Rec
     // An open period without a clock (another day) was never stopped: it counts 0, subtasks included.
     if (w.end === null && now === undefined) continue
     const duration = calculateWorkedHours([w], now)
-    const subtaskedHours = w.subtasks.reduce((sum, s) => sum + s.hours, 0)
-    const remainder = remainderHours(duration, subtaskedHours)
+    const remainder = remainderHours(duration, bookedSubtaskHours(w))
     for (const subtask of w.subtasks) {
+      if (isBreakSubtask(subtask)) continue
       result[subtask.category] = (result[subtask.category] ?? 0) + subtask.hours
     }
     if (remainder > 0.001) {

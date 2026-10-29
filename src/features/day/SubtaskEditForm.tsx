@@ -3,6 +3,7 @@ import { BlurCancelHint } from './BlurCancelHint'
 import { inputClass } from './subtaskFieldClass'
 import { useState, useRef, useEffect } from 'react'
 import type { WorkPeriodSubtask } from '../../infra/repositories/types'
+import { BREAK_CATEGORY } from '../../infra/repositories/types'
 import { useWorkPeriodMutations } from './useWorkPeriodMutations'
 import { calcSubtaskHours } from '../../shared/worktime'
 import { CategoryPicker } from './CategoryPicker'
@@ -120,7 +121,7 @@ export function SubtaskEditForm({
       />
       <CategoryPicker
         value={editCategory}
-        categories={categories}
+        categories={[...categories, BREAK_CATEGORY]}
         onChange={setEditCategory}
         compact
         categoryDescriptions={categoryDescriptions}

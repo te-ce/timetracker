@@ -1,8 +1,10 @@
-import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
+import { BREAK_CATEGORY, UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 
-/** Display name for a category, keeping the UNCATEGORIZED_CATEGORY sentinel readable. */
+/** Display name for a category, keeping the sentinel categories readable. */
 export function categoryLabel(category: string): string {
-  return category === UNCATEGORIZED_CATEGORY ? 'Uncategorized' : category
+  if (category === UNCATEGORIZED_CATEGORY) return 'Uncategorized'
+  if (category === BREAK_CATEGORY) return 'Break'
+  return category
 }
 
 export interface CategoryDisplay {

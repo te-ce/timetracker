@@ -15,6 +15,7 @@ import {
   parseDurationInput,
 } from './worktime'
 import type { WorkPeriod } from '../infra/repositories/types'
+import { BREAK_CATEGORY } from '../infra/repositories/types'
 
 const makeWindow = (start: string, end: string | null): WorkPeriod => ({
   id: '1',
@@ -72,6 +73,18 @@ describe('calculateWorkedHours', () => {
 
   it('accrues a planned-stop period only up to now', () => {
     expect(calculateWorkedHours([makeWindow('22:00', '23:30')], '22:45')).toBe(0.75)
+  })
+
+  it('takes logged break subtasks off the worked time', () => {
+    const withBreak: WorkPeriod = {
+      ...makeWindow('09:00', '13:00'),
+      subtasks: [
+        { id: 'b', category: BREAK_CATEGORY, hours: 0.5 },
+        { id: 's', category: '_SUPPORT', hours: 1 },
+      ],
+    }
+    expect(calculateWorkedHours([withBreak])).toBe(3.5)
+    expect(calculateProjectedWorkedHours([withBreak], '10:00')).toBe(3.5)
   })
 
   it('credits nothing to a period stored with its end before its start', () => {

@@ -1,7 +1,7 @@
 import { BlurCancelHint } from './BlurCancelHint'
 import { useState, useRef, useEffect } from 'react'
 import type { WorkPeriodSubtask } from '../../infra/repositories/types'
-import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
+import { BREAK_CATEGORY, UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 import { parseDurationInput } from '../../shared/worktime'
 import { CategoryPicker } from './CategoryPicker'
 import { categoryDisplay } from './categoryLabel'
@@ -65,7 +65,7 @@ export function SubtaskForm({
       />
       <CategoryPicker
         value={category}
-        categories={categories}
+        categories={[...categories, BREAK_CATEGORY]}
         onChange={setCategory}
         compact
         categoryDescriptions={categoryDescriptions}

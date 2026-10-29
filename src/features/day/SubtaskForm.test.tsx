@@ -28,6 +28,16 @@ describe('SubtaskForm', () => {
     )
   })
 
+  it('offers Break as a subtask category', async () => {
+    const onAdd = vi.fn()
+    render(<SubtaskForm categories={['Work']} onAdd={onAdd} onCancel={() => {}} />)
+    await userEvent.type(screen.getByLabelText('Subtask duration'), '0:30')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Category' }), 'Break')
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }))
+
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ category: '_BREAK', hours: 0.5 }))
+  })
+
   it('calls onCancel when the Cancel button is clicked', async () => {
     const onCancel = vi.fn()
     render(<SubtaskForm categories={['Work']} onAdd={() => {}} onCancel={onCancel} />)

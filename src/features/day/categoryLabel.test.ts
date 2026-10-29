@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { categoryLabel, categoryDisplay } from './categoryLabel'
-import { UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
+import { BREAK_CATEGORY, UNCATEGORIZED_CATEGORY } from '../../infra/repositories/types'
 
 describe('categoryLabel', () => {
   it('keeps the UNCATEGORIZED_CATEGORY sentinel readable', () => {
     expect(categoryLabel(UNCATEGORIZED_CATEGORY)).toBe('Uncategorized')
+  })
+
+  it('labels the BREAK_CATEGORY sentinel as Break', () => {
+    expect(categoryLabel(BREAK_CATEGORY)).toBe('Break')
   })
 
   it('returns the category as-is otherwise', () => {

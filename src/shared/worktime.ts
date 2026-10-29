@@ -1,4 +1,5 @@
-import type { WorkPeriod } from '../infra/repositories/types'
+import type { WorkPeriod, WorkPeriodSubtask } from '../infra/repositories/types'
+import { BREAK_CATEGORY } from '../infra/repositories/types'
 
 export function hasOpenPeriod(windows: WorkPeriod[]): boolean {
   return windows.some((w) => w.end === null)
@@ -104,16 +105,33 @@ export function findActivePeriod(windows: WorkPeriod[], nowHHMM: string): WorkPe
  * Closed past periods contribute their fixed duration.
  */
 export function calculateProjectedWorkedHours(windows: WorkPeriod[], nowHHMM: string): number {
-  return windows.reduce((total, w) => total + elapsedHours(w.start, w.end ?? nowHHMM), 0)
+  return windows.reduce(
+    (total, w) => total + Math.max(0, elapsedHours(w.start, w.end ?? nowHHMM) - breakSubtaskHours(w)),
+    0,
+  )
 }
 
+export function isBreakSubtask(subtask: WorkPeriodSubtask): boolean {
+  return subtask.category === BREAK_CATEGORY
+}
+
+function breakSubtaskHours(period: WorkPeriod): number {
+  return period.subtasks.filter(isBreakSubtask).reduce((sum, s) => sum + s.hours, 0)
+}
+
+/** Hours of the subtasks that book work, i.e. all but logged breaks. */
+export function bookedSubtaskHours(period: WorkPeriod): number {
+  return period.subtasks.filter((s) => !isBreakSubtask(s)).reduce((sum, s) => sum + s.hours, 0)
+}
+
+/** Elapsed period time minus logged break subtasks. */
 export function calculateWorkedHours(windows: WorkPeriod[], now?: string): number {
   return windows.reduce((total, w) => {
     // When now is provided, treat a future end as live (accrue up to now).
     const isFutureEnd = now !== undefined && w.end !== null && parseMinutes(w.end) > parseMinutes(now)
     const endTime = isFutureEnd ? now : (w.end ?? now)
     if (endTime === undefined) return total
-    return total + elapsedHours(w.start, endTime)
+    return total + Math.max(0, elapsedHours(w.start, endTime) - breakSubtaskHours(w))
   }, 0)
 }
 

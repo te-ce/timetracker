@@ -10,6 +10,7 @@ import {
 } from './periodCategories'
 import { DEFAULT_WEEKDAY_HOURS } from './weekdayHours'
 import type { MonthData, WorkPeriod } from '../infra/repositories/types'
+import { BREAK_CATEGORY } from '../infra/repositories/types'
 
 function period(
   id: string,
@@ -77,6 +78,16 @@ describe('calculateDayCategoryHours', () => {
 describe('calculateCategoryHours', () => {
   it('returns empty object for no windows', () => {
     expect(calculateCategoryHours([])).toEqual({})
+  })
+
+  it('books a break subtask nowhere and takes it off the period category', () => {
+    const result = calculateCategoryHours([
+      period('a', '09:00', '13:00', '_COREMEDIA', [
+        { id: 'b', category: BREAK_CATEGORY, hours: 0.5 },
+        { id: 's', category: '_SUPPORT', hours: 1 },
+      ]),
+    ])
+    expect(result).toEqual({ _COREMEDIA: 2.5, _SUPPORT: 1 })
   })
 
   it('assigns full duration to window category when no slices', () => {

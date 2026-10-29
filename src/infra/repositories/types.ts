@@ -25,6 +25,9 @@ export const DEFAULT_CATEGORIES: Category[] = [
 
 export const UNCATEGORIZED_CATEGORY = '_UNCATEGORIZED'
 
+/** Subtask category for a forgotten pause: its hours come off worked time and are booked nowhere. */
+export const BREAK_CATEGORY = '_BREAK'
+
 export interface TimeEntry {
   id: string
   category: string
