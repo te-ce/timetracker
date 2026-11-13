@@ -16,6 +16,7 @@ export interface MonthOverviewDay {
   /** Worked share of the day's target, 0–100. */
   fillPercent: number
   leaveType?: 'Vacation' | 'SickDay'
+  halfDayLeave?: 'Vacation' | 'SickDay'
 }
 
 export interface MonthOverviewWeek {
@@ -106,6 +107,7 @@ export function buildMonthOverview(input: MonthOverviewInput): MonthOverview {
       overtimeToDate,
       fillPercent: targetHours > 0 ? Math.min(100, (summary.workedHours / targetHours) * 100) : 0,
       ...(summary.leaveType !== undefined ? { leaveType: summary.leaveType } : {}),
+      ...(summary.halfDayLeave !== undefined ? { halfDayLeave: summary.halfDayLeave } : {}),
     }
   }
 

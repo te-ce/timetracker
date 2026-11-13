@@ -193,6 +193,17 @@ describe('buildMonthOverview', () => {
     expect(overview.attention[0]?.reason).toBe('Needs review')
   })
 
+  it('keeps the half-day leave type on the day, so the cell can mark it', () => {
+    const overview = buildMonthOverview({
+      days: [daySummary('2026-07-01', { workedHours: 4, halfDayLeave: 'SickDay' })],
+      targetHoursPerDay: [4],
+      today: '2026-07-01',
+      cumulativeBalance: 0,
+    })
+
+    expect(overview.weeks[0]?.days[0]?.halfDayLeave).toBe('SickDay')
+  })
+
   it('keeps the leave type on the day, so a vacation cell can say so instead of showing no hours', () => {
     const overview = buildMonthOverview({
       days: [

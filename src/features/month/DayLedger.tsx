@@ -1,8 +1,8 @@
-import { LEAVE_TYPE_LABEL } from '../../shared/leaveTypeLabel'
 import { formatHours } from '../../shared/formatHours'
 import type { TimeFormat } from '../../shared/timeFormatStore'
 import { balanceInk, formatSignedHours } from './monthBalanceFormat'
 import type { MonthOverviewDay } from './monthOverview'
+import { LeaveChip } from './LeaveChip'
 
 export function DayLedger({
   ledger,
@@ -15,8 +15,13 @@ export function DayLedger({
 }) {
   return (
     <span className="block">
+      {ledger.halfDayLeave && (
+        <span className="mb-0.5 block">
+          <LeaveChip type={ledger.halfDayLeave} half />
+        </span>
+      )}
       {ledger.leaveType && ledger.workedHours === 0 ? (
-        <span className="block text-xs font-medium leading-none">{LEAVE_TYPE_LABEL[ledger.leaveType]}</span>
+        <LeaveChip type={ledger.leaveType} half={false} />
       ) : (
         <span className="block text-base font-semibold leading-none tabular-nums">
           {ledger.workedHours > 0 ? formatHours(ledger.workedHours, timeFormat) : ''}

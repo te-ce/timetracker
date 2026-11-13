@@ -337,6 +337,24 @@ describe('MonthCalendar', () => {
       expect(screen.getByRole('button', { name: /Wednesday, 1 July 2026/i }).textContent).toContain('Vacation')
     })
 
+    it('marks half-day vacation and half-day sick leave apart from each other', () => {
+      const overview = overviewFor(
+        [
+          { ...workDay('2026-07-01', 4), halfDayLeave: 'Vacation' },
+          { ...workDay('2026-07-02', 4), halfDayLeave: 'SickDay' },
+        ],
+        [4, 4],
+        '2026-07-31',
+      )
+      render(<MonthCalendar year={2026} month={6} onSelectDate={vi.fn()} overview={overview} />)
+
+      const vacationChip = screen.getByText('½ Vacation')
+      const sickChip = screen.getByText('½ Sick day')
+      expect(screen.getByRole('button', { name: /Wednesday, 1 July 2026/i })).toContainElement(vacationChip)
+      expect(screen.getByRole('button', { name: /Thursday, 2 July 2026/i })).toContainElement(sickChip)
+      expect(vacationChip.className).not.toBe(sickChip.className)
+    })
+
     it('leaves a week that has not happened yet without totals', () => {
       const overview = overviewFor(
         [workDay('2026-07-01', 9), { ...workDay('2026-07-06', 0), dayStatus: 'future', displayStatus: 'future' }],
