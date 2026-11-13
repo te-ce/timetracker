@@ -2,7 +2,7 @@ import type { Day, MonthData } from '../infra/repositories/types'
 import type { DayType } from '../features/day/dayType'
 import { classifyDayType } from '../features/day/dayType'
 import { calculateWorkedHours, calculateProjectedWorkedHours, periodReviewReason } from './worktime'
-import { calculateDayCategoryHours, UNCATEGORIZED_CATEGORY } from './periodCategories'
+import { calculateDayCategoryHours, LEAVE_CATEGORY, UNCATEGORIZED_CATEGORY } from './periodCategories'
 import { toLocalIso } from './dateUtils'
 import { effectiveTargetHours, type WeekdayHours } from './weekdayHours'
 import type { LeaveType } from '../infra/repositories/types'
@@ -60,8 +60,9 @@ function splitCategoryTotals(categoryHours: Record<string, number>): {
   entryTotal: number
   uncategorizedHours: number
 } {
+  // Leave is booked against the target, not against worked time, so it must not count as booked work.
   const entryTotal = Object.entries(categoryHours)
-    .filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY)
+    .filter(([cat]) => cat !== UNCATEGORIZED_CATEGORY && cat !== LEAVE_CATEGORY)
     .reduce((sum, [, h]) => sum + h, 0)
   const uncategorizedHours = categoryHours[UNCATEGORIZED_CATEGORY] ?? 0
   return { entryTotal, uncategorizedHours }

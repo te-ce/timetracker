@@ -190,6 +190,18 @@ describe('deriveMonthDayCores', () => {
     expect(days[0]!.workedHours).toBe(4) // the actually logged window still counts in full
   })
 
+  it('keeps half-day leave out of entryTotal so the booked half is not over-booked', () => {
+    const { days } = deriveMonthDayCores({
+      year: 2026,
+      month: 5,
+      monthData: { '2026-05-01': { windows: [win('w1', '13:00', '17:00')], halfDayLeave: 'Vacation' } },
+      weekdayHours: [0, 8, 8, 8, 8, 8, 0],
+      today: '2026-05-02',
+    })
+    expect(days[0]!.categoryHours['_LEAVE']).toBe(4)
+    expect(days[0]!.entryTotal).toBe(4)
+  })
+
   it('uses the full weekday target when halfDayLeave is not set', () => {
     const { days } = deriveMonthDayCores({
       year: 2026,

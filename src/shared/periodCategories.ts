@@ -5,7 +5,7 @@ import { targetHoursForDate, type WeekdayHours } from './weekdayHours'
 
 export { UNCATEGORIZED_CATEGORY }
 
-const LEAVE_CATEGORY = '_LEAVE'
+export const LEAVE_CATEGORY = '_LEAVE'
 const LEAVE_OVERRIDES = new Set<DayTypeOverride>(['Vacation', 'SickDay'])
 
 /**
